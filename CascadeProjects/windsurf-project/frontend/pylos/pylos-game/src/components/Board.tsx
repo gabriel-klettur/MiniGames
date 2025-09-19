@@ -1,6 +1,8 @@
 import { Fragment } from 'react';
 import type { GameState, Position } from '../game/types';
 import { LEVELS, getCell, isFree, isSupported, levelSize } from '../game/board';
+import bolaA from '../assets/bola_a.webp';
+import bolaB from '../assets/bola_b.webp';
 
 export interface BoardProps {
   state: GameState;
@@ -75,16 +77,29 @@ function LevelView({ level, state, onCellClick, onDragStart, onDragEnd, highligh
                 title={`L${level} (${r},${c})`}
               >
                 {cell && (
-                  <span className={[
-                    'piece',
-                    cell === 'L' ? 'piece--light' : 'piece--dark',
-                    free ? 'piece--free' : 'piece--fixed',
-                    isAppearing ? 'piece--appear' : '',
-                  ].join(' ')}
+                  <span
+                    className={[
+                      'piece',
+                      cell === 'L' ? 'piece--light' : 'piece--dark',
+                      free ? 'piece--free' : 'piece--fixed',
+                      isAppearing ? 'piece--appear' : '',
+                    ].join(' ')}
                     draggable={canDrag}
-                    onDragStart={(e) => { if (canDrag) { e.dataTransfer.setData('text/plain', key); onDragStart?.(pos); } }}
+                    onDragStart={(e) => {
+                      if (canDrag) {
+                        e.dataTransfer.setData('text/plain', key);
+                        onDragStart?.(pos);
+                      }
+                    }}
                     onDragEnd={() => { onDragEnd?.(); }}
-                  />
+                  >
+                    <img
+                      src={cell === 'L' ? bolaA : bolaB}
+                      alt={cell === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+                      className="piece__img"
+                      draggable={false}
+                    />
+                  </span>
                 )}
               </button>
             );

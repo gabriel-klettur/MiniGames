@@ -1,4 +1,6 @@
 import type { GameState } from '../game/types';
+import bolaA from '../assets/bola_a.webp';
+import bolaB from '../assets/bola_b.webp';
 
 export interface InfoPanelProps {
   state: GameState;
@@ -36,7 +38,14 @@ function InfoPanel({ state, onFinishRecovery, gameOverText }: InfoPanelProps) {
             ].join(' ')}
             title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
             aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-          />
+          >
+            <img
+              src={currentPlayer === 'L' ? bolaA : bolaB}
+              alt={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+              className="piece__img"
+              draggable={false}
+            />
+          </span>
         </div>
         <div><strong>Reserva L:</strong> {reserves.L}</div>
         <div><strong>Reserva D:</strong> {reserves.D}</div>
