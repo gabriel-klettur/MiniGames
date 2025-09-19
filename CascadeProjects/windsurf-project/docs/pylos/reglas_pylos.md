@@ -53,10 +53,6 @@ En un mismo turno, un jugador puede (**Fig. D**):
 
 ## Variantes
 
-### Variante para niños
-- Se juega sin la regla de recuperar bolas al formar cuadrados.  
-- Solo se economizan bolas con la regla del apilamiento.  
-
 ### Variante para jugadores experimentados: Alineación
 - Un jugador recupera 1 o 2 bolas propias al formar un cuadrado **o una línea de su color**:  
   - 4 bolas alineadas en el primer nivel (**Fig. F1**).  

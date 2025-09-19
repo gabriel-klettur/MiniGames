@@ -1,22 +1,43 @@
-export type PlayerId = 1 | 2;
+// Types and shared interfaces for Pylos implementation
 
-export type GamePhase = 'PLAYING' | 'ENDED';
-export type TurnSubphase = 'ACTION' | 'REMOVAL';
+export type Player = 'L' | 'D'; // L = Light, D = Dark
+export type Piece = Player;
+export type Cell = Piece | null;
 
-export interface Cell {
-  layer: number; // 0..3, bottom to top
-  x: number;     // column index in layer
-  y: number;     // row index in layer
+export interface Position {
+  level: number; // 0..3
+  row: number;   // 0..n-1 depending on level
+  col: number;   // 0..n-1 depending on level
 }
 
-export const LAYER_SIZES: readonly [number, number, number, number] = [4, 3, 2, 1];
+export type LevelGrid = Cell[][]; // row-major
+export type Board = LevelGrid[];  // 4 levels: 4x4, 3x3, 2x2, 1x1
 
-export function sameCell(a: Cell | null | undefined, b: Cell | null | undefined): boolean {
-  return !!a && !!b && a.layer === b.layer && a.x === b.x && a.y === b.y;
+export type GamePhase = 'play' | 'selectMoveSource' | 'selectMoveDest' | 'recover';
+
+export interface GameOptions {
+  variantLines: boolean; // optional variant to count lines as scoring
 }
 
-// Tipos y utilidades adicionales (no intrusivos)
-export type Layer = 0 | 1 | 2 | 3;
-export const LAYERS: readonly Layer[] = [0, 1, 2, 3] as const;
-export type CellKey = string;
-export function keyOfCell(c: Cell): CellKey { return `${c.layer}-${c.x}-${c.y}`; }
+export interface GameState {
+  board: Board;
+  currentPlayer: Player;
+  reserves: Record<Player, number>; // remaining pieces in reserve
+  phase: GamePhase;
+  options: GameOptions;
+  // UI selections
+  selectedSource?: Position; // when moving
+  // Recovery state when a scoring pattern is formed
+  recovery?: {
+    player: Player;
+    remaining: number; // how many pieces the player may still recover this turn (max 2)
+    minRequired: number; // usually 1 if there are recoverable pieces, otherwise 0
+    removedSoFar: number; // how many recovered already
+  };
+}
+
+export const PLAYERS: Player[] = ['L', 'D'];
+
+export function otherPlayer(p: Player): Player {
+  return p === 'L' ? 'D' : 'L';
+}
