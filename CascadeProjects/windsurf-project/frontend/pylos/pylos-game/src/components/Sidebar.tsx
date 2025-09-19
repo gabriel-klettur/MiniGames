@@ -26,36 +26,38 @@ function Sidebar({ state, onNewGame, onFinishRecovery, gameOverText }: SidebarPr
     <aside className="sidebar">
       <h2>Pylos</h2>
       <div className="panel">
-        <div className="row"><strong>Turno:</strong></div>
-        <div className="row">
-          <span
-            className={[
-              'piece',
-              currentPlayer === 'L' ? 'piece--light' : 'piece--dark',
-            ].join(' ')}
-            title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-            aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-          />
+        <div className="row grid-3">
+          <div>
+            <strong>Turno:</strong>{' '}
+            <span
+              className={[
+                'piece',
+                currentPlayer === 'L' ? 'piece--light' : 'piece--dark',
+              ].join(' ')}
+              title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+              aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+            />
+          </div>
+          <div><strong>Reserva L:</strong> {reserves.L}</div>
+          <div><strong>Reserva D:</strong> {reserves.D}</div>
         </div>
-        <div className="row"><strong>Reserva L:</strong> {reserves.L}</div>
-        <div className="row"><strong>Reserva D:</strong> {reserves.D}</div>
         <div className="row"><strong>Fase:</strong> {phase}</div>
         <div className="row info">{info}</div>
       </div>
 
       <div className="panel">
-        <button onClick={onNewGame}>Nuevo juego</button>
-        <div className="row"><strong>Variante:</strong> líneas activada</div>
-        {phase === 'recover' && (
-          <button onClick={onFinishRecovery} className="primary">Terminar recuperación</button>
-        )}
+        <div className="row actions">
+          <button onClick={onNewGame}>Nuevo juego</button>
+          {phase === 'recover' && (
+            <button onClick={onFinishRecovery} className="primary">Terminar recuperación</button>
+          )}
+          <button className="push-right" onClick={() => setShowRules((v) => !v)}>
+            {showRules ? 'Ocultar reglas clave' : 'Mostrar reglas clave'}
+          </button>
+        </div>
       </div>
 
-      <div className="panel">
-        <button onClick={() => setShowRules((v) => !v)}>
-          {showRules ? 'Ocultar reglas clave' : 'Mostrar reglas clave'}
-        </button>
-      </div>
+      
 
       {showRules && (
         <div className="panel small">
