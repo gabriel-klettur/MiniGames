@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Cell, PlayerId } from '../../game/types';
-import bolaA from '../../assets/bola_a.png';
-import bolaB from '../../assets/bola_b.png';
+import bolaA from '../../assets/bola_a.webp';
+import bolaB from '../../assets/bola_b.webp';
 
 export interface CellButtonProps {
   cell: Cell;

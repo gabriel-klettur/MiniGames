@@ -6,8 +6,13 @@
   background: #fbbf24;
   border: 2px solid #1f2937;
   border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: none;
   cursor: nwse-resize;
+}
+
+/* Compensación de gaps negativos: acercar celdas con márgenes negativos */
+.layer .pylos-cell {
+  margin: var(--neg-gap-y, 0px) var(--neg-gap-x, 0px);
 }
 .calib-handle.tl { left: -10px; top: -10px; cursor: nwse-resize; }
 .calib-handle.tr { right: -10px; top: -10px; cursor: nesw-resize; }
@@ -42,14 +47,27 @@
 .layer {
   position: absolute;
   display: grid;
-  gap: var(--gap);
-  transform: translate(var(--t), var(--t));
+  /* Independent spacing on each axis. Default to --gap if not provided.
+     CSS grid gap no acepta negativos; usamos clamp a >=0 y compensamos con márgenes negativos. */
+  --gx: var(--gap-x, var(--gap));
+  --gy: var(--gap-y, var(--gap));
+  column-gap: clamp(0px, var(--gx), 256px);
+  row-gap: clamp(0px, var(--gy), 256px);
+  /* mitad del valor negativo (si lo hay) para repartir a ambos lados */
+  --neg-gap-x: calc(min(0px, var(--gx)) / 2);
+  --neg-gap-y: calc(min(0px, var(--gy)) / 2);
+  /* Grid calibration variables (with fallbacks):
+     --grid-x/--grid-y control translation; --grid-scale controls scaling. */
+  transform-origin: top left;
+  /* REMOVED scale so cell size stays constant. Only translate the grid. */
+  transform: translate(calc(var(--grid-x, 0px) + var(--t)), calc(var(--grid-y, 0px) + var(--t)));
 }
 
 .layer-0 { --t: 0px; }
-.layer-1 { --t: calc(var(--cell) * 0.5 + var(--gap) * 0.5); }
-.layer-2 { --t: calc(var(--cell) * 1 + var(--gap) * 1); }
-.layer-3 { --t: calc(var(--cell) * 1.5 + var(--gap) * 1.5); }
+/* Use an averaged gap for layer inward offset so it remains visually centered */
+.layer-1 { --g: calc((var(--gap-x, var(--gap)) + var(--gap-y, var(--gap))) / 2); --t: calc(var(--cell) * 0.5 + var(--g) * 0.5); }
+.layer-2 { --g: calc((var(--gap-x, var(--gap)) + var(--gap-y, var(--gap))) / 2); --t: calc(var(--cell) * 1 + var(--g) * 1); }
+.layer-3 { --g: calc((var(--gap-x, var(--gap)) + var(--gap-y, var(--gap))) / 2); --t: calc(var(--cell) * 1.5 + var(--g) * 1.5); }
 
 .pylos-cell {
   width: var(--cell);
@@ -62,18 +80,48 @@
   background-color: transparent; /* show board under empty cells */
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain; /* scale marble images */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, outline 120ms ease;
+  /* Size of the marble image (ball) can be adjusted via --ball */
+  background-size: var(--ball, calc(var(--cell) * 0.9)) var(--ball, calc(var(--cell) * 0.9));
+  box-shadow: none; /* no shading */
+  transition: transform 120ms ease, background 120ms ease, outline 120ms ease;
 }
 
-.pylos-cell.empty.valid {
-  /* subtle hint on valid empty holes */
-  background-color: rgba(255,255,255,0.03);
+/* Visualización del hueco (solo en modo calibración) */
+.pylos-cell::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--hole, calc(var(--cell) * 0.82));
+  height: var(--hole, calc(var(--cell) * 0.82));
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0; /* visible solo en calib-active */
+  background: rgba(236, 72, 153, 0.28); /* pink fill */
+  border: 2px solid rgba(190, 24, 93, 0.8); /* darker pink ring */
+  box-shadow: none;
 }
 
-.pylos-cell.empty.valid:hover {
-  box-shadow: 0 0 0 3px rgba(120, 200, 255, 0.6) inset;
+/* Mostrar el círculo del hueco cuando está en modo calibración y la celda está vacía */
+.pylos-board.calib-active .layer-0 .pylos-cell.empty::after {
+  opacity: 0.65;
+}
+
+/* Ocultar el círculo cuando hay una bola colocada */
+.pylos-cell.p1::after,
+.pylos-cell.p2::after {
+  opacity: 0;
+}
+
+.pylos-cell.empty.valid { background-color: transparent; }
+.pylos-cell.empty.valid:hover { box-shadow: none; }
+
+/* In calibration mode, hide the secondary hint so only the pink hole is visible */
+.pylos-board.calib-active .pylos-cell.empty.valid,
+.pylos-board.calib-active .pylos-cell.empty.valid:hover {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }
 
 /* p1/p2 backgrounds now provided via inline background-image from TSX */
@@ -99,6 +147,52 @@
   pointer-events: none; /* avoid intercepting clicks */
   opacity: 0.85;
 }
+
+/* Green overlay to calibrate the holes grid (position + scale) */
+.grid-calib {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Base grid size now depends on hole diameter + gaps (independiente de --cell) */
+  width: calc(var(--hole, 40px) * 4 + (var(--gap-x, var(--gap))) * 3);
+  height: calc(var(--hole, 40px) * 4 + (var(--gap-y, var(--gap))) * 3);
+  border: 3px solid rgba(16, 185, 129, 0.9); /* emerald */
+  border-radius: 4px;
+  box-shadow: none;
+  /* Yellow grid lines for calibration */
+  --unit-x: clamp(8px, calc(var(--hole, 40px) + (var(--gap-x, var(--gap)))), 512px);
+  --unit-y: clamp(8px, calc(var(--hole, 40px) + (var(--gap-y, var(--gap)))), 512px);
+  --grid-line: 2px;
+  --grid-color: rgba(251, 191, 36, 0.9); /* amber */
+  background-image:
+    linear-gradient(to right, transparent calc(100% - var(--grid-line)), var(--grid-color) 0),
+    linear-gradient(to bottom, transparent calc(100% - var(--grid-line)), var(--grid-color) 0);
+  background-size: var(--unit-x) var(--unit-y);
+  background-position: 0 0;
+  background-repeat: repeat;
+  /* Apply same transform logic as layers so it visually matches */
+  transform-origin: top left;
+  transform: translate(var(--grid-x, 0px), var(--grid-y, 0px));
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.grid-calib .grid-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #34d399; /* light emerald */
+  border: 2px solid #065f46; /* dark emerald */
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.grid-calib .grid-handle.tl { left: -10px; top: -10px; cursor: nwse-resize; }
+.grid-calib .grid-handle.tr { right: -10px; top: -10px; cursor: nesw-resize; }
+.grid-calib .grid-handle.bl { left: -10px; bottom: -10px; cursor: nesw-resize; }
+.grid-calib .grid-handle.br { right: -10px; bottom: -10px; cursor: nwse-resize; }
+
+/* When calibration mode is enabled, keep green overlay above yellow outline */
+.pylos-board.calib-active .grid-calib { outline-offset: 0; }
 
 .toolbar {
   display: flex;

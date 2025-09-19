@@ -2,10 +2,11 @@ import React from 'react';
 import { Board } from '../game/board';
 import { type Cell, LAYER_SIZES, type PlayerId, sameCell, LAYERS } from '../game/types';
 import './pylos.css';
-import boardImg from '../assets/board.png';
+import boardImg from '../assets/board.webp';
 import LayerGrid from './Board/LayerGrid';
 import CellButton from './Board/CellButton';
 import { useBoardSizing } from './Board/useBoardSizing';
+import { useGridCalibration } from './Board/useGridCalibration';
 
 export interface PylosBoardProps {
   board: Board;
@@ -21,6 +22,17 @@ export interface PylosBoardProps {
   gapSize?: number;  // pixels for --gap
   configMode?: boolean; // when true, show yellow border and handles
   onResize?: (nextCell: number, nextGap: number) => void;
+  // Grid calibration controls
+  gridX?: number;
+  gridY?: number;
+  gridGapX?: number;
+  gridGapY?: number;
+  onGridMove?: (x: number, y: number) => void;
+  onGridResize?: (gapX: number, gapY: number) => void;
+  // Hole visualization diameter in pixels
+  holeSize?: number;
+  // Ball (marble) diameter in pixels
+  ballSize?: number;
 }
 
 /**
@@ -41,9 +53,26 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
   gapSize,
   configMode = false,
   onResize,
+  gridX = 0,
+  gridY = 0,
+  gridGapX,
+  gridGapY,
+  onGridMove,
+  onGridResize,
+  holeSize,
+  ballSize,
 }) => {
   const layers = LAYERS;
   const { boardRef, onHandleDown } = useBoardSizing(configMode, cellSize, gapSize, onResize);
+  const { overlayRef, onOverlayDown, onHandleDown: onGridHandleDown } = useGridCalibration(
+    !!configMode,
+    gridX,
+    gridY,
+    gridGapX ?? gapSize,
+    gridGapY ?? gapSize,
+    onGridMove,
+    onGridResize,
+  );
 
   const renderCell = (cell: Cell) => {
     const owner = board.get(cell);
@@ -77,6 +106,14 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
           backgroundPosition: 'center',
           ...(cellSize ? ({ ['--cell' as any]: `${cellSize}px` } as React.CSSProperties) : {}),
           ...(gapSize ? ({ ['--gap' as any]: `${gapSize}px` } as React.CSSProperties) : {}),
+          // grid transform variables: translation only (keep hole size constant)
+          ['--grid-x' as any]: `${gridX}px`,
+          ['--grid-y' as any]: `${gridY}px`,
+          // independent grid spacing; default to global gap if not provided
+          ...(gridGapX != null ? ({ ['--gap-x' as any]: `${gridGapX}px` } as React.CSSProperties) : {}),
+          ...(gridGapY != null ? ({ ['--gap-y' as any]: `${gridGapY}px` } as React.CSSProperties) : {}),
+          ...(holeSize ? ({ ['--hole' as any]: `${holeSize}px` } as React.CSSProperties) : {}),
+          ...(ballSize ? ({ ['--ball' as any]: `${ballSize}px` } as React.CSSProperties) : {}),
         }}
       >
         {layers.map((layer) => {
@@ -97,6 +134,13 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
             <div className="calib-handle tr" onMouseDown={(e) => onHandleDown(e, 'tr')} />
             <div className="calib-handle bl" onMouseDown={(e) => onHandleDown(e, 'bl')} />
             <div className="calib-handle br" onMouseDown={(e) => onHandleDown(e, 'br')} />
+            {/* Green overlay for holes grid calibration */}
+            <div ref={overlayRef} className="grid-calib" onMouseDown={onOverlayDown}>
+              <div className="grid-handle tl" onMouseDown={(e) => onGridHandleDown(e, 'tl')} />
+              <div className="grid-handle tr" onMouseDown={(e) => onGridHandleDown(e, 'tr')} />
+              <div className="grid-handle bl" onMouseDown={(e) => onGridHandleDown(e, 'bl')} />
+              <div className="grid-handle br" onMouseDown={(e) => onGridHandleDown(e, 'br')} />
+            </div>
           </>
         )}
       </div>
