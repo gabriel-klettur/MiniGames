@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import './App.css';
 import Board from './components/Board';
 import Sidebar from './components/Sidebar';
+import InfoPanel from './components/InfoPanel';
 import type { Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey } from './game/board';
@@ -112,10 +113,10 @@ function App() {
       <Sidebar
         state={state}
         onNewGame={onNewGame}
-        onFinishRecovery={onFinishRecovery}
         gameOverText={gameOver}
       />
       <div className="content">
+        <InfoPanel state={state} onFinishRecovery={onFinishRecovery} gameOverText={gameOver} />
         <Board
           state={state}
           onCellClick={onCellClick}

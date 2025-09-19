@@ -4,56 +4,22 @@ import type { GameState } from '../game/types';
 export interface SidebarProps {
   state: GameState;
   onNewGame: () => void;
-  onFinishRecovery: () => void;
+  onFinishRecovery?: () => void; // now handled by InfoPanel when needed
   gameOverText?: string;
 }
 
-function Sidebar({ state, onNewGame, onFinishRecovery, gameOverText }: SidebarProps) {
-  const { currentPlayer, reserves, phase, recovery } = state;
+function Sidebar({ onNewGame }: SidebarProps) {
   const [showRules, setShowRules] = useState<boolean>(false);
-  const info: string = (() => {
-    if (gameOverText) return gameOverText;
-    if (phase === 'recover') {
-      const remaining = recovery?.remaining ?? 0;
-      const minReq = recovery?.minRequired ?? 0;
-      return `Recupera ${minReq > 0 ? `al menos ${minReq}` : 'hasta'} ${remaining} pieza(s).`;
-    }
-    if (phase === 'selectMoveDest') return 'Elige un destino válido para subir la pieza.';
-    return 'Elige una casilla vacía para colocar o toca una pieza libre para moverla.';
-  })();
 
   return (
     <aside className="sidebar">
       <h2>Pylos</h2>
-      <div className="panel">
-        <div className="row grid-3">
-          <div>
-            <strong>Turno:</strong>{' '}
-            <span
-              className={[
-                'piece',
-                currentPlayer === 'L' ? 'piece--light' : 'piece--dark',
-              ].join(' ')}
-              title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-              aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-            />
-          </div>
-          <div><strong>Reserva L:</strong> {reserves.L}</div>
-          <div><strong>Reserva D:</strong> {reserves.D}</div>
-        </div>
-        <div className="row"><strong>Fase:</strong> {phase}</div>
-        <div className="row info">{info}</div>
-      </div>
+      {/* Estado general movido a InfoPanel */}
 
       <div className="panel">
         <div className="row actions">
-          <button onClick={onNewGame}>Nuevo juego</button>
-          {phase === 'recover' && (
-            <button onClick={onFinishRecovery} className="primary">Terminar recuperación</button>
-          )}
-          <button className="push-right" onClick={() => setShowRules((v) => !v)}>
-            {showRules ? 'Ocultar reglas clave' : 'Mostrar reglas clave'}
-          </button>
+          <button onClick={onNewGame}>Nuevo</button>
+          <button className="push-right" onClick={() => setShowRules((v) => !v)}>Reglas</button>
         </div>
       </div>
 
