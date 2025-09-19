@@ -8,21 +8,38 @@
   --light: #f3f4f6;
   --dark: #111827;
   /* Board sizing */
+  --scale: 0.5;          /* global scale for board/balls (1.0 = original, 0.5 = half size) */
   --sidebar-width: 300px;   /* must match .app grid left column */
   --app-gap: 16px;          /* must match .app gap */
   --app-padding: 16px;      /* must match .app padding */
-  --level-gap: 8px;         /* must match .level gap */
-  --level-padding: 8px;     /* must match .level padding */
+  /* use base spacing values, then derive scaled ones */
+  --level-gap-base: 8px;         /* base gap between cells */
+  --level-padding-base: 8px;     /* base padding inside level */
+  --level-gap: calc(var(--level-gap-base) * var(--scale));
+  --level-padding: calc(var(--level-padding-base) * var(--scale));
   --max-cols: 4;            /* widest level (4x4) */
   /* Fluid cell size that shrinks if viewport is small. We subtract app padding (~16px),
-     level padding, and gaps to ensure the 4x4 base level fits without overflow. */
-  --cell-size: clamp(
+    level padding, and gaps to ensure the 4x4 base level fits without overflow. We use base spacing for this calculation, then apply scale. */
+  --cell-size-base: clamp(
     36px,
-    calc((100vw - (2 * var(--app-padding)) - var(--sidebar-width) - var(--app-gap) - (2 * var(--level-padding)) - ((var(--max-cols) - 1) * var(--level-gap))) / var(--max-cols)),
+    calc((100vw - (2 * var(--app-padding)) - var(--sidebar-width) - var(--app-gap) - (2 * var(--level-padding-base)) - ((var(--max-cols) - 1) * var(--level-gap-base))) / var(--max-cols)),
     64px
   );
+  --cell-size: calc(var(--cell-size-base) * var(--scale));
   /* Piece slightly smaller than the cell to leave visual breathing room */
   --piece-size: calc(var(--cell-size) - 20px);
+  /* Scale factor for piece visuals inside board cells (1.0 = normal) */
+  --piece-scale: 1.4; /* +10% */
+  /* Scaled geometry */
+  --cell-radius-base: 12px;
+  --cell-radius: calc(var(--cell-radius-base) * var(--scale));
+  /* Outline scaling */
+  --outline-w-base: 2px;
+  --outline-w: calc(var(--outline-w-base) * var(--scale));
+  --outline-offset-highlight-base: -4px;
+  --outline-offset-highlight: calc(var(--outline-offset-highlight-base) * var(--scale));
+  --outline-offset-selected-base: -2px;
+  --outline-offset-selected: calc(var(--outline-offset-selected-base) * var(--scale));
 }
 
 * { box-sizing: border-box; }
@@ -42,7 +59,8 @@
   flex-direction: column; /* stack InfoPanel above Board */
   align-items: center;    /* keep board centered horizontally */
   justify-content: flex-start;
-  gap: 12px;
+  /* more space so the board never touches the panel above */
+  gap: clamp(16px, 2.5vw, 28px);
 }
 
 .sidebar {
@@ -69,6 +87,8 @@
   border-radius: 12px;
   padding: 12px;
   text-align: center; /* center text always */
+  position: relative; /* create stacking context */
+  z-index: 1;         /* ensure panel sits above decorative board art */
 }
 .info-panel .row { margin: 6px 0; font-size: 14px; }
 .info-panel .row.info { color: var(--muted); }
@@ -119,39 +139,115 @@
   justify-content: center;
 }
 
+/* Render the real board image behind the base level grid without affecting sizing */
+.level--board {
+  /* neutralize panel chrome so only the board image is visible */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  position: relative;
+  /* Inner grid total width (4 cells + 3 gaps) used to scale the board art */
+  --inner-size: calc((var(--cell-size) * var(--max-cols)) + (var(--level-gap) * (var(--max-cols) - 1)));
+  /* Ratios from the provided asset (inner area 569x566 inside a 1024x1024 board) */
+  --board-w-mult: 1.799; /* 1024 / 569 ≈ 1.799 */
+  --board-h-mult: 1.810; /* 1024 / 566 ≈ 1.810 */
+  /* Optional fine alignment offsets (positive moves the art right/down). */
+  /* Based on ~225px left and ~230px top margins on a 1024px board (inner ~569x566), */
+  /* we nudge ~+2.5px right and ~-1px up for closer fit. Adjust as needed. */
+  --board-offset-x: calc(2.5px * var(--scale));
+  --board-offset-y: calc(-1px * var(--scale));
+  /* Compute extra padding so the ::before background is fully contained and no overlap occurs */
+  --extra-w: calc((var(--inner-size) * var(--board-w-mult)) - var(--inner-size));
+  --extra-h: calc((var(--inner-size) * var(--board-h-mult)) - var(--inner-size));
+  --extra-hpad: calc(var(--extra-w) / 2);
+  --extra-vpad: calc(var(--extra-h) / 2);
+  padding: var(--extra-vpad) var(--extra-hpad);
+}
+
+.level--board::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--inner-size) * var(--board-w-mult));
+  height: calc(var(--inner-size) * var(--board-h-mult));
+  transform: translate(calc(-50% + var(--board-offset-x)), calc(-50% + var(--board-offset-y)));
+  background-image: url('./assets/board.webp');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none; /* keep interactions on the grid */
+  z-index: 0;          /* render below any grid content */
+}
+
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
   background: #111827;
   border: 1px solid #1f2937;
-  border-radius: 12px;
+  border-radius: 50%;            /* make button visually circular */
+  clip-path: circle(50% at 50% 50%); /* circular hit area (affects pointer events) */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;           /* remove default button padding so piece can fill fully */
+  overflow: hidden;     /* clip piece/image to the rounded cell border */
+  position: relative;   /* allow inner piece to be absolutely positioned */
 }
-.cell--highlight { outline: 2px dashed var(--accent); outline-offset: -4px; }
-.cell--supported { background: #0f1b33; }
-.cell--selected { outline: 2px solid #3b82f6; outline-offset: -2px; }
 
+/* Base level cells are transparent so the wood board shows through */
+.level--board .cell {
+  background: transparent;
+  border-color: transparent;
+}
+/* ensure no background leaks on supported state at base level */
+.level--board .cell.cell--supported { background: transparent; }
+.cell--highlight { outline: none; box-shadow: 0 0 0 var(--outline-w) var(--accent) inset; }
+.cell--supported { background: #0f1b33; }
+.cell--selected { outline: none; box-shadow: 0 0 0 var(--outline-w) #3b82f6 inset; }
+
+/* Generic piece (used in InfoPanel) keeps normal flow */
 .piece {
   display: inline-block;
-  width: 100%;
-  height: 100%;
-  /* Guarantee perfect circle regardless of layout quirks */
   aspect-ratio: 1 / 1;
   border-radius: 50%;
+}
+
+/* Board cells: pieces fill their cells and can bleed under borders */
+.cell .piece {
+  position: absolute;   /* bleed under the cell border */
+  top: -1px;            /* match .cell border width */
+  right: -1px;
+  bottom: -1px;
+  left: -1px;
+  display: block;
   border: none;
   box-shadow: none;
 }
+
+/* On the base level, do not bleed beyond the cell; fit exactly inside the hole */
+.level--board .cell .piece {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
 /* Image inside the piece: fill the circle, keep ratio, and ignore pointer events */
 .piece__img {
+  display: block;       /* remove inline spacing, ensure full coverage */
   width: 100%;
   height: 100%;
   object-fit: cover; /* fill the circle; may crop edges slightly */
   border-radius: 50%;
   pointer-events: none; /* let drag/click be handled by the parent span */
   user-select: none;
+}
+
+/* Only scale in the actual board cells, not in the InfoPanel indicator */
+.cell .piece__img {
+  transform: scale(var(--piece-scale));
+  transform-origin: center center;
 }
 /* Make backgrounds transparent so only the asset is visible */
 .piece--light { background: transparent; }
@@ -194,7 +290,8 @@
 
   .content {
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* avoid vertical centering that can reduce spacing */
+    gap: clamp(20px, 4vh, 36px); /* extra breathing room on small screens */
   }
 
   .sidebar {
@@ -208,7 +305,8 @@
   .sidebar .row.grid-3 { gap: 6px; }
   .sidebar .row.actions { gap: 6px; flex-wrap: wrap; } /* allow wrap on mobile */
 
-  .board { gap: 8px; }
+  .board { gap: 8px; margin-top: 4px; }
+  .level--board { margin-top: 4px; }
   .level { gap: var(--level-gap); padding: var(--level-padding); }
 
   /* Ajustamos compacidad en móvil sin fijar tamaños rígidos */
@@ -218,5 +316,7 @@
     --app-padding: 8px; /* coincide con padding lateral en móvil */
     --level-gap: 6px;
     --level-padding: 6px;
+    /* reducir ligeramente la escala global para más aire en móvil */
+    --scale: 0.45;
   }
 }

@@ -47,7 +47,7 @@ interface LevelViewProps extends Omit<BoardProps, 'state'> {
 function LevelView({ level, state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys }: LevelViewProps) {
   const size = levelSize(level);
   return (
-    <div className="level" style={{ gridTemplateColumns: `repeat(${size}, var(--cell-size))`, justifyContent: 'center' }}>
+    <div className={["level", level === 0 ? "level--board" : ""].join(' ')} style={{ gridTemplateColumns: `repeat(${size}, var(--cell-size))`, justifyContent: 'center' }}>
       {Array.from({ length: size }).map((_, r) => (
         <Fragment key={r}> 
           {Array.from({ length: size }).map((_, c) => {
