@@ -211,3 +211,41 @@
   display: flex;
   gap: 8px;
 }
+
+/* Responsive helpers: container that scales the board to fit width */
+.pylos-responsive {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.pylos-scale {
+  /* The child is the real-sized board; we scale it to fit */
+  transform-origin: top left;
+  will-change: transform;
+}
+
+/* Avoid the page scrolling while dragging handles on touch devices */
+.pylos-board,
+.grid-calib,
+.calib-handle,
+.grid-handle {
+  touch-action: none;
+}
+
+/* Make the wrap use full width and breathe on mobile */
+.pylos-wrap {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .toolbar { justify-content: center; }
+  .finish-btn { padding: 10px 14px; font-size: 14px; }
+  .controls { flex-wrap: wrap; }
+  .status { font-size: 14px; text-align: center; }
+}

@@ -21,24 +21,29 @@ export function useGridCalibration(
     | { kind: 'move'; startX: number; startY: number; startGX: number; startGY: number }
     | { kind: 'resize'; startX: number; startY: number; startGapX: number; startGapY: number; corner: 'tl'|'tr'|'bl'|'br' }
   )>(null);
+  const [pointerId, setPointerId] = useState<number | null>(null);
 
-  const onOverlayDown = (e: React.MouseEvent) => {
+  const onOverlayDown = (e: React.PointerEvent) => {
     if (!enabled) return;
     // Evitar que el arrastre del tablero interfiera
     e.preventDefault();
     e.stopPropagation();
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+    setPointerId(e.pointerId);
     setDrag({ kind: 'move', startX: e.clientX, startY: e.clientY, startGX: gridX ?? 0, startGY: gridY ?? 0 });
   };
 
-  const onHandleDown = (e: React.MouseEvent, corner: 'tl'|'tr'|'bl'|'br') => {
+  const onHandleDown = (e: React.PointerEvent, corner: 'tl'|'tr'|'bl'|'br') => {
     if (!enabled) return;
     e.preventDefault();
     e.stopPropagation();
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch {}
+    setPointerId(e.pointerId);
     setDrag({ kind: 'resize', startX: e.clientX, startY: e.clientY, startGapX: gapX ?? 6, startGapY: gapY ?? 6, corner });
   };
 
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (!drag) return;
+  const onPointerMove = useCallback((e: PointerEvent) => {
+    if (!drag || (pointerId != null && e.pointerId !== pointerId)) return;
     if (drag.kind === 'move') {
       const dx = e.clientX - drag.startX;
       const dy = e.clientY - drag.startY;
@@ -59,21 +64,24 @@ export function useGridCalibration(
       );
       onResize?.(nextGapX, nextGapY);
     }
-  }, [drag, onMove]);
+  }, [drag, onMove, onResize, pointerId]);
 
-  const onMouseUp = useCallback(() => {
-    if (drag) setDrag(null);
-  }, [drag]);
+  const onPointerUp = useCallback((e: PointerEvent) => {
+    if (drag && (pointerId == null || e.pointerId === pointerId)) {
+      setDrag(null);
+      setPointerId(null);
+    }
+  }, [drag, pointerId]);
 
   useEffect(() => {
     if (!drag) return;
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
-  }, [drag, onMouseMove, onMouseUp]);
+  }, [drag, onPointerMove, onPointerUp]);
 
   return { overlayRef, onOverlayDown, onHandleDown } as const;
 }

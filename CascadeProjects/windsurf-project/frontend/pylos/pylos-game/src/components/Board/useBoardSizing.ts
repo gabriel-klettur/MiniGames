@@ -21,12 +21,17 @@ export function useBoardSizing(
     startGap: number;
     minRatio: number;
     maxRatio: number;
+    pointerId: number;
   }>(null);
 
-  const onHandleDown = (e: React.MouseEvent, corner: 'tl'|'tr'|'bl'|'br') => {
+  const onHandleDown = (e: React.PointerEvent, corner: 'tl'|'tr'|'bl'|'br') => {
     if (!configMode) return;
     e.preventDefault();
     e.stopPropagation();
+    // Capture the pointer so movement continues even if it leaves the handle.
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
     const el = boardRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
@@ -36,11 +41,11 @@ export function useBoardSizing(
     // Calcular límites de escala a partir de límites duros de cell/gap
     const minRatio = Math.max(36 / startCell, 4 / startGap);
     const maxRatio = Math.min(96 / startCell, 16 / startGap);
-    setDragging({ corner, startX: e.clientX, startY: e.clientY, startW, startCell, startGap, minRatio, maxRatio });
+    setDragging({ corner, startX: e.clientX, startY: e.clientY, startW, startCell, startGap, minRatio, maxRatio, pointerId: e.pointerId });
   };
 
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
+  const onPointerMove = useCallback((e: PointerEvent) => {
+    if (!dragging || e.pointerId !== dragging.pointerId) return;
     const signX = dragging.corner.includes('r') ? 1 : -1;
     const signY = dragging.corner.includes('b') ? 1 : -1;
     const delta = ((e.clientX - dragging.startX) * signX + (e.clientY - dragging.startY) * signY) / 2;
@@ -52,19 +57,19 @@ export function useBoardSizing(
     onResize?.(nextCell, nextGap);
   }, [dragging, onResize]);
 
-  const onMouseUp = useCallback(() => {
-    if (dragging) setDragging(null);
+  const onPointerUp = useCallback((e: PointerEvent) => {
+    if (dragging && e.pointerId === dragging.pointerId) setDragging(null);
   }, [dragging]);
 
   useEffect(() => {
     if (!dragging) return;
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
-  }, [dragging, onMouseMove, onMouseUp]);
+  }, [dragging, onPointerMove, onPointerUp]);
 
   return { boardRef, onHandleDown } as const;
 }

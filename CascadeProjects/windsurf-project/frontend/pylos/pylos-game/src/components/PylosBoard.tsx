@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Board } from '../game/board';
 import { type Cell, LAYER_SIZES, type PlayerId, sameCell, LAYERS } from '../game/types';
 import './pylos.css';
@@ -74,6 +74,32 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
     onGridResize,
   );
 
+  // Responsive scaling: compute the board's natural pixel size and scale it to fit container width.
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState<number>(1);
+
+  const { naturalWidth, naturalHeight } = useMemo(() => {
+    const cs = cellSize ?? 48;
+    const gs = gapSize ?? 6;
+    // Total box size = content (5*cell + 3*gap) + padding (cell/2 * 2) = 6*cell + 3*gap
+    const w = 6 * cs + 3 * gs;
+    return { naturalWidth: w, naturalHeight: w };
+  }, [cellSize, gapSize]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const cr = entries[0]?.contentRect;
+      if (!cr) return;
+      const maxW = cr.width;
+      const s = Math.min(1, maxW / Math.max(1, naturalWidth));
+      setScale(Number.isFinite(s) && s > 0 ? s : 1);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [naturalWidth]);
+
   const renderCell = (cell: Cell) => {
     const owner = board.get(cell);
     const isEmpty = owner === null;
@@ -97,52 +123,56 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
 
   return (
     <div className="pylos-wrap">
-      <div
-        ref={boardRef}
-        className={`pylos-board${configMode ? ' calib-active' : ''}`}
-        style={{
-          backgroundImage: `url(${boardImg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          ...(cellSize ? ({ ['--cell' as any]: `${cellSize}px` } as React.CSSProperties) : {}),
-          ...(gapSize ? ({ ['--gap' as any]: `${gapSize}px` } as React.CSSProperties) : {}),
-          // grid transform variables: translation only (keep hole size constant)
-          ['--grid-x' as any]: `${gridX}px`,
-          ['--grid-y' as any]: `${gridY}px`,
-          // independent grid spacing; default to global gap if not provided
-          ...(gridGapX != null ? ({ ['--gap-x' as any]: `${gridGapX}px` } as React.CSSProperties) : {}),
-          ...(gridGapY != null ? ({ ['--gap-y' as any]: `${gridGapY}px` } as React.CSSProperties) : {}),
-          ...(holeSize ? ({ ['--hole' as any]: `${holeSize}px` } as React.CSSProperties) : {}),
-          ...(ballSize ? ({ ['--ball' as any]: `${ballSize}px` } as React.CSSProperties) : {}),
-        }}
-      >
-        {layers.map((layer) => {
-          const size = LAYER_SIZES[layer];
-          return (
-            <LayerGrid
-              key={`layer-${layer}`}
-              layer={layer}
-              size={size}
-              className={`layer layer-${layer}`}
-              renderCell={renderCell}
-            />
-          );
-        })}
-        {configMode && (
-          <>
-            <div className="calib-handle tl" onMouseDown={(e) => onHandleDown(e, 'tl')} />
-            <div className="calib-handle tr" onMouseDown={(e) => onHandleDown(e, 'tr')} />
-            <div className="calib-handle bl" onMouseDown={(e) => onHandleDown(e, 'bl')} />
-            <div className="calib-handle br" onMouseDown={(e) => onHandleDown(e, 'br')} />
-            {/* Green overlay for holes grid calibration */}
-            <div ref={overlayRef} className="grid-calib" onMouseDown={onOverlayDown}>
-              <div className="grid-handle tl" onMouseDown={(e) => onGridHandleDown(e, 'tl')} />
-              <div className="grid-handle tr" onMouseDown={(e) => onGridHandleDown(e, 'tr')} />
-              <div className="grid-handle bl" onMouseDown={(e) => onGridHandleDown(e, 'bl')} />
-              <div className="grid-handle br" onMouseDown={(e) => onGridHandleDown(e, 'br')} />
-            </div>
-          </>
-        )}
+      <div ref={containerRef} className="pylos-responsive" style={{ height: `${naturalHeight * scale}px` }}>
+        <div className="pylos-scale" style={{ transform: `scale(${scale})`, width: `${naturalWidth}px` }}>
+          <div
+            ref={boardRef}
+            className={`pylos-board${configMode ? ' calib-active' : ''}`}
+            style={{
+              backgroundImage: `url(${boardImg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              ...(cellSize ? ({ ['--cell' as any]: `${cellSize}px` } as React.CSSProperties) : {}),
+              ...(gapSize ? ({ ['--gap' as any]: `${gapSize}px` } as React.CSSProperties) : {}),
+              // grid transform variables: translation only (keep hole size constant)
+              ['--grid-x' as any]: `${gridX}px`,
+              ['--grid-y' as any]: `${gridY}px`,
+              // independent grid spacing; default to global gap if not provided
+              ...(gridGapX != null ? ({ ['--gap-x' as any]: `${gridGapX}px` } as React.CSSProperties) : {}),
+              ...(gridGapY != null ? ({ ['--gap-y' as any]: `${gridGapY}px` } as React.CSSProperties) : {}),
+              ...(holeSize ? ({ ['--hole' as any]: `${holeSize}px` } as React.CSSProperties) : {}),
+              ...(ballSize ? ({ ['--ball' as any]: `${ballSize}px` } as React.CSSProperties) : {}),
+            }}
+          >
+            {layers.map((layer) => {
+              const size = LAYER_SIZES[layer];
+              return (
+                <LayerGrid
+                  key={`layer-${layer}`}
+                  layer={layer}
+                  size={size}
+                  className={`layer layer-${layer}`}
+                  renderCell={renderCell}
+                />
+              );
+            })}
+            {configMode && (
+              <>
+                <div className="calib-handle tl" onPointerDown={(e) => onHandleDown(e, 'tl')} />
+                <div className="calib-handle tr" onPointerDown={(e) => onHandleDown(e, 'tr')} />
+                <div className="calib-handle bl" onPointerDown={(e) => onHandleDown(e, 'bl')} />
+                <div className="calib-handle br" onPointerDown={(e) => onHandleDown(e, 'br')} />
+                {/* Green overlay for holes grid calibration */}
+                <div ref={overlayRef} className="grid-calib" onPointerDown={onOverlayDown}>
+                  <div className="grid-handle tl" onPointerDown={(e) => onGridHandleDown(e, 'tl')} />
+                  <div className="grid-handle tr" onPointerDown={(e) => onGridHandleDown(e, 'tr')} />
+                  <div className="grid-handle bl" onPointerDown={(e) => onGridHandleDown(e, 'bl')} />
+                  <div className="grid-handle br" onPointerDown={(e) => onGridHandleDown(e, 'br')} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
       {subphase === 'REMOVAL' && onFinishRemoval && (
         <div className="toolbar">
