@@ -1,4 +1,6 @@
 import { Board } from './board';
+import { squaresCreatedBy, linesCreatedBy } from './rules/scoring';
+import { hasAnyAction } from './rules/availability';
 import type { Cell, PlayerId, GamePhase, TurnSubphase } from './types';
 
 export const TOTAL_MARBLES_PER_PLAYER = 15;
@@ -57,25 +59,10 @@ export class GameState {
     this.checkUnavailabilityLoss();
   }
 
-  private hasAnyAction(player: PlayerId): boolean {
-    // Placement from reserve
-    if (this.reserveRemaining(player) > 0 && this.board.validMoves().length > 0) return true;
-    // Climb from any free marble to any higher valid destination
-    const free = this.board.freeMarbles(player);
-    if (free.length === 0) return false;
-    const places = this.board.validMoves();
-    for (const src of free) {
-      for (const dst of places) {
-        if (dst.layer > src.layer) return true;
-      }
-    }
-    return false;
-  }
-
   private checkUnavailabilityLoss(): void {
     if (this.phase !== 'PLAYING') return;
     const cur = this.currentPlayer;
-    if (!this.hasAnyAction(cur)) {
+    if (!hasAnyAction(this.board, cur, this.reserveRemaining(cur))) {
       this.phase = 'ENDED';
       this.winner = cur === 1 ? 2 : 1;
     }
@@ -104,8 +91,8 @@ export class GameState {
     let formedSquare = 0;
     let formedLine = 0;
     if (this.lastMoveDestination) {
-      formedSquare = this.board.squaresCreatedBy(this.currentPlayer, this.lastMoveDestination);
-      formedLine = this.board.linesCreatedBy(this.currentPlayer, this.lastMoveDestination);
+      formedSquare = squaresCreatedBy(this.board, this.currentPlayer, this.lastMoveDestination);
+      formedLine = linesCreatedBy(this.board, this.currentPlayer, this.lastMoveDestination);
     }
     if (this.allowSquareRemoval && (formedSquare > 0 || formedLine > 0)) {
       this.removalsAllowed = 2;

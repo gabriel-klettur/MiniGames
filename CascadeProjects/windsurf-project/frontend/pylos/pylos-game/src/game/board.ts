@@ -9,7 +9,8 @@ export class Board {
   static readonly LAYER_SIZES = LAYER_SIZES;
 
   private cells: (PlayerId | null)[][][]; // [layer][y][x]
-  lastPlayerToMove: PlayerId | null = null;
+  private _lastPlayerToMove: PlayerId | null = null;
+  get lastPlayerToMove(): PlayerId | null { return this._lastPlayerToMove; }
 
   constructor() {
     this.cells = LAYER_SIZES.map((size) =>
@@ -20,7 +21,7 @@ export class Board {
   clone(): Board {
     const b = new Board();
     b.cells = this.cells.map((layer) => layer.map((row) => row.slice()));
-    b.lastPlayerToMove = this.lastPlayerToMove;
+    b._lastPlayerToMove = this._lastPlayerToMove;
     return b;
   }
 
@@ -106,7 +107,7 @@ export class Board {
   place(player: PlayerId, cell: Cell): boolean {
     if (!this.validPlacement(cell)) return false;
     this.cells[cell.layer][cell.y][cell.x] = player;
-    this.lastPlayerToMove = player;
+    this._lastPlayerToMove = player;
     return true;
   }
 
@@ -117,7 +118,7 @@ export class Board {
     if (dst.layer <= src.layer) return false;
     this.cells[src.layer][src.y][src.x] = null;
     this.cells[dst.layer][dst.y][dst.x] = player;
-    this.lastPlayerToMove = player;
+    this._lastPlayerToMove = player;
     return true;
   }
 
@@ -129,59 +130,7 @@ export class Board {
     return owner;
   }
 
-  squaresCreatedBy(player: PlayerId, cell: Cell): number {
-    const layer = cell.layer;
-    if (layer >= 3) return 0;
-    const size = this.sizeOfLayer(layer);
-    let count = 0;
-    for (const oy of [cell.y - 1, cell.y] as const) {
-      for (const ox of [cell.x - 1, cell.x] as const) {
-        if (ox >= 0 && oy >= 0 && ox < size - 1 && oy < size - 1) {
-          const block: Cell[] = [
-            { layer, x: ox, y: oy },
-            { layer, x: ox + 1, y: oy },
-            { layer, x: ox, y: oy + 1 },
-            { layer, x: ox + 1, y: oy + 1 },
-          ];
-          if (block.every((b) => this.get(b) === player)) count += 1;
-        }
-      }
-    }
-    return count;
-  }
-
-  linesCreatedBy(player: PlayerId, cell: Cell): number {
-    const layer = cell.layer;
-    const size = this.sizeOfLayer(layer);
-    const targetLen = layer === 0 ? 4 : layer === 1 ? 3 : 0;
-    if (targetLen === 0) return 0;
-    let count = 0;
-    const rowOwners = Array.from({ length: size }, (_, x) => this.get({ layer, x, y: cell.y }));
-    if (rowOwners.every((o) => o === player)) {
-      if (size === targetLen) count += 1;
-    } else {
-      for (let start = 0; start <= size - targetLen; start++) {
-        const window = rowOwners.slice(start, start + targetLen);
-        if (window.every((o) => o === player) && cell.x >= start && cell.x < start + targetLen) {
-          count += 1;
-          break;
-        }
-      }
-    }
-    const colOwners = Array.from({ length: size }, (_, y) => this.get({ layer, x: cell.x, y }));
-    if (colOwners.every((o) => o === player)) {
-      if (size === targetLen) count += 1;
-    } else {
-      for (let start = 0; start <= size - targetLen; start++) {
-        const window = colOwners.slice(start, start + targetLen);
-        if (window.every((o) => o === player) && cell.y >= start && cell.y < start + targetLen) {
-          count += 1;
-          break;
-        }
-      }
-    }
-    return count;
-  }
+  
 
   freeMarbles(player: PlayerId): Cell[] {
     return this.allCells().filter((c) => this.get(c) === player && this.isFree(c));
@@ -202,5 +151,30 @@ export class Board {
       if (p === 1 || p === 2) counts[p]! += 1;
     }
     return counts;
+  }
+
+  // --- Serialization helpers ---
+  toJSON(): { cells: (PlayerId | null)[][][]; lastPlayerToMove: PlayerId | null } {
+    return {
+      cells: this.cells.map((layer) => layer.map((row) => row.slice())),
+      lastPlayerToMove: this._lastPlayerToMove,
+    };
+  }
+
+  static fromJSON(data: { cells: (PlayerId | null)[][][]; lastPlayerToMove: PlayerId | null }): Board {
+    const b = new Board();
+    const maxLayers = Math.min(data.cells?.length ?? 0, 4);
+    for (let layer = 0; layer < maxLayers; layer++) {
+      const size = LAYER_SIZES[layer];
+      const srcLayer = data.cells[layer] ?? [];
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const v = (srcLayer[y]?.[x] ?? null) as PlayerId | null;
+          b.cells[layer][y][x] = v;
+        }
+      }
+    }
+    b._lastPlayerToMove = data.lastPlayerToMove ?? null;
+    return b;
   }
 }

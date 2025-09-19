@@ -1,10 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PylosBoard from './PylosBoard';
-import { GameState } from '../game/gameState';
 import type { Cell } from '../game/types';
+import Controls from './Panels/Controls';
+import ConfigPanel from './Panels/ConfigPanel';
+import StatusBar from './Panels/StatusBar';
+import InfoPanel from './Panels/InfoPanel';
+import { usePylosGame } from '../hooks/usePylosGame';
 
 const PylosGame: React.FC = () => {
-  const [game, setGame] = useState(() => new GameState());
+  const { state, place, climb, remove, finishRemoval, reset, setExpertMode: applyExpertMode, statusText, canFinishRemoval, reserves } = usePylosGame(true);
   const [selectedSrc, setSelectedSrc] = useState<Cell | null>(null);
   const [expertMode, setExpertMode] = useState<boolean>(true);
   const [showInfo, setShowInfo] = useState<boolean>(false);
@@ -15,29 +19,23 @@ const PylosGame: React.FC = () => {
   const [cellSize, setCellSize] = useState<number>(48);
   const [gapSize, setGapSize] = useState<number>(6);
 
-  // Keep GameState's rule flag in sync with UI toggle
-  useMemo(() => {
-    game.allowSquareRemoval = expertMode;
-    // Trigger re-render in case subphase could change after a move
-    setGame(game.clone());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expertMode]);
+  // Sincroniza la regla de retirada con el modo experto a través del hook controlador
+  useEffect(() => {
+    applyExpertMode(expertMode);
+  }, [expertMode, applyExpertMode]);
 
   const handleCellClick = (cell: Cell) => {
-    if (game.phase === 'ENDED') return;
+    if (state.phase === 'ENDED') return;
 
-    if (game.subphase === 'REMOVAL') {
-      const changed = game.removeOwnFree(cell);
-      if (changed) {
-        setGame(game.clone());
-      }
+    if (state.subphase === 'REMOVAL') {
+      remove(cell);
       return;
     }
 
     // ACTION subphase
-    const owner = game.board.get(cell);
-    const isOwn = owner === game.currentPlayer;
-    const isFree = isOwn && game.board.isFree(cell);
+    const owner = state.board.get(cell);
+    const isOwn = owner === state.currentPlayer;
+    const isFree = isOwn && state.board.isFree(cell);
 
     // 1) Click own free marble -> select/deselect as src
     if (isFree) {
@@ -47,36 +45,25 @@ const PylosGame: React.FC = () => {
 
     // 2) If a src is selected and clicking a destination -> attempt climb
     if (selectedSrc) {
-      const moved = game.attemptClimb(selectedSrc, cell);
-      if (moved) {
-        setSelectedSrc(null);
-        setGame(game.clone());
-        return;
-      }
+      const src = selectedSrc;
+      const dst = cell;
+      // Intentar trepar vía acción del hook
+      climb(src, dst);
+      setSelectedSrc(null);
+      return;
     }
 
     // 3) Otherwise, try placement
-    const placed = game.attemptPlace(cell);
-    if (placed) {
-      setSelectedSrc(null);
-      setGame(game.clone());
-    }
-  };
-
-  const finishRemoval = () => {
-    if (game.subphase !== 'REMOVAL') return;
-    game.finishRemoval();
-    setGame(game.clone());
+    place(cell);
+    setSelectedSrc(null);
   };
 
   const resetGame = () => {
-    const g = new GameState();
-    g.allowSquareRemoval = expertMode;
     setSelectedSrc(null);
-    setGame(g);
+    reset(expertMode);
   };
 
-  const toggleMode = () => setExpertMode((v) => !v);
+  const toggleMode = () => setExpertMode((v: boolean) => !v);
   const toggleInfo = () => setShowInfo((v) => !v);
   const toggleHoles = () => setShowHoles((v) => !v);
   const toggleIndices = () => setShowIndices((v) => !v);
@@ -85,57 +72,36 @@ const PylosGame: React.FC = () => {
   return (
     <div style={{ display: 'grid', gap: 12, justifyItems: 'center' }}>
       <h1>Pylos (Web, React + TS)</h1>
-      <div className="controls">
-        <button onClick={resetGame}>Reset</button>
-        <button onClick={toggleMode}>
-          Modo: {expertMode ? 'Experto (con retirada por cuadrados/líneas)' : 'Niño (sin retirada)'}
-        </button>
-        <button onClick={toggleInfo}>{showInfo ? 'Ocultar info' : 'Mostrar info'}</button>
-        <button onClick={toggleHoles}>{showHoles ? 'Ocultar huecos' : 'Mostrar huecos'}</button>
-        <button onClick={toggleIndices}>{showIndices ? 'Ocultar índices' : 'Mostrar índices'}</button>
-        <button onClick={toggleConfig}>{showConfig ? 'Cerrar configuración' : 'Configuración'}</button>
-      </div>
+      <Controls
+        expertMode={expertMode}
+        showInfo={showInfo}
+        showHoles={showHoles}
+        showIndices={showIndices}
+        showConfig={showConfig}
+        onReset={resetGame}
+        onToggleMode={toggleMode}
+        onToggleInfo={toggleInfo}
+        onToggleHoles={toggleHoles}
+        onToggleIndices={toggleIndices}
+        onToggleConfig={toggleConfig}
+      />
       {showConfig && (
-        <div className="config-panel">
-          <div className="row">
-            <label>
-              Tamaño celda: {cellSize}px
-              <input
-                type="range"
-                min={36}
-                max={96}
-                step={2}
-                value={cellSize}
-                onChange={(e) => setCellSize(Number(e.target.value))}
-              />
-            </label>
-          </div>
-          <div className="row">
-            <label>
-              Separación: {gapSize}px
-              <input
-                type="range"
-                min={4}
-                max={16}
-                step={1}
-                value={gapSize}
-                onChange={(e) => setGapSize(Number(e.target.value))}
-              />
-            </label>
-          </div>
-          <div className="row">
-            <button onClick={() => { setCellSize(48); setGapSize(6); }}>Restablecer</button>
-          </div>
-        </div>
+        <ConfigPanel
+          cellSize={cellSize}
+          gapSize={gapSize}
+          onChangeCell={(v) => setCellSize(v)}
+          onChangeGap={(v) => setGapSize(v)}
+          onReset={() => { setCellSize(48); setGapSize(6); }}
+        />
       )}
       <PylosBoard
-        board={game.board}
-        currentPlayer={game.currentPlayer}
-        subphase={game.subphase}
+        board={state.board}
+        currentPlayer={state.currentPlayer}
+        subphase={state.subphase}
         selectedSrc={selectedSrc}
         onCellClick={handleCellClick}
-        onFinishRemoval={finishRemoval}
-        canFinishRemoval={game.canFinishRemoval()}
+        onFinishRemoval={() => finishRemoval()}
+        canFinishRemoval={canFinishRemoval}
         showHoles={showHoles}
         showIndices={showIndices}
         cellSize={cellSize}
@@ -143,13 +109,16 @@ const PylosGame: React.FC = () => {
         configMode={showConfig}
         onResize={(nextCell, nextGap) => { setCellSize(nextCell); setGapSize(nextGap); }}
       />
-      <div className="status">{game.statusText()}</div>
+      <StatusBar text={statusText} />
       {showInfo && (
-        <div style={{ color: '#ddd', display: 'grid', gap: 6, textAlign: 'center' }}>
-          <div>Turno: Jugador {game.currentPlayer} — Subfase: {game.subphase}</div>
-          <div>Reservas: P1 {game.reserveRemaining(1)} | P2 {game.reserveRemaining(2)}</div>
-          <div>Retiradas: permitidas {game.removalsAllowed}, tomadas {game.removalsTaken}</div>
-        </div>
+        <InfoPanel
+          currentPlayer={state.currentPlayer}
+          subphase={state.subphase}
+          p1Reserve={reserves.p1}
+          p2Reserve={reserves.p2}
+          removalsAllowed={state.removalsAllowed}
+          removalsTaken={state.removalsTaken}
+        />
       )}
     </div>
   );

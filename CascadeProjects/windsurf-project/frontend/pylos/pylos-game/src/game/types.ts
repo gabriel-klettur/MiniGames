@@ -14,3 +14,9 @@ export const LAYER_SIZES: readonly [number, number, number, number] = [4, 3, 2, 
 export function sameCell(a: Cell | null | undefined, b: Cell | null | undefined): boolean {
   return !!a && !!b && a.layer === b.layer && a.x === b.x && a.y === b.y;
 }
+
+// Tipos y utilidades adicionales (no intrusivos)
+export type Layer = 0 | 1 | 2 | 3;
+export const LAYERS: readonly Layer[] = [0, 1, 2, 3] as const;
+export type CellKey = string;
+export function keyOfCell(c: Cell): CellKey { return `${c.layer}-${c.x}-${c.y}`; }

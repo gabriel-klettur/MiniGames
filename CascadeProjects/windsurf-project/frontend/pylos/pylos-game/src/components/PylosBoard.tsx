@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Board } from '../game/board';
-import { type Cell, LAYER_SIZES, type PlayerId, sameCell } from '../game/types';
+import { type Cell, LAYER_SIZES, type PlayerId, sameCell, LAYERS } from '../game/types';
 import './pylos.css';
 import boardImg from '../assets/board.png';
-import bolaA from '../assets/bola_a.png';
-import bolaB from '../assets/bola_b.png';
+import LayerGrid from './Board/LayerGrid';
+import CellButton from './Board/CellButton';
+import { useBoardSizing } from './Board/useBoardSizing';
 
 export interface PylosBoardProps {
   board: Board;
@@ -41,87 +42,27 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
   configMode = false,
   onResize,
 }) => {
-  const layers = [0, 1, 2, 3] as const;
-
-  const boardRef = useRef<HTMLDivElement | null>(null);
-  const [dragging, setDragging] = useState<null | { corner: 'tl'|'tr'|'bl'|'br'; startX: number; startY: number; startW: number; startCell: number; startGap: number; minRatio: number; maxRatio: number }>(null);
-
-  const onHandleDown = (e: React.MouseEvent, corner: 'tl'|'tr'|'bl'|'br') => {
-    if (!configMode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const el = boardRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const startW = rect.width;
-    const startCell = cellSize ?? 48;
-    const startGap = gapSize ?? 6;
-    // Compute ratio bounds from cell/gap hard limits
-    const minRatio = Math.max(36 / startCell, 4 / startGap);
-    const maxRatio = Math.min(96 / startCell, 16 / startGap);
-    setDragging({ corner, startX: e.clientX, startY: e.clientY, startW, startCell, startGap, minRatio, maxRatio });
-  };
-
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragging) return;
-    const signX = dragging.corner.includes('r') ? 1 : -1;
-    const signY = dragging.corner.includes('b') ? 1 : -1;
-    const delta = ((e.clientX - dragging.startX) * signX + (e.clientY - dragging.startY) * signY) / 2;
-    const newW = Math.max(50, dragging.startW + delta);
-    let ratio = newW / dragging.startW;
-    ratio = Math.max(dragging.minRatio, Math.min(dragging.maxRatio, ratio));
-    const nextCell = Math.round(dragging.startCell * ratio);
-    const nextGap = Math.round(dragging.startGap * ratio);
-    onResize?.(nextCell, nextGap);
-  }, [dragging, onResize]);
-
-  const onMouseUp = useCallback(() => {
-    if (dragging) setDragging(null);
-  }, [dragging]);
-
-  useEffect(() => {
-    if (!dragging) return;
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [dragging, onMouseMove, onMouseUp]);
+  const layers = LAYERS;
+  const { boardRef, onHandleDown } = useBoardSizing(configMode, cellSize, gapSize, onResize);
 
   const renderCell = (cell: Cell) => {
     const owner = board.get(cell);
     const isEmpty = owner === null;
-    const isValid = isEmpty && board.validPlacement(cell);
-    const isSelected = selectedSrc && sameCell(selectedSrc, cell);
+    const isValid = showHoles && isEmpty && board.validPlacement(cell);
+    const isSelected = !!(selectedSrc && sameCell(selectedSrc, cell));
     const isRemovable = !isEmpty && board.get(cell) === currentPlayer && board.isFree(cell);
 
-    const classNames = [
-      'pylos-cell',
-      owner === 1 ? 'p1' : owner === 2 ? 'p2' : 'empty',
-      (showHoles && isValid) ? 'valid' : '',
-      isSelected ? 'selected' : '',
-      subphase === 'REMOVAL' && isRemovable ? 'removable' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    const label = `${cell.layer}:${cell.x},${cell.y}`;
-    const bgImage = owner === 1 ? `url(${bolaA})` : owner === 2 ? `url(${bolaB})` : 'none';
-
     return (
-      <button
-        key={`${cell.layer}-${cell.x}-${cell.y}`}
-        className={classNames}
-        title={label}
-        onClick={() => onCellClick(cell)}
-        aria-label={label}
-        style={{ backgroundImage: bgImage }}
-      >
-        {showIndices && (
-          <span className="idx">{cell.x},{cell.y}</span>
-        )}
-      </button>
+      <CellButton
+        cell={cell}
+        owner={owner}
+        isValid={isValid}
+        isSelected={isSelected}
+        isRemovable={isRemovable}
+        inRemoval={subphase === 'REMOVAL'}
+        showIndices={showIndices}
+        onClick={onCellClick}
+      />
     );
   };
 
@@ -141,20 +82,13 @@ export const PylosBoard: React.FC<PylosBoardProps> = ({
         {layers.map((layer) => {
           const size = LAYER_SIZES[layer];
           return (
-            <div
+            <LayerGrid
               key={`layer-${layer}`}
+              layer={layer}
+              size={size}
               className={`layer layer-${layer}`}
-              style={{
-                gridTemplateColumns: `repeat(${size}, var(--cell))`,
-                gridTemplateRows: `repeat(${size}, var(--cell))`,
-              }}
-            >
-              {Array.from({ length: size * size }, (_, i) => {
-                const x = i % size;
-                const y = Math.floor(i / size);
-                return renderCell({ layer, x, y });
-              })}
-            </div>
+              renderCell={renderCell}
+            />
           );
         })}
         {configMode && (
