@@ -1,4 +1,5 @@
-import { Cell, LAYER_SIZES, PlayerId } from './types';
+import { LAYER_SIZES } from './types';
+import type { Cell, PlayerId } from "./types";
 
 /**
  * Board represents the 4-layer Pylos pyramid (4x4 -> 1x1).
