@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Board from './components/Board';
-import Sidebar from './components/Sidebar';
 import InfoPanel from './components/InfoPanel';
+import HeaderPanel from './components/HeaderPanel';
+import FasePanel from './components/FasePanel';
 import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey } from './game/board';
@@ -10,6 +11,9 @@ import { posKey } from './game/board';
 function App() {
   const [state, setState] = useState(() => initialState());
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
+  // Dev/tools toggle and Rules panel toggle
+  const [showTools, setShowTools] = useState<boolean>(false);
+  const [showRules, setShowRules] = useState<boolean>(false);
   const LS_MODE_KEY = 'pylos.boardMode';
   const [boardMode, setBoardMode] = useState<'pyramid' | 'stacked'>(() => {
     try {
@@ -157,15 +161,35 @@ function App() {
 
   return (
     <div className="app">
-      <Sidebar
-        state={state}
+      <HeaderPanel
         onNewGame={onNewGame}
-        gameOverText={gameOver}
-        boardMode={boardMode}
-        onToggleBoardMode={() => setBoardMode((m) => (m === 'pyramid' ? 'stacked' : 'pyramid'))}
+        showTools={showTools}
+        onToggleDev={() => setShowTools((v) => !v)}
       />
+      {showTools && (
+        <div className="panel">
+          <div className="row actions">
+            <button onClick={() => setBoardMode((m) => (m === 'pyramid' ? 'stacked' : 'pyramid'))}>Tablero</button>
+            <button onClick={() => setShowRules((v) => !v)}>Reglas</button>
+          </div>
+        </div>
+      )}
+      {showTools && (
+        <FasePanel state={state} gameOverText={gameOver} />
+      )}
+      {showRules && (
+        <div className="panel small">
+          <p>Reglas clave:</p>
+          <ul>
+            <li>Coloca en casillas soportadas (2x2 abajo).</li>
+            <li>Para mover, solo subir niveles y pieza debe estar libre.</li>
+            <li>Formar cuadrado propio permite recuperar 1–2 piezas libres.</li>
+            <li>También puntúan las líneas (4 abajo, 3 en segundo nivel).</li>
+          </ul>
+        </div>
+      )}
       <div className="content">
-        <InfoPanel state={state} onFinishRecovery={onFinishRecovery} gameOverText={gameOver} />
+        <InfoPanel state={state} onFinishRecovery={onFinishRecovery} />
         <Board
           state={state}
           onCellClick={onCellClick}

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { GameState } from '../game/types';
+import FasePanel from './FasePanel';
+import HeaderPanel from './HeaderPanel';
 
 export interface SidebarProps {
   state: GameState;
@@ -10,21 +12,31 @@ export interface SidebarProps {
   onToggleBoardMode: () => void;
 }
 
-function Sidebar({ onNewGame, onToggleBoardMode }: SidebarProps) {
+function Sidebar({ state, onNewGame, onToggleBoardMode, gameOverText }: SidebarProps) {
   const [showRules, setShowRules] = useState<boolean>(false);
+  // Controls visibility of 'Tablero' and 'Reglas' buttons (toggled by 'Dev')
+  const [showTools, setShowTools] = useState<boolean>(false);
 
   return (
     <aside className="sidebar">
-      <h2>Pylos</h2>
-      {/* Estado general movido a InfoPanel */}
+      <HeaderPanel
+        onNewGame={onNewGame}
+        showTools={showTools}
+        onToggleDev={() => setShowTools((v) => !v)}
+      />
 
-      <div className="panel">
-        <div className="row actions">
-          <button onClick={onNewGame}>Nuevo</button>
-          <button className="push-right" onClick={onToggleBoardMode}>Tablero</button>
-          <button onClick={() => setShowRules((v) => !v)}>Reglas</button>
+      {showTools && (
+        <div className="panel">
+          <div className="row actions">
+            <button onClick={onToggleBoardMode}>Tablero</button>
+            <button onClick={() => setShowRules((v) => !v)}>Reglas</button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {showTools && (
+        <FasePanel state={state} gameOverText={gameOverText} />
+      )}
 
       
 
@@ -44,3 +56,4 @@ function Sidebar({ onNewGame, onToggleBoardMode }: SidebarProps) {
 }
 
 export default Sidebar;
+

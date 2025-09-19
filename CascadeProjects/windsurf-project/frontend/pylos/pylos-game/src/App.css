@@ -9,7 +9,7 @@
   --dark: #111827;
   /* Board sizing */
   --scale: 0.5;          /* global scale for board/balls (1.0 = original, 0.5 = half size) */
-  --sidebar-width: 300px;   /* must match .app grid left column */
+  --sidebar-width: 0px;   /* no sidebar in header-first layout */
   --app-gap: 16px;          /* must match .app gap */
   --app-padding: 16px;      /* must match .app padding */
   /* use base spacing values, then derive scaled ones */
@@ -48,7 +48,7 @@
 
 .app {
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: 1fr; /* single column layout */
   gap: var(--app-gap);
   padding: var(--app-padding);
   min-height: 100vh;
@@ -65,19 +65,81 @@
   gap: clamp(16px, 2.5vw, 28px);
 }
 
-.sidebar {
+/* Generic panel and header styles (no sidebar) */
+.panel {
   background: var(--panel);
   border: 1px solid #1f2937;
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px;
 }
+.panel--header {
+  padding: 0; /* sin relleno */
+  margin: 0; /* sin márgenes extra */
+  background: transparent !important; /* header plano */
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.panel--header .row.header {
+  margin: 0;
+  padding: 0;
+  min-height: 26px; /* aún más compacto */
+}
+.row { margin: 4px 0; font-size: 14px; }
+.row.info { color: var(--muted); }
+button { margin-right: 8px; }
+button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
+/* Image button for "Nuevo" */
+.btn-img {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 0; /* avoid extra vertical space */
+}
+.btn-img img {
+  display: block;
+  height: 24px; /* compact header size */
+  width: auto;
+}
+/* Compact header row: title + actions (Nuevo, Dev) */
+.row.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0; /* no extra vertical gap */
+}
+.row.header h2 { margin: 0; }
+.panel--header h2 { font-size: 14px; line-height: 1; }
+.header-actions { display: inline-flex; align-items: center; gap: 8px; }
+.panel--header .header-actions { gap: 6px; }
+.panel--header .header-actions button {
+  padding: 0 8px;
+  height: 22px; /* alinear controles con la altura del header */
+  font-size: 12px;
+}
+.panel--header .btn-img img { height: 12px; }
+.panel--header .btn-img { margin-right: 4px; }
 
-.sidebar h2 { margin-top: 0; }
-.sidebar .panel { margin-bottom: 16px; }
-.sidebar .row { margin: 6px 0; font-size: 14px; }
-.sidebar .row.info { color: var(--muted); }
-.sidebar button { margin-right: 8px; }
-.sidebar button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
+/* Flat header toolbar variant */
+.header-bar { padding: 0; margin: 0; background: transparent; border: 0; }
+.header-bar .row.header { margin: 0; min-height: 24px; }
+.header-bar h2 { font-size: 14px; line-height: 1; }
+.header-bar .header-actions { gap: 6px; }
+.header-bar .header-actions button { height: 22px; padding: 0 8px; font-size: 12px; }
+.header-bar .btn-img img { height: 12px; }
+.header-bar .btn-img { margin-right: 4px; }
+
+/* Slightly tighter vertical rhythm on wide screens */
+@media (min-width: 1024px) {
+  .app { gap: 8px; } /* compacta aún más entre secciones en escritorio */
+}
+/* Generic actions row inside panels */
+.panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 /* InfoPanel styling */
 .info-panel {
@@ -101,34 +163,6 @@
 .info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
-
-/* Sidebar layout helpers */
-.sidebar .row.actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: nowrap; /* keep buttons on one line in desktop */
-}
-.sidebar .row.actions > button { flex: 0 0 auto; }
-.sidebar .row.actions .push-right { margin-left: auto; }
-
-.sidebar .row.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  align-items: center;
-}
-.sidebar .row.grid-3 > div {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-/* Make the small status piece fit better inline with text */
-.sidebar .row.grid-3 .piece {
-  width: 20px;
-  height: 20px;
-  border-width: 1px;
-}
 
 .board { display: flex; flex-direction: column; gap: 14px; }
 .board--pyramid { position: relative; }
@@ -343,17 +377,6 @@
     justify-content: flex-start; /* avoid vertical centering that can reduce spacing */
     gap: clamp(20px, 4vh, 36px); /* extra breathing room on small screens */
   }
-
-  .sidebar {
-    border-radius: 12px;
-    padding: 12px;
-  }
-  .sidebar .row { font-size: 13px; }
-  .sidebar .panel { margin-bottom: 12px; }
-  .sidebar button { padding: 8px 10px; }
-
-  .sidebar .row.grid-3 { gap: 6px; }
-  .sidebar .row.actions { gap: 6px; flex-wrap: wrap; } /* allow wrap on mobile */
 
   .board { gap: 8px; margin-top: 4px; }
   /* When expanded (stacked), give more breathing room between levels */
