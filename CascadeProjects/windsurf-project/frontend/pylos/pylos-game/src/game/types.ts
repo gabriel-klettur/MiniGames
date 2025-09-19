@@ -15,16 +15,11 @@ export type Board = LevelGrid[];  // 4 levels: 4x4, 3x3, 2x2, 1x1
 
 export type GamePhase = 'play' | 'selectMoveSource' | 'selectMoveDest' | 'recover';
 
-export interface GameOptions {
-  variantLines: boolean; // optional variant to count lines as scoring
-}
-
 export interface GameState {
   board: Board;
   currentPlayer: Player;
   reserves: Record<Player, number>; // remaining pieces in reserve
   phase: GamePhase;
-  options: GameOptions;
   // UI selections
   selectedSource?: Position; // when moving
   // Recovery state when a scoring pattern is formed

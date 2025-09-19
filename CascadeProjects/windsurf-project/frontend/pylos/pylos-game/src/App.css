@@ -38,7 +38,6 @@
 .sidebar .panel { margin-bottom: 16px; }
 .sidebar .row { margin: 6px 0; font-size: 14px; }
 .sidebar .row.info { color: var(--muted); }
-.sidebar .toggle { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .sidebar button { margin-right: 8px; }
 .sidebar button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
@@ -70,6 +69,7 @@
 .cell--selected { outline: 2px solid #3b82f6; outline-offset: -2px; }
 
 .piece {
+  display: inline-block;
   width: 44px;
   height: 44px;
   border-radius: 50%;

@@ -99,11 +99,7 @@ function App() {
 
   const onNewGame = () => {
     setGameOver(undefined);
-    setState(initialState({ variantLines: state.options.variantLines }));
-  };
-
-  const onToggleVariant = () => {
-    setState((s) => ({ ...s, options: { ...s.options, variantLines: !s.options.variantLines } }));
+    setState(initialState());
   };
 
   const onFinishRecovery = () => {
@@ -116,7 +112,6 @@ function App() {
       <Sidebar
         state={state}
         onNewGame={onNewGame}
-        onToggleVariant={onToggleVariant}
         onFinishRecovery={onFinishRecovery}
         gameOverText={gameOver}
       />

@@ -1,4 +1,4 @@
-import type { Board, GameOptions, GameState, Player, Position } from './types';
+import type { Board, GameState, Player, Position } from './types';
 import { LEVELS, canPlaceAt, cloneBoard, createEmptyBoard, getCell, isFree, levelSize, positions, setCell } from './board';
 import { otherPlayer } from './types';
 
@@ -72,15 +72,13 @@ export function recoverablePositions(board: Board, player: Player): Position[] {
   return freePiecesOf(board, player);
 }
 
-export function initialState(options?: Partial<GameOptions>): GameState {
+export function initialState(): GameState {
   const board = createEmptyBoard();
-  const opts: GameOptions = { variantLines: false, ...options } as GameOptions;
   return {
     board,
     currentPlayer: 'L',
     reserves: { L: 15, D: 15 },
     phase: 'play',
-    options: opts,
     selectedSource: undefined,
     recovery: undefined,
   };
@@ -103,7 +101,7 @@ export type ActionResult = {
 function startRecoveryIfAny(previousBoard: Board, state: GameState, affected: Position): GameState {
   const player = state.currentPlayer;
   const formedSquare = formsAnyNewSquare(previousBoard, state.board, player, affected);
-  const formedLine = state.options.variantLines && formsAnyNewLine(previousBoard, state.board, player, affected);
+  const formedLine = formsAnyNewLine(previousBoard, state.board, player, affected);
   const scored = formedSquare || formedLine;
   if (!scored) {
     return { ...state, phase: 'play' };
