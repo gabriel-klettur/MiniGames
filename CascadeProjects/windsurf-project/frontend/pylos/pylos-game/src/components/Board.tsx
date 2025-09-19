@@ -15,97 +15,133 @@ export interface BoardProps {
   posKey: (p: Position) => string;
   appearKeys?: Set<string>;
   flashKeys?: Set<string>;
+  viewMode?: 'pyramid' | 'stacked';
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid' }: BoardProps) {
+  // Helper to render a single cell button with interactivity constraints
+  const renderCellBtn = (pos: Position) => {
+    const cell = getCell(state.board, pos);
+    const key = posKey(pos);
+    const isHighlighted = highlights?.has(key) ?? false;
+    const isSelected = selected && posKey(selected) === key;
+    const free = cell ? isFree(state.board, pos) : false;
+    const supported = !cell && isSupported(state.board, pos);
+    const isAppearing = appearKeys?.has(key) ?? false;
+    const isFlashing = flashKeys?.has(key) ?? false;
+    // A cell is clickable only if it's a highlighted destination, or it's a free own piece (to select/move)
+    const canClickOwnFreePiece = !!cell && state.currentPlayer === cell && free && state.phase === 'play';
+    const interactive = isHighlighted || canClickOwnFreePiece;
+    const canDrag = !!cell && state.currentPlayer === cell && free && state.phase !== 'recover';
+
+    return (
+      <button
+        key={key}
+        className={[
+          'cell',
+          isHighlighted ? 'cell--highlight' : '',
+          supported ? 'cell--supported' : '',
+          isSelected ? 'cell--selected' : '',
+          isFlashing ? 'cell--flash' : '',
+          !interactive ? 'cell--disabled' : '',
+        ].join(' ')}
+        // Only attach handlers when interactive to avoid accidental clicks in overlapped areas
+        onClick={interactive ? (() => onCellClick(pos)) : undefined}
+        onDragOver={isHighlighted ? ((e) => { e.preventDefault(); }) : undefined}
+        onDrop={isHighlighted ? ((e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }) : undefined}
+        title={`L${pos.level} (${pos.row},${pos.col})`}
+      >
+        {cell && (
+          <span
+            className={[
+              'piece',
+              cell === 'L' ? 'piece--light' : 'piece--dark',
+              free ? 'piece--free' : 'piece--fixed',
+              isAppearing ? 'piece--appear' : '',
+            ].join(' ')}
+            draggable={canDrag}
+            onDragStart={(e) => {
+              if (canDrag) {
+                e.dataTransfer.setData('text/plain', key);
+                onDragStart?.(pos);
+              }
+            }}
+            onDragEnd={() => { onDragEnd?.(); }}
+          >
+            <img
+              src={cell === 'L' ? bolaA : bolaB}
+              alt={cell === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+              className="piece__img"
+              draggable={false}
+            />
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  // Two rendering modes: stacked (vertical levels) or pyramid (overlays)
+  if (viewMode === 'stacked') {
+    return (
+      <div className="board board--stacked">
+        {Array.from({ length: LEVELS }).map((_, level) => {
+          const size = levelSize(level);
+          return (
+            <div
+              key={`stack-${level}`}
+              className={["level", level === 0 ? "level--board" : ""].join(' ')}
+              style={{ gridTemplateColumns: `repeat(${size}, var(--cell-size))`, justifyContent: 'center' }}
+            >
+              {Array.from({ length: size }).map((_, r) => (
+                <Fragment key={`L${level}-R${r}`}>
+                  {Array.from({ length: size }).map((_, c) => renderCellBtn({ level, row: r, col: c }))}
+                </Fragment>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Render base level as the visual board container, then overlay upper levels absolutely
+  const baseSize = levelSize(0);
   return (
-    <div className="board">
-      {Array.from({ length: LEVELS }).map((_, level) => (
-        <LevelView
-          key={level}
-          level={level}
-          state={state}
-          onCellClick={onCellClick}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          highlights={highlights}
-          selected={selected}
-          posKey={posKey}
-          appearKeys={appearKeys}
-          flashKeys={flashKeys}
-        />
-      ))}
-    </div>
-  );
-}
+    <div className="board board--pyramid">
+      <div
+        className={["level", "level--board"].join(' ')}
+        style={{ gridTemplateColumns: `repeat(${baseSize}, var(--cell-size))`, justifyContent: 'center' }}
+      >
+        {Array.from({ length: baseSize }).map((_, r) => (
+          <Fragment key={`L0-R${r}`}>
+            {Array.from({ length: baseSize }).map((_, c) => renderCellBtn({ level: 0, row: r, col: c }))}
+          </Fragment>
+        ))}
 
-interface LevelViewProps extends Omit<BoardProps, 'state'> {
-  level: number;
-  state: GameState;
-}
-
-function LevelView({ level, state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys }: LevelViewProps) {
-  const size = levelSize(level);
-  return (
-    <div className={["level", level === 0 ? "level--board" : ""].join(' ')} style={{ gridTemplateColumns: `repeat(${size}, var(--cell-size))`, justifyContent: 'center' }}>
-      {Array.from({ length: size }).map((_, r) => (
-        <Fragment key={r}> 
-          {Array.from({ length: size }).map((_, c) => {
-            const pos: Position = { level, row: r, col: c };
-            const cell = getCell(state.board, pos);
-            const key = posKey(pos);
-            const isHighlighted = highlights?.has(key) ?? false;
-            const isSelected = selected && posKey(selected) === key;
-            const free = cell ? isFree(state.board, pos) : false;
-            const supported = !cell && isSupported(state.board, pos);
-            const isAppearing = appearKeys?.has(key) ?? false;
-            const isFlashing = flashKeys?.has(key) ?? false;
-            const canDrag = !!cell && state.currentPlayer === cell && free && state.phase !== 'recover';
-            return (
-              <button
-                key={c}
-                className={[
-                  'cell',
-                  isHighlighted ? 'cell--highlight' : '',
-                  supported ? 'cell--supported' : '',
-                  isSelected ? 'cell--selected' : '',
-                  isFlashing ? 'cell--flash' : '',
-                ].join(' ')}
-                onClick={() => onCellClick(pos)}
-                onDragOver={(e) => { if (isHighlighted) e.preventDefault(); }}
-                onDrop={(e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }}
-                title={`L${level} (${r},${c})`}
-              >
-                {cell && (
-                  <span
-                    className={[
-                      'piece',
-                      cell === 'L' ? 'piece--light' : 'piece--dark',
-                      free ? 'piece--free' : 'piece--fixed',
-                      isAppearing ? 'piece--appear' : '',
-                    ].join(' ')}
-                    draggable={canDrag}
-                    onDragStart={(e) => {
-                      if (canDrag) {
-                        e.dataTransfer.setData('text/plain', key);
-                        onDragStart?.(pos);
-                      }
-                    }}
-                    onDragEnd={() => { onDragEnd?.(); }}
-                  >
-                    <img
-                      src={cell === 'L' ? bolaA : bolaB}
-                      alt={cell === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-                      className="piece__img"
-                      draggable={false}
-                    />
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </Fragment>
-      ))}
+        {/* Overlay upper levels centered over the base */}
+        {Array.from({ length: LEVELS - 1 }).map((_, idx) => {
+          const level = idx + 1;
+          const size = levelSize(level);
+          return (
+            <div
+              key={`overlay-${level}`}
+              className={["level", "level--overlay"].join(' ')}
+              style={{
+                gridTemplateColumns: `repeat(${size}, var(--cell-size))`,
+                justifyContent: 'center',
+                ['--overlay-cols' as any]: size,
+                zIndex: level + 1,
+              }}
+            >
+              {Array.from({ length: size }).map((_, r) => (
+                <Fragment key={`L${level}-R${r}`}>
+                  {Array.from({ length: size }).map((_, c) => renderCellBtn({ level, row: r, col: c }))}
+                </Fragment>
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

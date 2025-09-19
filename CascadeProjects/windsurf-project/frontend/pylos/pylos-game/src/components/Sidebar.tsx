@@ -6,9 +6,11 @@ export interface SidebarProps {
   onNewGame: () => void;
   onFinishRecovery?: () => void; // now handled by InfoPanel when needed
   gameOverText?: string;
+  boardMode: 'pyramid' | 'stacked';
+  onToggleBoardMode: () => void;
 }
 
-function Sidebar({ onNewGame }: SidebarProps) {
+function Sidebar({ onNewGame, onToggleBoardMode }: SidebarProps) {
   const [showRules, setShowRules] = useState<boolean>(false);
 
   return (
@@ -19,7 +21,8 @@ function Sidebar({ onNewGame }: SidebarProps) {
       <div className="panel">
         <div className="row actions">
           <button onClick={onNewGame}>Nuevo</button>
-          <button className="push-right" onClick={() => setShowRules((v) => !v)}>Reglas</button>
+          <button className="push-right" onClick={onToggleBoardMode}>Tablero</button>
+          <button onClick={() => setShowRules((v) => !v)}>Reglas</button>
         </div>
       </div>
 

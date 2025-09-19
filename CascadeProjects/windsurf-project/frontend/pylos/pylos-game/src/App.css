@@ -40,6 +40,8 @@
   --outline-offset-highlight: calc(var(--outline-offset-highlight-base) * var(--scale));
   --outline-offset-selected-base: -2px;
   --outline-offset-selected: calc(var(--outline-offset-selected-base) * var(--scale));
+  /* Half-step offset used to position upper levels over the centers of 2x2 supports */
+  --step: calc(0.5 * (var(--cell-size) + var(--level-gap)));
 }
 
 * { box-sizing: border-box; }
@@ -94,6 +96,9 @@
 .info-panel .row.info { color: var(--muted); }
 .info-panel .row.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: center; justify-items: center; }
 .info-panel .row.grid-3 .piece { width: 20px; height: 20px; border-width: 1px; }
+.info-panel .row.grid-3 > div { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.info-panel .row.grid-3 .piece { vertical-align: middle; }
+.info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
@@ -126,6 +131,7 @@
 }
 
 .board { display: flex; flex-direction: column; gap: 14px; }
+.board--pyramid { position: relative; }
 
 .level {
   display: grid;
@@ -180,6 +186,29 @@
   z-index: 0;          /* render below any grid content */
 }
 
+/* Overlay the upper levels (1..N) inside the base level container */
+.level--overlay {
+  position: absolute;
+  /* clear chrome from .level base styles */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  gap: var(--level-gap);
+  pointer-events: none; /* don't block base level in empty areas */
+  /* overlay bounds equal to its actual grid area (cols and gaps) */
+  --overlay-size: calc((var(--cell-size) * var(--overlay-cols)) + (var(--level-gap) * (var(--overlay-cols) - 1)));
+  width: var(--overlay-size);
+  height: var(--overlay-size);
+  left: 50%;
+  top: 50%;
+  /* strictly centered relative to base level; grid tracks inside are centered */
+  transform: translate(-50%, -50%);
+}
+
+/* re-enable interaction on actual cells inside overlays */
+.level--overlay .cell { pointer-events: auto; }
+
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -194,6 +223,12 @@
   padding: 0;           /* remove default button padding so piece can fill fully */
   overflow: hidden;     /* clip piece/image to the rounded cell border */
   position: relative;   /* allow inner piece to be absolutely positioned */
+}
+
+/* Non-interactive cells should not block clicks for cells underneath */
+.cell--disabled {
+  pointer-events: none;
+  cursor: default;
 }
 
 /* Base level cells are transparent so the wood board shows through */
@@ -284,6 +319,11 @@
   50% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.45); }
 }
 
+/* class to trigger cell flash using the keyframes */
+.cell--flash {
+  animation: cellFlash 900ms ease-in-out 2;
+}
+
 /* Mobile layout: Sidebar arriba, Tablero abajo — pensado para iPhone 12 (390px) */
 @media (max-width: 480px) {
   .app {
@@ -316,6 +356,10 @@
   .sidebar .row.actions { gap: 6px; flex-wrap: wrap; } /* allow wrap on mobile */
 
   .board { gap: 8px; margin-top: 4px; }
+  /* When expanded (stacked), give more breathing room between levels */
+  .board--stacked { gap: clamp(16px, 3.5vh, 28px); }
+  /* Add extra space specifically after the base board with the wood texture */
+  .board--stacked .level--board { margin-bottom: clamp(12px, 2.5vh, 20px); }
   .level--board { margin-top: 4px; }
   .level { gap: var(--level-gap); padding: var(--level-padding); }
 

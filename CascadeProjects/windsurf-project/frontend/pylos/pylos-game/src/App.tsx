@@ -1,15 +1,58 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import Board from './components/Board';
 import Sidebar from './components/Sidebar';
 import InfoPanel from './components/InfoPanel';
-import type { Position } from './game/types';
+import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey } from './game/board';
 
 function App() {
   const [state, setState] = useState(() => initialState());
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
+  const LS_MODE_KEY = 'pylos.boardMode';
+  const [boardMode, setBoardMode] = useState<'pyramid' | 'stacked'>(() => {
+    try {
+      const saved = localStorage.getItem(LS_MODE_KEY);
+      return saved === 'stacked' || saved === 'pyramid' ? saved : 'pyramid';
+    } catch {
+      return 'pyramid';
+    }
+  });
+
+  // Helper: map cell -> visual symbol
+  const cellSymbol = (cell: 'L' | 'D' | null): string => (cell === 'L' ? '○' : cell === 'D' ? '●' : '·');
+
+  // Pretty-print the full game snapshot using console.table per level
+  const printBoardSnapshot = (snapshot: GameState, label?: string) => {
+    const { board, currentPlayer, phase, reserves } = snapshot;
+    const header = label ?? `Turno de ${currentPlayer} — Fase: ${phase}`;
+    console.groupCollapsed(header);
+    console.info(`Jugador: ${currentPlayer} | Fase: ${phase} | Reservas: L=${reserves.L} D=${reserves.D}`);
+    for (let l = 0; l < board.length; l++) {
+      const grid = board[l];
+      const size = grid.length;
+      console.log(`Nivel ${l} (${size}x${size})`);
+      const table = grid.map((row) => row.map(cellSymbol));
+      // Render as a table with indexed columns
+      console.table(table);
+    }
+    console.groupEnd();
+  };
+
+  // Print board once on initial mount (guard against StrictMode double-run in dev)
+  const didLogInitialRef = useRef(false);
+  useEffect(() => {
+    if (didLogInitialRef.current) return;
+    didLogInitialRef.current = true;
+    printBoardSnapshot(state, 'Estado inicial — tablero');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist board mode on change
+  useEffect(() => {
+    try { localStorage.setItem(LS_MODE_KEY, boardMode); } catch { /* ignore */ }
+  }, [boardMode]);
 
   const highlights: Set<string> = useMemo(() => {
     if (gameOver) return new Set();
@@ -34,6 +77,8 @@ function App() {
 
   const updateAndCheck = (nextState: typeof state) => {
     setState(nextState);
+    // Log board snapshot after each state update
+    printBoardSnapshot(nextState);
     const over = isGameOver(nextState);
     if (over.over) {
       const text = over.winner ? `Ganador: ${over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} — ${over.reason ?? ''}` : 'Partida terminada';
@@ -100,7 +145,9 @@ function App() {
 
   const onNewGame = () => {
     setGameOver(undefined);
-    setState(initialState());
+    const init = initialState();
+    setState(init);
+    printBoardSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
   const onFinishRecovery = () => {
@@ -114,6 +161,8 @@ function App() {
         state={state}
         onNewGame={onNewGame}
         gameOverText={gameOver}
+        boardMode={boardMode}
+        onToggleBoardMode={() => setBoardMode((m) => (m === 'pyramid' ? 'stacked' : 'pyramid'))}
       />
       <div className="content">
         <InfoPanel state={state} onFinishRecovery={onFinishRecovery} gameOverText={gameOver} />
@@ -127,6 +176,7 @@ function App() {
           posKey={posKey}
           appearKeys={appearKeys}
           flashKeys={flashKeys}
+          viewMode={boardMode}
         />
       </div>
     </div>

@@ -47,8 +47,42 @@ function InfoPanel({ state, onFinishRecovery, gameOverText }: InfoPanelProps) {
             />
           </span>
         </div>
-        <div><strong>Reserva L:</strong> {reserves.L}</div>
-        <div><strong>Reserva D:</strong> {reserves.D}</div>
+        <div>
+          <span
+            className={[
+              'piece',
+              'piece--light',
+            ].join(' ')}
+            title="Claras (L) en reserva"
+            aria-label="Claras (L) en reserva"
+          >
+            <img
+              src={bolaA}
+              alt="Claras (L)"
+              className="piece__img"
+              draggable={false}
+            />
+          </span>
+          <span className="reserve-count">{reserves.L}</span>
+        </div>
+        <div>
+          <span
+            className={[
+              'piece',
+              'piece--dark',
+            ].join(' ')}
+            title="Oscuras (D) en reserva"
+            aria-label="Oscuras (D) en reserva"
+          >
+            <img
+              src={bolaB}
+              alt="Oscuras (D)"
+              className="piece__img"
+              draggable={false}
+            />
+          </span>
+          <span className="reserve-count">{reserves.D}</span>
+        </div>
       </div>
       <div className="row"><strong>Fase:</strong> {phase}</div>
       <div className="row info">{info}</div>
