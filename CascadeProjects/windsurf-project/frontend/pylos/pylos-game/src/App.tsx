@@ -22,6 +22,15 @@ function App() {
     return new Set(validReserveDestinations(state.board).map(posKey));
   }, [state, gameOver]);
 
+  // Animation keys
+  const [appearKeys, setAppearKeys] = useState<Set<string>>(new Set());
+  const flashKeys: Set<string> = useMemo(() => {
+    if (state.phase === 'recover' && state.recovery) {
+      return new Set(recoverablePositions(state.board, state.recovery.player).map(posKey));
+    }
+    return new Set();
+  }, [state.phase, state.recovery, state.board]);
+
   const updateAndCheck = (nextState: typeof state) => {
     setState(nextState);
     const over = isGameOver(nextState);
@@ -52,6 +61,7 @@ function App() {
 
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
+        setAppearKeys(new Set([posKey(pos)]));
         updateAndCheck(attempt.state);
       }
       return;
@@ -61,6 +71,7 @@ function App() {
     // Try place from reserve if clicked empty supported cell
     const placed = placeFromReserve(state, pos);
     if (!placed.error) {
+      setAppearKeys(new Set([posKey(pos)]));
       updateAndCheck(placed.state);
       return;
     }
@@ -69,6 +80,20 @@ function App() {
     if (!sel.error) {
       updateAndCheck(sel.state);
       return;
+    }
+  };
+
+  // Drag & drop handlers
+  const onDragStart = (pos: Position) => {
+    if (gameOver) return;
+    const sel = selectMoveSource(state, pos);
+    if (!sel.error) updateAndCheck(sel.state);
+  };
+
+  const onDragEnd = () => {
+    if (state.phase === 'selectMoveDest') {
+      const res = cancelMoveSelection(state);
+      if (!res.error) updateAndCheck(res.state);
     }
   };
 
@@ -99,9 +124,13 @@ function App() {
         <Board
           state={state}
           onCellClick={onCellClick}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
           highlights={highlights}
           selected={state.selectedSource}
           posKey={posKey}
+          appearKeys={appearKeys}
+          flashKeys={flashKeys}
         />
       </div>
     </div>

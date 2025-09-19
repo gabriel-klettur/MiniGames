@@ -1,4 +1,4 @@
-import type { Board, Cell, Piece, Player, Position } from './types';
+import type { Board, Cell, Player, Position } from './types';
 
 export const LEVELS = 4; // 0..3
 
