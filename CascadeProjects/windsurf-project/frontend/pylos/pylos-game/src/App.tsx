@@ -14,12 +14,19 @@ import { posKey, getCell, isFree, setCell } from './game/board';
 import FlyingPiece from './components/FlyingPiece';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
+import IAPanel from './components/IAPanel';
+import { computeBestNextStateAsync } from './ia';
 
 function App() {
   const [state, setState] = useState(() => initialState());
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
   // Dev/tools toggle and Rules panel toggle
   const [showTools, setShowTools] = useState<boolean>(false);
+  // IA panel toggle y parámetros (profundidad y límite de tiempo)
+  const [showIA, setShowIA] = useState<boolean>(false);
+  const [iaDepth, setIaDepth] = useState<number>(3);
+  const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>('auto');
+  const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(1.8);
   const [showRules, setShowRules] = useState<boolean>(false);
   const [boardMode, , toggleBoardMode] = useBoardMode('pylos.boardMode', 'pyramid');
   const { logSnapshot } = useGameLogger(state);
@@ -273,6 +280,40 @@ function App() {
     logSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
+  const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current;
+  const [iaBusy, setIaBusy] = useState<boolean>(false);
+  const iaAbortRef = useRef<AbortController | null>(null);
+  const onAIMove = async () => {
+    if (aiDisabled || iaBusy) return;
+    setIaBusy(true);
+    const ac = new AbortController();
+    iaAbortRef.current = ac;
+    try {
+      // Resolver presupuesto de tiempo según selección del panel
+      const timeMs = iaTimeMode === 'auto'
+        ? (iaDepth > 5 ? 1800 : 800)
+        : Math.max(0, Math.min(30, iaTimeSeconds)) * 1000;
+      const next = await computeBestNextStateAsync(state, {
+        depth: iaDepth,
+        timeMs,
+        signal: ac.signal,
+      });
+      updateAndCheck(next);
+    } catch (err) {
+      // ignorar AbortError o errores transitorios
+    } finally {
+      iaAbortRef.current = null;
+      setIaBusy(false);
+    }
+  };
+
+  // Cancelar búsqueda IA si el componente se desmonta
+  useEffect(() => {
+    return () => {
+      if (iaAbortRef.current) iaAbortRef.current.abort();
+    };
+  }, []);
+
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state);
@@ -284,7 +325,22 @@ function App() {
         onNewGame={onNewGame}
         showTools={showTools}
         onToggleDev={() => setShowTools((v) => !v)}
+        showIA={showIA}
+        onToggleIA={() => setShowIA((v) => !v)}
       />
+      {showIA && (
+        <IAPanel
+          state={state}
+          depth={iaDepth}
+          onChangeDepth={setIaDepth}
+          onAIMove={onAIMove}
+          disabled={aiDisabled || iaBusy}
+          timeMode={iaTimeMode}
+          timeSeconds={iaTimeSeconds}
+          onChangeTimeMode={setIaTimeMode}
+          onChangeTimeSeconds={setIaTimeSeconds}
+        />
+      )}
       {showTools && (
         <DevToolsPanel
           onToggleBoardMode={toggleBoardMode}

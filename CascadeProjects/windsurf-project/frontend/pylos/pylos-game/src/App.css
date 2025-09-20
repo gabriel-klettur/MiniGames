@@ -648,3 +648,56 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
     --scale: 0.45;
   }
 }
+
+/* === Segmented control (Auto / Manual) ==================================== */
+.segmented {
+  display: inline-flex;
+  border-radius: 9999px;
+  border: 1px solid var(--panel-border-color);
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.segmented > button {
+  background: rgba(17, 24, 39, 0.55);
+  color: var(--text);
+  border: none;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.segmented > button + button { border-left: 1px solid var(--panel-border-color); }
+.segmented > button.active, .segmented > button[aria-pressed="true"] {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+}
+
+/* === Range slider (0..30 s) =============================================== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 180px;
+  height: 6px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 4px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+}
+input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
