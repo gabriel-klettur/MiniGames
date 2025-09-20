@@ -32,20 +32,20 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, 
           <span
             className={[
               'piece',
-              'piece--light',
+              'piece--dark',
             ].join(' ')}
-            title="Claras (L) en reserva"
-            aria-label="Claras (L) en reserva"
-            ref={reserveLightRef ?? undefined}
+            title="Oscuras (D) en reserva"
+            aria-label="Oscuras (D) en reserva"
+            ref={reserveDarkRef ?? undefined}
           >
             <img
-              src={bolaA}
-              alt="Claras (L)"
+              src={bolaB}
+              alt="Oscuras (D)"
               className="piece__img"
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.L}</span>
+          <span className="reserve-count">{reserves.D}</span>
         </div>
         <div>
           <strong></strong>{' '}
@@ -71,20 +71,20 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, 
           <span
             className={[
               'piece',
-              'piece--dark',
+              'piece--light',
             ].join(' ')}
-            title="Oscuras (D) en reserva"
-            aria-label="Oscuras (D) en reserva"
-            ref={reserveDarkRef ?? undefined}
+            title="Claras (L) en reserva"
+            aria-label="Claras (L) en reserva"
+            ref={reserveLightRef ?? undefined}
           >
             <img
-              src={bolaB}
-              alt="Oscuras (D)"
+              src={bolaA}
+              alt="Claras (L)"
               className="piece__img"
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.D}</span>
+          <span className="reserve-count">{reserves.L}</span>
         </div>
       </div>
       {phase === 'recover' && (

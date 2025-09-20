@@ -23,6 +23,7 @@ export default function FlyingPiece({ from, to, imgSrc, durationMs = 420, onDone
   const [style, setStyle] = useState<PointSize>(from);
   const [running, setRunning] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const doneRef = useRef(false);
 
   useEffect(() => {
     // Kick off the transition on next animation frame to ensure initial styles apply
@@ -51,7 +52,12 @@ export default function FlyingPiece({ from, to, imgSrc, durationMs = 420, onDone
         // mild drop shadow for depth
         boxShadow: '0 6px 16px rgba(0,0,0,0.35)'
       }}
-      onTransitionEnd={() => { onDone?.(); }}
+      onTransitionEnd={() => {
+        // This event fires once per transitioned property; guard to call once
+        if (doneRef.current) return;
+        doneRef.current = true;
+        onDone?.();
+      }}
     >
       <img
         src={imgSrc}

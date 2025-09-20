@@ -12,6 +12,7 @@ import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey, getCell, isFree, setCell } from './game/board';
 import FlyingPiece from './components/FlyingPiece';
+import MoveLog from './components/MoveLog';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
 import IAPanel from './components/IAPanel';
@@ -20,7 +21,12 @@ import { applyMove } from './ia/moves';
 import type { AIMove } from './ia/moves';
 
 function App() {
+  type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
   const [state, setState] = useState(() => initialState());
+  // History stack for undo: stores previous states
+  const [history, setHistory] = useState<GameState[]>([]);
+  // Redo stack: states that can be re-applied after an undo
+  const [redo, setRedo] = useState<GameState[]>([]);
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
   // Dev/tools toggle and Rules panel toggle
   const [showTools, setShowTools] = useState<boolean>(false);
@@ -42,10 +48,11 @@ function App() {
   const autoTimerRef = useRef<number | null>(null);
   const autoRunningRef = useRef<boolean>(false);
 
-  // Flying animation state (only for placing from reserve)
+  // Flying animation state (only for placing from reserve or recover)
   type Rect = { left: number; top: number; width: number; height: number };
   const [flying, setFlying] = useState<null | { from: Rect; to: Rect; imgSrc: string; destKey: string }>(null);
   const [pendingState, setPendingState] = useState<GameState | null>(null);
+  const [pendingLog, setPendingLog] = useState<MoveEntry | null>(null);
 
   // Logging centralizado por useGameLogger (incluye log inicial)
 
@@ -75,7 +82,22 @@ function App() {
     return new Set();
   }, [state.phase, state.recovery, state.board]);
 
-  const updateAndCheck = (nextState: typeof state) => {
+  // Moves log for display under the board
+  const [moves, setMoves] = useState<MoveEntry[]>([]);
+  const [, setRedoMoves] = useState<MoveEntry[]>([]);
+
+  const updateAndCheck = (nextState: typeof state, pushHistory: boolean = true, clearRedo: boolean = true, logEntry?: MoveEntry) => {
+    // Save current state before applying the next one
+    if (pushHistory) {
+      setHistory((h) => [...h, state]);
+    }
+    if (clearRedo) {
+      setRedo([]);
+      setRedoMoves([]);
+    }
+    if (logEntry) {
+      setMoves((m) => [...m, logEntry]);
+    }
     setState(nextState);
     // Log board snapshot after each state update
     logSnapshot(nextState);
@@ -88,6 +110,46 @@ function App() {
     }
   };
 
+  // Undo last move: restore previous state from history
+  const onUndo = () => {
+    if (flying || autoRunningRef.current) return;
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      // Apply without recording a new history entry
+      setRedo((r) => [...r, state]);
+      // Move last log entry to redoMoves as well
+      setMoves((m) => {
+        if (m.length === 0) return m;
+        const last = m[m.length - 1];
+        setRedoMoves((rm) => [...rm, last]);
+        return m.slice(0, -1);
+      });
+      updateAndCheck(prev, false, false);
+      return h.slice(0, -1);
+    });
+  };
+
+  // Redo last undone move
+  const onRedo = () => {
+    if (flying || autoRunningRef.current) return;
+    setRedo((r) => {
+      if (r.length === 0) return r;
+      const next = r[r.length - 1];
+      // Push current into history and apply next without clearing redo (we slice it manually)
+      setHistory((h) => [...h, state]);
+      // Bring back last redo log entry to main moves
+      setRedoMoves((rm) => {
+        if (rm.length === 0) return rm;
+        const last = rm[rm.length - 1];
+        setMoves((m) => [...m, last]);
+        return rm.slice(0, -1);
+      });
+      updateAndCheck(next, false, false);
+      return r.slice(0, -1);
+    });
+  };
+
   const onCellClick = (pos: Position) => {
     if (gameOver) return;
     // Avoid interactions while auto-completion is running
@@ -96,7 +158,26 @@ function App() {
     if (flying) return;
     if (state.phase === 'recover') {
       const res = recoverPiece(state, pos);
-      if (!res.error) updateAndCheck(res.state);
+      if (!res.error) {
+        // Animate removal: fly from the board cell to the reserve icon of the current player
+        const key = posKey(pos);
+        const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+        const srcRect = srcBtn?.getBoundingClientRect();
+        const destEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+        const destRect = destEl?.getBoundingClientRect();
+        const imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `recuperar ${key}` };
+        if (srcRect && destRect) {
+          const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+          const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+          setPendingState(res.state);
+          setPendingLog(log);
+          setFlying({ from, to, imgSrc, destKey: key });
+        } else {
+          // Fallback if we cannot measure DOM positions
+          updateAndCheck(res.state, true, true, log);
+        }
+      }
       return;
     }
 
@@ -105,7 +186,7 @@ function App() {
       const srcKey = state.selectedSource ? posKey(state.selectedSource) : '';
       if (state.selectedSource && posKey(pos) === srcKey) {
         const res = cancelMoveSelection(state);
-        if (!res.error) updateAndCheck(res.state);
+        if (!res.error) updateAndCheck(res.state, false, false);
         return;
       }
 
@@ -113,7 +194,7 @@ function App() {
       const owner = getCell(state.board, pos);
       if (owner === state.currentPlayer && isFree(state.board, pos)) {
         const sel = selectMoveSource(state, pos);
-        if (!sel.error) updateAndCheck(sel.state);
+        if (!sel.error) updateAndCheck(sel.state, false, false);
         return;
       }
 
@@ -121,7 +202,10 @@ function App() {
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
         setAppearKeys(new Set([posKey(pos)]));
-        updateAndCheck(attempt.state);
+        const srcKey = state.selectedSource ? posKey(state.selectedSource) : '?';
+        const dstKey = posKey(pos);
+        const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey} -> ${dstKey}` };
+        updateAndCheck(attempt.state, true, true, log);
       }
       return;
     }
@@ -137,6 +221,7 @@ function App() {
       // Compute destination rect from the target cell button
       const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
       const destRect = destBtn?.getBoundingClientRect();
+      const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `colocar ${key}` };
 
       if (originRect && destRect) {
         const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
@@ -145,17 +230,18 @@ function App() {
         // Start flying animation and apply state after it finishes
         setFlying({ from, to, imgSrc, destKey: key });
         setPendingState(placed.state);
+        setPendingLog(log);
       } else {
         // Fallback: if we fail to measure, update immediately
         setAppearKeys(new Set([key]));
-        updateAndCheck(placed.state);
+        updateAndCheck(placed.state, true, true, log);
       }
       return;
     }
     // Else, try selecting a movable source
     const sel = selectMoveSource(state, pos);
     if (!sel.error) {
-      updateAndCheck(sel.state);
+      updateAndCheck(sel.state, false, false);
       return;
     }
   };
@@ -166,13 +252,13 @@ function App() {
     if (flying) return;
     if (autoRunningRef.current) return;
     const sel = selectMoveSource(state, pos);
-    if (!sel.error) updateAndCheck(sel.state);
+    if (!sel.error) updateAndCheck(sel.state, false);
   };
 
   const onDragEnd = () => {
     if (state.phase === 'selectMoveDest') {
       const res = cancelMoveSelection(state);
-      if (!res.error) updateAndCheck(res.state);
+      if (!res.error) updateAndCheck(res.state, false, false);
     }
   };
 
@@ -254,15 +340,17 @@ function App() {
       const destRect = destBtn?.getBoundingClientRect();
       const imgSrc = filler === 'L' ? bolaA : bolaB;
 
+      const autoLog: MoveEntry = { player: filler, source: 'AUTO', text: `colocar ${key}` };
       if (originRect && destRect) {
         const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
         const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
         setPendingState(nextState);
+        setPendingLog(autoLog);
         setFlying({ from, to, imgSrc, destKey: key });
       } else {
         // Fallback: no measurement possible, apply immediately
         setAppearKeys(new Set([key]));
-        updateAndCheck(nextState);
+        updateAndCheck(nextState, true, true, autoLog);
       }
     }, 500);
 
@@ -279,6 +367,8 @@ function App() {
     setGameOver(undefined);
     const init = initialState();
     setState(init);
+    setHistory([]);
+    setRedo([]);
     logSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
@@ -306,7 +396,9 @@ function App() {
     setIaNodes(0);
     setIaElapsedMs(0);
     setIaNps(0);
-    setIaRootPlayer(state.currentPlayer);
+    // Capture the AI's player at the moment thinking starts to avoid races
+    const aiPlayer: 'L' | 'D' = state.currentPlayer;
+    setIaRootPlayer(aiPlayer);
     const ac = new AbortController();
     iaAbortRef.current = ac;
     try {
@@ -333,23 +425,24 @@ function App() {
         if (res.move.kind === 'place') {
           const dest = res.move.dest;
           const key = posKey(dest);
-          // Calcular origen: icono de reservas del jugador raíz que estaba pensando
-          const originEl = (iaRootPlayer ?? state.currentPlayer) === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+          // Calcular origen: icono de reservas del jugador IA capturado al inicio
+          const originEl = aiPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
           const originRect = originEl?.getBoundingClientRect();
           // Calcular destino: botón de celda
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = (iaRootPlayer ?? state.currentPlayer) === 'L' ? bolaA : bolaB;
+          const imgSrc = aiPlayer === 'L' ? bolaA : bolaB;
           const nextState = applyMove(state, res.move);
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
             setPendingState(nextState);
+            setPendingLog({ player: aiPlayer, source: 'IA', text: `colocar ${key}` });
             setFlying({ from, to, imgSrc, destKey: key });
           } else {
             // Fallback si no podemos medir
             setAppearKeys(new Set([key]));
-            updateAndCheck(nextState);
+            updateAndCheck(nextState, true, true, { player: aiPlayer, source: 'IA', text: `colocar ${key}` });
           }
         } else if (res.move.kind === 'lift') {
           // Animar elevación: volar desde src hasta dest con la pieza del jugador actual
@@ -359,17 +452,18 @@ function App() {
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${destKey}"]`);
           const srcRect = srcBtn?.getBoundingClientRect();
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = (iaRootPlayer ?? state.currentPlayer) === 'L' ? bolaA : bolaB;
+          const imgSrc = aiPlayer === 'L' ? bolaA : bolaB;
           const nextState = applyMove(state, res.move);
           if (srcRect && destRect) {
             const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
             setPendingState(nextState);
+            setPendingLog({ player: aiPlayer, source: 'IA', text: `subir ${srcKey} -> ${destKey}` });
             setFlying({ from, to, imgSrc, destKey });
           } else {
             // Fallback si no podemos medir
             setAppearKeys(new Set([destKey]));
-            updateAndCheck(nextState);
+            updateAndCheck(nextState, true, true, { player: aiPlayer, source: 'IA', text: `subir ${srcKey} -> ${destKey}` });
           }
         }
       }
@@ -391,13 +485,17 @@ function App() {
 
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
-    if (!res.error) updateAndCheck(res.state);
+    if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
   };
 
   return (
     <div className="app">
       <HeaderPanel
         onNewGame={onNewGame}
+        onUndo={onUndo}
+        canUndo={history.length > 0 && !flying && !autoRunningRef.current && !iaBusy}
+        onRedo={onRedo}
+        canRedo={redo.length > 0 && !flying && !autoRunningRef.current && !iaBusy}
         showTools={showTools}
         onToggleDev={() => setShowTools((v) => !v)}
         showIA={showIA}
@@ -463,6 +561,7 @@ function App() {
           viewMode={boardMode}
           debugHitTest={debugHitTest}
         />
+        <MoveLog moves={moves} />
         {gameOver && (
           <div className="gameover-banner" role="status" aria-live="polite">
             <div className="gameover-banner__text">{gameOver}</div>
@@ -483,9 +582,10 @@ function App() {
             if (pendingState) {
               // trigger a small appear effect on the destination cell
               setAppearKeys(new Set([flying.destKey]));
-              updateAndCheck(pendingState);
+              updateAndCheck(pendingState, true, true, pendingLog ?? undefined);
             }
             setPendingState(null);
+            setPendingLog(null);
             setFlying(null);
           }}
         />

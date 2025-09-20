@@ -61,7 +61,8 @@ def run() -> int:
         # Reload persisted values in case user returned to menu previously
         loaded = load_view_prefs(cfg, view)
         state = GameState()
-        state.current_player = game_cfg.starting_player
+        # Always start with Player 1 (orange), ignoring menu selection
+        state.current_player = 1
         state.allow_square_removal = (game_cfg.game_mode == "Experto")
         controller = PylosController(
             state,

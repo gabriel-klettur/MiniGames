@@ -729,3 +729,24 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
   height: 100%;
   background: linear-gradient(90deg, #6b7280, #f59e0b);
 }
+
+/* Spinner for IA 'Pensando…' */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Moving arrow icon tweaks */
+.moving-icon {
+  display: inline-block;
+  transform: translateY(-1px);
+  color: var(--accent);
+}

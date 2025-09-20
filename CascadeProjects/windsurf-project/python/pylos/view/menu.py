@@ -75,8 +75,9 @@ class ConfigMenu:
             # AI depth: 1..5
             self.config.ai_depth = max(1, min(5, self.config.ai_depth + delta))
         elif self.selected_index == 3:
-            # Starting player
-            self.config.starting_player = 1 if self.config.starting_player == 2 else 2
+            # Starting player (fixed to Player 1)
+            # Do nothing: starting player is enforced to 1 in main.py
+            self.config.starting_player = 1
         elif self.selected_index == 4:
             # Game mode: Niño / Experto
             self.config.game_mode = "Niño" if self.config.game_mode == "Experto" else "Experto"
@@ -90,7 +91,7 @@ class ConfigMenu:
             ("Oponente", "IA" if self.config.ai_enabled else "Humano"),
             ("IA juega como", f"Jugador {self.config.ai_player}"),
             ("Profundidad IA", str(self.config.ai_depth)),
-            ("Comienza", f"Jugador {self.config.starting_player}"),
+            ("Comienza", "Jugador 1 (fijo)"),
             ("Modo de juego", self.config.game_mode),
         ]
 

@@ -101,16 +101,25 @@ export default function IAPanel(props: IAPanelProps) {
       {/* IA estado */}
       {(() => {
         const hasConclusion = !busy && evalScore !== null && evalScore !== undefined;
-        const statusText = moving
-          ? 'Moviendo Pieza'
-          : busy
-            ? (progress ? `Pensando… profundidad ${progress.depth}, eval ${progress.score.toFixed(1)}` : 'Pensando…')
-            : (hasConclusion ? 'Conclusión:' : 'Sin acción');
-        return (
+        const statusLine = (
           <div className="row" aria-live={busy ? 'polite' : undefined}>
-            <strong>IA estado:</strong>&nbsp;<span>{statusText}</span>
+            <strong>IA estado:</strong>&nbsp;
+            {moving ? (
+              <>
+                <span className="moving-icon" aria-hidden="true">➜</span>&nbsp;
+                <span>Moviendo Pieza</span>
+              </>
+            ) : busy ? (
+              <>
+                <span className="spinner" aria-hidden="true" />&nbsp;
+                <span>{progress ? `Pensando… profundidad ${progress.depth}, eval ${progress.score.toFixed(1)}` : 'Pensando…'}</span>
+              </>
+            ) : (
+              <span>{hasConclusion ? 'Conclusión:' : 'Sin acción'}</span>
+            )}
           </div>
         );
+        return statusLine;
       })()}
 
       {/* Conclusión: barra + PV (barra siempre visible; vacía si no hay info) */}
