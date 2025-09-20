@@ -18,9 +18,13 @@ export interface BoardProps {
   flashKeys?: Set<string>;
   viewMode?: 'pyramid' | 'stacked';
   debugHitTest?: boolean;
+  // Control de sombreado por nivel (L0..L3). true = ocultar sombreado
+  noShade?: { 0?: boolean; 1?: boolean; 2?: boolean; 3?: boolean };
+  // Modo: sombreado solo huecos disponibles (celdas soportadas vacías)
+  shadeOnlyHoles?: boolean;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -97,14 +101,21 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
 
   // Two rendering modes: stacked (vertical levels) or pyramid (overlays)
   if (viewMode === 'stacked') {
+    const shadeClasses = [
+      noShade[0] ? 'no-shade-l0' : '',
+      noShade[1] ? 'no-shade-l1' : '',
+      noShade[2] ? 'no-shade-l2' : '',
+      noShade[3] ? 'no-shade-l3' : '',
+    ].filter(Boolean).join(' ');
     return (
-      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : ""].join(' ').trim()}>
+      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : "", shadeClasses, shadeOnlyHoles ? 'shade-only-holes' : ''].join(' ').trim()}>
         {Array.from({ length: LEVELS }).map((_, level) => {
           const size = levelSize(level);
           return (
             <div
               key={`stack-${level}`}
               className={["level", level === 0 ? "level--board" : ""].join(' ')}
+              data-level={level}
               style={{ gridTemplateColumns: `repeat(${size}, var(--cell-size))`, justifyContent: 'center' }}
             >
               {Array.from({ length: size }).map((_, r) => (
@@ -122,9 +133,16 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
   // Render base level as the visual board container, then overlay upper levels absolutely
   const baseSize = levelSize(0);
   return (
-    <div className={["board", "board--pyramid", debugHitTest ? "board--debug" : ""].join(' ').trim()}>
+    <div className={["board", "board--pyramid", debugHitTest ? "board--debug" : "",
+      noShade[0] ? 'no-shade-l0' : '',
+      noShade[1] ? 'no-shade-l1' : '',
+      noShade[2] ? 'no-shade-l2' : '',
+      noShade[3] ? 'no-shade-l3' : '',
+      shadeOnlyHoles ? 'shade-only-holes' : ''
+    ].join(' ').trim()}>
       <div
         className={["level", "level--board"].join(' ')}
+        data-level={0}
         style={{ gridTemplateColumns: `repeat(${baseSize}, var(--cell-size))`, justifyContent: 'center' }}
       >
         {Array.from({ length: baseSize }).map((_, r) => (
@@ -142,6 +160,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
               key={`overlay-${level}`}
               className={["level", "level--overlay"].join(' ')}
               data-overlay-cols={size}
+              data-level={level}
               style={{
                 gridTemplateColumns: `repeat(${size}, var(--cell-size))`,
                 justifyContent: 'center',

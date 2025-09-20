@@ -6,11 +6,10 @@ import HeaderPanel from './components/HeaderPanel';
 import FasePanel from './components/FasePanel';
 import DevToolsPanel from './components/DevToolsPanel';
 import RulesPanel from './components/RulesPanel';
-import { useBoardMode } from './hooks/useBoardMode';
 import { useGameLogger } from './hooks/useGameLogger';
 import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
-import { posKey, getCell, isFree, setCell } from './game/board';
+import { posKey, getCell, isFree, setCell, positions, isSupported } from './game/board';
 import FlyingPiece from './components/FlyingPiece';
 import MoveLog from './components/MoveLog';
 import bolaA from './assets/bola_a.webp';
@@ -21,6 +20,7 @@ import { computeBestMoveAsync } from './ia';
 import { applyMove } from './ia/moves';
 import type { AIMove } from './ia/moves';
 import FootPanel from './components/FootPanel';
+import UXPanel from './components/UXPanel';
 
 function App() {
   type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
@@ -32,8 +32,9 @@ function App() {
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
   // Dev/tools toggle and Rules panel toggle
   const [showTools, setShowTools] = useState<boolean>(false);
-  // IA panel toggle y parámetros (profundidad y límite de tiempo)
-  const [showIA, setShowIA] = useState<boolean>(false);
+  // IA panel toggles y parámetros (separados User vs DevTools)
+  const [showIAUser, setShowIAUser] = useState<boolean>(false);     // IAUserPanel bajo el header
+  const [showIATools, setShowIATools] = useState<boolean>(false);   // IAPanel dentro de DevToolsPanel
   // Historial de movimientos (inicialmente oculto)
   const [showHistory, setShowHistory] = useState<boolean>(false);
   // FasePanel (inicialmente oculto)
@@ -42,9 +43,7 @@ function App() {
   const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>('auto');
   const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(1.8);
   const [showRules, setShowRules] = useState<boolean>(false);
-  const [boardMode, , toggleBoardMode] = useBoardMode('pylos.boardMode', 'pyramid');
   const { logSnapshot } = useGameLogger(state);
-  const [debugHitTest, setDebugHitTest] = useState<boolean>(false);
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
   // Refs for reserve icons in InfoPanel (left: L, right: D)
@@ -92,6 +91,45 @@ function App() {
   // Moves log for display under the board
   const [moves, setMoves] = useState<MoveEntry[]>([]);
   const [, setRedoMoves] = useState<MoveEntry[]>([]);
+
+  // === UI/UX CONFIG STATE ===
+  // Mostrar panel UI/UX en DevTools
+  const [showUX, setShowUX] = useState<boolean>(false);
+  // Sombreado por nivel (true = ocultar sombreado)
+  const [noShade, setNoShade] = useState<{ 0: boolean; 1: boolean; 2: boolean; 3: boolean }>({ 0: false, 1: false, 2: false, 3: false });
+  // Tamaño de bola (escala)
+  const [pieceScale, setPieceScale] = useState<number>(1.55);
+  // Duraciones de animación (ms)
+  const [animAppearMs, setAnimAppearMs] = useState<number>(280);
+  const [animFlashMs, setAnimFlashMs] = useState<number>(900);
+  const [animFlyMs, setAnimFlyMs] = useState<number>(1500);
+  // Modo: sombreado solo en niveles disponibles (ON por defecto)
+  const [shadeOnlyAvailable, setShadeOnlyAvailable] = useState<boolean>(true);
+  // Modo: sombreado solo en huecos soportados (vacíos) (ON por defecto)
+  const [shadeOnlyHoles, setShadeOnlyHoles] = useState<boolean>(true);
+
+  // Calcular niveles disponibles según el tablero actual
+  const availableLevels = useMemo(() => {
+    const avail: Record<0 | 1 | 2 | 3, boolean> = { 0: true, 1: false, 2: false, 3: false } as any;
+    for (let l = 1 as 0 | 1 | 2 | 3; l <= 3; l = (l + 1) as 0 | 1 | 2 | 3) {
+      const someSupported = positions(l).some((p) => isSupported(state.board, p));
+      (avail as any)[l] = someSupported;
+    }
+    return avail;
+  }, [state.board]);
+
+  // noShade efectivo: si el modo auto está activo, ocultamos sombreado en niveles NO disponibles
+  const noShadeEffective = shadeOnlyAvailable
+    ? ({ 0: !availableLevels[0], 1: !availableLevels[1], 2: !availableLevels[2], 3: !availableLevels[3] } as { 0: boolean; 1: boolean; 2: boolean; 3: boolean })
+    : noShade;
+
+  // Sincronizar variables CSS globales (duraciones y escala)
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--piece-scale', String(pieceScale));
+    root.style.setProperty('--anim-appear-ms', `${Math.max(0, animAppearMs)}ms`);
+    root.style.setProperty('--anim-flash-ms', `${Math.max(0, animFlashMs)}ms`);
+  }, [pieceScale, animAppearMs, animFlashMs]);
 
   const updateAndCheck = (nextState: typeof state, pushHistory: boolean = true, clearRedo: boolean = true, logEntry?: MoveEntry) => {
     // Save current state before applying the next one
@@ -327,7 +365,6 @@ function App() {
       // otherwise, try to move to a highlighted destination
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
-        setAppearKeys(new Set([posKey(pos)]));
         const srcKey = state.selectedSource ? posKey(state.selectedSource) : '?';
         const dstKey = posKey(pos);
         const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey} -> ${dstKey}` };
@@ -614,6 +651,8 @@ function App() {
     };
   }, []);
 
+  // (auto-IA desactivada) — eliminamos auto-play automático para evitar confusión
+
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
@@ -625,12 +664,12 @@ function App() {
         onNewGame={onNewGame}
         showTools={showTools}
         onToggleDev={() => setShowTools((v) => !v)}
-        showIA={showIA}
-        onToggleIA={() => setShowIA((v) => !v)}
+        showIA={showIAUser}
+        onToggleIA={() => setShowIAUser((v) => !v)}
         showIAToggle={true}
         showDevToggle={false}
       />
-      {showIA && (
+      {showIAUser && (
         <IAUserPanel
           depth={iaDepth}
           onChangeDepth={setIaDepth}
@@ -663,8 +702,8 @@ function App() {
           posKey={posKey}
           appearKeys={appearKeys}
           flashKeys={flashKeys}
-          viewMode={boardMode}
-          debugHitTest={debugHitTest}
+          noShade={noShadeEffective}
+          shadeOnlyHoles={shadeOnlyHoles}
         />
         {/* Board actions: Undo / Redo (icon-only) */}
         <div className="panel board-actions" role="group" aria-label="Acciones del tablero">
@@ -698,17 +737,15 @@ function App() {
         )}
         {showTools && (
           <DevToolsPanel
-            onToggleBoardMode={toggleBoardMode}
             onToggleRules={() => setShowRules((v) => !v)}
-            boardMode={boardMode}
-            debugOn={debugHitTest}
-            onToggleDebug={() => setDebugHitTest((v) => !v)}
-            showIA={showIA}
-            onToggleIA={() => setShowIA((v) => !v)}
+            showIA={showIATools}
+            onToggleIA={() => setShowIATools((v) => !v)}
             showHistory={showHistory}
             onToggleHistory={() => setShowHistory((v) => !v)}
             showFases={showFases}
             onToggleFases={() => setShowFases((v) => !v)}
+            showUX={showUX}
+            onToggleUX={() => setShowUX((v) => !v)}
             fullWidth
             iaPanel={(
               <IAPanel
@@ -734,6 +771,27 @@ function App() {
                 moving={!!flying}
               />
             )}
+            uxPanel={(
+              <UXPanel
+                noShadeL0={noShade[0]}
+                noShadeL1={noShade[1]}
+                noShadeL2={noShade[2]}
+                noShadeL3={noShade[3]}
+                onChangeNoShade={(level, value) => setNoShade((prev) => ({ ...prev, [level]: value }))}
+                shadeOnlyAvailable={shadeOnlyAvailable}
+                onToggleShadeOnlyAvailable={setShadeOnlyAvailable}
+                shadeOnlyHoles={shadeOnlyHoles}
+                onToggleShadeOnlyHoles={setShadeOnlyHoles}
+                pieceScale={pieceScale}
+                onChangePieceScale={setPieceScale}
+                appearMs={animAppearMs}
+                flashMs={animFlashMs}
+                flyMs={animFlyMs}
+                onChangeAppearMs={setAnimAppearMs}
+                onChangeFlashMs={setAnimFlashMs}
+                onChangeFlyMs={setAnimFlyMs}
+              />
+            )}
           />
         )}
         {gameOver && (
@@ -750,19 +808,18 @@ function App() {
           from={flying.from}
           to={flying.to}
           imgSrc={flying.imgSrc}
-          durationMs={1500}
+          durationMs={animFlyMs}
           onDone={() => {
-            // Apply the game state update after the piece has flown
+            // Primero retiramos el clon volador para evitar doble render (flicker)
+            setFlying(null);
+            // Luego aplicamos el nuevo estado del tablero
             if (pendingState) {
-              // trigger a small appear effect on the destination cell
-              setAppearKeys(new Set([flying.destKey]));
               const { pushHistory, clearRedo } = pendingApplyRef.current;
               updateAndCheck(pendingState, pushHistory, clearRedo, pendingLog ?? undefined);
             }
             setPendingState(null);
             setPendingLog(null);
             pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-            setFlying(null);
           }}
         />
       )}

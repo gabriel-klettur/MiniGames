@@ -1,3 +1,6 @@
+import bolaA from '../assets/bola_a.webp';
+import bolaB from '../assets/bola_b.webp';
+
 export interface IAUserPanelProps {
   depth: number; // 1..10
   onChangeDepth: (d: number) => void;
@@ -7,6 +10,10 @@ export interface IAUserPanelProps {
   timeSeconds: number; // 0..30
   onChangeTimeMode: (m: 'auto' | 'manual') => void;
   onChangeTimeSeconds: (secs: number) => void;
+  /** Color para el que la IA jugará automáticamente; null si desactivado */
+  autoFor?: 'L' | 'D' | null;
+  /** Alternar el modo auto para un color específico */
+  onToggleAutoFor?: (p: 'L' | 'D') => void;
 }
 
 /**
@@ -24,6 +31,8 @@ export default function IAUserPanel(props: IAUserPanelProps) {
     timeSeconds,
     onChangeTimeMode,
     onChangeTimeSeconds,
+    autoFor = null,
+    onToggleAutoFor = () => {},
   } = props;
 
   return (
@@ -42,7 +51,7 @@ export default function IAUserPanel(props: IAUserPanelProps) {
       </div>
 
       <div className="row" aria-label="Modo de tiempo de la IA">
-        <label>Límite de tiempo:</label>
+        <label>Límite de tiempo pensamiento IA:</label>
         <div className="segmented" role="group" aria-label="Modo de tiempo IA">
           <button
             className={timeMode === 'auto' ? 'active' : ''}
@@ -76,6 +85,26 @@ export default function IAUserPanel(props: IAUserPanelProps) {
 
       <div className="row actions">
         <button className="primary" onClick={onAIMove} disabled={disabled}>Mover IA</button>
+        <button
+          onClick={() => onToggleAutoFor('L')}
+          disabled={disabled}
+          aria-pressed={autoFor === 'L'}
+          aria-label="Partida IA (Claras)"
+          title="Partida IA (Claras)"
+        >
+          <img className="iauser-btn__icon" src={bolaA} alt="" aria-hidden="true" />
+          <span className="iauser-btn__label">Partida IA</span>
+        </button>
+        <button
+          onClick={() => onToggleAutoFor('D')}
+          disabled={disabled}
+          aria-pressed={autoFor === 'D'}
+          aria-label="Partida IA (Oscuras)"
+          title="Partida IA (Oscuras)"
+        >
+          <img className="iauser-btn__icon" src={bolaB} alt="" aria-hidden="true" />
+          <span className="iauser-btn__label">Partida IA</span>
+        </button>
       </div>
     </section>
   );

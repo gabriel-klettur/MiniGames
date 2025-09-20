@@ -13,6 +13,9 @@
   --panel-border-color: rgba(255, 255, 255, 0.10);
   --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
   --panel-blur: 8px;                   /* backdrop blur strength */
+  /* animation duration variables (modifiable from UI/UX panel) */
+  --anim-appear-ms: 280ms;
+  --anim-flash-ms: 900ms;
   /* Board sizing */
   --scale: 0.5;          /* global scale for board/balls (1.0 = original, 0.5 = half size) */
   --sidebar-width: 0px;   /* no sidebar in header-first layout */
@@ -425,12 +428,12 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 
 /* Base level cells are transparent so the wood board shows through */
-.level--board .cell {
+.level--board > .cell {
   background: transparent;
   border-color: transparent;
 }
 /* ensure no background leaks on supported state at base level */
-.level--board .cell.cell--supported { background: transparent; }
+.level--board > .cell.cell--supported { background: transparent; }
 .cell--highlight {
   outline: none;
   /* Use a soft semi-transparent white instead of a green border */
@@ -438,7 +441,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   box-shadow: 0 0 0 var(--outline-w) rgba(255, 255, 255, 0.55) inset;
 }
 /* Base level needs a more specific selector to override the transparent rule */
-.level--board .cell.cell--highlight {
+.level--board > .cell.cell--highlight {
   background: rgba(255, 255, 255, 0.35);
   box-shadow: 0 0 0 var(--outline-w) rgba(255, 255, 255, 0.55) inset;
 }
@@ -487,7 +490,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 
 /* On the base level, do not bleed beyond the cell; fit exactly inside the hole */
-.level--board .cell .piece {
+.level--board > .cell .piece {
   top: 0;
   right: 0;
   bottom: 0;
@@ -516,7 +519,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .piece--free { box-shadow: none; }
 .piece--fixed { opacity: 1; }
 .piece--appear {
-  animation: pieceAppear 280ms ease-out both;
+  animation: pieceAppear var(--anim-appear-ms) ease-out both;
 }
 
 .piece[draggable="true"] { cursor: grab; }
@@ -536,7 +539,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 
 /* class to trigger cell flash using the keyframes */
 .cell--flash {
-  animation: cellFlash 900ms ease-in-out 2;
+  animation: cellFlash var(--anim-flash-ms) ease-in-out 2;
 }
 
 /* Modal (game over) */
@@ -570,14 +573,14 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 
 /* Base level cells become pure containers; avoid border+alpha (iOS varies) */
-.level--board .cell {
+.level--board > .cell {
   position: relative;
   border: none;
   background: transparent;
 }
 
 /* Draw the slot for all base cells; variables control intensity per state */
-.level--board .cell::before {
+.level--board > .cell::before {
   content: "";
   position: absolute;
   inset: 2px;                /* adjust if you have inner outline */
@@ -597,25 +600,101 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
     0 1.5px 2.5px rgba(0,0,0,0.28) inset;
 }
 
+/* === Per-level shading toggles =========================================== */
+/* L0 (base) — hide inner slot shading entirely */
+.board.no-shade-l0 .level--board > .cell::before {
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* L1..L3 overlays (and stacked levels): remove background/border/shadow on cells */
+.board.no-shade-l1 .level--overlay[data-level="1"] .cell,
+.board.no-shade-l1 .level[data-level="1"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.board.no-shade-l2 .level--overlay[data-level="2"] .cell,
+.board.no-shade-l2 .level[data-level="2"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.board.no-shade-l3 .level--overlay[data-level="3"] .cell,
+.board.no-shade-l3 .level[data-level="3"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* === Shade only available holes mode ===================================== */
+/* On overlays and non-base stacked levels, hide default cell chrome; keep only supported empty cells shaded */
+.board.shade-only-holes .level--overlay .cell,
+.board.shade-only-holes .level[data-level="1"] .cell,
+.board.shade-only-holes .level[data-level="2"] .cell,
+.board.shade-only-holes .level[data-level="3"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Re-enable shading for supported empty cells with the same white ring + inner glow style as base */
+.board.shade-only-holes .level--overlay .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty {
+  /* make the inner a bit more visible on overlays */
+  --hole-inner-color: rgba(255, 255, 255, 0.22);
+  --hole-ring-color: rgba(255, 255, 255, 0.85);
+}
+
+.board.shade-only-holes .level--overlay .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    /* inner brighter fill */
+    var(--hole-inner-color) 60%,
+    var(--hole-inner-color) calc(60% + 1px),
+    /* ring core */
+    var(--hole-ring-color)   calc(60% + 1px),
+    var(--hole-ring-color)   calc(60% + 1px + var(--hole-ring-w)),
+    /* outer falloff for smoother look */
+    rgba(255,255,255,0.10)   calc(60% + 1px + var(--hole-ring-w) + 0.5px),
+    rgba(0,0,0,0)            calc(60% + 2px + var(--hole-ring-w) + 1px)
+  );
+  box-shadow:
+    0 2px 0 var(--hole-shadow-ins) inset,
+    0 -1px 1px rgba(255,255,255,0.06) inset,
+    0 1.5px 2.5px rgba(0,0,0,0.28) inset;
+}
+
 /* Supported empties look slightly deeper, still without ring */
-.level--board .cell.cell--supported { --hole-inner-color: rgba(255, 255, 255, 0.12); }
+.level--board > .cell.cell--supported { --hole-inner-color: rgba(255, 255, 255, 0.12); }
 
 /* Non-interactive cells: soften even more */
-.level--board .cell.cell--disabled {
+.level--board > .cell.cell--disabled {
   --hole-ring-color: rgba(255, 255, 255, 0.16);
   --hole-inner-color: rgba(255, 255, 255, 0.06);
 }
 
 /* When a piece is present, do not show the ring (requires :has support) */
-.level--board .cell:has(.piece)::before { display: none; }
+.level--board > .cell:has(.piece)::before { display: none; }
 /* Broad fallback: when the button has children (piece span), hide ring */
-.level--board .cell:not(:empty)::before { display: none; }
+.level--board > .cell:not(:empty)::before { display: none; }
 
 /* Pieces above the pseudo-element */
 .cell .piece { z-index: 1; }
 
 /* Highlight via inner brightness; avoid opaque overlays */
-.level--board .cell.cell--highlight {
+.level--board > .cell.cell--highlight {
   background: transparent;
   box-shadow: none;
   --hole-inner-color: rgba(255, 255, 255, 0.30);
@@ -625,7 +704,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 
 /* Override the gradient on highlight to include the ring */
-.level--board .cell.cell--highlight::before {
+.level--board > .cell.cell--highlight::before {
   background: radial-gradient(
     circle at 50% 50%,
     /* inner brighter fill */
@@ -854,6 +933,91 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
   margin-top: 40px;
 }
 
+/* === IAPanel professional layout ========================================= */
+.ia-panel {
+  display: grid;
+  grid-template-columns: 1fr; /* stack on mobile */
+  gap: 12px;
+}
+@media (min-width: 720px) {
+  .ia-panel { grid-template-columns: 1.1fr 1fr; }
+  .ia-panel__evaluation { grid-column: span 2; }
+  .ia-panel__kpis { grid-column: span 2; }
+  .ia-panel__moves { grid-column: span 2; }
+}
+.ia-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ia-panel__title { margin: 0; font-size: 16px; }
+.ia-panel__status { display: inline-flex; gap: 8px; align-items: center; }
+
+/* KPI chips */
+.kpi {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 9999px;
+  background: rgba(17,24,39,0.55);
+  border: 1px solid var(--panel-border-color);
+}
+.kpi--accent { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.45); }
+.kpi--muted { opacity: 0.8; }
+
+.ia-panel__controls {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+}
+.ia-panel__controls .label { color: var(--muted); }
+.ia-panel__range { display: inline-flex; align-items: center; gap: 8px; }
+.ia-panel__actions { margin-top: 4px; }
+
+.ia-panel__evaluation .eval {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ia-panel__evaluation .eval-value { min-width: 70px; text-align: right; }
+.ia-panel__kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+.ia-panel__moves .section-title { font-weight: 600; margin-bottom: 4px; }
+.moves-list { margin: 6px 0 0 18px; padding: 0; }
+
+/* === Tabs (UXPanel) ======================================================= */
+.tabs { margin-top: 6px; }
+.tabs__list {
+  display: inline-flex;
+  gap: 8px;
+}
+.tabs__tab {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.tabs__tab[aria-selected="true"] {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.tabs__tab:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 2px;
+}
+.tabs__panel { margin-top: 8px; }
+.move-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.move-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* === IAUserPanel (user-facing quick AI controls under header) ============ */
 .iauser-panel {
   width: 100%;
@@ -893,3 +1057,20 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
 }
 /* Tighten the spacing specifically for this compact panel */
 .iauser-panel .row + .row { margin-top: 6px; }
+
+/* Icon buttons layout in IAUserPanel actions */
+.iauser-panel .row.actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.iauser-btn__icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.6));
+  pointer-events: none; /* icon purely decorative */
+}
+.iauser-btn__label { line-height: 1; }

@@ -62,7 +62,16 @@ export default function FlyingPiece({ from, to, imgSrc, durationMs = 420, onDone
       <img
         src={imgSrc}
         alt="flying piece"
-        style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', borderRadius: '50%' }}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          objectFit: 'cover',
+          borderRadius: '50%',
+          // Match exact size of board piece using the same CSS variable scaling
+          transform: 'scale(var(--piece-scale))',
+          transformOrigin: 'center center',
+        }}
         draggable={false}
       />
     </div>
