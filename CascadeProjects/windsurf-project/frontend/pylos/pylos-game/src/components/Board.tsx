@@ -35,7 +35,12 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const hasMoves = !!cell && state.currentPlayer === cell && free && validMoveDestinations(state.board, pos).length > 0;
     const canClickOwnFreePiece = hasMoves && state.phase === 'play';
     const canClickEmptyBase = !cell && state.phase === 'play' && (viewMode !== 'pyramid' || pos.level === 0) && supported;
-    const interactive = isHighlighted || canClickOwnFreePiece || canClickEmptyBase;
+    // During selection phase, allow clicking:
+    // - the currently selected source (to cancel), and
+    // - any other own free piece with moves (to switch source).
+    const isSelectedWhenSelecting = isSelected && state.phase === 'selectMoveDest';
+    const canSwitchSource = state.phase === 'selectMoveDest' && hasMoves;
+    const interactive = isHighlighted || canClickOwnFreePiece || canSwitchSource || canClickEmptyBase || isSelectedWhenSelecting;
     // In pyramid view we allow base-level empty cells to receive clicks even if not highlighted,
     // to compensate for overlays that may occlude them visually. Do NOT enable this for occupied cells.
     const baseEmptyOverride = !cell && state.phase === 'play' && viewMode === 'pyramid' && pos.level === 0;

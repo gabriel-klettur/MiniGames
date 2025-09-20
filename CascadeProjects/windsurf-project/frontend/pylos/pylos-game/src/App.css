@@ -411,6 +411,24 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   box-shadow: 0 0 0 var(--outline-w) #f59e0b inset; /* amber-500 */
 }
 
+/* Semi-transparent shading overlay for the selected piece (when moving a ball).
+   - Scoped to board cells so InfoPanel icons are unaffected.
+   - Does not capture pointer events so dragging/clicking behaves normally.
+   - Slight dim on the image for extra clarity under the overlay. */
+.cell .piece.piece--selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cell .piece.piece--selected .piece__img {
+  filter: brightness(1.04) saturate(1.02);
+}
+
 /* Generic piece (used in InfoPanel) keeps normal flow */
 .piece {
   display: inline-block;
