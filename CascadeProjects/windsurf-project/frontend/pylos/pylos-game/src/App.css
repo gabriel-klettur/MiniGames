@@ -7,6 +7,12 @@
   --danger: #ef4444;
   --light: #f3f4f6;
   --dark: #111827;
+  /* panel system vars for frosted surfaces */
+  --panel-alpha: 0.78;                 /* transparency of panel surfaces */
+  --panel-radius: 16px;                /* unified corner radius */
+  --panel-border-color: rgba(255, 255, 255, 0.10);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --panel-blur: 8px;                   /* backdrop blur strength */
   /* Board sizing */
   --scale: 0.5;          /* global scale for board/balls (1.0 = original, 0.5 = half size) */
   --sidebar-width: 0px;   /* no sidebar in header-first layout */
@@ -54,7 +60,7 @@
   min-height: 100vh;
   /* Do not distribute extra vertical space across rows; keep them tight to content */
   align-content: start;
-  background: radial-gradient(100% 100% at 0% 0%, #0b1220 0%, #0f172a 60%);
+  background: transparent;
   color: var(--text);
 }
 
@@ -64,17 +70,21 @@
   align-items: center;    /* keep board centered horizontally */
   justify-content: flex-start;
   /* more space so the board never touches the panel above */
-  gap: clamp(16px, 2.5vw, 28px);
+  --content-gap: clamp(16px, 2.5vw, 28px);
+  gap: var(--content-gap);
 }
 
 /* Generic panel and header styles (no sidebar) */
 .panel {
-  background: var(--panel);
-  border: 1px solid #1f2937;
-  border-radius: 12px;
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
   padding: 12px;
   /* Avoid stretching to fill 1fr grid rows on mobile */
   align-self: start;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
 }
 .panel--header {
   padding: 0; /* sin relleno */
@@ -134,8 +144,29 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .header-bar .row.header { margin: 0; min-height: 0; padding: 2px 0; }
 .header-bar h2 { font-size: 13px; line-height: 1; }
 .header-bar .header-actions { gap: 4px; }
-.header-bar .header-actions button { height: 20px; padding: 0 6px; font-size: 12px; }
-.header-bar .btn-img img { height: 11px; }
+.header-bar .header-actions button {
+  height: 22px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 9999px; /* estilo chip */
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.header-bar .header-actions button:hover { filter: brightness(1.1); }
+.header-bar .header-actions button:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 2px;
+}
+.header-bar .header-actions button[aria-pressed="true"] {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.header-bar .btn-img img { height: 42px; }
 .header-bar .btn-img { margin-right: 4px; }
 
 /* Slightly tighter vertical rhythm on wide screens */
@@ -144,19 +175,52 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 /* Generic actions row inside panels */
 .panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* Consistent vertical rhythm inside panels */
+.panel .row + .row { margin-top: 6px; }
+/* Small variant for compact side panels */
+.panel.small { padding: 10px; border-radius: calc(var(--panel-radius) - 2px); }
+
+/* Dev panel buttons: apply glass/pill styling (non-primary) */
+.panel .row.actions button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 9999px;
+  transition: background-color 150ms ease, filter 150ms ease, transform 120ms ease;
+}
+.panel .row.actions button:not(.primary) {
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.panel .row.actions button[aria-pressed="true"]:not(.primary) {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.panel .row.actions button:not(.primary):hover { filter: brightness(1.07); }
+.panel .row.actions button:not(.primary):active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel .row.actions button:not(.primary):focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.panel .row.actions button:disabled { opacity: 0.65; cursor: not-allowed; filter: none; transform: none; }
 
 /* InfoPanel styling */
 .info-panel {
   width: 100%;
   max-width: 600px; /* cap at 600px on wider screens */
   margin: 0 auto;   /* center horizontally */
-  background: var(--panel);
-  border: 1px solid #1f2937;
-  border-radius: 12px;
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
   padding: 12px;
   text-align: center; /* center text always */
   position: relative; /* create stacking context */
   z-index: 1;         /* ensure panel sits above decorative board art */
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
 }
 .info-panel .row { margin: 6px 0; font-size: 14px; }
 .info-panel .row.info { color: var(--muted); }
@@ -167,10 +231,39 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .info-panel .row.grid-3 .piece--current { width: 28px; height: 28px; }
 .info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+/* Slight pop for icons over glass panel */
+.info-panel .piece { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
 .board { display: flex; flex-direction: column; gap: 14px; margin-top: 25px; }
 .board--pyramid { position: relative; }
+
+/* Inline game-over banner shown under the board */
+.gameover-banner {
+  /* Keep the visual distance from the board at exactly 100px by compensating the .content gap */
+  margin-top: calc(60px - var(--content-gap));
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+.gameover-banner__text {
+  font-size: 14px;
+  color: var(--text);
+}
+.gameover-banner__actions {
+  display: inline-flex;
+  align-items: center;
+}
 
 /* Debugging helpers: enable light outlines and translucent overlays to visualize hit-testing */
 .board--debug .level { outline: 1px dashed rgba(255,255,255,0.25); }
@@ -390,6 +483,107 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   animation: cellFlash 900ms ease-in-out 2;
 }
 
+/* Modal (game over) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 999; /* above board and panels */
+}
+.modal {
+  background: var(--panel);
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px 20px;
+  width: min(92vw, 420px);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  text-align: center;
+}
+ .modal__title { margin: 0 0 8px; font-size: 18px; }
+ .modal__message { margin: 0 0 12px; color: var(--light); font-size: 14px; }
+ .modal__actions { display: flex; justify-content: center; gap: 8px; }
+/* === Hole (slot) unified rendering ======================================= */
+:root {
+  --hole-ring-w: 3px;                               /* ring thickness */
+  --hole-ring-color: rgba(255, 255, 255, 0.00);     /* invisible ring by default */
+  --hole-inner-color: rgba(255, 255, 255, 0.10);    /* soft inner fill */
+  --hole-shadow-ins: rgba(0, 0, 0, 0.15);           /* subtle inner depth */
+}
+
+/* Base level cells become pure containers; avoid border+alpha (iOS varies) */
+.level--board .cell {
+  position: relative;
+  border: none;
+  background: transparent;
+}
+
+/* Draw the slot for all base cells; variables control intensity per state */
+.level--board .cell::before {
+  content: "";
+  position: absolute;
+  inset: 2px;                /* adjust if you have inner outline */
+  border-radius: 50%;
+  pointer-events: none;      /* do not block clicks */
+  /* Default: soft inner depression only (no ring) */
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  );
+  /* subtle bevel: inner light at top and shadow at bottom for nicer look */
+  box-shadow:
+    0 2px 0 var(--hole-shadow-ins) inset,
+    0 -1px 1px rgba(255,255,255,0.06) inset,
+    0 1.5px 2.5px rgba(0,0,0,0.28) inset;
+}
+
+/* Supported empties look slightly deeper, still without ring */
+.level--board .cell.cell--supported { --hole-inner-color: rgba(255, 255, 255, 0.12); }
+
+/* Non-interactive cells: soften even more */
+.level--board .cell.cell--disabled {
+  --hole-ring-color: rgba(255, 255, 255, 0.16);
+  --hole-inner-color: rgba(255, 255, 255, 0.06);
+}
+
+/* When a piece is present, do not show the ring (requires :has support) */
+.level--board .cell:has(.piece)::before { display: none; }
+/* Broad fallback: when the button has children (piece span), hide ring */
+.level--board .cell:not(:empty)::before { display: none; }
+
+/* Pieces above the pseudo-element */
+.cell .piece { z-index: 1; }
+
+/* Highlight via inner brightness; avoid opaque overlays */
+.level--board .cell.cell--highlight {
+  background: transparent;
+  box-shadow: none;
+  --hole-inner-color: rgba(255, 255, 255, 0.30);
+  --hole-ring-color: rgba(255, 255, 255, 0.85);
+  /* Highlight: add visible ring with smooth outer falloff */
+  
+}
+
+/* Override the gradient on highlight to include the ring */
+.level--board .cell.cell--highlight::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    /* inner brighter fill */
+    var(--hole-inner-color) 60%,
+    var(--hole-inner-color) calc(60% + 1px),
+    /* ring core */
+    var(--hole-ring-color)   calc(60% + 1px),
+    var(--hole-ring-color)   calc(60% + 1px + var(--hole-ring-w)),
+    /* outer falloff for smoother look */
+    rgba(255,255,255,0.10)   calc(60% + 1px + var(--hole-ring-w) + 0.5px),
+    rgba(0,0,0,0)            calc(60% + 2px + var(--hole-ring-w) + 1px)
+  );
+}
+
 /* Mobile layout: Sidebar arriba, Tablero abajo — pensado para iPhone 12 (390px) */
 @media (max-width: 480px) {
   .app {
@@ -410,7 +604,8 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   .content {
     align-items: center;
     justify-content: flex-start; /* avoid vertical centering that can reduce spacing */
-    gap: clamp(20px, 4vh, 36px); /* extra breathing room on small screens */
+    --content-gap: clamp(20px, 4vh, 36px);
+    gap: var(--content-gap); /* extra breathing room on small screens */
   }
 
   /* Even tighter header height on small screens */

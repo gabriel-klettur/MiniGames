@@ -44,6 +44,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     return (
       <button
         key={key}
+        data-poskey={key}
         className={[
           'cell',
           isHighlighted ? 'cell--highlight' : '',

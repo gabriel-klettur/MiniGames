@@ -240,6 +240,55 @@ export function finishRecovery(state: GameState): ActionResult {
   return { state: next };
 }
 
+/**
+ * Auto-completa la pirámide colocando automáticamente todas las bolas del jugador que
+ * aún tenga reservas cuando el oponente se haya quedado sin fichas en reserva.
+ *
+ * Regla práctica (de UX):
+ * - No actúa durante la fase de recuperación.
+ * - Si L tiene 0 en reserva y D > 0, se autocompleta con D.
+ * - Si D tiene 0 en reserva y L > 0, se autocompleta con L.
+ * - Coloca en posiciones válidas (soportadas) en orden nivel->fila->columna,
+ *   recalculando destinos en cada inserción para habilitar niveles superiores hasta coronar.
+ */
+export function autoCompletePyramid(state: GameState): GameState {
+  if (state.phase === 'recover') return state;
+  const { reserves } = state;
+  let filler: Player | null = null;
+  if (reserves.L === 0 && reserves.D > 0) filler = 'D';
+  else if (reserves.D === 0 && reserves.L > 0) filler = 'L';
+  if (!filler) return state;
+
+  let board = state.board;
+  const newReserves: Record<Player, number> = { ...reserves } as Record<Player, number>;
+  let placed = 0;
+
+  while (newReserves[filler] > 0) {
+    const dests = validReserveDestinations(board);
+    if (dests.length === 0) break;
+    // Orden estable: primero niveles inferiores, luego fila/columna
+    dests.sort((a, b) => (a.level - b.level) || (a.row - b.row) || (a.col - b.col));
+    const dest = dests[0];
+    board = setCell(board, dest, filler);
+    newReserves[filler] -= 1;
+    placed += 1;
+    // Si coronamos la cima, basta
+    const top = getCell(board, { level: 3, row: 0, col: 0 });
+    if (top !== null) break;
+  }
+
+  if (placed === 0) return state;
+  try { console.info('[rules] autoCompletePyramid', { filler, placed, reservesBefore: reserves, reservesAfter: newReserves }); } catch {}
+  return {
+    ...state,
+    board,
+    reserves: newReserves,
+    phase: 'play',
+    selectedSource: undefined,
+    recovery: undefined,
+  };
+}
+
 export function isGameOver(state: GameState): { over: boolean; winner?: Player; reason?: string } {
   // Win conditions:
   // 1) A player places the last ball at the top (level 3, 0,0)

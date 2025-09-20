@@ -1,17 +1,23 @@
 import type { GameState } from '../game/types';
+import type { MutableRefObject, RefObject } from 'react';
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 
 export interface InfoPanelProps {
   state: GameState;
   onFinishRecovery: () => void;
+  /**
+   * Ref to the current player's piece icon in the center, used to measure
+   * screen position for the flying animation from panel to board.
+   */
+  currentPieceRef?: MutableRefObject<HTMLSpanElement | null> | RefObject<HTMLSpanElement>;
 }
 
 /**
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * El botón "Terminar recuperación" sólo aparece cuando la fase es 'recover'.
  */
-function InfoPanel({ state, onFinishRecovery }: InfoPanelProps) {
+function InfoPanel({ state, onFinishRecovery, currentPieceRef }: InfoPanelProps) {
   const { currentPlayer, reserves, phase } = state;
 
   return (
@@ -45,6 +51,7 @@ function InfoPanel({ state, onFinishRecovery }: InfoPanelProps) {
             ].join(' ')}
             title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
             aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+            ref={currentPieceRef ?? undefined}
           >
             <img
               src={currentPlayer === 'L' ? bolaA : bolaB}

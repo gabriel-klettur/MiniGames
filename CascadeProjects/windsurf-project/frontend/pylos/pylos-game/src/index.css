@@ -5,6 +5,49 @@ body {
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
   background: #0f172a;
 }
+
+/* Fullscreen background image: mobile (no rotation) */
+#root { position: relative; z-index: 0; }
+#root::before {
+  content: "";
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('./assets/background_b.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none; /* do not block UI */
+  z-index: -1;         /* behind app content */
+  transform: none;     /* no rotation on mobile */
+}
+
+/* Vignette + top scrim to improve contrast under panels/header */
+#root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1; /* above ::before, below app content */
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.18) 100%),
+    linear-gradient(to top, rgba(0,0,0,0.28), rgba(0,0,0,0) 140px);
+}
+
+/* Desktop: rotate 90deg and ensure coverage using vmax */
+@media (min-width: 768px) {
+  #root::before {
+    width: 100vmax;
+    height: 100vmax;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+}
 button {
   font: inherit;
   background: #172036;

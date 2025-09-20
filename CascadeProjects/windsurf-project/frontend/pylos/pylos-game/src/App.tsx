@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import './App.css';
 import Board from './components/Board';
 import InfoPanel from './components/InfoPanel';
@@ -8,9 +8,12 @@ import DevToolsPanel from './components/DevToolsPanel';
 import RulesPanel from './components/RulesPanel';
 import { useBoardMode } from './hooks/useBoardMode';
 import { useGameLogger } from './hooks/useGameLogger';
-import type { Position } from './game/types';
+import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey, getCell, isFree } from './game/board';
+import FlyingPiece from './components/FlyingPiece';
+import bolaA from './assets/bola_a.webp';
+import bolaB from './assets/bola_b.webp';
 
 function App() {
   const [state, setState] = useState(() => initialState());
@@ -21,6 +24,13 @@ function App() {
   const [boardMode, , toggleBoardMode] = useBoardMode('pylos.boardMode', 'pyramid');
   const { logSnapshot } = useGameLogger(state);
   const [debugHitTest, setDebugHitTest] = useState<boolean>(false);
+  // Ref to the current player's piece icon in the InfoPanel (animation origin)
+  const currentPieceRef = useRef<HTMLSpanElement | null>(null);
+
+  // Flying animation state (only for placing from reserve)
+  type Rect = { left: number; top: number; width: number; height: number };
+  const [flying, setFlying] = useState<null | { from: Rect; to: Rect; imgSrc: string; destKey: string }>(null);
+  const [pendingState, setPendingState] = useState<GameState | null>(null);
 
   // Logging centralizado por useGameLogger (incluye log inicial)
 
@@ -65,6 +75,8 @@ function App() {
 
   const onCellClick = (pos: Position) => {
     if (gameOver) return;
+    // Avoid interactions while a flying animation is running
+    if (flying) return;
     if (state.phase === 'recover') {
       const res = recoverPiece(state, pos);
       if (!res.error) updateAndCheck(res.state);
@@ -101,8 +113,26 @@ function App() {
     // Try place from reserve if clicked empty supported cell
     const placed = placeFromReserve(state, pos);
     if (!placed.error) {
-      setAppearKeys(new Set([posKey(pos)]));
-      updateAndCheck(placed.state);
+      const key = posKey(pos);
+      // Compute origin rect from InfoPanel current piece
+      const originEl = currentPieceRef.current;
+      const originRect = originEl?.getBoundingClientRect();
+      // Compute destination rect from the target cell button
+      const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+      const destRect = destBtn?.getBoundingClientRect();
+
+      if (originRect && destRect) {
+        const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
+        const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+        const imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        // Start flying animation and apply state after it finishes
+        setFlying({ from, to, imgSrc, destKey: key });
+        setPendingState(placed.state);
+      } else {
+        // Fallback: if we fail to measure, update immediately
+        setAppearKeys(new Set([key]));
+        updateAndCheck(placed.state);
+      }
       return;
     }
     // Else, try selecting a movable source
@@ -162,7 +192,7 @@ function App() {
         <RulesPanel />
       )}
       <div className="content">
-        <InfoPanel state={state} onFinishRecovery={onFinishRecovery} />
+        <InfoPanel state={state} onFinishRecovery={onFinishRecovery} currentPieceRef={currentPieceRef} />
         <Board
           state={state}
           onCellClick={onCellClick}
@@ -176,7 +206,33 @@ function App() {
           viewMode={boardMode}
           debugHitTest={debugHitTest}
         />
+        {gameOver && (
+          <div className="gameover-banner" role="status" aria-live="polite">
+            <div className="gameover-banner__text">{gameOver}</div>
+            <div className="gameover-banner__actions">
+              <button className="primary" onClick={onNewGame} aria-label="Empezar otra partida">OK</button>
+            </div>
+          </div>
+        )}
       </div>
+      {flying && (
+        <FlyingPiece
+          from={flying.from}
+          to={flying.to}
+          imgSrc={flying.imgSrc}
+          durationMs={420}
+          onDone={() => {
+            // Apply the game state update after the piece has flown
+            if (pendingState) {
+              // trigger a small appear effect on the destination cell
+              setAppearKeys(new Set([flying.destKey]));
+              updateAndCheck(pendingState);
+            }
+            setPendingState(null);
+            setFlying(null);
+          }}
+        />
+      )}
     </div>
   );
 }
