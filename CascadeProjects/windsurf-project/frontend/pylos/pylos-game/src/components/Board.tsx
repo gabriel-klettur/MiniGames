@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import type { GameState, Position } from '../game/types';
 import { LEVELS, getCell, isFree, isSupported, levelSize } from '../game/board';
+import { validMoveDestinations } from '../game/rules';
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 
@@ -30,11 +31,15 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const supported = !cell && isSupported(state.board, pos);
     const isAppearing = appearKeys?.has(key) ?? false;
     const isFlashing = flashKeys?.has(key) ?? false;
-    // A cell is clickable only if it's a highlighted destination, or it's a free own piece (to select/move)
-    const canClickOwnFreePiece = !!cell && state.currentPlayer === cell && free && (state.phase === 'play' || state.phase === 'selectMoveDest');
+    // A cell is clickable only if it's a highlighted destination, or it's a free own piece WITH MOVES (to select/move)
+    const hasMoves = !!cell && state.currentPlayer === cell && free && validMoveDestinations(state.board, pos).length > 0;
+    const canClickOwnFreePiece = hasMoves && state.phase === 'play';
     const canClickEmptyBase = !cell && state.phase === 'play' && (viewMode !== 'pyramid' || pos.level === 0) && supported;
     const interactive = isHighlighted || canClickOwnFreePiece || canClickEmptyBase;
-    const canDrag = !!cell && state.currentPlayer === cell && free && state.phase !== 'recover';
+    // In pyramid view we allow base-level empty cells to receive clicks even if not highlighted,
+    // to compensate for overlays that may occlude them visually. Do NOT enable this for occupied cells.
+    const baseEmptyOverride = !cell && state.phase === 'play' && viewMode === 'pyramid' && pos.level === 0;
+    const canDrag = !!cell && state.currentPlayer === cell && free && hasMoves && state.phase !== 'recover';
 
     return (
       <button
@@ -47,9 +52,9 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
           isFlashing ? 'cell--flash' : '',
           !interactive ? 'cell--disabled' : '',
         ].join(' ')}
-        style={{ pointerEvents: (interactive || (viewMode === 'pyramid' && state.phase === 'play' && pos.level === 0)) ? 'auto' : 'none' }}
-        // Only attach handlers when interactive to avoid accidental clicks in overlapped areas
-        onClick={(interactive || (viewMode === 'pyramid' && state.phase === 'play' && pos.level === 0)) ? (() => { if (debugHitTest) { console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell }); } onCellClick(pos); }) : undefined}
+        style={{ pointerEvents: (interactive || baseEmptyOverride) ? 'auto' : 'none' }}
+        // Only attach handlers when interactive or when base empty override applies
+        onClick={(interactive || baseEmptyOverride) ? (() => { if (debugHitTest) { console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell }); } onCellClick(pos); }) : undefined}
         onDragOver={isHighlighted ? ((e) => { e.preventDefault(); }) : undefined}
         onDrop={isHighlighted ? ((e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }) : undefined}
         title={`L${pos.level} (${pos.row},${pos.col})`}

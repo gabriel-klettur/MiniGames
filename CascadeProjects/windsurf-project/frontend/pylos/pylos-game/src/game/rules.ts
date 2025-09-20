@@ -104,13 +104,23 @@ function startRecoveryIfAny(previousBoard: Board, state: GameState, affected: Po
   const formedSquare = formsAnyNewSquare(previousBoard, state.board, player, affected);
   const formedLine = formsAnyNewLine(previousBoard, state.board, player, affected);
   const scored = formedSquare || formedLine;
+  try {
+    console.info('[rules] startRecoveryIfAny', { player, affected, formedSquare, formedLine, scored });
+  } catch {}
   if (!scored) {
     return { ...state, phase: 'play' };
   }
   const free = freePiecesOf(state.board, player);
   const available = free.length;
+  // If there are no free pieces to recover, skip recovery phase entirely.
+  // Caller will handle switching the turn when phase !== 'recover'.
+  if (available === 0) {
+    try { console.info('[rules] skip recover — no free pieces'); } catch {}
+    return { ...state, phase: 'play' };
+  }
   const remaining = Math.min(2, available);
-  const minRequired = available > 0 ? 1 : 0;
+  const minRequired = 1;
+  try { console.info('[rules] enter recover', { available, remaining, minRequired }); } catch {}
   return {
     ...state,
     phase: 'recover',
@@ -133,6 +143,7 @@ export function placeFromReserve(state: GameState, dest: Position): ActionResult
   const reserves = { ...state.reserves, [state.currentPlayer]: state.reserves[state.currentPlayer] - 1 };
   let next: GameState = { ...state, board, reserves };
   next = startRecoveryIfAny(before, next, dest);
+  try { console.info('[rules] placeFromReserve -> after scoring check', { dest, phase: next.phase, recovery: next.recovery }); } catch {}
   if (next.phase !== 'recover') {
     next.currentPlayer = otherPlayer(state.currentPlayer);
   }
@@ -143,7 +154,17 @@ export function selectMoveSource(state: GameState, source: Position): ActionResu
   if (state.phase !== 'play') return { state, error: 'No es el momento de seleccionar una pieza a mover.' };
   const owner = getCell(state.board, source);
   if (owner !== state.currentPlayer) return { state, error: 'Debes elegir una pieza propia.' };
-  if (!isFree(state.board, source)) return { state, error: 'Esa pieza no está libre para mover.' };
+  if (!isFree(state.board, source)) {
+    try { console.info('[rules] selectMoveSource rejected — not free/supporting', { source }); } catch {}
+    return { state, error: 'Esa pieza no está libre para mover.' };
+  }
+  // Only allow selection if there is at least one valid upward destination.
+  const moves = validMoveDestinations(state.board, source);
+  if (moves.length === 0) {
+    try { console.info('[rules] selectMoveSource rejected — no valid destinations', { source }); } catch {}
+    return { state, error: 'Esa pieza no tiene destinos válidos para subir.' };
+  }
+  try { console.info('[rules] selectMoveSource ok', { source }); } catch {}
   return { state: { ...state, selectedSource: source, phase: 'selectMoveDest' } };
 }
 
@@ -166,6 +187,7 @@ export function movePiece(state: GameState, dest: Position): ActionResult {
   board = setCell(board, dest, state.currentPlayer);
   let next: GameState = { ...state, board, selectedSource: undefined, phase: 'play' };
   next = startRecoveryIfAny(before, next, dest);
+  try { console.info('[rules] movePiece -> after scoring check', { src, dest, phase: next.phase, recovery: next.recovery }); } catch {}
   if (next.phase !== 'recover') {
     next.currentPlayer = otherPlayer(state.currentPlayer);
   }
@@ -191,10 +213,12 @@ export function recoverPiece(state: GameState, pos: Position): ActionResult {
     reserves,
     recovery: { ...rec, removedSoFar, remaining },
   };
+  try { console.info('[rules] recoverPiece', { pos, removedSoFar, remaining }); } catch {}
 
   // If no more remaining or no more free pieces, finish recovery automatically
   const stillFree = freePiecesOf(board, rec.player).length;
   if (remaining <= 0 || stillFree <= 0) {
+    try { console.info('[rules] recoverPiece -> auto finish', { stillFree }); } catch {}
     return finishRecovery(next);
   }
   return { state: next };
@@ -212,6 +236,7 @@ export function finishRecovery(state: GameState): ActionResult {
     recovery: undefined,
     currentPlayer: otherPlayer(state.currentPlayer),
   };
+  try { console.info('[rules] finishRecovery', { removedSoFar: rec.removedSoFar, minRequired: rec.minRequired }); } catch {}
   return { state: next };
 }
 

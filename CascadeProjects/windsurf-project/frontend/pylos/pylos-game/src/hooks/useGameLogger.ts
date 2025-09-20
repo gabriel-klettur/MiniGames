@@ -23,7 +23,14 @@ export function useGameLogger(state: GameState) {
         const grid = board[l];
         const size = grid.length;
         console.log(`Nivel ${l} (${size}x${size})`);
-        const table = grid.map((row) => row.map(cellSymbol));
+        const table = grid.map((row, r) => row.map((cell, c) => {
+          let sym = cellSymbol(cell);
+          const sel = snapshot.selectedSource;
+          if (phase === 'selectMoveDest' && sel && sel.level === l && sel.row === r && sel.col === c) {
+            sym = `${sym}S`;
+          }
+          return sym;
+        }));
         console.table(table);
       }
       console.groupEnd();
