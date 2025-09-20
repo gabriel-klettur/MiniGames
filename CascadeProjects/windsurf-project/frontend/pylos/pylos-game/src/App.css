@@ -52,6 +52,8 @@
   gap: var(--app-gap);
   padding: var(--app-padding);
   min-height: 100vh;
+  /* Do not distribute extra vertical space across rows; keep them tight to content */
+  align-content: start;
   background: radial-gradient(100% 100% at 0% 0%, #0b1220 0%, #0f172a 60%);
   color: var(--text);
 }
@@ -71,6 +73,8 @@
   border: 1px solid #1f2937;
   border-radius: 12px;
   padding: 12px;
+  /* Avoid stretching to fill 1fr grid rows on mobile */
+  align-self: start;
 }
 .panel--header {
   padding: 0; /* sin relleno */
@@ -126,12 +130,12 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .panel--header .btn-img { margin-right: 4px; }
 
 /* Flat header toolbar variant */
-.header-bar { padding: 0; margin: 0; background: transparent; border: 0; }
-.header-bar .row.header { margin: 0; min-height: 24px; }
-.header-bar h2 { font-size: 14px; line-height: 1; }
-.header-bar .header-actions { gap: 6px; }
-.header-bar .header-actions button { height: 22px; padding: 0 8px; font-size: 12px; }
-.header-bar .btn-img img { height: 12px; }
+.header-bar { padding: 0; margin: 0; background: transparent; border: 0; align-self: start; line-height: 1; }
+.header-bar .row.header { margin: 0; min-height: 0; padding: 2px 0; }
+.header-bar h2 { font-size: 13px; line-height: 1; }
+.header-bar .header-actions { gap: 4px; }
+.header-bar .header-actions button { height: 20px; padding: 0 6px; font-size: 12px; }
+.header-bar .btn-img img { height: 11px; }
 .header-bar .btn-img { margin-right: 4px; }
 
 /* Slightly tighter vertical rhythm on wide screens */
@@ -164,8 +168,14 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
-.board { display: flex; flex-direction: column; gap: 14px; }
+.board { display: flex; flex-direction: column; gap: 14px; margin-top: 25px; }
 .board--pyramid { position: relative; }
+
+/* Debugging helpers: enable light outlines and translucent overlays to visualize hit-testing */
+.board--debug .level { outline: 1px dashed rgba(255,255,255,0.25); }
+.board--debug .level--overlay { background: rgba(255, 255, 0, 0.06); }
+.board--debug .cell { box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.25); }
+.board--debug .cell.cell--disabled { box-shadow: inset 0 0 0 1px rgba(255, 99, 71, 0.35); }
 
 .level {
   display: grid;
@@ -186,6 +196,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   border: none;
   box-shadow: none;
   position: relative;
+  z-index: 2; /* ensure base grid is above any other decorative layers */
   /* Inner grid total width (4 cells + 3 gaps) used to scale the board art */
   --inner-size: calc((var(--cell-size) * var(--max-cols)) + (var(--level-gap) * (var(--max-cols) - 1)));
   /* Ratios from the provided asset (inner area 569x566 inside a 1024x1024 board) */
@@ -363,7 +374,10 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   .app {
     /* una sola columna: el DOM ya tiene <Sidebar /> primero */
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    /* Ensure every row sizes to its content; don't force the second item to fill viewport */
+    grid-auto-rows: auto;
+    /* Pack rows at the top; leave any extra space below */
+    align-content: start;
     gap: var(--app-gap);
     padding: var(--app-padding);
     /* safe areas para notch / home bar */
@@ -378,7 +392,10 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
     gap: clamp(20px, 4vh, 36px); /* extra breathing room on small screens */
   }
 
-  .board { gap: 8px; margin-top: 4px; }
+  /* Even tighter header height on small screens */
+  .header-bar .row.header { min-height: 20px; }
+
+  .board { gap: 8px; margin-top: 25px; }
   /* When expanded (stacked), give more breathing room between levels */
   .board--stacked { gap: clamp(16px, 3.5vh, 28px); }
   /* Add extra space specifically after the base board with the wood texture */

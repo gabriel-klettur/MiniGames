@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import './App.css';
 import Board from './components/Board';
 import InfoPanel from './components/InfoPanel';
 import HeaderPanel from './components/HeaderPanel';
 import FasePanel from './components/FasePanel';
-import type { GameState, Position } from './game/types';
+import DevToolsPanel from './components/DevToolsPanel';
+import RulesPanel from './components/RulesPanel';
+import { useBoardMode } from './hooks/useBoardMode';
+import { useGameLogger } from './hooks/useGameLogger';
+import type { Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
 import { posKey } from './game/board';
 
@@ -14,49 +18,13 @@ function App() {
   // Dev/tools toggle and Rules panel toggle
   const [showTools, setShowTools] = useState<boolean>(false);
   const [showRules, setShowRules] = useState<boolean>(false);
-  const LS_MODE_KEY = 'pylos.boardMode';
-  const [boardMode, setBoardMode] = useState<'pyramid' | 'stacked'>(() => {
-    try {
-      const saved = localStorage.getItem(LS_MODE_KEY);
-      return saved === 'stacked' || saved === 'pyramid' ? saved : 'pyramid';
-    } catch {
-      return 'pyramid';
-    }
-  });
+  const [boardMode, , toggleBoardMode] = useBoardMode('pylos.boardMode', 'pyramid');
+  const { logSnapshot } = useGameLogger(state);
+  const [debugHitTest, setDebugHitTest] = useState<boolean>(false);
 
-  // Helper: map cell -> visual symbol
-  const cellSymbol = (cell: 'L' | 'D' | null): string => (cell === 'L' ? '○' : cell === 'D' ? '●' : '·');
+  // Logging centralizado por useGameLogger (incluye log inicial)
 
-  // Pretty-print the full game snapshot using console.table per level
-  const printBoardSnapshot = (snapshot: GameState, label?: string) => {
-    const { board, currentPlayer, phase, reserves } = snapshot;
-    const header = label ?? `Turno de ${currentPlayer} — Fase: ${phase}`;
-    console.groupCollapsed(header);
-    console.info(`Jugador: ${currentPlayer} | Fase: ${phase} | Reservas: L=${reserves.L} D=${reserves.D}`);
-    for (let l = 0; l < board.length; l++) {
-      const grid = board[l];
-      const size = grid.length;
-      console.log(`Nivel ${l} (${size}x${size})`);
-      const table = grid.map((row) => row.map(cellSymbol));
-      // Render as a table with indexed columns
-      console.table(table);
-    }
-    console.groupEnd();
-  };
-
-  // Print board once on initial mount (guard against StrictMode double-run in dev)
-  const didLogInitialRef = useRef(false);
-  useEffect(() => {
-    if (didLogInitialRef.current) return;
-    didLogInitialRef.current = true;
-    printBoardSnapshot(state, 'Estado inicial — tablero');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist board mode on change
-  useEffect(() => {
-    try { localStorage.setItem(LS_MODE_KEY, boardMode); } catch { /* ignore */ }
-  }, [boardMode]);
+  // Board mode persistence now handled by useBoardMode hook
 
   const highlights: Set<string> = useMemo(() => {
     if (gameOver) return new Set();
@@ -66,8 +34,11 @@ function App() {
     if (state.phase === 'selectMoveDest' && state.selectedSource) {
       return new Set(validMoveDestinations(state.board, state.selectedSource).map(posKey));
     }
-    // phase 'play': highlight valid reserve placements
-    return new Set(validReserveDestinations(state.board).map(posKey));
+    // phase 'play': highlight valid reserve placements on ALL supported levels
+    if (state.phase === 'play') {
+      return new Set(validReserveDestinations(state.board).map(posKey));
+    }
+    return new Set();
   }, [state, gameOver]);
 
   // Animation keys
@@ -82,7 +53,7 @@ function App() {
   const updateAndCheck = (nextState: typeof state) => {
     setState(nextState);
     // Log board snapshot after each state update
-    printBoardSnapshot(nextState);
+    logSnapshot(nextState);
     const over = isGameOver(nextState);
     if (over.over) {
       const text = over.winner ? `Ganador: ${over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} — ${over.reason ?? ''}` : 'Partida terminada';
@@ -151,7 +122,7 @@ function App() {
     setGameOver(undefined);
     const init = initialState();
     setState(init);
-    printBoardSnapshot(init, 'Nuevo juego — tablero inicial');
+    logSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
   const onFinishRecovery = () => {
@@ -167,26 +138,19 @@ function App() {
         onToggleDev={() => setShowTools((v) => !v)}
       />
       {showTools && (
-        <div className="panel">
-          <div className="row actions">
-            <button onClick={() => setBoardMode((m) => (m === 'pyramid' ? 'stacked' : 'pyramid'))}>Tablero</button>
-            <button onClick={() => setShowRules((v) => !v)}>Reglas</button>
-          </div>
-        </div>
+        <DevToolsPanel
+          onToggleBoardMode={toggleBoardMode}
+          onToggleRules={() => setShowRules((v) => !v)}
+          boardMode={boardMode}
+          debugOn={debugHitTest}
+          onToggleDebug={() => setDebugHitTest((v) => !v)}
+        />
       )}
       {showTools && (
         <FasePanel state={state} gameOverText={gameOver} />
       )}
       {showRules && (
-        <div className="panel small">
-          <p>Reglas clave:</p>
-          <ul>
-            <li>Coloca en casillas soportadas (2x2 abajo).</li>
-            <li>Para mover, solo subir niveles y pieza debe estar libre.</li>
-            <li>Formar cuadrado propio permite recuperar 1–2 piezas libres.</li>
-            <li>También puntúan las líneas (4 abajo, 3 en segundo nivel).</li>
-          </ul>
-        </div>
+        <RulesPanel />
       )}
       <div className="content">
         <InfoPanel state={state} onFinishRecovery={onFinishRecovery} />
@@ -201,6 +165,7 @@ function App() {
           appearKeys={appearKeys}
           flashKeys={flashKeys}
           viewMode={boardMode}
+          debugHitTest={debugHitTest}
         />
       </div>
     </div>

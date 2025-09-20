@@ -16,9 +16,10 @@ export interface BoardProps {
   appearKeys?: Set<string>;
   flashKeys?: Set<string>;
   viewMode?: 'pyramid' | 'stacked';
+  debugHitTest?: boolean;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid' }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -31,7 +32,8 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const isFlashing = flashKeys?.has(key) ?? false;
     // A cell is clickable only if it's a highlighted destination, or it's a free own piece (to select/move)
     const canClickOwnFreePiece = !!cell && state.currentPlayer === cell && free && state.phase === 'play';
-    const interactive = isHighlighted || canClickOwnFreePiece;
+    const canClickEmptyBase = !cell && state.phase === 'play' && (viewMode !== 'pyramid' || pos.level === 0) && supported;
+    const interactive = isHighlighted || canClickOwnFreePiece || canClickEmptyBase;
     const canDrag = !!cell && state.currentPlayer === cell && free && state.phase !== 'recover';
 
     return (
@@ -45,8 +47,9 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
           isFlashing ? 'cell--flash' : '',
           !interactive ? 'cell--disabled' : '',
         ].join(' ')}
+        style={{ pointerEvents: (interactive || (viewMode === 'pyramid' && state.phase === 'play' && pos.level === 0)) ? 'auto' : 'none' }}
         // Only attach handlers when interactive to avoid accidental clicks in overlapped areas
-        onClick={interactive ? (() => onCellClick(pos)) : undefined}
+        onClick={(interactive || (viewMode === 'pyramid' && state.phase === 'play' && pos.level === 0)) ? (() => { if (debugHitTest) { console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell }); } onCellClick(pos); }) : undefined}
         onDragOver={isHighlighted ? ((e) => { e.preventDefault(); }) : undefined}
         onDrop={isHighlighted ? ((e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }) : undefined}
         title={`L${pos.level} (${pos.row},${pos.col})`}
@@ -83,7 +86,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
   // Two rendering modes: stacked (vertical levels) or pyramid (overlays)
   if (viewMode === 'stacked') {
     return (
-      <div className="board board--stacked">
+      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : ""].join(' ').trim()}>
         {Array.from({ length: LEVELS }).map((_, level) => {
           const size = levelSize(level);
           return (
@@ -107,7 +110,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
   // Render base level as the visual board container, then overlay upper levels absolutely
   const baseSize = levelSize(0);
   return (
-    <div className="board board--pyramid">
+    <div className={["board", "board--pyramid", debugHitTest ? "board--debug" : ""].join(' ').trim()}>
       <div
         className={["level", "level--board"].join(' ')}
         style={{ gridTemplateColumns: `repeat(${baseSize}, var(--cell-size))`, justifyContent: 'center' }}
@@ -130,7 +133,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
                 gridTemplateColumns: `repeat(${size}, var(--cell-size))`,
                 justifyContent: 'center',
                 ['--overlay-cols' as any]: size,
-                zIndex: level + 1,
+                zIndex: 10 + level, // ensure overlays (>=11) sit above base (z-index: 2)
               }}
             >
               {Array.from({ length: size }).map((_, r) => (

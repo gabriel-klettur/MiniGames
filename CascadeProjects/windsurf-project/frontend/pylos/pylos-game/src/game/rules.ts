@@ -1,5 +1,5 @@
 import type { Board, GameState, Player, Position } from './types';
-import { LEVELS, canPlaceAt, cloneBoard, createEmptyBoard, getCell, isFree, levelSize, positions, setCell } from './board';
+import { LEVELS, canPlaceAt, cloneBoard, createEmptyBoard, getCell, isEmpty, isFree, isSupported, levelSize, positions, setCell } from './board';
 import { otherPlayer } from './types';
 
 // Helpers to detect patterns
@@ -89,8 +89,9 @@ export function validReserveDestinations(board: Board): Position[] {
 }
 
 export function validMoveDestinations(board: Board, source: Position): Position[] {
-  // must move upwards only
-  return positions().filter((p) => p.level > source.level && canPlaceAt(board, p));
+  // must move upwards only; simulate removing the source before checking support
+  const temp = setCell(board, source, null);
+  return positions().filter((p) => p.level > source.level && isEmpty(board, p) && isSupported(temp, p));
 }
 
 export type ActionResult = {
@@ -155,7 +156,10 @@ export function movePiece(state: GameState, dest: Position): ActionResult {
   if (state.phase !== 'selectMoveDest' || !state.selectedSource) return { state, error: 'No hay movimiento en curso.' };
   const src = state.selectedSource;
   if (dest.level <= src.level) return { state, error: 'Solo puedes subir piezas.' };
-  if (!canPlaceAt(state.board, dest)) return { state, error: 'Destino inválido.' };
+  // Validate destination with source removed: cannot use the source as one of the supports
+  if (!isEmpty(state.board, dest)) return { state, error: 'Destino inválido (ocupado).' };
+  const temp = setCell(state.board, src, null);
+  if (!isSupported(temp, dest)) return { state, error: 'Destino inválido (sin soporte suficiente).' };
 
   const before = cloneBoard(state.board);
   let board = setCell(state.board, src, null);
