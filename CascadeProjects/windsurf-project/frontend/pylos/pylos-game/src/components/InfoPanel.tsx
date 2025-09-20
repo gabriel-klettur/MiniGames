@@ -11,13 +11,18 @@ export interface InfoPanelProps {
    * screen position for the flying animation from panel to board.
    */
   currentPieceRef?: MutableRefObject<HTMLSpanElement | null> | RefObject<HTMLSpanElement>;
+  /**
+   * Refs to each player's reserve piece icon (left/right), used as animation origins.
+   */
+  reserveLightRef?: MutableRefObject<HTMLSpanElement | null> | RefObject<HTMLSpanElement>;
+  reserveDarkRef?: MutableRefObject<HTMLSpanElement | null> | RefObject<HTMLSpanElement>;
 }
 
 /**
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * El botón "Terminar recuperación" sólo aparece cuando la fase es 'recover'.
  */
-function InfoPanel({ state, onFinishRecovery, currentPieceRef }: InfoPanelProps) {
+function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
   const { currentPlayer, reserves, phase } = state;
 
   return (
@@ -31,6 +36,7 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef }: InfoPanelProps)
             ].join(' ')}
             title="Claras (L) en reserva"
             aria-label="Claras (L) en reserva"
+            ref={reserveLightRef ?? undefined}
           >
             <img
               src={bolaA}
@@ -69,6 +75,7 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef }: InfoPanelProps)
             ].join(' ')}
             title="Oscuras (D) en reserva"
             aria-label="Oscuras (D) en reserva"
+            ref={reserveDarkRef ?? undefined}
           >
             <img
               src={bolaB}
