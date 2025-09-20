@@ -16,9 +16,11 @@ import MoveLog from './components/MoveLog';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
 import IAPanel from './components/IAPanel';
+import IAUserPanel from './components/IAUserPanel';
 import { computeBestMoveAsync } from './ia';
 import { applyMove } from './ia/moves';
 import type { AIMove } from './ia/moves';
+import FootPanel from './components/FootPanel';
 
 function App() {
   type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
@@ -32,6 +34,10 @@ function App() {
   const [showTools, setShowTools] = useState<boolean>(false);
   // IA panel toggle y parámetros (profundidad y límite de tiempo)
   const [showIA, setShowIA] = useState<boolean>(false);
+  // Historial de movimientos (inicialmente oculto)
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  // FasePanel (inicialmente oculto)
+  const [showFases, setShowFases] = useState<boolean>(false);
   const [iaDepth, setIaDepth] = useState<number>(3);
   const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>('auto');
   const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(1.8);
@@ -53,6 +59,7 @@ function App() {
   const [flying, setFlying] = useState<null | { from: Rect; to: Rect; imgSrc: string; destKey: string }>(null);
   const [pendingState, setPendingState] = useState<GameState | null>(null);
   const [pendingLog, setPendingLog] = useState<MoveEntry | null>(null);
+  const pendingApplyRef = useRef<{ pushHistory: boolean; clearRedo: boolean }>({ pushHistory: true, clearRedo: true });
 
   // Logging centralizado por useGameLogger (incluye log inicial)
 
@@ -110,42 +117,160 @@ function App() {
     }
   };
 
-  // Undo last move: restore previous state from history
+  // Undo last move: restore previous state from history WITH animation when possible
   const onUndo = () => {
     if (flying || autoRunningRef.current) return;
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      const prev = h[h.length - 1];
-      // Apply without recording a new history entry
-      setRedo((r) => [...r, state]);
-      // Move last log entry to redoMoves as well
-      setMoves((m) => {
-        if (m.length === 0) return m;
-        const last = m[m.length - 1];
-        setRedoMoves((rm) => [...rm, last]);
-        return m.slice(0, -1);
-      });
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    const lastLog = moves.length > 0 ? moves[moves.length - 1] : undefined;
+
+    // Update stacks
+    setHistory((h) => h.slice(0, -1));
+    setRedo((r) => [...r, state]);
+    if (lastLog) {
+      setRedoMoves((rm) => [...rm, lastLog]);
+      setMoves((m) => m.slice(0, -1));
+    }
+
+    // Try to animate inverse of lastLog
+    let fromRect: Rect | null = null;
+    let toRect: Rect | null = null;
+    let imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB; // default; will use lastLog.player if present
+    let appearKey = '';
+    if (lastLog) {
+      const p = lastLog.player;
+      imgSrc = p === 'L' ? bolaA : bolaB;
+      if (lastLog.text.startsWith('colocar ')) {
+        const key = lastLog.text.replace('colocar ', '').trim();
+        const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+        const srcRect = srcBtn?.getBoundingClientRect();
+        const destEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+        const destRect = destEl?.getBoundingClientRect();
+        if (srcRect && destRect) {
+          fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+          toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+          appearKey = key; // harmless; appear after removal
+        }
+      } else if (lastLog.text.startsWith('subir ')) {
+        // format: subir src -> dest
+        const rest = lastLog.text.replace('subir ', '').trim();
+        const [src, dst] = rest.split('->').map((s) => s.trim());
+        const dstBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${dst}"]`);
+        const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${src}"]`);
+        const dRect = dstBtn?.getBoundingClientRect();
+        const sRect = srcBtn?.getBoundingClientRect();
+        if (dRect && sRect) {
+          // Undo goes from dest back to src
+          fromRect = { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height };
+          toRect = { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height };
+          appearKey = src;
+        }
+      } else if (lastLog.text.startsWith('recuperar ')) {
+        const key = lastLog.text.replace('recuperar ', '').trim();
+        const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+        const destRect = destBtn?.getBoundingClientRect();
+        const srcEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+        const srcRect = srcEl?.getBoundingClientRect();
+        if (srcRect && destRect) {
+          // Undo recovery: bring piece back from reserve to board
+          fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+          toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+          appearKey = key;
+        }
+      }
+    }
+
+    if (fromRect && toRect) {
+      setPendingState(prev);
+      setPendingLog(null);
+      // For UNDO animation we already updated history/redo stacks above
+      pendingApplyRef.current = { pushHistory: false, clearRedo: false };
+      setFlying({ from: fromRect, to: toRect, imgSrc, destKey: appearKey });
+    } else {
+      // Fallback: apply immediately without animation
       updateAndCheck(prev, false, false);
-      return h.slice(0, -1);
-    });
+    }
   };
 
-  // Redo last undone move
+  // Redo last undone move WITH animation when possible
   const onRedo = () => {
     if (flying || autoRunningRef.current) return;
+    let redoLog: MoveEntry | undefined = undefined;
     setRedo((r) => {
       if (r.length === 0) return r;
       const next = r[r.length - 1];
-      // Push current into history and apply next without clearing redo (we slice it manually)
+      // Push current into history
       setHistory((h) => [...h, state]);
-      // Bring back last redo log entry to main moves
+      // Bring back last redo log entry to main moves and capture it
       setRedoMoves((rm) => {
         if (rm.length === 0) return rm;
         const last = rm[rm.length - 1];
+        redoLog = last;
         setMoves((m) => [...m, last]);
         return rm.slice(0, -1);
       });
-      updateAndCheck(next, false, false);
+
+      // Helper to try measurement and animate; retries once on next frame
+      const tryAnimate = (retry: boolean) => {
+        let fromRect: Rect | null = null;
+        let toRect: Rect | null = null;
+        let imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        let appearKey = '';
+        if (redoLog) {
+          const p = redoLog.player;
+          imgSrc = p === 'L' ? bolaA : bolaB;
+          if (redoLog.text.startsWith('colocar ')) {
+            const key = redoLog.text.replace('colocar ', '').trim();
+            const srcEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+            const srcRect = srcEl?.getBoundingClientRect();
+            const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+            const destRect = destBtn?.getBoundingClientRect();
+            if (srcRect && destRect) {
+              fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+              toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+              appearKey = key;
+            }
+          } else if (redoLog.text.startsWith('subir ')) {
+            const rest = redoLog.text.replace('subir ', '').trim();
+            const [src, dst] = rest.split('->').map((s) => s.trim());
+            const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${src}"]`);
+            const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${dst}"]`);
+            const sRect = srcBtn?.getBoundingClientRect();
+            const dRect = destBtn?.getBoundingClientRect();
+            if (sRect && dRect) {
+              fromRect = { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height };
+              toRect = { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height };
+              appearKey = dst;
+            }
+          } else if (redoLog.text.startsWith('recuperar ')) {
+            const key = redoLog.text.replace('recuperar ', '').trim();
+            const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+            const srcRect = srcBtn?.getBoundingClientRect();
+            const destEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+            const destRect = destEl?.getBoundingClientRect();
+            if (srcRect && destRect) {
+              fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+              toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+              appearKey = key;
+            }
+          }
+        }
+
+        if (fromRect && toRect) {
+          setPendingState(next);
+          setPendingLog(redoLog ?? null);
+          pendingApplyRef.current = { pushHistory: false, clearRedo: false };
+          setFlying({ from: fromRect, to: toRect, imgSrc, destKey: appearKey });
+        } else if (!retry) {
+          // Retry once on next animation frame
+          requestAnimationFrame(() => tryAnimate(true));
+        } else {
+          updateAndCheck(next, false, false);
+        }
+      };
+
+      tryAnimate(false);
+
       return r.slice(0, -1);
     });
   };
@@ -172,6 +297,7 @@ function App() {
           const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
           setPendingState(res.state);
           setPendingLog(log);
+          pendingApplyRef.current = { pushHistory: true, clearRedo: true };
           setFlying({ from, to, imgSrc, destKey: key });
         } else {
           // Fallback if we cannot measure DOM positions
@@ -222,7 +348,6 @@ function App() {
       const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
       const destRect = destBtn?.getBoundingClientRect();
       const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `colocar ${key}` };
-
       if (originRect && destRect) {
         const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
         const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
@@ -231,6 +356,7 @@ function App() {
         setFlying({ from, to, imgSrc, destKey: key });
         setPendingState(placed.state);
         setPendingLog(log);
+        pendingApplyRef.current = { pushHistory: true, clearRedo: true };
       } else {
         // Fallback: if we fail to measure, update immediately
         setAppearKeys(new Set([key]));
@@ -374,6 +500,9 @@ function App() {
 
   const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current;
   const [iaBusy, setIaBusy] = useState<boolean>(false);
+  // Undo/Redo availability flags (used in board actions panel)
+  const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
+  const canRedo = redo.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
   const [iaProgress, setIaProgress] = useState<{ depth: number; score: number } | null>(null);
   // Últimos resultados para visualización
   const [iaEval, setIaEval] = useState<number | null>(null);
@@ -438,6 +567,7 @@ function App() {
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
             setPendingState(nextState);
             setPendingLog({ player: aiPlayer, source: 'IA', text: `colocar ${key}` });
+            pendingApplyRef.current = { pushHistory: true, clearRedo: true };
             setFlying({ from, to, imgSrc, destKey: key });
           } else {
             // Fallback si no podemos medir
@@ -459,6 +589,7 @@ function App() {
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
             setPendingState(nextState);
             setPendingLog({ player: aiPlayer, source: 'IA', text: `subir ${srcKey} -> ${destKey}` });
+            pendingApplyRef.current = { pushHistory: true, clearRedo: true };
             setFlying({ from, to, imgSrc, destKey });
           } else {
             // Fallback si no podemos medir
@@ -492,18 +623,15 @@ function App() {
     <div className="app">
       <HeaderPanel
         onNewGame={onNewGame}
-        onUndo={onUndo}
-        canUndo={history.length > 0 && !flying && !autoRunningRef.current && !iaBusy}
-        onRedo={onRedo}
-        canRedo={redo.length > 0 && !flying && !autoRunningRef.current && !iaBusy}
         showTools={showTools}
         onToggleDev={() => setShowTools((v) => !v)}
         showIA={showIA}
         onToggleIA={() => setShowIA((v) => !v)}
+        showIAToggle={true}
+        showDevToggle={false}
       />
       {showIA && (
-        <IAPanel
-          state={state}
+        <IAUserPanel
           depth={iaDepth}
           onChangeDepth={setIaDepth}
           onAIMove={onAIMove}
@@ -512,30 +640,7 @@ function App() {
           timeSeconds={iaTimeSeconds}
           onChangeTimeMode={setIaTimeMode}
           onChangeTimeSeconds={setIaTimeSeconds}
-          busy={iaBusy}
-          progress={iaProgress}
-          evalScore={iaEval}
-          depthReached={iaDepthReached}
-          pv={iaPV}
-          rootMoves={iaRootMoves}
-          nodes={iaNodes}
-          elapsedMs={iaElapsedMs}
-          nps={iaNps}
-          rootPlayer={iaRootPlayer ?? undefined}
-          moving={!!flying}
         />
-      )}
-      {showTools && (
-        <DevToolsPanel
-          onToggleBoardMode={toggleBoardMode}
-          onToggleRules={() => setShowRules((v) => !v)}
-          boardMode={boardMode}
-          debugOn={debugHitTest}
-          onToggleDebug={() => setDebugHitTest((v) => !v)}
-        />
-      )}
-      {showTools && (
-        <FasePanel state={state} gameOverText={gameOver} />
       )}
       {showRules && (
         <RulesPanel />
@@ -561,7 +666,76 @@ function App() {
           viewMode={boardMode}
           debugHitTest={debugHitTest}
         />
-        <MoveLog moves={moves} />
+        {/* Board actions: Undo / Redo (icon-only) */}
+        <div className="panel board-actions" role="group" aria-label="Acciones del tablero">
+          <div className="row actions">
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              aria-label="Deshacer última jugada"
+              title="Deshacer"
+            >
+              <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5 4 12l7 7v-4h5a4 4 0 0 0 0-8h-5V5z"/></svg>
+              <span className="sr-only">Deshacer</span>
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              aria-label="Rehacer jugada"
+              title="Rehacer"
+            >
+              <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 5 20 12l-7 7v-4H8a4 4 0 0 1 0-8h5V5z"/></svg>
+              <span className="sr-only">Rehacer</span>
+            </button>
+          </div>
+        </div>
+
+        {showHistory && (
+          <MoveLog moves={moves} />
+        )}
+        {showFases && (
+          <FasePanel state={state} gameOverText={gameOver} />
+        )}
+        {showTools && (
+          <DevToolsPanel
+            onToggleBoardMode={toggleBoardMode}
+            onToggleRules={() => setShowRules((v) => !v)}
+            boardMode={boardMode}
+            debugOn={debugHitTest}
+            onToggleDebug={() => setDebugHitTest((v) => !v)}
+            showIA={showIA}
+            onToggleIA={() => setShowIA((v) => !v)}
+            showHistory={showHistory}
+            onToggleHistory={() => setShowHistory((v) => !v)}
+            showFases={showFases}
+            onToggleFases={() => setShowFases((v) => !v)}
+            fullWidth
+            iaPanel={(
+              <IAPanel
+                state={state}
+                depth={iaDepth}
+                onChangeDepth={setIaDepth}
+                onAIMove={onAIMove}
+                disabled={aiDisabled || iaBusy}
+                timeMode={iaTimeMode}
+                timeSeconds={iaTimeSeconds}
+                onChangeTimeMode={setIaTimeMode}
+                onChangeTimeSeconds={setIaTimeSeconds}
+                busy={iaBusy}
+                progress={iaProgress}
+                evalScore={iaEval}
+                depthReached={iaDepthReached}
+                pv={iaPV}
+                rootMoves={iaRootMoves}
+                nodes={iaNodes}
+                elapsedMs={iaElapsedMs}
+                nps={iaNps}
+                rootPlayer={iaRootPlayer ?? undefined}
+                moving={!!flying}
+              />
+            )}
+          />
+        )}
         {gameOver && (
           <div className="gameover-banner" role="status" aria-live="polite">
             <div className="gameover-banner__text">{gameOver}</div>
@@ -582,14 +756,20 @@ function App() {
             if (pendingState) {
               // trigger a small appear effect on the destination cell
               setAppearKeys(new Set([flying.destKey]));
-              updateAndCheck(pendingState, true, true, pendingLog ?? undefined);
+              const { pushHistory, clearRedo } = pendingApplyRef.current;
+              updateAndCheck(pendingState, pushHistory, clearRedo, pendingLog ?? undefined);
             }
             setPendingState(null);
             setPendingLog(null);
+            pendingApplyRef.current = { pushHistory: true, clearRedo: true };
             setFlying(null);
           }}
         />
       )}
+      <FootPanel
+        showTools={showTools}
+        onToggleDev={() => setShowTools((v) => !v)}
+      />
     </div>
   );
 }

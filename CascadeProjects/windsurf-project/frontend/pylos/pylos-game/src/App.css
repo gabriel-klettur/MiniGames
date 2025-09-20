@@ -155,6 +155,9 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
   -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  display: inline-flex; /* alinear icono + label */
+  align-items: center;
+  gap: 6px;
 }
 .header-bar .header-actions button:hover { filter: brightness(1.1); }
 .header-bar .header-actions button:focus-visible {
@@ -168,6 +171,28 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 .header-bar .btn-img img { height: 42px; }
 .header-bar .btn-img { margin-right: 4px; }
+
+/* Header button icon styling */
+.header-btn__icon {
+  display: inline-block;
+  color: var(--text);
+  opacity: 0.95;
+  pointer-events: none;
+}
+.header-btn__label { line-height: 1; }
+
+/* Utility: screen-reader only (for icon-only buttons) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* Slightly tighter vertical rhythm on wide screens */
 @media (min-width: 1024px) {
@@ -263,6 +288,19 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .gameover-banner__actions {
   display: inline-flex;
   align-items: center;
+}
+
+/* Board actions (Undo/Redo) under the board */
+.board-actions {
+  align-self: center; /* center panel under the board */
+  margin-top: 8px;
+  /* Remove panel chrome: no background, no border, no shadow/blur, no padding */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
 }
 
 /* Debugging helpers: enable light outlines and translucent overlays to visualize hit-testing */
@@ -750,3 +788,108 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
   transform: translateY(-1px);
   color: var(--accent);
 }
+
+/* === FootPanel (floating Dev button) ====================================== */
+.foot-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 0; /* pegado al borde inferior */
+  padding: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  z-index: 1000; /* por debajo del DevToolsPanel (1001) */
+  pointer-events: none; /* evita capturar eventos fuera del botón */
+}
+.foot-panel__btn {
+  pointer-events: auto; /* el botón sí recibe clicks */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-radius: 9999px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.65);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  transition: filter 140ms ease, transform 120ms ease, background-color 160ms ease;
+}
+.foot-panel__btn:hover { filter: brightness(1.07); }
+.foot-panel__btn:active { transform: translateY(0.5px); filter: brightness(0.98); }
+.foot-panel__btn:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.foot-panel__btn.is-active {
+  background: rgba(17, 24, 39, 0.78);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.foot-panel__icon { display: inline-block; color: var(--text); opacity: 0.9; }
+.foot-panel__label { line-height: 1; }
+
+/* === DevToolsPanel refinements ============================================ */
+.devtools-panel.is-fullwidth {
+  width: 100%;
+}
+.devtools-panel {
+  margin-top: 25px; /* push panel further down under the board */
+}
+.devtools-actions {
+  justify-content: center; /* center actions on wide screens */
+  gap: 8px;                /* already set globally; keep for clarity */
+  flex-wrap: wrap;
+}
+.devtools-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.devtools-btn__icon {
+  display: inline-block;
+  color: var(--text);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.devtools-section {
+  margin-top: 40px;
+}
+
+/* === IAUserPanel (user-facing quick AI controls under header) ============ */
+.iauser-panel {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;              /* center panel under header */
+  text-align: center;
+}
+.iauser-panel .row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.iauser-panel label {
+  color: var(--muted);
+}
+/* Make the difficulty select visually consistent with glass/pill controls */
+.iauser-panel select {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.iauser-panel select:hover {
+  filter: brightness(1.07);
+}
+.iauser-panel select:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 2px;
+}
+/* Tighten the spacing specifically for this compact panel */
+.iauser-panel .row + .row { margin-top: 6px; }
