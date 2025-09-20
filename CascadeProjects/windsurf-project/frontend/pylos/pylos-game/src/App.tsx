@@ -10,7 +10,7 @@ import { useBoardMode } from './hooks/useBoardMode';
 import { useGameLogger } from './hooks/useGameLogger';
 import type { Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
-import { posKey } from './game/board';
+import { posKey, getCell, isFree } from './game/board';
 
 function App() {
   const [state, setState] = useState(() => initialState());
@@ -72,7 +72,7 @@ function App() {
     }
 
     if (state.phase === 'selectMoveDest') {
-      // allow switching source by clicking another free own piece
+      // allow switching source by clicking the same source (to cancel)
       const srcKey = state.selectedSource ? posKey(state.selectedSource) : '';
       if (state.selectedSource && posKey(pos) === srcKey) {
         const res = cancelMoveSelection(state);
@@ -80,6 +80,15 @@ function App() {
         return;
       }
 
+      // allow switching to another own free piece as the new source
+      const owner = getCell(state.board, pos);
+      if (owner === state.currentPlayer && isFree(state.board, pos)) {
+        const sel = selectMoveSource(state, pos);
+        if (!sel.error) updateAndCheck(sel.state);
+        return;
+      }
+
+      // otherwise, try to move to a highlighted destination
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
         setAppearKeys(new Set([posKey(pos)]));

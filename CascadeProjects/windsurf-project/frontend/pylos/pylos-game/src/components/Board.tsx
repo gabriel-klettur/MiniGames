@@ -31,7 +31,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const isAppearing = appearKeys?.has(key) ?? false;
     const isFlashing = flashKeys?.has(key) ?? false;
     // A cell is clickable only if it's a highlighted destination, or it's a free own piece (to select/move)
-    const canClickOwnFreePiece = !!cell && state.currentPlayer === cell && free && state.phase === 'play';
+    const canClickOwnFreePiece = !!cell && state.currentPlayer === cell && free && (state.phase === 'play' || state.phase === 'selectMoveDest');
     const canClickEmptyBase = !cell && state.phase === 'play' && (viewMode !== 'pyramid' || pos.level === 0) && supported;
     const interactive = isHighlighted || canClickOwnFreePiece || canClickEmptyBase;
     const canDrag = !!cell && state.currentPlayer === cell && free && state.phase !== 'recover';
@@ -60,6 +60,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
               'piece',
               cell === 'L' ? 'piece--light' : 'piece--dark',
               free ? 'piece--free' : 'piece--fixed',
+              isSelected ? 'piece--selected' : '',
               isAppearing ? 'piece--appear' : '',
             ].join(' ')}
             draggable={canDrag}
@@ -129,6 +130,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
             <div
               key={`overlay-${level}`}
               className={["level", "level--overlay"].join(' ')}
+              data-overlay-cols={size}
               style={{
                 gridTemplateColumns: `repeat(${size}, var(--cell-size))`,
                 justifyContent: 'center',

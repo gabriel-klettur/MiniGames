@@ -18,24 +18,6 @@ function InfoPanel({ state, onFinishRecovery }: InfoPanelProps) {
     <section className="info-panel" aria-label="Panel de información y acciones">
       <div className="row grid-3">
         <div>
-          <strong>Turno:</strong>{' '}
-          <span
-            className={[
-              'piece',
-              currentPlayer === 'L' ? 'piece--light' : 'piece--dark',
-            ].join(' ')}
-            title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-            aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-          >
-            <img
-              src={currentPlayer === 'L' ? bolaA : bolaB}
-              alt={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
-              className="piece__img"
-              draggable={false}
-            />
-          </span>
-        </div>
-        <div>
           <span
             className={[
               'piece',
@@ -52,6 +34,25 @@ function InfoPanel({ state, onFinishRecovery }: InfoPanelProps) {
             />
           </span>
           <span className="reserve-count">{reserves.L}</span>
+        </div>
+        <div>
+          <strong></strong>{' '}
+          <span
+            className={[
+              'piece',
+              currentPlayer === 'L' ? 'piece--light' : 'piece--dark',
+              'piece--current',
+            ].join(' ')}
+            title={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+            aria-label={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+          >
+            <img
+              src={currentPlayer === 'L' ? bolaA : bolaB}
+              alt={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+              className="piece__img"
+              draggable={false}
+            />
+          </span>
         </div>
         <div>
           <span

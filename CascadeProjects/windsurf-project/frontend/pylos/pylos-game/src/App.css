@@ -29,7 +29,7 @@
   /* Piece slightly smaller than the cell to leave visual breathing room */
   --piece-size: calc(var(--cell-size) - 20px);
   /* Scale factor for piece visuals inside board cells (1.0 = normal) */
-  --piece-scale: 1.4; /* +10% */
+  --piece-scale: 1.55; /*
   /* Scaled geometry */
   --cell-radius-base: 12px;
   --cell-radius: calc(var(--cell-radius-base) * var(--scale));
@@ -164,6 +164,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .info-panel .row.grid-3 .piece { width: 20px; height: 20px; border-width: 1px; }
 .info-panel .row.grid-3 > div { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .info-panel .row.grid-3 .piece { vertical-align: middle; }
+.info-panel .row.grid-3 .piece--current { width: 28px; height: 28px; }
 .info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
@@ -251,6 +252,22 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   transform: translate(-50%, -50%);
 }
 
+/* Fine-tune alignment: in pyramid mode, nudge the first upper level (3x3) slightly upwards */
+.board--pyramid .level--board > .level--overlay[data-overlay-cols="3"] {
+  /* Move up a few pixels; scaled to respect global --scale */
+  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+}
+
+/* Nudge second upper level (2x2) upward slightly */
+.board--pyramid .level--board > .level--overlay[data-overlay-cols="2"] {
+  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+}
+
+/* Nudge top level (1x1) upward as well */
+.board--pyramid .level--board > .level--overlay[data-overlay-cols="1"] {
+  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+}
+
 /* re-enable interaction on actual cells inside overlays */
 .level--overlay .cell { pointer-events: auto; }
 
@@ -295,7 +312,11 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   box-shadow: 0 0 0 var(--outline-w) rgba(255, 255, 255, 0.55) inset;
 }
 .cell--supported { background: #0f1b33; }
-.cell--selected { outline: none; box-shadow: 0 0 0 var(--outline-w) #3b82f6 inset; }
+.cell--selected { outline: none; box-shadow: 0 0 0 var(--outline-w) #f59e0b inset; }
+/* Selected piece ring (yellow). Applied on the piece span to ensure it's visible above the cell */
+.piece--selected {
+  box-shadow: 0 0 0 var(--outline-w) #f59e0b inset; /* amber-500 */
+}
 
 /* Generic piece (used in InfoPanel) keeps normal flow */
 .piece {
