@@ -15,7 +15,9 @@ import FlyingPiece from './components/FlyingPiece';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
 import IAPanel from './components/IAPanel';
-import { computeBestNextStateAsync } from './ia';
+import { computeBestMoveAsync } from './ia';
+import { applyMove } from './ia/moves';
+import type { AIMove } from './ia/moves';
 
 function App() {
   const [state, setState] = useState(() => initialState());
@@ -282,10 +284,29 @@ function App() {
 
   const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current;
   const [iaBusy, setIaBusy] = useState<boolean>(false);
+  const [iaProgress, setIaProgress] = useState<{ depth: number; score: number } | null>(null);
+  // Últimos resultados para visualización
+  const [iaEval, setIaEval] = useState<number | null>(null);
+  const [iaDepthReached, setIaDepthReached] = useState<number | null>(null);
+  const [iaPV, setIaPV] = useState<AIMove[]>([]);
+  const [iaRootMoves, setIaRootMoves] = useState<Array<{ move: AIMove; score: number }>>([]);
+  const [iaNodes, setIaNodes] = useState<number>(0);
+  const [iaElapsedMs, setIaElapsedMs] = useState<number>(0);
+  const [iaNps, setIaNps] = useState<number>(0);
+  const [iaRootPlayer, setIaRootPlayer] = useState<'L' | 'D' | null>(null);
   const iaAbortRef = useRef<AbortController | null>(null);
   const onAIMove = async () => {
     if (aiDisabled || iaBusy) return;
     setIaBusy(true);
+    setIaProgress(null);
+    setIaEval(null);
+    setIaDepthReached(null);
+    setIaPV([]);
+    setIaRootMoves([]);
+    setIaNodes(0);
+    setIaElapsedMs(0);
+    setIaNps(0);
+    setIaRootPlayer(state.currentPlayer);
     const ac = new AbortController();
     iaAbortRef.current = ac;
     try {
@@ -293,17 +314,71 @@ function App() {
       const timeMs = iaTimeMode === 'auto'
         ? (iaDepth > 5 ? 1800 : 800)
         : Math.max(0, Math.min(30, iaTimeSeconds)) * 1000;
-      const next = await computeBestNextStateAsync(state, {
+      const res = await computeBestMoveAsync(state, {
         depth: iaDepth,
         timeMs,
         signal: ac.signal,
+        onProgress: (info) => setIaProgress(info),
       });
-      updateAndCheck(next);
+      // Guardar métricas y PV para visualización SIEMPRE (aunque no haya jugada)
+      setIaEval(res.score);
+      setIaDepthReached(res.depthReached);
+      setIaPV(res.pv);
+      setIaRootMoves(res.rootMoves);
+      setIaNodes(res.nodes);
+      setIaElapsedMs(res.elapsedMs);
+      setIaNps(res.nps);
+      if (res.move) {
+        // Preparar animaciones acorde al tipo de jugada IA
+        if (res.move.kind === 'place') {
+          const dest = res.move.dest;
+          const key = posKey(dest);
+          // Calcular origen: icono de reservas del jugador raíz que estaba pensando
+          const originEl = (iaRootPlayer ?? state.currentPlayer) === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+          const originRect = originEl?.getBoundingClientRect();
+          // Calcular destino: botón de celda
+          const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+          const destRect = destBtn?.getBoundingClientRect();
+          const imgSrc = (iaRootPlayer ?? state.currentPlayer) === 'L' ? bolaA : bolaB;
+          const nextState = applyMove(state, res.move);
+          if (originRect && destRect) {
+            const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
+            const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+            setPendingState(nextState);
+            setFlying({ from, to, imgSrc, destKey: key });
+          } else {
+            // Fallback si no podemos medir
+            setAppearKeys(new Set([key]));
+            updateAndCheck(nextState);
+          }
+        } else if (res.move.kind === 'lift') {
+          // Animar elevación: volar desde src hasta dest con la pieza del jugador actual
+          const srcKey = posKey(res.move.src);
+          const destKey = posKey(res.move.dest);
+          const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${srcKey}"]`);
+          const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${destKey}"]`);
+          const srcRect = srcBtn?.getBoundingClientRect();
+          const destRect = destBtn?.getBoundingClientRect();
+          const imgSrc = (iaRootPlayer ?? state.currentPlayer) === 'L' ? bolaA : bolaB;
+          const nextState = applyMove(state, res.move);
+          if (srcRect && destRect) {
+            const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+            const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+            setPendingState(nextState);
+            setFlying({ from, to, imgSrc, destKey });
+          } else {
+            // Fallback si no podemos medir
+            setAppearKeys(new Set([destKey]));
+            updateAndCheck(nextState);
+          }
+        }
+      }
     } catch (err) {
       // ignorar AbortError o errores transitorios
     } finally {
       iaAbortRef.current = null;
       setIaBusy(false);
+      setIaProgress(null);
     }
   };
 
@@ -339,6 +414,17 @@ function App() {
           timeSeconds={iaTimeSeconds}
           onChangeTimeMode={setIaTimeMode}
           onChangeTimeSeconds={setIaTimeSeconds}
+          busy={iaBusy}
+          progress={iaProgress}
+          evalScore={iaEval}
+          depthReached={iaDepthReached}
+          pv={iaPV}
+          rootMoves={iaRootMoves}
+          nodes={iaNodes}
+          elapsedMs={iaElapsedMs}
+          nps={iaNps}
+          rootPlayer={iaRootPlayer ?? undefined}
+          moving={!!flying}
         />
       )}
       {showTools && (

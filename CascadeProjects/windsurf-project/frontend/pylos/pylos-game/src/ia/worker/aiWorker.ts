@@ -1,6 +1,7 @@
 /* eslint-disable no-restricted-globals */
 import type { GameState } from '../../game/types';
 import { bestMove } from '../search';
+import type { SearchStats } from '../search';
 
 // Messages from main thread
 // { type: 'SEARCH', state, depth?: number, timeMs?: number }
@@ -23,18 +24,21 @@ self.onmessage = (e: MessageEvent) => {
   const timeMs: number | undefined = typeof data.timeMs === 'number' ? Math.max(50, data.timeMs) : undefined;
 
   const start = performance.now();
-  let best: { move: any; score: number } = { move: null, score: -Infinity };
+  let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }> } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
   let reached = 0;
+  let nodes = 0;
 
   for (let d = 1; d <= depthMax; d++) {
     if (aborted) return;
-    const cur = bestMove(state, d);
+    const stats: SearchStats = { nodes: 0 };
+    const cur = bestMove(state, d, stats);
+    nodes += stats.nodes;
     if (cur.move !== null) {
-      best = cur;
+      best = cur as any;
       reached = d;
       // Optional: post progress
       // @ts-ignore
-      self.postMessage({ type: 'PROGRESS', depth: d, score: cur.score });
+      self.postMessage({ type: 'PROGRESS', depth: d, score: cur.score, nodes });
     }
     if (timeMs !== undefined) {
       const elapsed = performance.now() - start;
@@ -43,6 +47,8 @@ self.onmessage = (e: MessageEvent) => {
   }
 
   if (aborted) return;
+  const elapsedMs = performance.now() - start;
+  const nps = elapsedMs > 0 ? (nodes * 1000) / elapsedMs : nodes;
   // @ts-ignore
-  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached });
+  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached, pv: best.pv ?? [], rootMoves: best.rootMoves ?? [], nodes, elapsedMs, nps });
 };

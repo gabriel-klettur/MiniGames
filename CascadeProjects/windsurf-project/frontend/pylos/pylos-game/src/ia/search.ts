@@ -22,57 +22,67 @@ function orderMoves(moves: AIMove[]): AIMove[] {
     });
 }
 
-function alphabeta(state: GameState, depth: number, alpha: number, beta: number, me: Player): number {
+export interface SearchStats { nodes: number }
+export interface SearchResult { score: number; pv: AIMove[] }
+
+function alphabeta(state: GameState, depth: number, alpha: number, beta: number, me: Player, stats?: SearchStats): SearchResult {
+  if (stats) stats.nodes++;
   const maximizing = state.currentPlayer === me;
   if (depth === 0) {
-    return evaluate(state, me);
+    return { score: evaluate(state, me), pv: [] };
   }
 
   const moves = orderMoves(generateAllMoves(state));
   if (moves.length === 0) {
     // No legal moves; evaluate position as is
-    return evaluate(state, me);
+    return { score: evaluate(state, me), pv: [] };
   }
 
   if (maximizing) {
-    let value = -Infinity;
+    let best: SearchResult | null = null;
     for (const m of moves) {
       const nxt = applyMove(state, m);
-      value = Math.max(value, alphabeta(nxt, depth - 1, alpha, beta, me));
-      alpha = Math.max(alpha, value);
+      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats);
+      if (!best || child.score > best.score) {
+        best = { score: child.score, pv: [m, ...child.pv] };
+      }
+      alpha = Math.max(alpha, best!.score);
       if (alpha >= beta) break;
     }
-    return value;
+    return best ?? { score: -Infinity, pv: [] };
   } else {
-    let value = +Infinity;
+    let best: SearchResult | null = null;
     for (const m of moves) {
       const nxt = applyMove(state, m);
-      value = Math.min(value, alphabeta(nxt, depth - 1, alpha, beta, me));
-      beta = Math.min(beta, value);
+      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats);
+      if (!best || child.score < best.score) {
+        best = { score: child.score, pv: [m, ...child.pv] };
+      }
+      beta = Math.min(beta, best!.score);
       if (alpha >= beta) break;
     }
-    return value;
+    return best ?? { score: +Infinity, pv: [] };
   }
 }
 
-export function bestMove(state: GameState, depth: number): { move: AIMove | null; score: number } {
+export function bestMove(state: GameState, depth: number, stats?: SearchStats): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
   const me: Player = state.currentPlayer;
   const moves = orderMoves(generateAllMoves(state));
-  if (moves.length === 0) return { move: null, score: evaluate(state, me) };
+  if (moves.length === 0) return { move: null, score: evaluate(state, me), pv: [], rootMoves: [] };
 
-  let best: AIMove | null = null;
-  let bestScore = -Infinity;
+  let best: { move: AIMove; score: number; pv: AIMove[] } | null = null;
   let alpha = -Infinity;
   const beta = +Infinity;
+  const rootMoves: Array<{ move: AIMove; score: number }> = [];
 
   for (const m of moves) {
     const nxt = applyMove(state, m);
-    const score = alphabeta(nxt, Math.max(0, depth - 1), alpha, beta, me);
-    if (score > bestScore) {
-      bestScore = score;
-      best = m;
-      alpha = Math.max(alpha, bestScore);
+    const res = alphabeta(nxt, Math.max(0, depth - 1), alpha, beta, me, stats);
+    rootMoves.push({ move: m, score: res.score });
+    if (!best || res.score > best.score) {
+      best = { move: m, score: res.score, pv: [m, ...res.pv] };
+      alpha = Math.max(alpha, best.score);
     }
   }
-  return { move: best, score: bestScore };
+  return { move: best?.move ?? null, score: best?.score ?? -Infinity, pv: best?.pv ?? [], rootMoves };
 }

@@ -38,10 +38,19 @@ export type ComputeOptions = {
   depth?: number; // 1..5
   timeMs?: number; // optional time budget
   signal?: AbortSignal; // optional cancellation
-  onProgress?: (info: { depth: number; score: number }) => void;
+  onProgress?: (info: { depth: number; score: number; nodes?: number }) => void;
 };
 
-export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{ move: AIMove | null; score: number; depthReached: number }>
+export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{
+  move: AIMove | null;
+  score: number;
+  depthReached: number;
+  pv: AIMove[];
+  rootMoves: Array<{ move: AIMove; score: number }>;
+  nodes: number;
+  elapsedMs: number;
+  nps: number;
+}>
 {
   const worker = ensureWorker();
   const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
@@ -52,14 +61,23 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
     const onMessage = (e: MessageEvent) => {
       const data = e.data || {};
       if (data.type === 'PROGRESS' && opts.onProgress) {
-        opts.onProgress({ depth: data.depth, score: data.score });
+        opts.onProgress({ depth: data.depth, score: data.score, nodes: data.nodes });
         return;
       }
       if (data.type === 'RESULT') {
         if (done) return;
         done = true;
         worker.removeEventListener('message', onMessage);
-        resolve({ move: data.bestMove ?? null, score: data.score, depthReached: data.depthReached ?? depth });
+        resolve({
+          move: data.bestMove ?? null,
+          score: data.score,
+          depthReached: data.depthReached ?? depth,
+          pv: (data.pv ?? []) as AIMove[],
+          rootMoves: (data.rootMoves ?? []) as Array<{ move: AIMove; score: number }>,
+          nodes: data.nodes ?? 0,
+          elapsedMs: data.elapsedMs ?? 0,
+          nps: data.nps ?? 0,
+        });
       }
     };
     worker.addEventListener('message', onMessage);
