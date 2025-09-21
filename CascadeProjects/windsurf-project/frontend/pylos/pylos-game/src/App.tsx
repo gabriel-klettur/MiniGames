@@ -70,11 +70,11 @@ function App() {
   });
   const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>(() => {
     try { const raw = localStorage.getItem(LS_KEYS.ia); if (raw) { const p = JSON.parse(raw); if (p?.timeMode === 'auto' || p?.timeMode === 'manual') return p.timeMode; } } catch {}
-    return 'auto';
+    return 'manual';
   });
   const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(() => {
     try { const raw = localStorage.getItem(LS_KEYS.ia); if (raw) { const p = JSON.parse(raw); if (typeof p?.timeSeconds === 'number') return p.timeSeconds; } } catch {}
-    return 1.8;
+    return 8;
   });
   const [showRules, setShowRules] = useState<boolean>(false);
   // VS IA configuration (null = normal mode)
@@ -175,6 +175,8 @@ function App() {
   const [shadeOnlyAvailable, setShadeOnlyAvailable] = useState<boolean>(true);
   // Modo: sombreado solo en huecos soportados (vacíos) (ON por defecto)
   const [shadeOnlyHoles, setShadeOnlyHoles] = useState<boolean>(true);
+  // Mostrar borde blanco en huecos disponibles (OFF por defecto)
+  const [holeBorders, setHoleBorders] = useState<boolean>(false);
   // Pausa entre pasos de autocolocación final (ms)
   const [autoFillDelayMs, setAutoFillDelayMs] = useState<number>(250);
 
@@ -904,10 +906,6 @@ function App() {
           onChangeDepth={setIaDepth}
           onAIMove={onAIMove}
           disabled={aiDisabled || iaBusy}
-          timeMode={iaTimeMode}
-          timeSeconds={iaTimeSeconds}
-          onChangeTimeMode={setIaTimeMode}
-          onChangeTimeSeconds={setIaTimeSeconds}
           aiAutoplayActive={iaAutoplay}
           onToggleAiAutoplay={() => {
             // toggle y limpiar timer si corresponde
@@ -948,6 +946,7 @@ function App() {
           flashKeys={flashKeys}
           noShade={noShadeEffective}
           shadeOnlyHoles={shadeOnlyHoles}
+          showHoleBorders={holeBorders}
         />
         {/* Board actions: Undo / Redo (icon-only) */}
         <div className="panel board-actions" role="group" aria-label="Acciones del tablero">
@@ -1036,6 +1035,8 @@ function App() {
                 onToggleShadeOnlyAvailable={setShadeOnlyAvailable}
                 shadeOnlyHoles={shadeOnlyHoles}
                 onToggleShadeOnlyHoles={setShadeOnlyHoles}
+                holeBorders={holeBorders}
+                onToggleHoleBorders={setHoleBorders}
                 pieceScale={pieceScale}
                 onChangePieceScale={setPieceScale}
                 appearMs={animAppearMs}

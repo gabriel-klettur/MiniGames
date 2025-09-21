@@ -572,12 +572,13 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   outline: none;
   /* Use a soft semi-transparent white instead of a green border */
   background: rgba(255, 255, 255, 0.28);
-  box-shadow: 0 0 0 var(--outline-w) rgba(255, 255, 255, 0.55) inset;
+  /* No default white border; ring is controlled by .hole-borders rules */
+  box-shadow: none;
 }
 /* Base level needs a more specific selector to override the transparent rule */
 .level--board > .cell.cell--highlight {
   background: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 var(--outline-w) rgba(255, 255, 255, 0.55) inset;
+  box-shadow: none;
 }
 .cell--supported { background: #0f1b33; }
 .cell--selected { outline: none; box-shadow: 0 0 0 var(--outline-w) #f59e0b inset; }
@@ -736,6 +737,22 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   --hole-shadow-ins: rgba(0, 0, 0, 0.15);           /* subtle inner depth */
 }
 
+/* Globally ensure base-level ring is hidden unless explicitly toggled */
+.board:not(.hole-borders) .level--board > .cell {
+  --hole-ring-color: rgba(255, 255, 255, 0.00) !important;
+}
+
+/* Strong override: ensure base-level slots render without ring when hole-borders is off */
+.board:not(.hole-borders) .level--board > .cell::before,
+.board:not(.hole-borders) .level--board > .cell.cell--highlight::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  ) !important;
+}
+
 /* Base level cells become pure containers; avoid border+alpha (iOS varies) */
 .level--board > .cell {
   position: relative;
@@ -810,6 +827,14 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty {
   /* make the inner a bit more visible on overlays */
   --hole-inner-color: rgba(255, 255, 255, 0.22);
+  /* Do NOT set ring color by default; keep it transparent */
+}
+
+/* Enable white ring on available holes only when explicitly toggled */
+.board.hole-borders.shade-only-holes .level--overlay .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty {
   --hole-ring-color: rgba(255, 255, 255, 0.85);
 }
 
@@ -845,8 +870,14 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 
 /* Non-interactive cells: soften even more */
 .level--board > .cell.cell--disabled {
-  --hole-ring-color: rgba(255, 255, 255, 0.16);
+  /* Keep inner subtle but do not force a ring by default */
+  --hole-ring-color: rgba(255, 255, 255, 0.00);
   --hole-inner-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Optionally show a faint ring on disabled cells when toggled */
+.board.hole-borders .level--board > .cell.cell--disabled {
+  --hole-ring-color: rgba(255, 255, 255, 0.16);
 }
 
 /* When a piece is present, do not show the ring (requires :has support) */
@@ -862,22 +893,33 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   background: transparent;
   box-shadow: none;
   --hole-inner-color: rgba(255, 255, 255, 0.30);
+  /* Do not set ring color by default; keep ring hidden unless toggled */
+}
+
+/* Only enable white ring on base-level highlighted holes when toggled */
+.board.hole-borders .level--board > .cell.cell--highlight {
   --hole-ring-color: rgba(255, 255, 255, 0.85);
-  /* Highlight: add visible ring with smooth outer falloff */
-  
 }
 
 /* Override the gradient on highlight to include the ring */
 .level--board > .cell.cell--highlight::before {
+  /* Default: brighter inner only, no ring */
   background: radial-gradient(
     circle at 50% 50%,
-    /* inner brighter fill */
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  );
+}
+
+/* When toggled, re-enable ring on base-level highlight */
+.board.hole-borders .level--board > .cell.cell--highlight::before {
+  background: radial-gradient(
+    circle at 50% 50%,
     var(--hole-inner-color) 60%,
     var(--hole-inner-color) calc(60% + 1px),
-    /* ring core */
     var(--hole-ring-color)   calc(60% + 1px),
     var(--hole-ring-color)   calc(60% + 1px + var(--hole-ring-w)),
-    /* outer falloff for smoother look */
     rgba(255,255,255,0.10)   calc(60% + 1px + var(--hole-ring-w) + 0.5px),
     rgba(0,0,0,0)            calc(60% + 2px + var(--hole-ring-w) + 1px)
   );

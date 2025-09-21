@@ -22,9 +22,11 @@ export interface BoardProps {
   noShade?: { 0?: boolean; 1?: boolean; 2?: boolean; 3?: boolean };
   // Modo: sombreado solo huecos disponibles (celdas soportadas vacías)
   shadeOnlyHoles?: boolean;
+  // Mostrar borde blanco en huecos disponibles (controlado por DevTools UX)
+  showHoleBorders?: boolean;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -108,7 +110,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
       noShade[3] ? 'no-shade-l3' : '',
     ].filter(Boolean).join(' ');
     return (
-      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : "", shadeClasses, shadeOnlyHoles ? 'shade-only-holes' : ''].join(' ').trim()}>
+      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : "", shadeClasses, shadeOnlyHoles ? 'shade-only-holes' : '', showHoleBorders ? 'hole-borders' : ''].join(' ').trim()}>
         {Array.from({ length: LEVELS }).map((_, level) => {
           const size = levelSize(level);
           return (
@@ -138,7 +140,8 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
       noShade[1] ? 'no-shade-l1' : '',
       noShade[2] ? 'no-shade-l2' : '',
       noShade[3] ? 'no-shade-l3' : '',
-      shadeOnlyHoles ? 'shade-only-holes' : ''
+      shadeOnlyHoles ? 'shade-only-holes' : '',
+      showHoleBorders ? 'hole-borders' : ''
     ].join(' ').trim()}>
       <div
         className={["level", "level--board"].join(' ')}

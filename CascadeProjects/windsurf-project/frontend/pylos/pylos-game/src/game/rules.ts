@@ -296,6 +296,11 @@ export function isGameOver(state: GameState): { over: boolean; winner?: Player; 
   if (top !== null) {
     return { over: true, winner: top, reason: 'La cima de la pirámide fue ocupada.' };
   }
+  // 1.5) Durante la fase de recuperación, el jugador activo tiene una acción obligatoria/opcional (recuperar);
+  //      no debe declararse fin de partida aunque no pueda colocar ni mover aún.
+  if (state.phase === 'recover') {
+    return { over: false };
+  }
   // 2) Opponent has no reserves and no movable/free pieces? Official rule says: a player who runs out of balls loses
   // Interpret: If current player must play and has no reserve and no legal moves, then they lose.
   const p = state.currentPlayer;

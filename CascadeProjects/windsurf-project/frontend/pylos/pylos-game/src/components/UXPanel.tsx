@@ -13,6 +13,9 @@ export interface UXPanelProps {
   // Shade only supported (available) holes per cell
   shadeOnlyHoles: boolean;
   onToggleShadeOnlyHoles: (v: boolean) => void;
+  // Show white borders on available holes
+  holeBorders: boolean;
+  onToggleHoleBorders: (v: boolean) => void;
   // Piece scale (only ball size, not board scale)
   pieceScale: number; // e.g., 1.55
   onChangePieceScale: (v: number) => void;
@@ -40,6 +43,7 @@ export default function UXPanel(props: UXPanelProps) {
     onChangeNoShade,
     shadeOnlyAvailable, onToggleShadeOnlyAvailable,
     shadeOnlyHoles, onToggleShadeOnlyHoles,
+    holeBorders, onToggleHoleBorders,
     pieceScale, onChangePieceScale,
     appearMs, flashMs, flyMs,
     onChangeAppearMs, onChangeFlashMs, onChangeFlyMs,
@@ -117,6 +121,16 @@ export default function UXPanel(props: UXPanelProps) {
                 onChange={(e) => onToggleShadeOnlyHoles(e.target.checked)}
               />
               Sombreado solo huecos disponibles
+            </label>
+          </div>
+          <div className="row">
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                checked={holeBorders}
+                onChange={(e) => onToggleHoleBorders(e.target.checked)}
+              />
+              Bordes blancos en huecos disponibles
             </label>
           </div>
           <div className="row" aria-disabled={shadeOnlyAvailable}>
