@@ -1,9 +1,6 @@
 export interface HeaderPanelProps {
   title?: string;
   onNewGame?: () => void;
-  onToggleRules?: () => void;
-  onToggleDev?: () => void;
-  showTools?: boolean;
 }
 
 /**
@@ -12,9 +9,6 @@ export interface HeaderPanelProps {
 export default function HeaderPanel({
   title = 'Quoridor',
   onNewGame = () => {},
-  onToggleRules = () => {},
-  onToggleDev = () => {},
-  showTools = false,
 }: HeaderPanelProps) {
   return (
     <section className="w-full border-b border-white/10 bg-gray-900/70">
@@ -28,26 +22,6 @@ export default function HeaderPanel({
             aria-label="Nueva partida"
           >
             Nueva
-          </button>
-          <button
-            onClick={onToggleRules}
-            className="px-3 py-1.5 rounded-md bg-gray-800 hover:bg-gray-700 text-sm"
-            title="Mostrar/Ocultar reglas"
-            aria-label="Reglas"
-          >
-            Reglas
-          </button>
-          <button
-            onClick={onToggleDev}
-            className={[
-              'px-3 py-1.5 rounded-md text-sm',
-              showTools ? 'bg-blue-700 hover:bg-blue-600' : 'bg-gray-800 hover:bg-gray-700',
-            ].join(' ')}
-            aria-pressed={showTools}
-            title="Mostrar/Ocultar DevTools"
-            aria-label="DevTools"
-          >
-            Dev
           </button>
         </div>
       </div>

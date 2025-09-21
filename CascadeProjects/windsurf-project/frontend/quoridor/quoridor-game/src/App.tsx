@@ -1,16 +1,20 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useAppDispatch, useAppSelector } from './store/hooks.ts'
-import { toggleDarkMode, toggleDevTools, toggleRules, toggleFases, toggleHistory, toggleIA, toggleUX } from './store/uiSlice.ts'
+import { toggleDevTools, toggleRules, toggleFases, toggleHistory, toggleIA, toggleUX } from './store/uiSlice.ts'
 import type { RootState } from './store/index.ts'
+import { movePawn, newGame, placeWall } from './store/gameSlice.ts'
 import HeaderPanel from './components/HeaderPanel.tsx'
 import DevToolsPanel from './components/DevToolsPanel.tsx'
 import FootPanel from './components/FootPanel.tsx'
 import Board from './components/Board.tsx'
 import RulesPanel from './components/RulesPanel.tsx'
+import InfoPanel from './components/InfoPanel.tsx'
+import { legalPawnMoves } from './game/rules.ts'
 
 function App() {
   const dispatch = useAppDispatch()
   const ui = useAppSelector((s: RootState) => s.ui)
+  const game = useAppSelector((s: RootState) => s.game)
   const { darkMode, showDevTools, showRules, showFases, showHistory, showIA, showUX } = ui
 
   // Sincroniza la clase `dark` en <html> con el estado global
@@ -20,24 +24,43 @@ function App() {
   }, [darkMode])
 
   const onNewGame = () => {
-    // TODO: reiniciar estado del juego cuando implementemos el motor
-    console.info('Nueva partida (placeholder)')
+    dispatch(newGame({ size: 9 }))
   }
+
+  const onCellClick = (row: number, col: number) => {
+    dispatch(movePawn({ row, col }))
+  }
+
+  const onWallClick = (o: 'H' | 'V', r: number, c: number) => {
+    dispatch(placeWall({ o, r, c }))
+  }
+
+  const highlightCells = useMemo(() => {
+    return legalPawnMoves(game).map((c) => [c.row, c.col] as [number, number])
+  }, [game])
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <HeaderPanel
         title="Quoridor"
         onNewGame={onNewGame}
-        onToggleRules={() => dispatch(toggleRules())}
-        onToggleDev={() => dispatch(toggleDevTools())}
-        showTools={showDevTools}
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-4 md:grid-cols-12">
         <section className="md:col-span-8 lg:col-span-9 rounded-lg border border-white/10 bg-gray-900/40 p-4">
+          <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />
           <h2 className="text-lg font-medium mb-3">Tablero</h2>
-          <Board className="w-full" />
+          <Board
+            className="w-full"
+            onCellClick={onCellClick}
+            onWallClick={onWallClick}
+            highlightCells={highlightCells}
+            pawns={{
+              L: [game.pawns.L.row, game.pawns.L.col],
+              D: [game.pawns.D.row, game.pawns.D.col],
+            }}
+            walls={game.walls}
+          />
         </section>
 
         <aside className="md:col-span-4 lg:col-span-3 space-y-4">
@@ -60,17 +83,7 @@ function App() {
 
       <FootPanel showTools={showDevTools} onToggleDev={() => dispatch(toggleDevTools())} />
 
-      <footer className="border-t border-white/10 bg-gray-900/60">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs text-gray-400 flex items-center gap-3">
-          <span>© {new Date().getFullYear()} Quoridor — Vite + React + TypeScript + Tailwind + Redux</span>
-          <button
-            className="ml-auto px-3 py-1.5 rounded-md bg-gray-800 hover:bg-gray-700 text-xs"
-            onClick={() => dispatch(toggleDarkMode())}
-          >
-            Tema: {darkMode ? 'Oscuro' : 'Claro'}
-          </button>
-        </div>
-      </footer>
+      {/* Footer eliminado según solicitud: sin texto ni botón de tema */}
     </div>
   )
 }

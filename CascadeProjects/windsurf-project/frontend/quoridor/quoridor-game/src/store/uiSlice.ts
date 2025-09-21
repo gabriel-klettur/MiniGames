@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 export interface UIState {
   darkMode: boolean;
@@ -24,8 +24,6 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    toggleDarkMode(state) { state.darkMode = !state.darkMode; },
-    setDarkMode(state, action: PayloadAction<boolean>) { state.darkMode = action.payload; },
     toggleDevTools(state) { state.showDevTools = !state.showDevTools; },
     toggleRules(state) { state.showRules = !state.showRules; },
     toggleIA(state) { state.showIA = !state.showIA; },
@@ -36,8 +34,6 @@ const uiSlice = createSlice({
 });
 
 export const {
-  toggleDarkMode,
-  setDarkMode,
   toggleDevTools,
   toggleRules,
   toggleIA,
