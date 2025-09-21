@@ -22,9 +22,30 @@ import type { AIMove } from './ia/moves';
 import FootPanel from './components/FootPanel';
 import UXPanel from './components/UXPanel';
 
+// LocalStorage keys for persistence
+const LS_KEYS = {
+  game: 'pylos.game.v1',
+  moves: 'pylos.moves.v1',
+  vsai: 'pylos.vsai.v1',
+  ia: 'pylos.ia.config.v1',
+  iaShow: 'pylos.ia.showUser.v1',
+} as const;
+
 function App() {
   type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
-  const [state, setState] = useState(() => initialState());
+  const [state, setState] = useState(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.game);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Basic shape validation
+        if (parsed && typeof parsed === 'object' && parsed.board && parsed.reserves && parsed.currentPlayer) {
+          return parsed as GameState;
+        }
+      }
+    } catch {}
+    return initialState();
+  });
   // History stack for undo: stores previous states
   const [history, setHistory] = useState<GameState[]>([]);
   // Redo stack: states that can be re-applied after an undo
@@ -33,18 +54,39 @@ function App() {
   // Dev/tools toggle and Rules panel toggle
   const [showTools, setShowTools] = useState<boolean>(false);
   // IA panel toggles y parámetros (separados User vs DevTools)
-  const [showIAUser, setShowIAUser] = useState<boolean>(false);     // IAUserPanel bajo el header
+  const [showIAUser, setShowIAUser] = useState<boolean>(() => {
+    try { const raw = localStorage.getItem(LS_KEYS.iaShow); if (raw != null) return raw === 'true'; } catch {}
+    return false;
+  });     // IAUserPanel bajo el header
   const [showIATools, setShowIATools] = useState<boolean>(false);   // IAPanel dentro de DevToolsPanel
   // Historial de movimientos (inicialmente oculto)
   const [showHistory, setShowHistory] = useState<boolean>(false);
   // FasePanel (inicialmente oculto)
   const [showFases, setShowFases] = useState<boolean>(false);
-  const [iaDepth, setIaDepth] = useState<number>(3);
-  const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>('auto');
-  const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(1.8);
+  const [iaDepth, setIaDepth] = useState<number>(() => {
+    try { const raw = localStorage.getItem(LS_KEYS.ia); if (raw) { const p = JSON.parse(raw); if (typeof p?.depth === 'number') return p.depth; } } catch {}
+    return 3;
+  });
+  const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>(() => {
+    try { const raw = localStorage.getItem(LS_KEYS.ia); if (raw) { const p = JSON.parse(raw); if (p?.timeMode === 'auto' || p?.timeMode === 'manual') return p.timeMode; } } catch {}
+    return 'auto';
+  });
+  const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(() => {
+    try { const raw = localStorage.getItem(LS_KEYS.ia); if (raw) { const p = JSON.parse(raw); if (typeof p?.timeSeconds === 'number') return p.timeSeconds; } } catch {}
+    return 1.8;
+  });
   const [showRules, setShowRules] = useState<boolean>(false);
   // VS IA configuration (null = normal mode)
-  const [vsAI, setVsAI] = useState<null | { enemy: 'L' | 'D'; depth: number }>(null);
+  const [vsAI, setVsAI] = useState<null | { enemy: 'L' | 'D'; depth: number }>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.vsai);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && (p.enemy === 'L' || p.enemy === 'D') && typeof p.depth === 'number') return p as { enemy: 'L' | 'D'; depth: number };
+      }
+    } catch {}
+    return null;
+  });
   const { logSnapshot } = useGameLogger(state);
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
@@ -61,6 +103,10 @@ function App() {
   const [pendingState, setPendingState] = useState<GameState | null>(null);
   const [pendingLog, setPendingLog] = useState<MoveEntry | null>(null);
   const pendingApplyRef = useRef<{ pushHistory: boolean; clearRedo: boolean }>({ pushHistory: true, clearRedo: true });
+  // Flag to indicate a redo operation is in progress (used to pause AI autoplay)
+  const redoingRef = useRef<boolean>(false);
+  // Track appear destination to trigger appear animation exactly after state applies
+  const lastAppearKeyRef = useRef<string>("");
 
   // Logging centralizado por useGameLogger (incluye log inicial)
 
@@ -91,7 +137,16 @@ function App() {
   }, [state.phase, state.recovery, state.board]);
 
   // Moves log for display under the board
-  const [moves, setMoves] = useState<MoveEntry[]>([]);
+  const [moves, setMoves] = useState<MoveEntry[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.moves);
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) return list as MoveEntry[];
+      }
+    } catch {}
+    return [];
+  });
   const [, setRedoMoves] = useState<MoveEntry[]>([]);
   // Derive last IA move side for InfoPanel indicator
   const lastIaMove: 'L' | 'D' | null = useMemo(() => {
@@ -139,6 +194,27 @@ function App() {
     root.style.setProperty('--anim-appear-ms', `${Math.max(0, animAppearMs)}ms`);
     root.style.setProperty('--anim-flash-ms', `${Math.max(0, animFlashMs)}ms`);
   }, [pieceScale, animAppearMs, animFlashMs]);
+
+  // === Persistence: save to localStorage on change ===
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEYS.game, JSON.stringify(state)); } catch {}
+  }, [state]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEYS.moves, JSON.stringify(moves)); } catch {}
+  }, [moves]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEYS.vsai, JSON.stringify(vsAI)); } catch {}
+  }, [vsAI]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEYS.ia, JSON.stringify({ depth: iaDepth, timeMode: iaTimeMode, timeSeconds: iaTimeSeconds })); } catch {}
+  }, [iaDepth, iaTimeMode, iaTimeSeconds]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_KEYS.iaShow, String(showIAUser)); } catch {}
+  }, [showIAUser]);
 
   const updateAndCheck = (nextState: typeof state, pushHistory: boolean = true, clearRedo: boolean = true, logEntry?: MoveEntry) => {
     // Save current state before applying the next one
@@ -243,17 +319,17 @@ function App() {
   const onRedo = () => {
     if (flying || autoRunningRef.current) return;
     let redoLog: MoveEntry | undefined = undefined;
+    redoingRef.current = true;
     setRedo((r) => {
       if (r.length === 0) return r;
       const next = r[r.length - 1];
       // Push current into history
       setHistory((h) => [...h, state]);
-      // Bring back last redo log entry to main moves and capture it
+      // Capture last redo log entry; actual push to moves happens on apply
       setRedoMoves((rm) => {
         if (rm.length === 0) return rm;
         const last = rm[rm.length - 1];
         redoLog = last;
-        setMoves((m) => [...m, last]);
         return rm.slice(0, -1);
       });
 
@@ -298,7 +374,8 @@ function App() {
             if (srcRect && destRect) {
               fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
               toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-              appearKey = key;
+              // No appear on board for recovery redo (piece is leaving the board)
+              appearKey = '';
             }
           }
         }
@@ -307,12 +384,16 @@ function App() {
           setPendingState(next);
           setPendingLog(redoLog ?? null);
           pendingApplyRef.current = { pushHistory: false, clearRedo: false };
+          // Defer appear animation until after state apply
+          lastAppearKeyRef.current = appearKey || "";
           setFlying({ from: fromRect, to: toRect, imgSrc, destKey: appearKey });
         } else if (!retry) {
           // Retry once on next animation frame
           requestAnimationFrame(() => tryAnimate(true));
         } else {
-          updateAndCheck(next, false, false);
+          updateAndCheck(next, false, false, redoLog);
+          // End of redo without animation
+          redoingRef.current = false;
         }
       };
 
@@ -547,7 +628,9 @@ function App() {
     logSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
-  const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current;
+  // Disable AI when we are navigating the past (redo has entries) in Vs IA mode.
+  const atPresent = redo.length === 0;
+  const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current || (!!vsAI && !atPresent);
   const [iaBusy, setIaBusy] = useState<boolean>(false);
   // Undo/Redo availability flags (used in board actions panel)
   const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
@@ -666,6 +749,8 @@ function App() {
   // VS IA: si es turno de la IA, que juegue automáticamente
   useEffect(() => {
     if (!vsAI) return;                  // no estamos en modo vs IA
+    if (!atPresent) return;             // estamos en el pasado; no autojugar hasta volver al presente
+    if (redoingRef.current) return;     // transición de redo en curso; evitar solapamientos
     if (gameOver) return;               // partida terminada
     if (iaBusy) return;                 // IA ya pensando
     if (aiDisabled) return;             // condiciones de UI impiden jugar ahora
@@ -675,7 +760,7 @@ function App() {
       onAIMove();
     }, 50);
     return () => clearTimeout(t);
-  }, [vsAI, state.currentPlayer, iaBusy, aiDisabled, gameOver]);
+  }, [vsAI, atPresent, state.currentPlayer, iaBusy, aiDisabled, gameOver]);
 
   // (auto-IA desactivada) — eliminamos auto-play automático para evitar confusión
 
@@ -861,9 +946,16 @@ function App() {
               const { pushHistory, clearRedo } = pendingApplyRef.current;
               updateAndCheck(pendingState, pushHistory, clearRedo, pendingLog ?? undefined);
             }
+            // Tras aplicar estado, si hay appear pendiente (redo de colocar/subir), dispararlo ahora
+            if (lastAppearKeyRef.current) {
+              setAppearKeys(new Set([lastAppearKeyRef.current]));
+            }
+            lastAppearKeyRef.current = "";
             setPendingState(null);
             setPendingLog(null);
             pendingApplyRef.current = { pushHistory: true, clearRedo: true };
+            // Any flying animation end (including redo) — allow AI again
+            redoingRef.current = false;
           }}
         />
       )}
