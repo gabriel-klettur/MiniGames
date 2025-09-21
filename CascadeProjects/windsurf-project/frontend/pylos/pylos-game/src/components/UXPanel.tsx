@@ -23,6 +23,9 @@ export interface UXPanelProps {
   onChangeAppearMs: (ms: number) => void;
   onChangeFlashMs: (ms: number) => void;
   onChangeFlyMs: (ms: number) => void;
+  // Delay between auto-placement steps (ms)
+  autoFillDelayMs: number;
+  onChangeAutoFillDelayMs: (ms: number) => void;
 }
 
 /**
@@ -40,6 +43,7 @@ export default function UXPanel(props: UXPanelProps) {
     pieceScale, onChangePieceScale,
     appearMs, flashMs, flyMs,
     onChangeAppearMs, onChangeFlashMs, onChangeFlyMs,
+    autoFillDelayMs, onChangeAutoFillDelayMs,
   } = props;
 
   const [tab, setTab] = useState<'shade' | 'size' | 'anim'>('shade');
@@ -184,6 +188,18 @@ export default function UXPanel(props: UXPanelProps) {
                 onChange={(e) => onChangeFlyMs(parseInt(e.target.value, 10) || 0)}
                 style={{ width: 100 }}
                 aria-label="Duración vuelo pieza (ms)"
+              />
+              <label className="label">Pausa auto-colocación final</label>
+              <input
+                type="number"
+                min={0}
+                max={5000}
+                step={10}
+                value={Number.isFinite(autoFillDelayMs) ? autoFillDelayMs : 250}
+                onChange={(e) => onChangeAutoFillDelayMs(parseInt(e.target.value, 10) || 0)}
+                style={{ width: 100 }}
+                aria-label="Pausa entre auto-colocaciones (ms)"
+                title="Retraso entre pasos de autocolocación cuando un jugador se queda sin bolas"
               />
             </div>
           </div>

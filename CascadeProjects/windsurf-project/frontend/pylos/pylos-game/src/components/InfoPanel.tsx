@@ -16,6 +16,11 @@ export interface InfoPanelProps {
    */
   aiLastMove?: 'L' | 'D' | null;
   /**
+   * Optional override for reserves to support optimistic UI during animations
+   * (e.g., decrement when placing from reserve, increment when recovering)
+   */
+  reservesOverride?: GameState['reserves'];
+  /**
    * Ref to the current player's piece icon in the center, used to measure
    * screen position for the flying animation from panel to board.
    */
@@ -31,8 +36,9 @@ export interface InfoPanelProps {
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * El botón "Terminar recuperación" sólo aparece cuando la fase es 'recover'.
  */
-function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
+function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
   const { currentPlayer, reserves, phase } = state;
+  const reservesDisplay = reservesOverride ?? reserves;
   const showEnemyL = aiEnemy === 'L';
   const showEnemyD = aiEnemy === 'D';
   const showMoveL = aiLastMove === 'L';
@@ -68,7 +74,7 @@ function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null,
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.L}</span>
+          <span className="reserve-count">{reservesDisplay.L}</span>
         </div>
         <div>
           <strong></strong>{' '}
@@ -117,7 +123,7 @@ function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null,
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.D}</span>
+          <span className="reserve-count">{reservesDisplay.D}</span>
         </div>
       </div>
       {phase === 'recover' && (

@@ -21,6 +21,17 @@
   --sidebar-width: 0px;   /* no sidebar in header-first layout */
   --app-gap: 16px;          /* must match .app gap */
   --app-padding: 16px;      /* must match .app padding */
+  /* Professional spacing between InfoPanel and board */
+  --board-top-gap: 110px;    /* total visual gap desired */
+  /* Fine alignment offsets for background art (positive = move art right/down) */
+  --board-offset-x: 0px;
+  --board-offset-y: 0px;
+  /* Spacing below the board for Undo/Redo */
+  --board-actions-gap: 24px;
+  /* Board width factor relative to content width (1 = 100%, 0.5 = 50%) */
+  --board-width-factor: 1;
+  /* Board art width multiplier (matches .level--board ratios) */
+  --board-w-mult-root: 1.799; /* 1024 / 569 ≈ 1.799 */
   /* use base spacing values, then derive scaled ones */
   --level-gap-base: 8px;         /* base gap between cells */
   --level-padding-base: 8px;     /* base padding inside level */
@@ -28,11 +39,18 @@
   --level-padding: calc(var(--level-padding-base) * var(--scale));
   --max-cols: 4;            /* widest level (4x4) */
   /* Fluid cell size that shrinks if viewport is small. We subtract app padding (~16px),
-    level padding, and gaps to ensure the 4x4 base level fits without overflow. We use base spacing for this calculation, then apply scale. */
+    level padding, and gaps to ensure the 4x4 base level fits without overflow. We use base spacing for this calculation, then apply scale.
+    Adjusted to account for the board art width multiplier so the final board width fits the content area. */
   --cell-size-base: clamp(
     36px,
-    calc((100vw - (2 * var(--app-padding)) - var(--sidebar-width) - var(--app-gap) - (2 * var(--level-padding-base)) - ((var(--max-cols) - 1) * var(--level-gap-base))) / var(--max-cols)),
-    64px
+    calc(
+      (
+        ((100vw - (2 * var(--app-padding))) * var(--board-width-factor))
+        / (var(--board-w-mult-root) * var(--scale))
+        - ((var(--max-cols) - 1) * var(--level-gap-base))
+      ) / var(--max-cols)
+    ),
+    480px
   );
   --cell-size: calc(var(--cell-size-base) * var(--scale));
   /* Piece slightly smaller than the cell to leave visual breathing room */
@@ -75,6 +93,7 @@
   /* more space so the board never touches the panel above */
   --content-gap: clamp(16px, 2.5vw, 28px);
   gap: var(--content-gap);
+  width: 100%;
 }
 
 /* Generic panel and header styles (no sidebar) */
@@ -254,6 +273,12 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 /* Slightly tighter vertical rhythm on wide screens */
 @media (min-width: 1024px) {
   .app { gap: 8px; } /* compacta aún más entre secciones en escritorio */
+  :root { --board-top-gap: 120px; }
+}
+
+/* Tablet and up: board uses half of the content width */
+@media (min-width: 768px) {
+  :root { --board-width-factor: 0.5; }
 }
 /* Generic actions row inside panels */
 .panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -332,8 +357,27 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 }
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
-.board { display: flex; flex-direction: column; gap: 14px; margin-top: 25px; }
-.board--pyramid { position: relative; }
+.board { display: block; margin-top: calc(var(--board-top-gap) - var(--content-gap)); width: 100%; position: relative; }
+.board--pyramid { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; width: min(100%, calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor))); margin-left: auto; margin-right: auto; }
+/* Stacked view needs flex column to separate levels vertically */
+.board--stacked { display: flex; flex-direction: column; gap: 14px; width: 100%; align-items: center; }
+
+/* Render the real board image on the whole board container to control spacing consistently */
+.board--pyramid::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(calc(-50% + var(--board-offset-x)), calc(-50% + var(--board-offset-y)));
+  background-image: url('./assets/board.webp');
+  background-size: contain; /* show whole board without cropping */
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none; /* keep interactions on the grid */
+  z-index: -1;          /* render below any grid content and transient overlays */
+}
 
 /* Inline game-over banner shown under the board */
 .gameover-banner {
@@ -365,7 +409,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 /* Board actions (Undo/Redo) under the board */
 .board-actions {
   align-self: center; /* center panel under the board */
-  margin-top: 8px;
+  margin-top: var(--board-actions-gap);   /* clearer breathing room below the board */
   /* Remove panel chrome: no background, no border, no shadow/blur, no padding */
   background: transparent;
   border: none;
@@ -373,6 +417,55 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   padding: 0;
+  position: relative; /* create stacking context */
+  z-index: 20;        /* ensure above any board overlays */
+}
+
+/* iOS/Safari + Glassy style for Undo/Redo buttons under the board */
+.panel.board-actions .row.actions button {
+  /* Neutralize native appearance that can add white borders on iOS */
+  -webkit-appearance: none;
+  appearance: none;
+  /* Subtle frosted-glass chip (softer than InfoPanel) */
+  background: rgba(17, 24, 39, 0.38);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.6)) saturate(1.02);
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.6)) saturate(1.02);
+  /* Comfortable hit area for touch */
+  height: auto;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Remove tap highlight rectangle on iOS */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.panel.board-actions .row.actions button:hover { filter: brightness(1.08); }
+
+.panel.board-actions .row.actions button:active { transform: translateY(0.5px); filter: brightness(0.98); }
+
+.panel.board-actions .row.actions button:focus { outline: none; }
+.panel.board-actions .row.actions button:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.45);
+  outline-offset: 2px;
+}
+
+/* Pressed/toggled state */
+.panel.board-actions .row.actions button[aria-pressed="true"] {
+  background: rgba(17, 24, 39, 0.52);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.30), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.panel.board-actions .row.actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Debugging helpers: enable light outlines and translucent overlays to visualize hit-testing */
@@ -401,39 +494,11 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   box-shadow: none;
   position: relative;
   z-index: 2; /* ensure base grid is above any other decorative layers */
-  /* Inner grid total width (4 cells + 3 gaps) used to scale the board art */
-  --inner-size: calc((var(--cell-size) * var(--max-cols)) + (var(--level-gap) * (var(--max-cols) - 1)));
-  /* Ratios from the provided asset (inner area 569x566 inside a 1024x1024 board) */
-  --board-w-mult: 1.799; /* 1024 / 569 ≈ 1.799 */
-  --board-h-mult: 1.810; /* 1024 / 566 ≈ 1.810 */
-  /* Optional fine alignment offsets (positive moves the art right/down). */
-  /* Based on ~225px left and ~230px top margins on a 1024px board (inner ~569x566), */
-  /* we nudge ~+2.5px right and ~-1px up for closer fit. Adjust as needed. */
-  --board-offset-x: calc(2.5px * var(--scale));
-  --board-offset-y: calc(-1px * var(--scale));
-  /* Compute extra padding so the ::before background is fully contained and no overlap occurs */
-  --extra-w: calc((var(--inner-size) * var(--board-w-mult)) - var(--inner-size));
-  --extra-h: calc((var(--inner-size) * var(--board-h-mult)) - var(--inner-size));
-  --extra-hpad: calc(var(--extra-w) / 2);
-  --extra-vpad: calc(var(--extra-h) / 2);
-  padding: var(--extra-vpad) var(--extra-hpad);
+  /* No extra padding; the background is handled by .board::before */
+  padding: 0;
 }
 
-.level--board::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(var(--inner-size) * var(--board-w-mult));
-  height: calc(var(--inner-size) * var(--board-h-mult));
-  transform: translate(calc(-50% + var(--board-offset-x)), calc(-50% + var(--board-offset-y)));
-  background-image: url('./assets/board.webp');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  pointer-events: none; /* keep interactions on the grid */
-  z-index: 0;          /* render below any grid content */
-}
+.level--board::before { content: none; }
 
 /* Overlay the upper levels (1..N) inside the base level container */
 .level--overlay {
@@ -633,6 +698,36 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
  .modal__title { margin: 0 0 8px; font-size: 18px; }
  .modal__message { margin: 0 0 12px; color: var(--light); font-size: 14px; }
  .modal__actions { display: flex; justify-content: center; gap: 8px; }
+
+/* Winner modal: softer backdrop and frosted panel */
+.winner-backdrop {
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.winner-modal {
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 18px 22px;
+  width: min(92vw, 360px);
+  color: var(--text);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+}
+
+.winner-modal .modal__message {
+  margin: 0 0 14px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.winner-modal .modal__actions .primary {
+  min-width: 86px;
+}
 /* === Hole (slot) unified rendering ======================================= */
 :root {
   --hole-ring-w: 3px;                               /* ring thickness */
@@ -832,6 +927,10 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
     --level-padding: 6px;
     /* reducir ligeramente la escala global para más aire en móvil */
     --scale: 0.45;
+    /* Profesional pero cómodo en móvil */
+    --board-top-gap: 88px;
+    /* Full width on phones */
+    --board-width-factor: 1;
   }
 }
 

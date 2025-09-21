@@ -24,11 +24,15 @@ export interface IAPanelProps {
   nps?: number;
   rootPlayer?: 'L' | 'D';
   moving?: boolean; // si hay animación de pieza en curso
+  // Nuevo: autoplay IA
+  aiAutoplayActive?: boolean;
+  onToggleAiAutoplay?: () => void;
 }
 
 export default function IAPanel(props: IAPanelProps) {
   const { state, depth, onChangeDepth, onAIMove, disabled, timeMode, timeSeconds, onChangeTimeMode, onChangeTimeSeconds, busy = false, progress = null,
-    evalScore = null, depthReached = null, pv = [], rootMoves = [], nodes = 0, elapsedMs = 0, nps = 0, rootPlayer, moving = false } = props;
+    evalScore = null, depthReached = null, pv = [], rootMoves = [], nodes = 0, elapsedMs = 0, nps = 0, rootPlayer, moving = false,
+    aiAutoplayActive = false, onToggleAiAutoplay } = props;
   const current = state.currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)';
   const atRootLabel = rootPlayer ? (rootPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)') : current;
 
@@ -93,7 +97,43 @@ export default function IAPanel(props: IAPanelProps) {
           </div>
         )}
         <div className="ia-panel__actions">
-          <button className="primary" onClick={onAIMove} disabled={disabled}>Mover IA</button>
+          <button
+            className="primary"
+            onClick={onAIMove}
+            disabled={disabled}
+            aria-label="Mover IA"
+            title="Mover IA"
+          >
+            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+            <span className="sr-only">Mover IA</span>
+          </button>
+          <button
+            onClick={onToggleAiAutoplay}
+            aria-pressed={aiAutoplayActive}
+            disabled={disabled && !aiAutoplayActive}
+            title={aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}
+            aria-label={aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}
+          >
+            {aiAutoplayActive ? (
+              // Stop (square)
+              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M6 6h12v12H6z" />
+              </svg>
+            ) : (
+              // Play (triangle)
+              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M8 5v14l11-7z" />
+              </svg>
+            )}
+            <span className="sr-only">{aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}</span>
+          </button>
         </div>
       </div>
 

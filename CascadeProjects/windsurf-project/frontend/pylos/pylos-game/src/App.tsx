@@ -21,6 +21,7 @@ import { applyMove } from './ia/moves';
 import type { AIMove } from './ia/moves';
 import FootPanel from './components/FootPanel';
 import UXPanel from './components/UXPanel';
+import GameOverModal from './components/GameOverModal';
 
 // LocalStorage keys for persistence
 const LS_KEYS = {
@@ -96,6 +97,9 @@ function App() {
   // Auto-completion control: timer and running flag
   const autoTimerRef = useRef<number | null>(null);
   const autoRunningRef = useRef<boolean>(false);
+  // IA autoplay (Play/Stop) timer
+  const iaAutoTimerRef = useRef<number | null>(null);
+  const [iaAutoplay, setIaAutoplay] = useState<boolean>(false);
 
   // Flying animation state (only for placing from reserve or recover)
   type Rect = { left: number; top: number; width: number; height: number };
@@ -166,11 +170,13 @@ function App() {
   // Duraciones de animación (ms)
   const [animAppearMs, setAnimAppearMs] = useState<number>(280);
   const [animFlashMs, setAnimFlashMs] = useState<number>(900);
-  const [animFlyMs, setAnimFlyMs] = useState<number>(1500);
+  const [animFlyMs, setAnimFlyMs] = useState<number>(900);
   // Modo: sombreado solo en niveles disponibles (ON por defecto)
   const [shadeOnlyAvailable, setShadeOnlyAvailable] = useState<boolean>(true);
   // Modo: sombreado solo en huecos soportados (vacíos) (ON por defecto)
   const [shadeOnlyHoles, setShadeOnlyHoles] = useState<boolean>(true);
+  // Pausa entre pasos de autocolocación final (ms)
+  const [autoFillDelayMs, setAutoFillDelayMs] = useState<number>(250);
 
   // Calcular niveles disponibles según el tablero actual
   const availableLevels = useMemo(() => {
@@ -412,8 +418,8 @@ function App() {
     if (state.phase === 'recover') {
       const res = recoverPiece(state, pos);
       if (!res.error) {
-        // Animate removal: fly from the board cell to the reserve icon of the current player
         const key = posKey(pos);
+        // Medimos ANTES de aplicar el estado para obtener el rect de origen preciso
         const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
         const srcRect = srcBtn?.getBoundingClientRect();
         const destEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
@@ -423,12 +429,13 @@ function App() {
         if (srcRect && destRect) {
           const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
           const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-          setPendingState(res.state);
-          setPendingLog(log);
-          pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-          setFlying({ from, to, imgSrc, destKey: key });
+          // 1) Aplicar el nuevo estado primero: quita la bola del tablero y actualiza reservas/historial
+          updateAndCheck(res.state, true, true, log);
+          // 2) Lanzar la animación de vuelo del clon desde el tablero al InfoPanel
+          //    (sin estado pendiente: evitamos doble render o re-aplicaciones en onDone)
+          setFlying({ from, to, imgSrc, destKey: '' });
         } else {
-          // Fallback if we cannot measure DOM positions
+          // Fallback si no podemos medir posiciones del DOM
           updateAndCheck(res.state, true, true, log);
         }
       }
@@ -455,10 +462,28 @@ function App() {
       // otherwise, try to move to a highlighted destination
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
-        const srcKey = state.selectedSource ? posKey(state.selectedSource) : '?';
+        const srcKey2 = state.selectedSource ? posKey(state.selectedSource) : '?';
         const dstKey = posKey(pos);
-        const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey} -> ${dstKey}` };
-        updateAndCheck(attempt.state, true, true, log);
+        const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey2} -> ${dstKey}` };
+
+        // Try to animate lift: measure source and destination cell rects
+        const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${srcKey2}"]`);
+        const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${dstKey}"]`);
+        const sRect = srcBtn?.getBoundingClientRect();
+        const dRect = destBtn?.getBoundingClientRect();
+        const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
+        if (sRect && dRect) {
+          const from = { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height };
+          const to = { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height };
+          setPendingState(attempt.state);
+          setPendingLog(log);
+          pendingApplyRef.current = { pushHistory: true, clearRedo: true };
+          setFlying({ from, to, imgSrc, destKey: dstKey });
+        } else {
+          // Fallback: if we cannot measure DOM positions, apply immediately
+          setAppearKeys(new Set([dstKey]));
+          updateAndCheck(attempt.state, true, true, log);
+        }
       }
       return;
     }
@@ -468,27 +493,53 @@ function App() {
     const placed = placeFromReserve(state, pos);
     if (!placed.error) {
       const key = posKey(pos);
-      // Compute origin rect from InfoPanel reserve icon of the current player
-      const originEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
-      const originRect = originEl?.getBoundingClientRect();
-      // Compute destination rect from the target cell button
-      const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
-      const destRect = destBtn?.getBoundingClientRect();
       const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `colocar ${key}` };
-      if (originRect && destRect) {
-        const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
-        const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-        const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
-        // Start flying animation and apply state after it finishes
-        setFlying({ from, to, imgSrc, destKey: key });
-        setPendingState(placed.state);
-        setPendingLog(log);
-        pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-      } else {
-        // Fallback: if we fail to measure, update immediately
-        setAppearKeys(new Set([key]));
-        updateAndCheck(placed.state, true, true, log);
-      }
+
+      // Try to measure origin/destination; retry up to 3 frames if needed
+      const tryAnimatePlace = (attempt: number) => {
+        // Prefer reserve icon; fallback to current piece icon in center
+        const primaryOriginEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
+        const fallbackOriginEl = currentPieceRef.current;
+        const originEl = primaryOriginEl ?? fallbackOriginEl ?? null;
+        const originRect = originEl?.getBoundingClientRect();
+        // Compute destination rect from the target cell button
+        const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
+        const destRect = destBtn?.getBoundingClientRect();
+
+        if (originRect && destRect) {
+          console.debug('[FLY place] attempt=%d originRect=%o destRect=%o', attempt, originRect, destRect);
+          // Guard against 0-sized rects (can happen during layout)
+          const minSize = 12; // px; small but visible, replaced quickly by scale
+          const from = {
+            left: originRect.left,
+            top: originRect.top,
+            width: Math.max(minSize, originRect.width),
+            height: Math.max(minSize, originRect.height),
+          };
+          const to = {
+            left: destRect.left,
+            top: destRect.top,
+            width: Math.max(minSize, destRect.width),
+            height: Math.max(minSize, destRect.height),
+          };
+          const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
+          // Start flying animation and apply state after it finishes
+          setFlying({ from, to, imgSrc, destKey: key });
+          setPendingState(placed.state);
+          setPendingLog(log);
+          pendingApplyRef.current = { pushHistory: true, clearRedo: true };
+        } else if (attempt < 3) {
+          console.debug('[FLY place] retry attempt=%d origin?%s dest?%s', attempt, !!originRect, !!destRect);
+          requestAnimationFrame(() => tryAnimatePlace(attempt + 1));
+        } else {
+          console.debug('[FLY place] fallback without animation');
+          // Fallback: if we still fail to measure, update immediately
+          setAppearKeys(new Set([key]));
+          updateAndCheck(placed.state, true, true, log);
+        }
+      };
+
+      requestAnimationFrame(() => tryAnimatePlace(1));
       return;
     }
     // Else, try selecting a movable source
@@ -605,7 +656,7 @@ function App() {
         setAppearKeys(new Set([key]));
         updateAndCheck(nextState, true, true, autoLog);
       }
-    }, 500);
+    }, Math.max(0, autoFillDelayMs));
 
     // Cleanup: if deps change (e.g., leaving this mode), clear any pending timer
     return () => {
@@ -646,6 +697,19 @@ function App() {
   const [iaNps, setIaNps] = useState<number>(0);
   const [iaRootPlayer, setIaRootPlayer] = useState<'L' | 'D' | null>(null);
   const iaAbortRef = useRef<AbortController | null>(null);
+
+  // Compute concise winner label for modal: "Ganador: Humano/IA"
+  const winnerMessage = useMemo(() => {
+    if (!gameOver) return '';
+    const over = isGameOver(state);
+    if (!over.over || !over.winner) return '';
+    if (vsAI) {
+      const label = over.winner === vsAI.enemy ? 'IA' : 'Humano';
+      return `Ganador: ${label}`;
+    }
+    // Fallback fuera de modo Vs IA
+    return 'Ganador: Humano';
+  }, [gameOver, state, vsAI]);
   const onAIMove = async () => {
     if (aiDisabled || iaBusy) return;
     setIaBusy(true);
@@ -746,9 +810,10 @@ function App() {
     };
   }, []);
 
-  // VS IA: si es turno de la IA, que juegue automáticamente
+  // VS IA: si es turno de la IA, que juegue automáticamente (desactivado si autoplay manual está activo para evitar conflicto)
   useEffect(() => {
     if (!vsAI) return;                  // no estamos en modo vs IA
+    if (iaAutoplay) return;             // si el usuario activó autoplay, evitamos doble disparo
     if (!atPresent) return;             // estamos en el pasado; no autojugar hasta volver al presente
     if (redoingRef.current) return;     // transición de redo en curso; evitar solapamientos
     if (gameOver) return;               // partida terminada
@@ -760,10 +825,44 @@ function App() {
       onAIMove();
     }, 50);
     return () => clearTimeout(t);
-  }, [vsAI, atPresent, state.currentPlayer, iaBusy, aiDisabled, gameOver]);
+  }, [vsAI, atPresent, state.currentPlayer, iaBusy, aiDisabled, gameOver, iaAutoplay]);
+
+  // IA autoplay manual: jugar cada ~2s mientras esté activo y condiciones lo permitan
+  useEffect(() => {
+    // limpiar cualquier timer pendiente al entrar/salir o al cambiar deps
+    if (iaAutoTimerRef.current !== null) {
+      clearTimeout(iaAutoTimerRef.current);
+      iaAutoTimerRef.current = null;
+    }
+
+    if (!iaAutoplay) return;            // no activo
+
+    if (gameOver) {
+      // reflejar estado en el botón cuando termine la partida
+      setIaAutoplay(false);
+      return;
+    }
+
+    // no programar si IA está ocupada o UI lo impide (animando, recuperando, etc.)
+    if (iaBusy || aiDisabled) return;
+
+    // Programar siguiente jugada IA tras ~2s
+    iaAutoTimerRef.current = window.setTimeout(() => {
+      // Condiciones runtime: evitar disparos si algo cambió
+      if (!iaAutoplay || gameOver) return;
+      if (iaBusy || aiDisabled) return;
+      onAIMove();
+    }, 2000);
+
+    return () => {
+      if (iaAutoTimerRef.current !== null) {
+        clearTimeout(iaAutoTimerRef.current);
+        iaAutoTimerRef.current = null;
+      }
+    };
+  }, [iaAutoplay, iaBusy, aiDisabled, gameOver, state.currentPlayer, flying]);
 
   // (auto-IA desactivada) — eliminamos auto-play automático para evitar confusión
-
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
@@ -783,6 +882,9 @@ function App() {
     setShowIAUser(false);
     logSnapshot(initAdjusted, `Nuevo juego vs IA — enemigo ${enemy === 'L' ? 'Naranja (L)' : 'Marrón (D)'} — dificultad ${depth}`);
   };
+
+  // During a flying animation, use the pending state's reserves so the UI counter updates immediately
+  const reservesForDisplay = (flying && pendingState) ? pendingState.reserves : state.reserves;
 
   return (
     <div className="app">
@@ -806,6 +908,18 @@ function App() {
           timeSeconds={iaTimeSeconds}
           onChangeTimeMode={setIaTimeMode}
           onChangeTimeSeconds={setIaTimeSeconds}
+          aiAutoplayActive={iaAutoplay}
+          onToggleAiAutoplay={() => {
+            // toggle y limpiar timer si corresponde
+            setIaAutoplay((v) => {
+              const next = !v;
+              if (!next && iaAutoTimerRef.current !== null) {
+                clearTimeout(iaAutoTimerRef.current);
+                iaAutoTimerRef.current = null;
+              }
+              return next;
+            });
+          }}
         />
       )}
       {showRules && (
@@ -817,6 +931,7 @@ function App() {
           onFinishRecovery={onFinishRecovery}
           aiEnemy={vsAI?.enemy ?? null}
           aiLastMove={lastIaMove}
+          reservesOverride={reservesForDisplay}
           currentPieceRef={currentPieceRef}
           reserveLightRef={reserveLightRef}
           reserveDarkRef={reserveDarkRef}
@@ -857,7 +972,6 @@ function App() {
             </button>
           </div>
         </div>
-
         {showHistory && (
           <MoveLog moves={moves} />
         )}
@@ -898,6 +1012,17 @@ function App() {
                 nps={iaNps}
                 rootPlayer={iaRootPlayer ?? undefined}
                 moving={!!flying}
+                aiAutoplayActive={iaAutoplay}
+                onToggleAiAutoplay={() => {
+                  setIaAutoplay((v) => {
+                    const next = !v;
+                    if (!next && iaAutoTimerRef.current !== null) {
+                      clearTimeout(iaAutoTimerRef.current);
+                      iaAutoTimerRef.current = null;
+                    }
+                    return next;
+                  });
+                }}
               />
             )}
             uxPanel={(
@@ -919,17 +1044,14 @@ function App() {
                 onChangeAppearMs={setAnimAppearMs}
                 onChangeFlashMs={setAnimFlashMs}
                 onChangeFlyMs={setAnimFlyMs}
+                autoFillDelayMs={autoFillDelayMs}
+                onChangeAutoFillDelayMs={setAutoFillDelayMs}
               />
             )}
           />
         )}
-        {gameOver && (
-          <div className="gameover-banner" role="status" aria-live="polite">
-            <div className="gameover-banner__text">{gameOver}</div>
-            <div className="gameover-banner__actions">
-              <button className="primary" onClick={onNewGame} aria-label="Empezar otra partida">OK</button>
-            </div>
-          </div>
+        {gameOver && winnerMessage && (
+          <GameOverModal message={winnerMessage} onConfirm={onNewGame} />
         )}
       </div>
       {flying && (
