@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* Base global para tema oscuro por defecto */
+:root {
+  color-scheme: dark;
+}
+html, body, #root {
+  height: 100%;
+}
