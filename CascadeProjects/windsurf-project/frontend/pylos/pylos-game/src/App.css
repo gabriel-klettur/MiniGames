@@ -446,9 +446,41 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   -webkit-tap-highlight-color: transparent;
 }
 
+/* iOS Safari only: remove unexpected white focus ring/halo around these buttons. */
+@supports (-webkit-touch-callout: none) {
+  .panel.board-actions { -webkit-tap-highlight-color: transparent; }
+  .panel.board-actions .row.actions button {
+    /* Avoid halo from backdrop-filter compositing */
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+    outline: none !important;
+  }
+  .panel.board-actions .row.actions button:focus,
+  .panel.board-actions .row.actions button:focus-visible {
+    outline: none !important;
+  }
+}
+
 .panel.board-actions .row.actions button:hover { filter: brightness(1.08); }
 
 .panel.board-actions .row.actions button:active { transform: translateY(0.5px); filter: brightness(0.98); }
+
+  /* Board-actions: green translucent primary (white text) */
+  .panel.board-actions .row.actions button.primary {
+  background: var(--accent) !important;           /* original green */
+  color: #ffffff !important;                      /* white text for contrast */
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  }
+  .panel.board-actions .row.actions button.primary:hover {
+    background: #26d068 !important; /* slight brighten of accent */
+  }
+  .panel.board-actions .row.actions button.primary:active {
+    background: #20b65b !important; /* slight darken of accent */
+    transform: translateY(0.5px);
+  }
 
 .panel.board-actions .row.actions button:focus { outline: none; }
 .panel.board-actions .row.actions button:focus-visible {

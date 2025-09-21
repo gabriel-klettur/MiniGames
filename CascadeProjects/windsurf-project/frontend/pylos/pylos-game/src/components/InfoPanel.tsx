@@ -5,7 +5,6 @@ import bolaB from '../assets/bola_b.webp';
 
 export interface InfoPanelProps {
   state: GameState;
-  onFinishRecovery: () => void;
   /**
    * If playing vs AI, which side is controlled by the AI (enemy). Null otherwise.
    */
@@ -34,10 +33,10 @@ export interface InfoPanelProps {
 
 /**
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
- * El botón "Terminar recuperación" sólo aparece cuando la fase es 'recover'.
+ * Botones contextuales se gestionan fuera de este panel.
  */
-function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
-  const { currentPlayer, reserves, phase } = state;
+function InfoPanel({ state, aiEnemy = null, aiLastMove = null, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
+  const { currentPlayer, reserves } = state;
   const reservesDisplay = reservesOverride ?? reserves;
   const showEnemyL = aiEnemy === 'L';
   const showEnemyD = aiEnemy === 'D';
@@ -126,11 +125,6 @@ function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null,
           <span className="reserve-count">{reservesDisplay.D}</span>
         </div>
       </div>
-      {phase === 'recover' && (
-        <div className="row actions">
-          <button onClick={onFinishRecovery} className="primary">Terminar recuperación</button>
-        </div>
-      )}
     </section>
   );
 }

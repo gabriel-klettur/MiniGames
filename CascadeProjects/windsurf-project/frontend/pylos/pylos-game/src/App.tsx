@@ -926,7 +926,6 @@ function App() {
       <div className="content">
         <InfoPanel
           state={state}
-          onFinishRecovery={onFinishRecovery}
           aiEnemy={vsAI?.enemy ?? null}
           aiLastMove={lastIaMove}
           reservesOverride={reservesForDisplay}
@@ -969,6 +968,18 @@ function App() {
               <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 5 20 12l-7 7v-4H8a4 4 0 0 1 0-8h5V5z"/></svg>
               <span className="sr-only">Rehacer</span>
             </button>
+            {state.phase === 'recover' && (
+              <div style={{ marginLeft: 'auto', display: 'inline-flex' }}>
+                <button
+                  className="primary finish-recovery"
+                  onClick={onFinishRecovery}
+                  aria-label="Terminar recuperación"
+                  title="Terminar recuperación"
+                >
+                  Terminar recuperación
+                </button>
+              </div>
+            )}
           </div>
         </div>
         {showHistory && (
