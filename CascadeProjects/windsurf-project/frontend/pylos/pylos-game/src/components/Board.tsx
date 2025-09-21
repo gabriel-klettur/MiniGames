@@ -88,7 +88,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
             onDragEnd={() => { onDragEnd?.(); }}
           >
             <img
-              src={cell === 'L' ? bolaA : bolaB}
+              src={cell === 'L' ? bolaB : bolaA}
               alt={cell === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
               className="piece__img"
               draggable={false}

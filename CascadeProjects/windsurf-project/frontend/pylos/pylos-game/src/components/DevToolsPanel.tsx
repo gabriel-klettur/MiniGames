@@ -49,7 +49,14 @@ function DevToolsPanel({ onToggleRules, className, showIA = false, onToggleIA = 
           <span className="devtools-btn__label">Historial</span>
         </button>
         <button className="devtools-btn" onClick={onToggleIA} aria-pressed={!!showIA} title="Alternar panel de IA">
-          <svg className="devtools-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3c4.97 0 9 3.58 9 8 0 4.42-4.03 8-9 8-.69 0-1.36-.07-2-.2L7 21l.65-2.28C6.06 17.51 5 15.86 5 14c0-4.42 4.03-8 9-8Z"/></svg>
+          <svg className="devtools-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M11 2h2v3h-2z"/>
+            <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+            <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+            <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+            <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+          </svg>
           <span className="devtools-btn__label">IA {showIA ? '▾' : '▸'}</span>
         </button>
         <button className="devtools-btn" onClick={onToggleUX} aria-pressed={!!showUX} title="Opciones de UI/UX (tamaño, sombra y animaciones)">

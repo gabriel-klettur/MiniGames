@@ -28,7 +28,7 @@ export default function MoveLog({ moves }: MoveLogProps) {
     }
   }
 
-  const iconFor = (p: 'L' | 'D') => (p === 'L' ? bolaA : bolaB);
+  const iconFor = (p: 'L' | 'D') => (p === 'L' ? bolaB : bolaA);
   const labelFor = (s: MoveEntry['source']) => (s === 'IA' ? 'IA' : s === 'AUTO' ? 'AUTO' : 'Jugador');
 
   return (

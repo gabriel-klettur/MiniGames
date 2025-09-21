@@ -7,6 +7,15 @@ export interface InfoPanelProps {
   state: GameState;
   onFinishRecovery: () => void;
   /**
+   * If playing vs AI, which side is controlled by the AI (enemy). Null otherwise.
+   */
+  aiEnemy?: 'L' | 'D' | null;
+  /**
+   * If the last move was performed by the AI (manual assist or vs AI), which side moved.
+   * Null otherwise.
+   */
+  aiLastMove?: 'L' | 'D' | null;
+  /**
    * Ref to the current player's piece icon in the center, used to measure
    * screen position for the flying animation from panel to board.
    */
@@ -22,30 +31,44 @@ export interface InfoPanelProps {
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * El botón "Terminar recuperación" sólo aparece cuando la fase es 'recover'.
  */
-function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
+function InfoPanel({ state, onFinishRecovery, aiEnemy = null, aiLastMove = null, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
   const { currentPlayer, reserves, phase } = state;
+  const showEnemyL = aiEnemy === 'L';
+  const showEnemyD = aiEnemy === 'D';
+  const showMoveL = aiLastMove === 'L';
+  const showMoveD = aiLastMove === 'D';
 
   return (
     <section className="info-panel" aria-label="Panel de información y acciones">
       <div className="row grid-3">
         <div>
+          {(showEnemyL || showMoveL) && (
+            <svg className={["robot-icon", showMoveL ? 'is-active' : 'is-passive'].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+          )}
           <span
             className={[
               'piece',
-              'piece--dark',
+              'piece--light',
             ].join(' ')}
-            title="Oscuras (D) en reserva"
-            aria-label="Oscuras (D) en reserva"
-            ref={reserveDarkRef ?? undefined}
+            title="Claras (L) en reserva"
+            aria-label="Claras (L) en reserva"
+            ref={reserveLightRef ?? undefined}
           >
             <img
               src={bolaB}
-              alt="Oscuras (D)"
+              alt="Claras (L)"
               className="piece__img"
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.D}</span>
+          <span className="reserve-count">{reserves.L}</span>
         </div>
         <div>
           <strong></strong>{' '}
@@ -60,7 +83,7 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, 
             ref={currentPieceRef ?? undefined}
           >
             <img
-              src={currentPlayer === 'L' ? bolaA : bolaB}
+              src={currentPlayer === 'L' ? bolaB : bolaA}
               alt={currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
               className="piece__img"
               draggable={false}
@@ -68,23 +91,33 @@ function InfoPanel({ state, onFinishRecovery, currentPieceRef, reserveLightRef, 
           </span>
         </div>
         <div>
+          {(showEnemyD || showMoveD) && (
+            <svg className={["robot-icon", showMoveD ? 'is-active' : 'is-passive'].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+          )}
           <span
             className={[
               'piece',
-              'piece--light',
+              'piece--dark',
             ].join(' ')}
-            title="Claras (L) en reserva"
-            aria-label="Claras (L) en reserva"
-            ref={reserveLightRef ?? undefined}
+            title="Oscuras (D) en reserva"
+            aria-label="Oscuras (D) en reserva"
+            ref={reserveDarkRef ?? undefined}
           >
             <img
               src={bolaA}
-              alt="Claras (L)"
+              alt="Oscuras (D)"
               className="piece__img"
               draggable={false}
             />
           </span>
-          <span className="reserve-count">{reserves.L}</span>
+          <span className="reserve-count">{reserves.D}</span>
         </div>
       </div>
       {phase === 'recover' && (

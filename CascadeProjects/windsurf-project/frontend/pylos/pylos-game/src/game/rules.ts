@@ -76,7 +76,7 @@ export function initialState(): GameState {
   const board = createEmptyBoard();
   return {
     board,
-    currentPlayer: 'D',
+    currentPlayer: 'L',
     reserves: { L: 15, D: 15 },
     phase: 'play',
     selectedSource: undefined,

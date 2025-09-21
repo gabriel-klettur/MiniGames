@@ -43,6 +43,8 @@ function App() {
   const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>('auto');
   const [iaTimeSeconds, setIaTimeSeconds] = useState<number>(1.8);
   const [showRules, setShowRules] = useState<boolean>(false);
+  // VS IA configuration (null = normal mode)
+  const [vsAI, setVsAI] = useState<null | { enemy: 'L' | 'D'; depth: number }>(null);
   const { logSnapshot } = useGameLogger(state);
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
@@ -91,6 +93,13 @@ function App() {
   // Moves log for display under the board
   const [moves, setMoves] = useState<MoveEntry[]>([]);
   const [, setRedoMoves] = useState<MoveEntry[]>([]);
+  // Derive last IA move side for InfoPanel indicator
+  const lastIaMove: 'L' | 'D' | null = useMemo(() => {
+    for (let i = moves.length - 1; i >= 0; i--) {
+      if (moves[i].source === 'IA') return moves[i].player;
+    }
+    return null;
+  }, [moves]);
 
   // === UI/UX CONFIG STATE ===
   // Mostrar panel UI/UX en DevTools
@@ -173,11 +182,11 @@ function App() {
     // Try to animate inverse of lastLog
     let fromRect: Rect | null = null;
     let toRect: Rect | null = null;
-    let imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB; // default; will use lastLog.player if present
+    let imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA; // default; will use lastLog.player if present
     let appearKey = '';
     if (lastLog) {
       const p = lastLog.player;
-      imgSrc = p === 'L' ? bolaA : bolaB;
+      imgSrc = p === 'L' ? bolaB : bolaA;
       if (lastLog.text.startsWith('colocar ')) {
         const key = lastLog.text.replace('colocar ', '').trim();
         const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
@@ -252,11 +261,11 @@ function App() {
       const tryAnimate = (retry: boolean) => {
         let fromRect: Rect | null = null;
         let toRect: Rect | null = null;
-        let imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        let imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
         let appearKey = '';
         if (redoLog) {
           const p = redoLog.player;
-          imgSrc = p === 'L' ? bolaA : bolaB;
+          imgSrc = p === 'L' ? bolaB : bolaA;
           if (redoLog.text.startsWith('colocar ')) {
             const key = redoLog.text.replace('colocar ', '').trim();
             const srcEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
@@ -328,7 +337,7 @@ function App() {
         const srcRect = srcBtn?.getBoundingClientRect();
         const destEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
         const destRect = destEl?.getBoundingClientRect();
-        const imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
         const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `recuperar ${key}` };
         if (srcRect && destRect) {
           const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
@@ -388,7 +397,7 @@ function App() {
       if (originRect && destRect) {
         const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
         const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-        const imgSrc = state.currentPlayer === 'L' ? bolaA : bolaB;
+        const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
         // Start flying animation and apply state after it finishes
         setFlying({ from, to, imgSrc, destKey: key });
         setPendingState(placed.state);
@@ -501,7 +510,7 @@ function App() {
       const key = posKey(dest);
       const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
       const destRect = destBtn?.getBoundingClientRect();
-      const imgSrc = filler === 'L' ? bolaA : bolaB;
+      const imgSrc = filler === 'L' ? bolaB : bolaA;
 
       const autoLog: MoveEntry = { player: filler, source: 'AUTO', text: `colocar ${key}` };
       if (originRect && destRect) {
@@ -532,6 +541,9 @@ function App() {
     setState(init);
     setHistory([]);
     setRedo([]);
+    setMoves([]);
+    setRedoMoves([]);
+    setVsAI(null);
     logSnapshot(init, 'Nuevo juego — tablero inicial');
   };
 
@@ -597,7 +609,7 @@ function App() {
           // Calcular destino: botón de celda
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = aiPlayer === 'L' ? bolaA : bolaB;
+          const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
           const nextState = applyMove(state, res.move);
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
@@ -619,7 +631,7 @@ function App() {
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${destKey}"]`);
           const srcRect = srcBtn?.getBoundingClientRect();
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = aiPlayer === 'L' ? bolaA : bolaB;
+          const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
           const nextState = applyMove(state, res.move);
           if (srcRect && destRect) {
             const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
@@ -651,11 +663,40 @@ function App() {
     };
   }, []);
 
+  // VS IA: si es turno de la IA, que juegue automáticamente
+  useEffect(() => {
+    if (!vsAI) return;                  // no estamos en modo vs IA
+    if (gameOver) return;               // partida terminada
+    if (iaBusy) return;                 // IA ya pensando
+    if (aiDisabled) return;             // condiciones de UI impiden jugar ahora
+    if (state.currentPlayer !== vsAI.enemy) return; // no es turno de la IA enemiga
+    // Invocar IA en el siguiente tick para dejar que el DOM estabilice
+    const t = setTimeout(() => {
+      onAIMove();
+    }, 50);
+    return () => clearTimeout(t);
+  }, [vsAI, state.currentPlayer, iaBusy, aiDisabled, gameOver]);
+
   // (auto-IA desactivada) — eliminamos auto-play automático para evitar confusión
 
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
+  };
+
+  const onStartVsAI = (enemy: 'L' | 'D', depth: number) => {
+    setGameOver(undefined);
+    const init = initialState();
+    const initAdjusted = { ...init, currentPlayer: 'L' as 'L' | 'D' };
+    setState(initAdjusted);
+    setHistory([]);
+    setRedo([]);
+    setMoves([]);
+    setRedoMoves([]);
+    setIaDepth(depth);
+    setVsAI({ enemy, depth });
+    setShowIAUser(false);
+    logSnapshot(initAdjusted, `Nuevo juego vs IA — enemigo ${enemy === 'L' ? 'Naranja (L)' : 'Marrón (D)'} — dificultad ${depth}`);
   };
 
   return (
@@ -668,6 +709,7 @@ function App() {
         onToggleIA={() => setShowIAUser((v) => !v)}
         showIAToggle={true}
         showDevToggle={false}
+        onStartVsAI={onStartVsAI}
       />
       {showIAUser && (
         <IAUserPanel
@@ -688,6 +730,8 @@ function App() {
         <InfoPanel
           state={state}
           onFinishRecovery={onFinishRecovery}
+          aiEnemy={vsAI?.enemy ?? null}
+          aiLastMove={lastIaMove}
           currentPieceRef={currentPieceRef}
           reserveLightRef={reserveLightRef}
           reserveDarkRef={reserveDarkRef}
