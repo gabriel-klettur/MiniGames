@@ -1,13 +1,14 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppDispatch, useAppSelector } from './store/hooks.ts'
 import { toggleDevTools, toggleRules, toggleFases, toggleHistory, toggleIA, toggleUX } from './store/uiSlice.ts'
 import type { RootState } from './store/index.ts'
 import { movePawn, newGame, placeWall } from './store/gameSlice.ts'
 import HeaderPanel from './components/HeaderPanel.tsx'
-import DevToolsPanel from './components/DevToolsPanel.tsx'
+import DevToolsPanel from './components/DevTools/DevToolsPanel.tsx'
 import FootPanel from './components/FootPanel.tsx'
 import Board from './components/Board.tsx'
-import RulesPanel from './components/RulesPanel.tsx'
+import RulesPanel from './components/DevTools/RulesPanel.tsx'
+import UIUX from './components/DevTools/UIUX.tsx'
 import InfoPanel from './components/InfoPanel.tsx'
 import { legalPawnMoves } from './game/rules.ts'
 
@@ -22,6 +23,20 @@ function App() {
     const el = document.documentElement
     el.classList.toggle('dark', darkMode)
   }, [darkMode])
+
+  // Detección de puntero "coarse" (móvil/tablet)
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse)')
+    const update = () => setIsCoarsePointer(mq.matches)
+    update()
+    mq.addEventListener?.('change', update)
+    return () => mq.removeEventListener?.('change', update)
+  }, [])
+
+  // Modo de interacción para móvil/tablet: 'move' | 'wall'
+  const [inputMode, setInputMode] = useState<'move' | 'wall'>('move')
+  const toggleInputMode = () => setInputMode((m) => (m === 'move' ? 'wall' : 'move'))
 
   const onNewGame = () => {
     dispatch(newGame({ size: 9 }))
@@ -55,30 +70,57 @@ function App() {
             onCellClick={onCellClick}
             onWallClick={onWallClick}
             highlightCells={highlightCells}
+            inputMode={inputMode}
+            onToggleInputMode={toggleInputMode}
+            isCoarsePointer={isCoarsePointer}
+            wallGap={ui.wallGap}
+            warp={ui.boardWarp}
             pawns={{
               L: [game.pawns.L.row, game.pawns.L.col],
               D: [game.pawns.D.row, game.pawns.D.col],
             }}
             walls={game.walls}
           />
+          {/* Área de paneles debajo del tablero */}
+          <div className="mt-4 space-y-4">
+            {showRules && <RulesPanel />}
+            {showDevTools && (
+              <DevToolsPanel
+                onToggleRules={() => dispatch(toggleRules())}
+                showFases={showFases}
+                onToggleFases={() => dispatch(toggleFases())}
+                showHistory={showHistory}
+                onToggleHistory={() => dispatch(toggleHistory())}
+                showIA={showIA}
+                onToggleIA={() => dispatch(toggleIA())}
+                showUX={showUX}
+                onToggleUX={() => dispatch(toggleUX())}
+              />
+            )}
+            {showFases && (
+              <section className="rounded-lg border border-white/10 bg-gray-900/50 p-4">
+                <h3 className="text-sm font-semibold mb-2">Fases (vista de desarrollo)</h3>
+                <p className="text-xs text-gray-300">Placeholder de panel de fases. Integra visualizaciones y ayudas de depuración aquí.</p>
+              </section>
+            )}
+            {showHistory && (
+              <section className="rounded-lg border border-white/10 bg-gray-900/50 p-4">
+                <h3 className="text-sm font-semibold mb-2">Historial (vista de desarrollo)</h3>
+                <p className="text-xs text-gray-300">Placeholder de historial de movimientos/acciones.</p>
+              </section>
+            )}
+            {showIA && (
+              <section className="rounded-lg border border-white/10 bg-gray-900/50 p-4">
+                <h3 className="text-sm font-semibold mb-2">IA (vista de desarrollo)</h3>
+                <p className="text-xs text-gray-300">Placeholder para datos o controles de IA.</p>
+              </section>
+            )}
+            {showUX && <UIUX />}
+          </div>
         </section>
 
-        <aside className="md:col-span-4 lg:col-span-3 space-y-4">
-          {showRules && <RulesPanel />}
-          {showDevTools && (
-            <DevToolsPanel
-              onToggleRules={() => dispatch(toggleRules())}
-              showFases={showFases}
-              onToggleFases={() => dispatch(toggleFases())}
-              showHistory={showHistory}
-              onToggleHistory={() => dispatch(toggleHistory())}
-              showIA={showIA}
-              onToggleIA={() => dispatch(toggleIA())}
-              showUX={showUX}
-              onToggleUX={() => dispatch(toggleUX())}
-            />
-          )}
-        </aside>
+        {/* Aside vacío para mantener el layout de grid sin duplicar paneles */}
+        <aside className="md:col-span-4 lg:col-span-3 space-y-4" />
       </main>
 
       <FootPanel showTools={showDevTools} onToggleDev={() => dispatch(toggleDevTools())} />

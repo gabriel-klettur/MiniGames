@@ -19,6 +19,20 @@ export interface BoardProps {
   onWallClick?: (o: 'H' | 'V', r: number, c: number) => void;
   /** Celdas a resaltar (sombras) para indicar movimientos legales del jugador en turno. */
   highlightCells?: Array<[number, number]>;
+  /** Modo de interacción: mover o colocar valla (para móvil/tablet). */
+  inputMode?: 'move' | 'wall';
+  /** Alternar modo de interacción (se invoca en long-press). */
+  onToggleInputMode?: () => void;
+  /** Si el puntero es "coarse" (móvil/tablet) para ajustar UX. */
+  isCoarsePointer?: boolean;
+  /** Deformación del tablero: define 4 vértices (en %) para un clip-path poligonal. */
+  warp?: {
+    enabled: boolean;
+    tl: { x: number; y: number };
+    tr: { x: number; y: number };
+    br: { x: number; y: number };
+    bl: { x: number; y: number };
+  };
 }
 
 /**
@@ -29,10 +43,14 @@ export default function Board({
   className,
   onCellClick = () => {},
   pawns = { L: [8, Math.floor(9 / 2)], D: [0, Math.floor(9 / 2)] },
-  wallGap = 8,
+  wallGap = 16,
   walls = [],
   onWallClick = () => {},
   highlightCells = [],
+  inputMode = 'move',
+  onToggleInputMode = () => {},
+  isCoarsePointer = false,
+  warp,
 }: BoardProps) {
   // Construimos una rejilla de (2*size - 1) con pistas alternas: celda (1fr), valla (wallGap px)
   const gridCount = size * 2 - 1;
@@ -42,106 +60,272 @@ export default function Board({
     gridTemplateRows: track,
   };
 
+  // Clip-path opcional si warp.enabled está activo (aplicado al wrapper)
+  const clipPath = React.useMemo(() => {
+    if (!warp || !warp.enabled) return undefined;
+    const { tl, tr, br, bl } = warp;
+    const p = (pt: { x: number; y: number }) => `${pt.x}% ${pt.y}%`;
+    return `polygon(${p(tl)}, ${p(tr)}, ${p(br)}, ${p(bl)})`;
+  }, [warp]);
+
+  // --- Transformación proyectiva (homografía) para deformar TODA la rejilla ---
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const [matrix3d, setMatrix3d] = React.useState<string | undefined>(undefined);
+
+  type Pt = { x: number; y: number };
+
+  // Pequeño solver Gauss para 8x8 (n=8)
+  function solve(A: number[][], b: number[]): number[] {
+    const n = b.length;
+    // Augmented matrix
+    for (let i = 0; i < n; i++) A[i] = [...A[i], b[i]];
+    for (let i = 0; i < n; i++) {
+      // Pivot
+      let maxR = i;
+      for (let r = i + 1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[maxR][i])) maxR = r;
+      const tmp = A[i]; A[i] = A[maxR]; A[maxR] = tmp;
+      const pivot = A[i][i] || 1e-12;
+      // Normalize row
+      for (let c = i; c <= n; c++) A[i][c] /= pivot;
+      // Eliminate others
+      for (let r = 0; r < n; r++) if (r !== i) {
+        const f = A[r][i];
+        for (let c = i; c <= n; c++) A[r][c] -= f * A[i][c];
+      }
+    }
+    return A.map((row) => row[n]);
+  }
+
+  // Calcula homografía 2D que mapea src rect (0,0)-(w,0)-(w,h)-(0,h) a quad dst
+  function homographyToMatrix3d(w: number, h: number, dst: [Pt, Pt, Pt, Pt]): string {
+    const src: [Pt, Pt, Pt, Pt] = [
+      { x: 0, y: 0 },
+      { x: w, y: 0 },
+      { x: w, y: h },
+      { x: 0, y: h },
+    ];
+    // Solve for 8 unknowns of H (h11..h32), with h33=1
+    const A: number[][] = [];
+    const bb: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      const X = src[i].x, Y = src[i].y;
+      const x = dst[i].x, y = dst[i].y;
+      A.push([X, Y, 1, 0, 0, 0, -x * X, -x * Y]); bb.push(x);
+      A.push([0, 0, 0, X, Y, 1, -y * X, -y * Y]); bb.push(y);
+    }
+    const sol = solve(A, bb);
+    const [h11, h12, h13, h21, h22, h23, h31, h32] = sol;
+    const h33 = 1;
+    // Embed en 4x4 matrix3d con transform-origin 0 0
+    //   [ h11 h12 0 h13 ]
+    //   [ h21 h22 0 h23 ]
+    //   [  0   0  1  0  ]
+    //   [ h31 h32 0 h33 ]
+    const m = [
+      h11, h21, 0, h31,
+      h12, h22, 0, h32,
+      0,   0,   1, 0,
+      h13, h23, 0, h33,
+    ];
+    return `matrix3d(${m.map((v) => (Math.abs(v) < 1e-10 ? 0 : v)).join(',')})`;
+  }
+
+  // Observa tamaño y recalcula matriz cuando cambia warp o tamaño
+  React.useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const compute = () => {
+      if (!warp || !warp.enabled) { setMatrix3d(undefined); return; }
+      const rect = el.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      const toPx = (pt: Pt) => ({ x: (pt.x / 100) * w, y: (pt.y / 100) * h });
+      const { tl, tr, br, bl } = warp;
+      const mat = homographyToMatrix3d(w, h, [toPx(tl), toPx(tr), toPx(br), toPx(bl)]);
+      setMatrix3d(mat);
+    };
+    compute();
+    const ro = new ResizeObserver(() => compute());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [warp]);
+
   const pawnType = (r: number, c: number) =>
     pawns.L[0] === r && pawns.L[1] === c ? 'L' : pawns.D[0] === r && pawns.D[1] === c ? 'D' : null;
 
   const hasWall = (o: 'H' | 'V', r: number, c: number) => walls.some((w) => w.o === o && w.r === r && w.c === c);
   const hlSet = new Set(highlightCells.map(([r, c]) => `${r},${c}`));
 
-  // Nota: en lugar de "cubrir" celdas, hacemos que la valla activa que se expande
-  // no intercepte eventos (pointer-events-none) para permitir clicks en slots adyacentes.
+  // Estado local para previsualización (hover) de valla de 2 segmentos
+  const [hover, setHover] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
+
+  // Long-press para alternar modo en móvil/tablet
+  const longPressTimer = React.useRef<number | null>(null);
+  const longPressFired = React.useRef(false);
+  const LONG_PRESS_MS = 450;
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const onPointerDownRoot = () => {
+    longPressFired.current = false;
+    if (!isCoarsePointer) return; // solo móvil/tablet
+    clearLongPress();
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      onToggleInputMode();
+    }, LONG_PRESS_MS);
+  };
+
+  const onPointerUpRoot = () => {
+    clearLongPress();
+    // Si se disparó long-press, evitamos que el siguiente click "pase" a hijos
+    // Devolvemos el control a los handlers de botones (no hacemos preventDefault aquí).
+  };
 
   return (
-    <div className={["w-full", "aspect-square", "select-none", className ?? ""].join(" ").trim()}>
-      <div className="grid w-full h-full bg-gray-800/60 p-1 rounded-md" style={gridStyle}>
-        {Array.from({ length: gridCount }).map((_, gr) => (
-          <React.Fragment key={gr}>
-            {Array.from({ length: gridCount }).map((__, gc) => {
-              const evenR = gr % 2 === 0;
-              const evenC = gc % 2 === 0;
-              if (evenR && evenC) {
-                // Celda de juego
-                const r = gr / 2;
-                const c = gc / 2;
-                const type = pawnType(r, c);
-                const highlighted = hlSet.has(`${r},${c}`);
-                return (
-                  <button
-                    key={`${gr}-${gc}`}
-                    className="relative bg-gray-900/60 hover:bg-gray-800 active:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                    onClick={() => onCellClick(r, c)}
-                    title={`(${r}, ${c})`}
-                  >
-                    {highlighted && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-md ring-2 ring-emerald-500/40 bg-emerald-400/5"
-                      />
-                    )}
-                    {type && (
-                      <span
-                        className={[
-                          'absolute inset-1 rounded-full grid place-items-center text-[10px] font-medium',
-                          type === 'L' ? 'bg-orange-500/90 text-white' : 'bg-amber-900/90 text-white',
-                        ].join(' ')}
-                      >
-                        {type}
-                      </span>
-                    )}
-                  </button>
-                );
-              }
-              if (!evenR && evenC) {
-                // Slot horizontal (entre filas r y r+1) en columna c,c+1
-                const r = (gr - 1) / 2;
-                const c = gc / 2;
-                const valid = c < size - 1; // índices válidos 0..size-2
-                const active = hasWall('H', r, c);
-                if (!valid) return <div key={`${gr}-${gc}`} />;
-                const spanStyle = active ? { gridColumn: `${gc + 1} / ${gc + 4}` } as React.CSSProperties : undefined;
-                return (
-                  <button
-                    key={`${gr}-${gc}`}
-                    style={spanStyle}
-                    className={[
-                      'w-full h-full rounded-[2px] transition-colors',
-                      active ? 'bg-amber-500/90 pointer-events-none z-10' : 'bg-transparent hover:bg-amber-500/50',
-                    ].join(' ')}
-                    title={`Valla H @ (${r},${c})`}
-                    onClick={() => onWallClick('H', r, c)}
-                    aria-pressed={active}
-                  />
-                );
-              }
-              if (evenR && !evenC) {
-                // Slot vertical (entre columnas c y c+1) en fila r,r+1
-                const r = gr / 2;
-                const c = (gc - 1) / 2;
-                const valid = r < size - 1; // índices válidos 0..size-2
-                const active = hasWall('V', r, c);
-                if (!valid) return <div key={`${gr}-${gc}`} />;
-                const spanStyle = active ? { gridRow: `${gr + 1} / ${gr + 4}` } as React.CSSProperties : undefined;
-                return (
-                  <button
-                    key={`${gr}-${gc}`}
-                    style={spanStyle}
-                    className={[
-                      'w-full h-full rounded-[2px] transition-colors',
-                      active ? 'bg-amber-500/90 pointer-events-none' : 'bg-transparent hover:bg-amber-500/50',
-                    ].join(' ')}
-                    title={`Valla V @ (${r},${c})`}
-                    onClick={() => onWallClick('V', r, c)}
-                    aria-pressed={active}
-                  />
-                );
-              }
-              // Junta (intersección de vallas)
-              return <div key={`${gr}-${gc}`} className="w-full h-full bg-gray-800/80 rounded-sm" />;
-            })}
-          </React.Fragment>
-        ))}
+    <div
+      ref={rootRef}
+      className={["w-full", "aspect-square", "select-none", className ?? ""].join(" ").trim()}
+      style={clipPath ? { clipPath } : undefined}
+    >
+      <div
+        className="relative w-full h-full"
+        style={{ transformOrigin: '0 0', transform: matrix3d }}
+      >
+        <div
+          className="relative grid w-full h-full bg-gray-800/60 p-1 rounded-md"
+          style={gridStyle}
+          onPointerDown={onPointerDownRoot}
+          onPointerUp={onPointerUpRoot}
+          onPointerCancel={clearLongPress}
+          onPointerLeave={clearLongPress}
+        >
+          {isCoarsePointer && (
+            <div className="pointer-events-none absolute left-2 top-2 z-20 text-[11px] rounded-md bg-black/50 border border-white/10 px-2 py-1 text-gray-100">
+              Modo: {inputMode === 'wall' ? 'Vallas' : 'Mover'}
+            </div>
+          )}
+          {Array.from({ length: gridCount }).map((_, gr) => (
+            <React.Fragment key={gr}>
+              {Array.from({ length: gridCount }).map((__, gc) => {
+                const evenR = gr % 2 === 0;
+                const evenC = gc % 2 === 0;
+                const baseStyle: React.CSSProperties = {
+                  gridRow: `${gr + 1} / ${gr + 2}`,
+                  gridColumn: `${gc + 1} / ${gc + 2}`,
+                };
+                if (evenR && evenC) {
+                  // Celda de juego
+                  const r = gr / 2;
+                  const c = gc / 2;
+                  const type = pawnType(r, c);
+                  const highlighted = hlSet.has(`${r},${c}`);
+                  return (
+                    <button
+                      key={`${gr}-${gc}`}
+                      style={baseStyle}
+                      className="relative bg-gray-900/60 hover:bg-gray-800 active:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      onClick={() => { if (!isCoarsePointer || inputMode === 'move') onCellClick(r, c); }}
+                      title={`(${r}, ${c})`}
+                    >
+                      {highlighted && (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0 rounded-md ring-2 ring-emerald-500/40 bg-emerald-400/5"
+                        />
+                      )}
+                      {type && (
+                        <span
+                          className={[
+                            'absolute inset-1 rounded-full grid place-items-center text-[10px] font-medium',
+                            type === 'L' ? 'bg-orange-500/90 text-white' : 'bg-amber-900/90 text-white',
+                          ].join(' ')}
+                        >
+                          {type}
+                        </span>
+                      )}
+                    </button>
+                  );
+                }
+                if (!evenR && evenC) {
+                  // Slot horizontal (entre filas r y r+1) en columna c,c+1
+                  const r = (gr - 1) / 2;
+                  const c = gc / 2;
+                  const valid = c < size - 1; // índices válidos 0..size-2
+                  const active = hasWall('H', r, c);
+                  if (!valid) return <div key={`${gr}-${gc}`} />;
+                  const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
+                  const spanStyle: React.CSSProperties | undefined =
+                    active || isHover
+                      ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` }
+                      : undefined;
+                  return (
+                    <button
+                      key={`${gr}-${gc}`}
+                      style={spanStyle ? { ...baseStyle, ...spanStyle } : baseStyle}
+                      className={[
+                        'w-full h-full rounded-[2px] transition-colors',
+                        active
+                          ? 'bg-amber-500/90 pointer-events-none z-10'
+                          : isHover
+                            ? 'bg-emerald-400/10 ring-2 ring-emerald-500/50'
+                            : 'bg-transparent hover:bg-amber-500/50',
+                      ].join(' ')}
+                      title={`Valla H @ (${r},${c})`}
+                      onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('H', r, c); }}
+                      onMouseEnter={() => setHover({ o: 'H', r, c })}
+                      onPointerEnter={() => setHover({ o: 'H', r, c })}
+                      onMouseLeave={() => setHover(null)}
+                      onPointerLeave={() => setHover(null)}
+                      aria-pressed={active}
+                    />
+                  );
+                }
+                if (evenR && !evenC) {
+                  // Slot vertical (entre columnas c y c+1) en fila r,r+1
+                  const r = gr / 2;
+                  const c = (gc - 1) / 2;
+                  const valid = r < size - 1; // índices válidos 0..size-2
+                  const active = hasWall('V', r, c);
+                  if (!valid) return <div key={`${gr}-${gc}`} />;
+                  const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
+                  const spanStyle: React.CSSProperties | undefined =
+                    active || isHover
+                      ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` }
+                      : undefined;
+                  return (
+                    <button
+                      key={`${gr}-${gc}`}
+                      style={spanStyle ? { ...baseStyle, ...spanStyle } : baseStyle}
+                      className={[
+                        'w-full h-full rounded-[2px] transition-colors',
+                        active
+                          ? 'bg-amber-500/90 pointer-events-none z-10'
+                          : isHover
+                            ? 'bg-emerald-400/10 ring-2 ring-emerald-500/50'
+                            : 'bg-transparent hover:bg-amber-500/50',
+                      ].join(' ')}
+                      title={`Valla V @ (${r},${c})`}
+                      onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('V', r, c); }}
+                      onMouseEnter={() => setHover({ o: 'V', r, c })}
+                      onPointerEnter={() => setHover({ o: 'V', r, c })}
+                      onMouseLeave={() => setHover(null)}
+                      onPointerLeave={() => setHover(null)}
+                      aria-pressed={active}
+                    />
+                  );
+                }
+                // Junta (intersección de vallas)
+                return <div key={`${gr}-${gc}`} style={baseStyle} className="w-full h-full bg-gray-800/80 rounded-sm" />;
+              })}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
-

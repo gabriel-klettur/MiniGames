@@ -13,38 +13,65 @@ export function goalRow(size: number, p: Player): number {
 }
 
 /**
- * Devuelve la lista de celdas legales a las que el jugador puede mover su peón.
- * Reglas incluidas: movimiento ortogonal de 1 y salto cara a cara si el rival está adyacente
- * sin valla intermedia. (Diagonal lateral al estar bloqueado: TODO si se requiere.)
+ * Devuelve las casillas legales para mover el peón del jugador.
+ * Reglas implementadas (Quoridor):
+ *  - Movimiento ortogonal de 1 casilla (arriba/abajo/izquierda/derecha) si no hay valla entre medias.
+ *  - Si el rival está adyacente ortogonalmente y no hay valla en medio:
+ *      a) Se puede saltar recto al otro lado del rival si la casilla existe y no hay valla entre rival y destino.
+ *      b) Si el salto recto está bloqueado por valla o borde, se permiten los dos movimientos diagonales alrededor del rival
+ *         (si existe conexión entre el rival y dichas casillas).
+ *  - Además, aunque el rival esté adyacente, siguen siendo válidos los otros movimientos ortogonales que no invaden su casilla.
  */
 export function legalPawnMoves(state: GameState, player: Player = state.current): Coord[] {
   const { size, pawns, walls } = state;
   const me = pawns[player];
   const op = pawns[otherPlayer(player)];
 
+  // Vecinos ortogonales del jugador (respetando vallas)
   const nbs = neighbors(size, me.row, me.col, walls);
 
-  // ¿El rival está justo en una casilla ortogonal accesible?
+  // Punto de partida: todos los vecinos que no están ocupados por el rival
+  const res: Coord[] = nbs.filter((c) => !(c.row === op.row && c.col === op.col));
+
+  // ¿El rival está justo en una vecina accesible?
   const isOppAdjacent = nbs.some((c) => c.row === op.row && c.col === op.col);
-  if (isOppAdjacent) {
-    // Vector desde mí hacia el rival
-    const dr = op.row - me.row;
-    const dc = op.col - me.col;
-    const jr = op.row + dr;
-    const jc = op.col + dc;
-    // Salto al otro lado si está dentro de tablero y no hay valla entre rival y celda destino
-    if (inBounds(size, jr, jc)) {
-      const opNbs = neighbors(size, op.row, op.col, walls);
-      if (opNbs.some((c) => c.row === jr && c.col === jc)) {
-        return [{ row: jr, col: jc }];
-      }
-    }
-    // Si no se puede saltar recto (p.ej. pared detrás), por ahora no permitimos diagonal lateral.
-    return [];
+  if (!isOppAdjacent) return res;
+
+  // Vector desde mí hacia el rival
+  const dr = op.row - me.row;
+  const dc = op.col - me.col;
+  const jr = op.row + dr;
+  const jc = op.col + dc;
+
+  // Vecinos del rival (respetando vallas)
+  const opNbs = neighbors(size, op.row, op.col, walls);
+
+  // Caso (a): salto recto si la casilla detrás del rival es accesible desde el rival
+  if (inBounds(size, jr, jc) && opNbs.some((c) => c.row === jr && c.col === jc)) {
+    res.push({ row: jr, col: jc });
+    return res;
   }
 
-  // Si el rival no está ocupado en una vecina, podemos movernos a cualquiera de ellas, salvo la ocupada por el rival
-  return nbs.filter((c) => !(c.row === op.row && c.col === op.col));
+  // Caso (b): salto diagonal (dos laterales) si el salto recto está bloqueado
+  // Si estamos alineados verticalmente (dr != 0), laterales son izquierda/derecha del rival
+  // Si estamos alineados horizontalmente (dc != 0), laterales son arriba/abajo del rival
+  if (dr !== 0) {
+    for (const cand of [
+      { row: op.row, col: op.col - 1 },
+      { row: op.row, col: op.col + 1 },
+    ]) {
+      if (opNbs.some((c) => c.row === cand.row && c.col === cand.col)) res.push(cand);
+    }
+  } else if (dc !== 0) {
+    for (const cand of [
+      { row: op.row - 1, col: op.col },
+      { row: op.row + 1, col: op.col },
+    ]) {
+      if (opNbs.some((c) => c.row === cand.row && c.col === cand.col)) res.push(cand);
+    }
+  }
+
+  return res;
 }
 
 export function canMoveTo(state: GameState, player: Player, dest: Coord): boolean {
