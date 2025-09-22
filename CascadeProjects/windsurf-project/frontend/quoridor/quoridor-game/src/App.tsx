@@ -73,13 +73,13 @@ function App() {
       />
 
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-4 md:grid-cols-12">
-        <section className="md:col-span-8 lg:col-span-9 rounded-lg border border-white/10 bg-gray-900/40 p-4">
+        <section className="md:col-span-12 rounded-lg border border-white/10 bg-gray-900/40 p-4">
           <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />
           {/* Controles IA principales para el usuario */}
           <IAUserPanel />
           <h2 className="text-lg font-medium mb-3">Tablero</h2>
           <Board
-            className="w-full"
+            className="w-full max-w-[48rem] mx-auto"
             onCellClick={onCellClick}
             onWallClick={onWallClick}
             highlightCells={highlightCells}
@@ -126,9 +126,6 @@ function App() {
             {showUX && <UIUX />}
           </div>
         </section>
-
-        {/* Aside vacío para mantener el layout de grid sin duplicar paneles */}
-        <aside className="md:col-span-4 lg:col-span-3 space-y-4" />
       </main>
 
       <FootPanel showTools={showDevTools} onToggleDev={() => dispatch(toggleDevTools())} />

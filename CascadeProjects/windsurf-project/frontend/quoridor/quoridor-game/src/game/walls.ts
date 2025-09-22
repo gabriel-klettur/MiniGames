@@ -8,7 +8,21 @@ export function wallInBounds(size: number, w: Wall): boolean {
 
 /** Devuelve true si la valla candidata se solapa exactamente con una existente. */
 export function overlaps(walls: Wall[], cand: Wall): boolean {
-  return walls.some((w) => w.o === cand.o && w.r === cand.r && w.c === cand.c);
+  // En Quoridor, una valla ocupa 2 segmentos contiguos.
+  // Representamos cada valla por su "inicio" (r,c). Por tanto, dos vallas de la
+  // misma orientación se solapan si comparten cualquiera de los 2 segmentos.
+  // Eso ocurre cuando sus inicios están a distancia 0 o 1 a lo largo de la orientación,
+  // y alineados en la otra coordenada.
+  if (cand.o === 'H') {
+    // Horizontal: misma fila r, y c en {cand.c-1, cand.c, cand.c+1} implica compartir segmento
+    return walls.some(
+      (w) => w.o === 'H' && w.r === cand.r && (w.c === cand.c - 1 || w.c === cand.c || w.c === cand.c + 1)
+    );
+  }
+  // Vertical: misma columna c, y r en {cand.r-1, cand.r, cand.r+1}
+  return walls.some(
+    (w) => w.o === 'V' && w.c === cand.c && (w.r === cand.r - 1 || w.r === cand.r || w.r === cand.r + 1)
+  );
 }
 
 /** Devuelve true si la valla candidata cruza a 90° con una existente en el mismo punto (no permitido). */

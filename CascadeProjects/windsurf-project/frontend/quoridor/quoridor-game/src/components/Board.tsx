@@ -1,4 +1,5 @@
 import React from 'react';
+import { canPlaceWallBasic } from '../game/walls.ts';
 
 export interface BoardProps {
   size?: number; // default 9
@@ -259,6 +260,10 @@ export default function Board({
                   const active = hasWall('H', r, c);
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
+                  const invalidBasic = !!isHover && !canPlaceWallBasic(size, walls, { o: 'H', r, c });
+                  const hoverClass = invalidBasic
+                    ? 'bg-red-500/15 ring-2 ring-red-500/60'
+                    : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
                   const spanStyle: React.CSSProperties | undefined =
                     active || isHover
                       ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` }
@@ -272,7 +277,7 @@ export default function Board({
                         active
                           ? 'bg-amber-500/90 pointer-events-none z-10'
                           : isHover
-                            ? 'bg-emerald-400/10 ring-2 ring-emerald-500/50'
+                            ? hoverClass
                             : 'bg-transparent hover:bg-amber-500/50',
                       ].join(' ')}
                       title={`Valla H @ (${r},${c})`}
@@ -293,6 +298,10 @@ export default function Board({
                   const active = hasWall('V', r, c);
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
+                  const invalidBasic = !!isHover && !canPlaceWallBasic(size, walls, { o: 'V', r, c });
+                  const hoverClass = invalidBasic
+                    ? 'bg-red-500/15 ring-2 ring-red-500/60'
+                    : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
                   const spanStyle: React.CSSProperties | undefined =
                     active || isHover
                       ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` }
@@ -306,7 +315,7 @@ export default function Board({
                         active
                           ? 'bg-amber-500/90 pointer-events-none z-10'
                           : isHover
-                            ? 'bg-emerald-400/10 ring-2 ring-emerald-500/50'
+                            ? hoverClass
                             : 'bg-transparent hover:bg-amber-500/50',
                       ].join(' ')}
                       title={`Valla V @ (${r},${c})`}
