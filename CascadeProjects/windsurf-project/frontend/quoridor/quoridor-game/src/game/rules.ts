@@ -15,12 +15,18 @@ export function goalRow(size: number, p: Player): number {
 /**
  * Devuelve las casillas legales para mover el peón del jugador.
  * Reglas implementadas (Quoridor):
- *  - Movimiento ortogonal de 1 casilla (arriba/abajo/izquierda/derecha) si no hay valla entre medias.
- *  - Si el rival está adyacente ortogonalmente y no hay valla en medio:
- *      a) Se puede saltar recto al otro lado del rival si la casilla existe y no hay valla entre rival y destino.
- *      b) Si el salto recto está bloqueado por valla o borde, se permiten los dos movimientos diagonales alrededor del rival
- *         (si existe conexión entre el rival y dichas casillas).
- *  - Además, aunque el rival esté adyacente, siguen siendo válidos los otros movimientos ortogonales que no invaden su casilla.
+ *  - Movimiento ortogonal básico: desde tu casilla a cualquier vecino ortogonal accesible
+ *    según `neighbors()` (que ya respeta vallas y límites del tablero).
+ *  - Encuentro cara a cara (peones adyacentes ortogonalmente):
+ *      a) Salto recto obligatorio si es posible: si la casilla "detrás" del rival existe
+ *         y es accesible desde él (sin valla bloqueando), se añade ese salto y NO se
+ *         permiten diagonales en esta situación.
+ *      b) Diagonal alrededor del rival si el salto recto está bloqueado por una valla o
+ *         por el borde del tablero: se permiten hasta dos diagonales (a ambos lados del
+ *         rival) siempre que cada casilla diagonal sea accesible desde el rival
+ *         (verificado con `neighbors()` del rival, que filtra por vallas/bordes).
+ *  - Otros movimientos ortogonales (no invadir al rival) siguen siendo válidos aunque el
+ *    rival esté adyacente.
  */
 export function legalPawnMoves(state: GameState, player: Player = state.current): Coord[] {
   const { size, pawns, walls } = state;
@@ -47,6 +53,9 @@ export function legalPawnMoves(state: GameState, player: Player = state.current)
   const opNbs = neighbors(size, op.row, op.col, walls);
 
   // Caso (a): salto recto si la casilla detrás del rival es accesible desde el rival
+  // Nota: esta comprobación cubre dos bloqueos posibles del salto recto:
+  //  - Borde del tablero (fuera de rango)
+  //  - Valla entre el rival y la casilla de salto
   if (inBounds(size, jr, jc) && opNbs.some((c) => c.row === jr && c.col === jc)) {
     res.push({ row: jr, col: jc });
     return res;
@@ -60,6 +69,7 @@ export function legalPawnMoves(state: GameState, player: Player = state.current)
       { row: op.row, col: op.col - 1 },
       { row: op.row, col: op.col + 1 },
     ]) {
+      // Sólo se añade si el rival puede "ver" esa casilla lateral (no hay valla)
       if (opNbs.some((c) => c.row === cand.row && c.col === cand.col)) res.push(cand);
     }
   } else if (dc !== 0) {
@@ -67,6 +77,7 @@ export function legalPawnMoves(state: GameState, player: Player = state.current)
       { row: op.row - 1, col: op.col },
       { row: op.row + 1, col: op.col },
     ]) {
+      // Sólo se añade si el rival puede "ver" esa casilla lateral (no hay valla)
       if (opNbs.some((c) => c.row === cand.row && c.col === cand.col)) res.push(cand);
     }
   }

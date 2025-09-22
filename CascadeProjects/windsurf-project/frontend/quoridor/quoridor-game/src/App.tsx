@@ -10,7 +10,10 @@ import Board from './components/Board.tsx'
 import RulesPanel from './components/DevTools/RulesPanel.tsx'
 import UIUX from './components/DevTools/UIUX.tsx'
 import InfoPanel from './components/InfoPanel.tsx'
-import { legalPawnMoves } from './game/rules.ts'
+import { legalPawnMoves, goalRow } from './game/rules.ts'
+import GameOverModal from './components/GameOverModal.tsx'
+import IAUserPanel from './components/IA/IAUserPanel.tsx'
+import IAPanel from './components/IA/IAPanel.tsx'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -54,6 +57,14 @@ function App() {
     return legalPawnMoves(game).map((c) => [c.row, c.col] as [number, number])
   }, [game])
 
+  // ¿Hay ganador? Un jugador gana al alcanzar su fila objetivo
+  const winner = useMemo(() => {
+    const size = game.size
+    if (game.pawns.L.row === goalRow(size, 'L')) return 'L' as const
+    if (game.pawns.D.row === goalRow(size, 'D')) return 'D' as const
+    return null
+  }, [game])
+
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <HeaderPanel
@@ -64,6 +75,8 @@ function App() {
       <main className="mx-auto max-w-6xl px-4 py-6 grid gap-4 md:grid-cols-12">
         <section className="md:col-span-8 lg:col-span-9 rounded-lg border border-white/10 bg-gray-900/40 p-4">
           <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />
+          {/* Controles IA principales para el usuario */}
+          <IAUserPanel />
           <h2 className="text-lg font-medium mb-3">Tablero</h2>
           <Board
             className="w-full"
@@ -109,12 +122,7 @@ function App() {
                 <p className="text-xs text-gray-300">Placeholder de historial de movimientos/acciones.</p>
               </section>
             )}
-            {showIA && (
-              <section className="rounded-lg border border-white/10 bg-gray-900/50 p-4">
-                <h3 className="text-sm font-semibold mb-2">IA (vista de desarrollo)</h3>
-                <p className="text-xs text-gray-300">Placeholder para datos o controles de IA.</p>
-              </section>
-            )}
+            {showIA && <IAPanel />}
             {showUX && <UIUX />}
           </div>
         </section>
@@ -124,6 +132,14 @@ function App() {
       </main>
 
       <FootPanel showTools={showDevTools} onToggleDev={() => dispatch(toggleDevTools())} />
+
+      {/* Modal de fin de partida */}
+      {winner && (
+        <GameOverModal
+          message={`¡Ganador: ${winner === 'L' ? 'Claras' : 'Oscuras'} (${winner}) — alcanzó la meta!`}
+          onConfirm={onNewGame}
+        />
+      )}
 
       {/* Footer eliminado según solicitud: sin texto ni botón de tema */}
     </div>
