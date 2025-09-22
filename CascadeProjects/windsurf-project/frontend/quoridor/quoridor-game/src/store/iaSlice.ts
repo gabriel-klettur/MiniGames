@@ -31,6 +31,8 @@ export interface IAState<M = any> {
   engine?: 'minimax' | 'mcts' | 'hybrid';
   /** Preset de estilo de evaluación/estrategia. */
   preset?: 'balanced' | 'aggressive' | 'defensive';
+  /** Preset de dificultad (mapea a profundidad y algunos parámetros). */
+  difficultyPreset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte';
   /** Qué bandos están controlados por la IA (para jugar vs IA). */
   control: { L: boolean; D: boolean };
   /** Configuración de trazas para visualización. */
@@ -76,6 +78,7 @@ const initialState: IAState = {
   autoplay: false,
   engine: 'minimax',
   preset: 'balanced',
+  difficultyPreset: 'intermedio',
   control: { L: false, D: true },
   trace: { enabled: false, sampleRate: 0.25, maxDepth: 4, cap: 5000 },
   config: {
@@ -157,6 +160,48 @@ const iaSlice = createSlice({
         state.config.reserveWallsMin = 2;
         state.config.enablePVS = true;
         state.config.enableLMR = true;
+      }
+    },
+    /**
+     * Selección de preset de dificultad (Novato, Intermedio, Bueno, Fuerte).
+     * Ajusta profundidad y algunos parámetros por defecto pensados para cada nivel.
+     */
+    setDifficultyPreset(state, action: PayloadAction<'novato' | 'intermedio' | 'bueno' | 'fuerte'>) {
+      state.difficultyPreset = action.payload;
+      const p = action.payload;
+      if (p === 'novato') {
+        state.depth = 2;
+        // Config menos agresiva y más rápida
+        state.config.maxWallsRoot = 16;
+        state.config.maxWallsNode = 8;
+        state.config.enableIterative = true;
+        state.config.enableLMR = false;
+        state.config.enablePVS = true;
+        state.config.ttSize = 16384;
+      } else if (p === 'intermedio') {
+        state.depth = 4;
+        state.config.maxWallsRoot = 20;
+        state.config.maxWallsNode = 10;
+        state.config.enableIterative = true;
+        state.config.enableLMR = false;
+        state.config.enablePVS = true;
+        state.config.ttSize = 32768;
+      } else if (p === 'bueno') {
+        state.depth = 6;
+        state.config.maxWallsRoot = 24;
+        state.config.maxWallsNode = 12;
+        state.config.enableIterative = true;
+        state.config.enableLMR = true;
+        state.config.enablePVS = true;
+        state.config.ttSize = 49152;
+      } else if (p === 'fuerte') {
+        state.depth = 8;
+        state.config.maxWallsRoot = 28;
+        state.config.maxWallsNode = 14;
+        state.config.enableIterative = true;
+        state.config.enableLMR = true;
+        state.config.enablePVS = true;
+        state.config.ttSize = 65536;
       }
     },
     setDepth(state, action: PayloadAction<number>) {
@@ -279,6 +324,7 @@ const iaSlice = createSlice({
 export const {
   setEngine,
   setPreset,
+  setDifficultyPreset,
   setDepth,
   setTimeMode,
   setTimeSeconds,

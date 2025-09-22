@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAIForL, toggleAIForD } from '../../store/iaSlice.ts';
+import { setDepth, toggleAIForL, toggleAIForD, setDifficultyPreset } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 import TimeControls from './panel/TimeControls.tsx';
 import RootMovesList from './panel/RootMovesList.tsx';
@@ -60,6 +60,27 @@ export default function IAPanel() {
               >
                 {[1,2,3,4,5,6,7,8,9,10].map(d => <option key={d} value={d}>{d}</option>)}
               </select>
+            </div>
+
+            {/* Presets de dificultad: Novato / Intermedio / Bueno / Fuerte */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Nivel</span>
+              <div className="inline-flex rounded-md overflow-hidden border border-white/10">
+                {(['novato','intermedio','bueno','fuerte'] as const).map((p) => (
+                  <button
+                    key={p}
+                    className={[
+                      'px-3 py-1.5 text-sm',
+                      ia.difficultyPreset === p ? 'bg-indigo-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700',
+                    ].join(' ')}
+                    onClick={() => dispatch(setDifficultyPreset(p))}
+                    aria-pressed={ia.difficultyPreset === p}
+                    title={p === 'novato' ? 'Novato' : p === 'intermedio' ? 'Intermedio' : p === 'bueno' ? 'Bueno' : 'Fuerte'}
+                  >
+                    {p === 'novato' ? 'Novato' : p === 'intermedio' ? 'Intermedio' : p === 'bueno' ? 'Bueno' : 'Fuerte'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <TimeControls elapsedMs={stats.elapsedMs} />
