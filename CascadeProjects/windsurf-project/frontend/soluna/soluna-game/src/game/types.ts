@@ -26,5 +26,6 @@ export interface GameState {
 export type GameAction =
   | { type: 'select'; id: string }
   | { type: 'attempt-merge'; targetId: string }
+  | { type: 'move-tower'; id: string; pos: { x: number; y: number } }
   | { type: 'new-round' }
   | { type: 'reset-game' };

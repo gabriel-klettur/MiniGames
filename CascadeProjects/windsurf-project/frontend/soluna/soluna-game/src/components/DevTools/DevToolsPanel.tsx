@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useGame } from '../game/store';
+import { useGame } from '../../game/store';
 
 export default function DevToolsPanel() {
   const { state, dispatch } = useGame();

@@ -70,6 +70,11 @@ function reducer(state: GameState, action: GameAction): GameState {
         currentPlayer: nextPlayer,
       };
     }
+    case 'move-tower': {
+      if (state.roundOver || state.gameOver) return state;
+      const towers = state.towers.map(t => (t.id === action.id ? { ...t, pos: { x: action.pos.x, y: action.pos.y } } : t));
+      return { ...state, towers };
+    }
     case 'new-round': {
       if (!state.roundOver && !state.gameOver) return state; // solo cuando terminó la ronda o juego
       const starter: 1 | 2 = state.lastMover ? (state.lastMover === 1 ? 2 : 1) : 1;
