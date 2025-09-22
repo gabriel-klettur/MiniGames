@@ -27,7 +27,7 @@ const initialState: UIState = {
   showRules: false,
   showIA: false,
   showHistory: false,
-  showFases: true,
+  showFases: false,
   showUX: false,
   wallGap: 8,
   boardWarp: {

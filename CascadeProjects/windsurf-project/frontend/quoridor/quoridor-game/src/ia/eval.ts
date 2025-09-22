@@ -48,3 +48,41 @@ export function evaluate(state: GameState, rootPlayer: Player): number {
 
   return score;
 }
+
+/**
+ * shortestPathToGoal — Devuelve un camino (lista de coords) desde el peón del jugador hasta
+ * su fila objetivo, si existe. Si hay múltiples caminos mínimos, devuelve uno cualquiera.
+ * Si no hay camino (no debería suceder), devuelve []. Incluye el origen y el destino alcanzado.
+ */
+export function shortestPathToGoal(state: GameState, player: Player): Coord[] {
+  const targetRow = goalRow(state.size, player);
+  const start = state.pawns[player];
+  if (start.row === targetRow) return [start];
+  type Node = { c: Coord; d: number };
+  const q: Node[] = [{ c: start, d: 0 }];
+  const seen = new Set<string>([key(start)]);
+  const parent = new Map<string, Coord>();
+  while (q.length) {
+    const { c, d } = q.shift()!;
+    for (const nb of neighbors(state.size, c.row, c.col, state.walls)) {
+      const k = key(nb);
+      if (seen.has(k)) continue;
+      parent.set(k, c);
+      if (nb.row === targetRow) {
+        // reconstruir camino
+        const path: Coord[] = [nb];
+        let curKey = k;
+        while (parent.has(curKey)) {
+          const p = parent.get(curKey)!;
+          path.push(p);
+          curKey = key(p);
+          if (p.row === start.row && p.col === start.col) break;
+        }
+        return path.reverse();
+      }
+      seen.add(k);
+      q.push({ c: nb, d: d + 1 });
+    }
+  }
+  return [];
+}

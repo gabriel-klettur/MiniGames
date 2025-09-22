@@ -39,4 +39,22 @@ export interface SearchConfig {
   enableAlphaBeta: boolean;
   randomTieBreak: boolean;
   hardTimeLimit: boolean;
+  /** Peso λ para penalizar aumentar nuestra distancia al evaluar vallas. 0..1 */
+  wallMeritLambda?: number;
+  /** Si true, pre-filtra vallas candidatas cerca de la ruta mínima del oponente. */
+  enableWallPathFilter?: boolean;
+  /** Radio (en celdas) para seleccionar vallas cerca de la ruta del oponente. */
+  wallPathRadius?: number;
+  /** Heurística/orden avanzado (a implementar): */
+  enableKillerHeuristic?: boolean;
+  enableHistoryHeuristic?: boolean;
+  enableQuiescence?: boolean;
+  quiescenceMaxPlies?: number;
+  enableLMR?: boolean;
+  enablePVS?: boolean;
+  enableAspirationWindows?: boolean;
+  aspirationWindow?: number; // tamaño de ventana (p. ej., 0.5)
+  /** Priorización valla vs movimiento en raíz: umbral base τ y reserva mínima de vallas. */
+  wallVsPawnTauBase?: number;
+  reserveWallsMin?: number;
 }
