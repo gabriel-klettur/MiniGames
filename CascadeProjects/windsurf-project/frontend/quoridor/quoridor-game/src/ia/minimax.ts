@@ -2,7 +2,7 @@ import type { GameState, Player } from '../game/types.ts';
 import { goalRow } from '../game/rules.ts';
 import { evaluate } from './eval.ts';
 import { applyAIMove, generateMoves } from './moves.ts';
-import type { AIMove, SearchParams, SearchResult, SearchConfig } from './types.ts';
+import type { AIMove, SearchParams, SearchResult, SearchConfig, TraceConfig, TraceEvent } from './types.ts';
 import { stateKey } from './hash.ts';
 
 interface ABResult {
@@ -38,16 +38,27 @@ function alphaBeta(
   history?: Map<string, number>,
   lastMove?: AIMove | null,
   qPlies: number = 0,
+  tracer?: Tracer,
 ): ABResult {
+  const maximizing = state.current === rootPlayer;
+  // Enter node first so any early return still has a matching exit
+  if (tracer) tracer.nodeEnter(depth, ply, alpha, beta, maximizing);
+
   // Time control
   if (deadline !== undefined && performance.now() >= deadline) {
-    return { score: evaluate(state, rootPlayer), pv: [], nodes: 1 };
+    const score = evaluate(state, rootPlayer);
+    if (tracer) tracer.emitNode({ type: 'eval', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), score });
+    if (tracer) tracer.nodeExit(depth, ply, score);
+    return { score, pv: [], nodes: 1 };
   }
 
   const winner = isTerminal(state);
   if (winner) {
     const sign = winner === rootPlayer ? 1 : -1;
-    return { score: 1000 * sign, pv: [], nodes: 1 };
+    const score = 1000 * sign;
+    if (tracer) tracer.emitNode({ type: 'eval', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), score });
+    if (tracer) tracer.nodeExit(depth, ply, score);
+    return { score, pv: [], nodes: 1 };
   }
 
   if (depth === 0) {
@@ -56,15 +67,20 @@ function alphaBeta(
       depth = 1; // extender una capa
       qPlies += 1;
     } else {
-      return { score: evaluate(state, rootPlayer), pv: [], nodes: 1 };
+      const score = evaluate(state, rootPlayer);
+      if (tracer) tracer.emitNode({ type: 'eval', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), score });
+      if (tracer) tracer.nodeExit(depth, ply, score);
+      return { score, pv: [], nodes: 1 };
     }
   }
 
-  const maximizing = state.current === rootPlayer;
   let moves = generateMoves(state, config, false);
   if (moves.length === 0) {
     // No legal moves — extremely unlikely in Quoridor; fallback to evaluation
-    return { score: evaluate(state, rootPlayer), pv: [], nodes: 1 };
+    const score = evaluate(state, rootPlayer);
+    if (tracer) tracer.emitNode({ type: 'eval', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), score });
+    if (tracer) tracer.nodeExit(depth, ply, score);
+    return { score, pv: [], nodes: 1 };
   }
 
   let bestScore = maximizing ? -Infinity : Infinity;
@@ -77,6 +93,8 @@ function alphaBeta(
     const e = tt.get(key);
     if (e && e.depth >= depth && e.alpha <= alpha && e.beta >= beta) {
       // Use stored score as exact within current window
+      if (tracer) tracer.emitNode({ type: 'tt_hit', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId() });
+      if (tracer) tracer.nodeExit(depth, ply, e.score);
       return { score: e.score, pv: [], nodes: 1 };
     }
   }
@@ -145,21 +163,22 @@ function alphaBeta(
       } else {
         localAlpha = localBeta - 1;
       }
-      res = alphaBeta(next, childDepth, localAlpha, localBeta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies);
+      res = alphaBeta(next, childDepth, localAlpha, localBeta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
       nodes += res.nodes; // contar la búsqueda de ventana estrecha
       const inWindow = res.score > alpha && res.score < beta;
       if (inWindow) {
-        res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies);
+        res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
         nodes += res.nodes; // sólo sumamos la re-búsqueda completa
       }
     } else {
-      res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies);
+      res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
       nodes += res.nodes;
     }
     // Nota: no volver a sumar res.nodes aquí para evitar doble conteo.
     if (maximizing) {
       if (res.score > bestScore || (config?.randomTieBreak && res.score === bestScore && Math.random() < 0.5)) {
         bestScore = res.score; bestPV = [m, ...res.pv];
+        if (tracer) tracer.emitNode({ type: 'best_update', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), move: m, score: bestScore });
       }
       if (bestScore > alpha) alpha = bestScore;
       if (config?.enableAlphaBeta !== false && alpha >= beta) {
@@ -176,11 +195,13 @@ function alphaBeta(
           const mk = moveKey(m);
           history.set(mk, (history.get(mk) ?? 0) + depth * depth);
         }
+        if (tracer) tracer.emitNode({ type: 'cutoff', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), reason: 'beta', move: m, alpha, beta });
         break; // beta cut
       }
     } else {
       if (res.score < bestScore || (config?.randomTieBreak && res.score === bestScore && Math.random() < 0.5)) {
         bestScore = res.score; bestPV = [m, ...res.pv];
+        if (tracer) tracer.emitNode({ type: 'best_update', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), move: m, score: bestScore });
       }
       if (bestScore < beta) beta = bestScore;
       if (config?.enableAlphaBeta !== false && alpha >= beta) {
@@ -197,6 +218,7 @@ function alphaBeta(
           const mk = moveKey(m);
           history.set(mk, (history.get(mk) ?? 0) + depth * depth);
         }
+        if (tracer) tracer.emitNode({ type: 'cutoff', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), reason: 'alpha', move: m, alpha, beta });
         break; // alpha cut
       }
     }
@@ -213,7 +235,72 @@ function alphaBeta(
     }
   }
 
+  if (tracer) tracer.nodeExit(depth, ply, bestScore, bestPV[0]);
   return { score: bestScore, pv: bestPV, nodes: nodes + 1 };
+}
+
+type Tracer = {
+  cfg: TraceConfig | undefined;
+  onTrace?: (ev: TraceEvent | TraceEvent[]) => void;
+  nextId: number;
+  parentStack: number[];
+  sampledStack: boolean[];
+  sample(): boolean;
+  emit(ev: TraceEvent | TraceEvent[]): void;
+  emitNode(ev: TraceEvent): void;
+  nodeEnter(depth: number, ply: number, alpha: number, beta: number, maximizing: boolean): void;
+  nodeExit(depth: number, ply: number, score: number, bestMove?: AIMove): void;
+  peekNodeId(): number;
+};
+
+function makeTracer(cfg?: TraceConfig, onTrace?: (ev: TraceEvent | TraceEvent[]) => void): Tracer | undefined {
+  if (!cfg || !cfg.enabled) return undefined;
+  const t: Tracer = {
+    cfg,
+    onTrace,
+    nextId: 1,
+    parentStack: [],
+    sampledStack: [],
+    sample() {
+      const rate = typeof cfg.sampleRate === 'number' ? Math.max(0, Math.min(1, cfg.sampleRate)) : 0;
+      return Math.random() < rate;
+    },
+    emit(ev) {
+      if (!this.onTrace) return;
+      if (Array.isArray(ev)) {
+        if (ev.length === 0) return;
+        this.onTrace(ev);
+      } else {
+        this.onTrace(ev);
+      }
+    },
+    emitNode(ev) {
+      // Only emit if current node is sampled
+      if (!this.sampledStack.length) return; // outside node context; ignore
+      if (!this.sampledStack[this.sampledStack.length - 1]) return;
+      this.emit(ev);
+    },
+    nodeEnter(depth, ply, alpha, beta, maximizing) {
+      const parentId = this.parentStack.length ? this.parentStack[this.parentStack.length - 1] : undefined;
+      const nodeId = this.nextId++;
+      this.parentStack.push(nodeId);
+      const withinDepth = this.cfg?.maxDepth === undefined || ply <= this.cfg.maxDepth;
+      const sampled = withinDepth && this.sample();
+      this.sampledStack.push(sampled);
+      if (sampled) {
+        this.emit({ type: 'node_enter', t: performance.now(), depth, ply, nodeId, parentId, alpha, beta, maximizing });
+      }
+    },
+    nodeExit(depth, ply, score, bestMove) {
+      const nodeId = this.parentStack.pop() ?? 0;
+      const sampled = this.sampledStack.pop() ?? false;
+      if (sampled) {
+        this.emit({ type: 'node_exit', t: performance.now(), depth, ply, nodeId, score, bestMove });
+      }
+    },
+    peekNodeId() { return this.parentStack.length ? this.parentStack[this.parentStack.length - 1] : 0; },
+  };
+  return t;
 }
 
 export function searchBestMove(state: GameState, params: SearchParams, rootPlayer?: Player): SearchResult {
@@ -221,6 +308,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
   const rp: Player = rootPlayer ?? state.current;
   const deadline = params.deadlineMs;
   const cfg = params.config;
+  const tracer = makeTracer(params.traceConfig, params.onTrace);
   const tt: Map<string, TTEntry> | undefined = cfg?.enableTT ? new Map() : undefined;
   // Data for enhanced move ordering
   const killers: AIMove[][] = [];
@@ -245,6 +333,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
 
   // Iterative deepening (optional): dStart..maxDepth or until deadline
   for (let d = dStart; d <= dEnd; d++) {
+    if (tracer) tracer.emit({ type: 'iter_start', t: performance.now(), depth: d });
     let bestAtD: AIMove | null = null;
     let bestScoreAtD = -Infinity;
     let bestPVAtD: AIMove[] = [];
@@ -265,7 +354,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
         if (now >= deadline) break;
       }
       const next = applyAIMove(state, m);
-      const res = alphaBeta(next, d - 1, rootAlpha, rootBeta, rp, deadline, cfg, tt, 1, killers, history, m, 0);
+      const res = alphaBeta(next, d - 1, rootAlpha, rootBeta, rp, deadline, cfg, tt, 1, killers, history, m, 0, tracer);
       nodesAtD += res.nodes;
       rootScores.push({ move: m, score: res.score });
       if (res.score > bestScoreAtD) { bestScoreAtD = res.score; bestAtD = m; bestPVAtD = [m, ...res.pv]; }
@@ -285,6 +374,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
       if (now >= deadline) break;
       if (cfg?.hardTimeLimit && (deadline - now) <= 0) break;
     }
+    if (tracer) tracer.emit({ type: 'iter_end', t: performance.now(), depth: d });
   }
 
   const elapsedMs = performance.now() - start;

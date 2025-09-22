@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts';
 import type { RootState } from '../store/index.ts';
-import { setBusy, setStats, resetStats } from '../store/iaSlice.ts';
+import { setBusy, setStats } from '../store/iaSlice.ts';
 import { movePawn, placeWall } from '../store/gameSlice.ts';
 import { searchBestMove } from './minimax.ts';
-import type { AIMove } from './types.ts';
+import type { AIMove, TraceEvent } from './types.ts';
 import { goalRow } from '../game/rules.ts';
 import { shortestDistanceToGoal } from './eval.ts';
+import { traceBuffer } from './trace.ts';
 
 export function useAI() {
   const dispatch = useAppDispatch();
@@ -15,6 +16,25 @@ export function useAI() {
   const workerRef = useRef<Worker | null>(null);
   const startRef = useRef<number | null>(null);
   const tickRef = useRef<number | null>(null);
+  // Throttled trace processing
+  const traceQueueRef = useRef<TraceEvent[][]>([]);
+  const traceRafRef = useRef<number | null>(null);
+  const scheduleTraceDrain = useCallback(() => {
+    if (traceRafRef.current != null) return; // already scheduled
+    const drain = () => {
+      traceRafRef.current = null;
+      const tStart = performance.now();
+      const budgetMs = 8; // process up to ~8ms per frame
+      while (traceQueueRef.current.length > 0 && (performance.now() - tStart) < budgetMs) {
+        const batch = traceQueueRef.current.shift();
+        if (batch && batch.length) traceBuffer.add(batch);
+      }
+      if (traceQueueRef.current.length > 0) {
+        traceRafRef.current = requestAnimationFrame(drain);
+      }
+    };
+    traceRafRef.current = requestAnimationFrame(drain);
+  }, []);
   // Cleanup worker on unmount
   useEffect(() => {
     return () => {
@@ -39,16 +59,21 @@ export function useAI() {
     // Autoplay respeta control; petición manual puede forzar
     if (!force && !ia.control[game.current]) return;
 
+    // Configurar buffer de trazas antes de iniciar
+    traceBuffer.setMax(ia.trace.cap);
+    if (ia.trace.enabled) traceBuffer.clear();
+
     startRef.current = performance.now();
     dispatch(setBusy(true));
-    dispatch(resetStats());
+    // Reset KPIs but preserve busy=true
+    dispatch(setStats({ nodes: 0, elapsedMs: 0, depthReached: 0, evalScore: null, pv: [], rootMoves: [] } as any));
 
     const start = performance.now();
     const deadline = ia.timeMode === 'manual' ? performance.now() + Math.max(0, ia.timeSeconds) * 1000 : undefined;
 
     let result: ReturnType<typeof searchBestMove>;
-    if (ia.config.enableWorker) {
-      // Lazy init worker
+    // Always try Web Worker first to keep UI responsive for live time updates
+    try {
       if (!workerRef.current) {
         workerRef.current = new Worker(new URL('./aiWorker.ts', import.meta.url), { type: 'module' });
       }
@@ -58,6 +83,15 @@ export function useAI() {
         const onMessage = (ev: MessageEvent<any>) => {
           const msg = ev.data;
           if (!msg || (msg.id !== id)) return; // ignore other messages
+          if (msg.type === 'trace') {
+            const evs: TraceEvent[] = msg.payload?.events ?? [];
+            if (ia.trace.enabled && evs.length) {
+              traceQueueRef.current.push(evs);
+              scheduleTraceDrain();
+            }
+            return; // keep listening
+          }
+          // For terminal messages, cleanup listeners and resolve
           w.removeEventListener('message', onMessage as any);
           w.removeEventListener('error', onError as any);
           if (msg.type === 'result') {
@@ -82,17 +116,24 @@ export function useAI() {
             state: game,
             params: { maxDepth: ia.depth, deadlineMs: deadline, config: ia.config },
             rootPlayer: game.current,
+            traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
           },
         });
       });
-    } else {
-      // Fallback sin worker; encapsulamos en Promise para no bloquear brevemente.
+    } catch (err) {
+      // Fallback sin worker (sentimos: la UI no podrá animar mientras el cómputo bloquee el hilo)
       result = await new Promise<ReturnType<typeof searchBestMove>>((resolve) => {
         setTimeout(() => {
           resolve(searchBestMove(
             game,
-            { maxDepth: ia.depth, deadlineMs: deadline, config: ia.config },
-            game.current
+            {
+              maxDepth: ia.depth,
+              deadlineMs: deadline,
+              config: ia.config,
+              traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
+              onTrace: (ev) => { if (ia.trace.enabled) traceBuffer.add(ev as any); },
+            },
+            game.current,
           ));
         }, 0);
       });

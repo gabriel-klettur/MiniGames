@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import type { TraceConfig } from '../ia/types.ts';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -32,6 +33,8 @@ export interface IAState<M = any> {
   preset?: 'balanced' | 'aggressive' | 'defensive';
   /** Qué bandos están controlados por la IA (para jugar vs IA). */
   control: { L: boolean; D: boolean };
+  /** Configuración de trazas para visualización. */
+  trace: TraceConfig & { cap: number };
   /** Configuración avanzada (extensibilidad) */
   config: {
     enableMoveOrdering: boolean;
@@ -74,6 +77,7 @@ const initialState: IAState = {
   engine: 'minimax',
   preset: 'balanced',
   control: { L: false, D: true },
+  trace: { enabled: false, sampleRate: 0.25, maxDepth: 4, cap: 5000 },
   config: {
     enableMoveOrdering: true,
     maxWallsRoot: 24,
@@ -253,6 +257,22 @@ const iaSlice = createSlice({
     resetConfigToDefaults(state) {
       state.config = { ...initialState.config } as any;
     },
+    // --- Trace configuration ---
+    setTraceEnabled(state, action: PayloadAction<boolean>) {
+      state.trace.enabled = !!action.payload;
+    },
+    setTraceSampleRate(state, action: PayloadAction<number>) {
+      const v = Number(action.payload);
+      state.trace.sampleRate = Math.max(0, Math.min(1, isFinite(v) ? v : 0));
+    },
+    setTraceMaxDepth(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.trace.maxDepth = typeof v === 'number' ? Math.max(0, Math.round(v)) : undefined;
+    },
+    setTraceCap(state, action: PayloadAction<number>) {
+      const v = Math.max(100, Math.round(Number(action.payload)));
+      state.trace.cap = v;
+    },
   },
 });
 
@@ -292,6 +312,10 @@ export const {
   setStats,
   resetStats,
   resetConfigToDefaults,
+  setTraceEnabled,
+  setTraceSampleRate,
+  setTraceMaxDepth,
+  setTraceCap,
 } = iaSlice.actions;
 
 export default iaSlice.reducer;

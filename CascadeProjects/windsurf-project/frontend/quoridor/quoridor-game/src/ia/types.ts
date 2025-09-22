@@ -17,6 +17,10 @@ export interface SearchParams {
   maxDepth: number; // 1..10
   deadlineMs?: number; // Date.now() deadline for time control (optional)
   config?: SearchConfig;
+  /** Optional callback to receive trace events during search (non-worker mode). */
+  onTrace?: (ev: TraceEvent | TraceEvent[]) => void;
+  /** Optional trace configuration to control verbosity and sampling. */
+  traceConfig?: TraceConfig;
 }
 
 export interface SearchResult {
@@ -58,3 +62,78 @@ export interface SearchConfig {
   wallVsPawnTauBase?: number;
   reserveWallsMin?: number;
 }
+
+// --- Tracing model ---
+export type TraceConfig = {
+  enabled: boolean;
+  /** 0..1 probability of keeping an event (sampling). */
+  sampleRate: number;
+  /** Optional maximum depth to trace (inclusive). */
+  maxDepth?: number;
+};
+
+export type TraceBase = {
+  t: number; // performance.now()
+  depth: number; // remaining depth in the AB call
+  ply: number; // ply from root
+  nodeId: number; // unique id per node
+  parentId?: number;
+};
+
+export type TraceNodeEnter = TraceBase & {
+  type: 'node_enter';
+  alpha: number;
+  beta: number;
+  maximizing: boolean;
+};
+
+export type TraceNodeExit = TraceBase & {
+  type: 'node_exit';
+  score: number;
+  bestMove?: AIMove;
+};
+
+export type TraceEval = TraceBase & {
+  type: 'eval';
+  score: number;
+};
+
+export type TraceCutoff = TraceBase & {
+  type: 'cutoff';
+  reason: 'alpha' | 'beta';
+  move?: AIMove;
+  alpha: number;
+  beta: number;
+};
+
+export type TraceTTHit = TraceBase & {
+  type: 'tt_hit';
+};
+
+export type TraceBestUpdate = TraceBase & {
+  type: 'best_update';
+  move: AIMove;
+  score: number;
+};
+
+export type TraceIterStart = {
+  type: 'iter_start';
+  t: number;
+  depth: number; // current iterative depth
+};
+
+export type TraceIterEnd = {
+  type: 'iter_end';
+  t: number;
+  depth: number;
+};
+
+export type TraceEvent =
+  | TraceNodeEnter
+  | TraceNodeExit
+  | TraceEval
+  | TraceCutoff
+  | TraceTTHit
+  | TraceBestUpdate
+  | TraceIterStart
+  | TraceIterEnd;
