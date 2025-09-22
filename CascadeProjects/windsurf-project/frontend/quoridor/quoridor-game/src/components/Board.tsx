@@ -1,5 +1,5 @@
 import React from 'react';
-import { canPlaceWallBasic } from '../game/walls.ts';
+import { validateWallPlacement } from '../game/rules.ts';
 
 export interface BoardProps {
   size?: number; // default 9
@@ -44,7 +44,7 @@ export default function Board({
   className,
   onCellClick = () => {},
   pawns = { L: [8, Math.floor(9 / 2)], D: [0, Math.floor(9 / 2)] },
-  wallGap = 16,
+  wallGap = 8,
   walls = [],
   onWallClick = () => {},
   highlightCells = [],
@@ -260,8 +260,20 @@ export default function Board({
                   const active = hasWall('H', r, c);
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
-                  const invalidBasic = !!isHover && !canPlaceWallBasic(size, walls, { o: 'H', r, c });
-                  const hoverClass = invalidBasic
+                  const invalidPlacement = !!isHover && !validateWallPlacement(
+                    {
+                      size,
+                      pawns: {
+                        L: { row: pawns.L[0], col: pawns.L[1] },
+                        D: { row: pawns.D[0], col: pawns.D[1] },
+                      },
+                      walls,
+                      wallsLeft: { L: 10, D: 10 },
+                      current: 'L',
+                    },
+                    { o: 'H', r, c },
+                  );
+                  const hoverClass = invalidPlacement
                     ? 'bg-red-500/15 ring-2 ring-red-500/60'
                     : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
                   const spanStyle: React.CSSProperties | undefined =
@@ -298,8 +310,20 @@ export default function Board({
                   const active = hasWall('V', r, c);
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
-                  const invalidBasic = !!isHover && !canPlaceWallBasic(size, walls, { o: 'V', r, c });
-                  const hoverClass = invalidBasic
+                  const invalidPlacement = !!isHover && !validateWallPlacement(
+                    {
+                      size,
+                      pawns: {
+                        L: { row: pawns.L[0], col: pawns.L[1] },
+                        D: { row: pawns.D[0], col: pawns.D[1] },
+                      },
+                      walls,
+                      wallsLeft: { L: 10, D: 10 },
+                      current: 'L',
+                    },
+                    { o: 'V', r, c },
+                  );
+                  const hoverClass = invalidPlacement
                     ? 'bg-red-500/15 ring-2 ring-red-500/60'
                     : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
                   const spanStyle: React.CSSProperties | undefined =

@@ -29,7 +29,7 @@ const initialState: UIState = {
   showHistory: false,
   showFases: true,
   showUX: false,
-  wallGap: 16,
+  wallGap: 8,
   boardWarp: {
     enabled: false,
     tl: { x: 0, y: 0 },
