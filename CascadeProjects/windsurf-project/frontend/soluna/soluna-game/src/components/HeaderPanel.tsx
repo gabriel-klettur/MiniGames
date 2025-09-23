@@ -7,7 +7,7 @@ function Stars({ count }: { count: number }) {
 export default function HeaderPanel() {
   const { state, dispatch } = useGame();
   return (
-    <header className="header-panel">
+    <header className="header-panel card">
       <div className="title">Soluna</div>
       <div className="players">
         <div className={`player-badge ${state.currentPlayer === 1 ? 'active' : ''}`}>
@@ -19,9 +19,9 @@ export default function HeaderPanel() {
       </div>
       <div className="actions">
         {state.roundOver && !state.gameOver && (
-          <button onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
+          <button className="btn btn-primary" onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
         )}
-        <button onClick={() => dispatch({ type: 'reset-game' })}>Reiniciar</button>
+        <button className="btn btn-secondary" onClick={() => dispatch({ type: 'reset-game' })}>Reiniciar</button>
       </div>
     </header>
   );

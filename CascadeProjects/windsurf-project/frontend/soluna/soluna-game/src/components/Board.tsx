@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../game/store';
 import { canMerge } from '../game/rules';
 import { SymbolIcon } from './Icons';
+import GameOverModal from './GameOverModal';
 
 export default function Board() {
   const { state, dispatch } = useGame();
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const ellipseRef = useRef<HTMLDivElement | null>(null);
-  const [sizes, setSizes] = useState<{ w: number; h: number; token: number }>({ w: 0, h: 0, token: 0 });
+  const [sizes, setSizes] = useState<{ w: number; h: number; token: number; stackStep: number; maxDiscs: number; mergeFactor: number; dropHighlight: boolean; freeMove: boolean }>({ w: 0, h: 0, token: 0, stackStep: 18, maxDiscs: 10, mergeFactor: 0.6, dropHighlight: true, freeMove: true });
   const [dragId, setDragId] = useState<string | null>(null);
   const dragStartRef = useRef<{ id: string; pos: { x: number; y: number } } | null>(null);
   const movedDuringDragRef = useRef(false);
@@ -22,7 +23,13 @@ export default function Board() {
       const cs = getComputedStyle(ellipse);
       const tokenStr = cs.getPropertyValue('--token-size').trim();
       const token = tokenStr.endsWith('px') ? parseFloat(tokenStr) : parseFloat(tokenStr) || 56;
-      setSizes({ w: rect.width, h: rect.height, token });
+      const stepStr = cs.getPropertyValue('--stack-step').trim();
+      const stackStep = stepStr.endsWith('px') ? parseFloat(stepStr) : parseFloat(stepStr) || 18;
+      const maxDiscs = parseInt(cs.getPropertyValue('--max-discs').trim() || '10', 10) || 10;
+      const mergeFactor = parseFloat(cs.getPropertyValue('--merge-threshold-factor').trim() || '0.6') || 0.6;
+      const dropHighlight = (parseFloat(cs.getPropertyValue('--drop-highlight').trim() || '1') || 0) > 0;
+      const freeMove = (parseFloat(cs.getPropertyValue('--free-move').trim() || '1') || 0) > 0;
+      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove });
     });
     ro.observe(el);
     ro.observe(ellipse);
@@ -79,8 +86,8 @@ export default function Board() {
         const d = Math.hypot(dx, dy);
         if (!best || d < best.d) best = { id: t.id, d };
       }
-      const threshold = sizes.token * 0.6;
-      if (best && best.d <= threshold) {
+      const threshold = sizes.token * sizes.mergeFactor;
+      if (sizes.dropHighlight && best && best.d <= threshold) {
         const srcT = state.towers.find(t => t.id === id);
         const dstT = state.towers.find(t => t.id === best!.id);
         if (srcT && dstT && canMerge(srcT, dstT)) setDropTargetId(dstT.id);
@@ -113,8 +120,8 @@ export default function Board() {
       const d = Math.hypot(dx, dy);
       if (!best || d < best.d) best = { id: t.id, d };
     }
-    // Threshold to consider 'dropping onto' another: ~0.6 token diameter
-    const threshold = sizes.token * 0.6;
+    // Threshold to consider 'dropping onto' another: CSS-configured merge factor
+    const threshold = sizes.token * sizes.mergeFactor;
     if (best && best.d <= threshold) {
       const dst = state.towers.find(t => t.id === best!.id);
       if (dst && canMerge(src, dst)) {
@@ -125,7 +132,11 @@ export default function Board() {
         return;
       }
     }
-    // Free move: keep last position; do not toggle selection
+    // Free move: keep last position; otherwise revert to start
+    const start = dragStartRef.current;
+    if (!sizes.freeMove && start && start.id === id) {
+      dispatch({ type: 'move-tower', id, pos: start.pos });
+    }
     dragStartRef.current = null;
     setDropTargetId(null);
     // keep moved flag true briefly to suppress the click that follows pointerup
@@ -161,7 +172,7 @@ export default function Board() {
                     : `${t.pos.x * 100}%`,
                   top: (() => {
                     if (!sizes.h) return `${t.pos.y * 100}%`;
-                    const stackPx = 12 + Math.min(10, t.height - 1) * 18; // must match CSS calc (18px per level)
+                    const stackPx = 12 + Math.min(10, t.height - 1) * sizes.stackStep; // must match CSS calc
                     const margin = sizes.token / 2 + stackPx / 2 + 2; // +2px for borders
                     return clamp(t.pos.y * sizes.h, margin, sizes.h - margin);
                   })(),
@@ -177,8 +188,9 @@ export default function Board() {
                 onPointerCancel={(e) => handlePointerCancel(e, t.id)}
                 title={`h:${t.height} · top:${t.top}`}
               >
+                <div className="token-base" aria-hidden="true" />
                 <div className="token-stack" aria-hidden="true">
-                  {Array.from({ length: Math.min(10, t.height - 1) }).map((_, i) => (
+                  {Array.from({ length: Math.min(sizes.maxDiscs, t.height - 1) }).map((_, i) => (
                     <span key={i} className="token-disc" style={{ ['--i' as any]: i + 1 }} />
                   ))}
                 </div>
@@ -194,23 +206,22 @@ export default function Board() {
         </div>
       </div>
 
-      {state.roundOver && (
-        <div className="board-overlay">
-          <div className="overlay-card">
-            <div>Ronda terminada</div>
-            {state.lastMover && <div>Ganador: Jugador {state.lastMover}</div>}
-            <button onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
-          </div>
-        </div>
+      {state.roundOver && !state.gameOver && (
+        <GameOverModal
+          title="Ronda terminada"
+          message={`Ronda terminada — Ganador: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: obtiene 1 estrella y espera a que el rival inicie la siguiente ronda • Perdedor: empieza la siguiente ronda.`}
+          buttonLabel="Nueva ronda"
+          onConfirm={() => dispatch({ type: 'new-round' })}
+        />
       )}
+
       {state.gameOver && (
-        <div className="board-overlay">
-          <div className="overlay-card">
-            <div>Partida terminada</div>
-            {state.lastMover && <div>Campeón: Jugador {state.lastMover}</div>}
-            <button onClick={() => dispatch({ type: 'reset-game' })}>Reiniciar juego</button>
-          </div>
-        </div>
+        <GameOverModal
+          title="Partida terminada"
+          message={`Partida terminada — Campeón: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: Campeón de la partida • Perdedor: puedes reiniciar para comenzar una nueva partida.`}
+          buttonLabel="Nueva partida"
+          onConfirm={() => dispatch({ type: 'reset-game' })}
+        />
       )}
     </div>
   );
