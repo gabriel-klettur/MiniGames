@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAutoplay } from '../../store/iaSlice.ts';
+import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 
 /**
@@ -38,6 +38,35 @@ export default function IAUserPanel() {
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
+        </div>
+
+        {/* Presets compactos: Balanceado / Agresivo / Defensivo */}
+        <div className="inline-flex rounded-md overflow-hidden border border-white/10">
+          {(['balanced','aggressive','defensive'] as const).map((p) => (
+            <button
+              key={p}
+              className={[
+                'px-3 py-1.5 text-sm',
+                ia.preset === p ? 'bg-indigo-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700',
+              ].join(' ')}
+              onClick={() => dispatch(setPreset(p))}
+              aria-pressed={ia.preset === p}
+              title={p === 'balanced' ? 'Equilibrado' : p === 'aggressive' ? 'Agresivo' : 'Defensivo'}
+            >
+              {p === 'balanced' ? 'Balanceado' : p === 'aggressive' ? 'Agresivo' : 'Defensivo'}
+            </button>
+          ))}
+        </div>
+
+        {/* Control IA (compacto) */}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-xs text-gray-300">Control IA:</span>
+          <label className="inline-flex items-center gap-1">
+            <input type="checkbox" checked={ia.control.L} onChange={() => dispatch(toggleAIForL())} /> L
+          </label>
+          <label className="inline-flex items-center gap-1">
+            <input type="checkbox" checked={ia.control.D} onChange={() => dispatch(toggleAIForD())} /> D
+          </label>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
