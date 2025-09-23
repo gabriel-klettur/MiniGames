@@ -62,8 +62,7 @@ export default function IAUserPanel() {
         </div>
 
         {/* Nivel (Novato / Intermedio / Bueno / Fuerte) */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Nivel</span>
+        <div className="flex items-center gap-2">          
           <div className="inline-flex rounded-md overflow-hidden border border-white/10">
             {(['novato','intermedio','bueno','fuerte'] as const).map((p) => (
               <button
