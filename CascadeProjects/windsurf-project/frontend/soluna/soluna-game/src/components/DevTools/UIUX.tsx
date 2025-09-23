@@ -13,6 +13,7 @@ type Cfg = {
 };
 
 const LS_PREFIX = 'soluna:ui:';
+const LOG_LS_KEY = 'soluna:log:merges';
 
 function getPlayEllipse(): HTMLElement | null {
   return document.querySelector('.play-ellipse') as HTMLElement | null;
@@ -70,11 +71,25 @@ function saveToLocalStorage(cfg: Cfg) {
 export default function UIUX() {
   const initial = useMemo(() => ({ ...readComputedCfg(), ...loadFromLocalStorage() }), []);
   const [cfg, setCfg] = useState<Cfg>(initial);
+  const [logMerges, setLogMerges] = useState<boolean>(() => {
+    try {
+      const raw = window.localStorage.getItem(LOG_LS_KEY);
+      return raw == null ? true : raw !== '0';
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     applyCfg(cfg);
     saveToLocalStorage(cfg);
   }, [cfg]);
+
+  // Sync merge logging preference to localStorage and optional global helper
+  useEffect(() => {
+    try { (window as any).solunaLogMerges?.(logMerges); } catch {}
+    try { window.localStorage.setItem(LOG_LS_KEY, logMerges ? '1' : '0'); } catch {}
+  }, [logMerges]);
 
   const onNum = (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : parseFloat(e.target.value);
@@ -134,6 +149,10 @@ export default function UIUX() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={cfg.freeMove} onChange={onNum('freeMove')} />
           Permitir mover libremente si no hay fusión
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={logMerges} onChange={(e) => setLogMerges(e.target.checked)} />
+          Registrar fusiones en consola
         </label>
         <label style={{ display: 'grid', gap: 4 }}>
           <span>Umbral de colisión para apilar: {cfg.mergeThreshold.toFixed(2)}× diámetro</span>

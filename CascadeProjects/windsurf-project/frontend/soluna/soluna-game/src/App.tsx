@@ -14,7 +14,7 @@ import { useGame } from './game/store';
 
 function App() {
   const { state, dispatch } = useGame();
-  const [showDev, setShowDev] = useState(true);
+  const [showDev, setShowDev] = useState(false);
   const [showFases, setShowFases] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showUX, setShowUX] = useState(false);
@@ -184,7 +184,7 @@ function App() {
   return (
     <div className="app-layout">
       <HeaderPanel />
-      <main className="main-area">
+      <main className={`main-area ${showDev ? '' : 'no-dev'}`}>
         <IAUserPanel
           depth={aiDepth}
           onChangeDepth={setAiDepth}
