@@ -48,6 +48,8 @@ export interface IAState<M = any> {
     enableAlphaBeta: boolean; // activa poda AB (si no, minimax puro)
     randomTieBreak: boolean; // desempate aleatorio entre empates
     hardTimeLimit: boolean; // cortar estrictamente por deadline
+    /** Margen de seguridad (segundos) restado al presupuesto antes de fijar el deadline */
+    safetyMarginSeconds?: number;
     // Heurística de vallas
     wallMeritLambda?: number; // 0..1 peso para penalizar Δd_me en mérito de valla
     enableWallPathFilter?: boolean; // filtrar vallas por cercanía a ruta mínima del rival
@@ -91,6 +93,7 @@ const initialState: IAState = {
     enableAlphaBeta: true,
     randomTieBreak: true,
     hardTimeLimit: true,
+    safetyMarginSeconds: 0.15,
     wallMeritLambda: 0.6,
     enableWallPathFilter: true,
     wallPathRadius: 1,
@@ -233,6 +236,14 @@ const iaSlice = createSlice({
     setEnableAlphaBeta(state, action: PayloadAction<boolean>) { state.config.enableAlphaBeta = action.payload; },
     setRandomTieBreak(state, action: PayloadAction<boolean>) { state.config.randomTieBreak = action.payload; },
     setHardTimeLimit(state, action: PayloadAction<boolean>) { state.config.hardTimeLimit = action.payload; },
+    setSafetyMarginSeconds(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      if (typeof v === 'number') {
+        state.config.safetyMarginSeconds = Math.max(0, Math.min(5, Number(v)));
+      } else {
+        state.config.safetyMarginSeconds = undefined;
+      }
+    },
     // Avanzado: heurísticas/optimizaciones
     setEnableKillerHeuristic(state, action: PayloadAction<boolean | undefined>) {
       state.config.enableKillerHeuristic = !!action.payload;
@@ -340,6 +351,7 @@ export const {
   setEnableAlphaBeta,
   setRandomTieBreak,
   setHardTimeLimit,
+  setSafetyMarginSeconds,
   setWallMeritLambda,
   setEnableWallPathFilter,
   setWallPathRadius,

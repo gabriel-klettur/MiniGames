@@ -21,6 +21,8 @@ export interface SearchParams {
   onTrace?: (ev: TraceEvent | TraceEvent[]) => void;
   /** Optional trace configuration to control verbosity and sampling. */
   traceConfig?: TraceConfig;
+  /** Cooperative-cancel predicate; when returns true, search should stop ASAP. */
+  shouldStop?: () => boolean;
 }
 
 export interface SearchResult {

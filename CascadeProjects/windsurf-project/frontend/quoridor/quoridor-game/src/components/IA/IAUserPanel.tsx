@@ -58,18 +58,18 @@ export default function IAUserPanel() {
           ))}
         </div>
 
-        {/* Control IA (compacto) */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-xs text-gray-300">Control IA:</span>
-          <label className="inline-flex items-center gap-1">
-            <input type="checkbox" checked={ia.control.L} onChange={() => dispatch(toggleAIForL())} /> L
-          </label>
-          <label className="inline-flex items-center gap-1">
-            <input type="checkbox" checked={ia.control.D} onChange={() => dispatch(toggleAIForD())} /> D
-          </label>
-        </div>
+        <div className="ml-auto flex items-center gap-3">
+          {/* Control IA (compacto) movido a la izquierda del botón */}
+          <div className="flex items-center gap-2 text-sm" aria-label="Control IA">
+            <span className="text-xs text-gray-300">Control IA:</span>
+            <label className="inline-flex items-center gap-1">
+              <input type="checkbox" checked={ia.control.L} onChange={() => dispatch(toggleAIForL())} /> L
+            </label>
+            <label className="inline-flex items-center gap-1">
+              <input type="checkbox" checked={ia.control.D} onChange={() => dispatch(toggleAIForD())} /> D
+            </label>
+          </div>
 
-        <div className="ml-auto flex items-center gap-2">
           <button
             className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm text-white disabled:opacity-60"
             onClick={() => requestAIMove(true)}

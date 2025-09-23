@@ -14,8 +14,9 @@ export interface BoardProps {
   /**
    * walls — Lista de vallas colocadas para su renderizado.
    * Mantiene el mismo esquema que el motor: r,c en 0..size-2.
+   * Campo opcional 'by' indica el jugador que la colocó para colorear.
    */
-  walls?: Array<{ o: 'H' | 'V'; r: number; c: number }>;
+  walls?: Array<{ o: 'H' | 'V'; r: number; c: number; by?: 'L' | 'D' }>;
   /** Evento al intentar colocar una valla en un slot. */
   onWallClick?: (o: 'H' | 'V', r: number, c: number) => void;
   /** Celdas a resaltar (sombras) para indicar movimientos legales del jugador en turno. */
@@ -153,7 +154,7 @@ export default function Board({
   const pawnType = (r: number, c: number) =>
     pawns.L[0] === r && pawns.L[1] === c ? 'L' : pawns.D[0] === r && pawns.D[1] === c ? 'D' : null;
 
-  const hasWall = (o: 'H' | 'V', r: number, c: number) => walls.some((w) => w.o === o && w.r === r && w.c === c);
+  const getWall = (o: 'H' | 'V', r: number, c: number) => walls.find((w) => w.o === o && w.r === r && w.c === c);
   const hlSet = new Set(highlightCells.map(([r, c]) => `${r},${c}`));
 
   // Estado local para previsualización (hover) de valla de 2 segmentos
@@ -257,7 +258,8 @@ export default function Board({
                   const r = (gr - 1) / 2;
                   const c = gc / 2;
                   const valid = c < size - 1; // índices válidos 0..size-2
-                  const active = hasWall('H', r, c);
+                  const wobjH = getWall('H', r, c);
+                  const active = !!wobjH;
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
                   const invalidPlacement = !!isHover && !validateWallPlacement(
@@ -287,7 +289,11 @@ export default function Board({
                       className={[
                         'w-full h-full rounded-[2px] transition-colors',
                         active
-                          ? 'bg-amber-500/90 pointer-events-none z-10'
+                          ? (wobjH?.by === 'L'
+                              ? 'bg-orange-500/90 pointer-events-none z-10'
+                              : wobjH?.by === 'D'
+                                ? 'bg-amber-900/90 pointer-events-none z-10'
+                                : 'bg-amber-500/90 pointer-events-none z-10')
                           : isHover
                             ? hoverClass
                             : 'bg-transparent hover:bg-amber-500/50',
@@ -307,7 +313,8 @@ export default function Board({
                   const r = gr / 2;
                   const c = (gc - 1) / 2;
                   const valid = r < size - 1; // índices válidos 0..size-2
-                  const active = hasWall('V', r, c);
+                  const wobjV = getWall('V', r, c);
+                  const active = !!wobjV;
                   if (!valid) return <div key={`${gr}-${gc}`} />;
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
                   const invalidPlacement = !!isHover && !validateWallPlacement(
@@ -337,7 +344,11 @@ export default function Board({
                       className={[
                         'w-full h-full rounded-[2px] transition-colors',
                         active
-                          ? 'bg-amber-500/90 pointer-events-none z-10'
+                          ? (wobjV?.by === 'L'
+                              ? 'bg-orange-500/90 pointer-events-none z-10'
+                              : wobjV?.by === 'D'
+                                ? 'bg-amber-900/90 pointer-events-none z-10'
+                                : 'bg-amber-500/90 pointer-events-none z-10')
                           : isHover
                             ? hoverClass
                             : 'bg-transparent hover:bg-amber-500/50',

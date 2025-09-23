@@ -39,13 +39,14 @@ function alphaBeta(
   lastMove?: AIMove | null,
   qPlies: number = 0,
   tracer?: Tracer,
+  shouldStop?: (() => boolean),
 ): ABResult {
   const maximizing = state.current === rootPlayer;
   // Enter node first so any early return still has a matching exit
   if (tracer) tracer.nodeEnter(depth, ply, alpha, beta, maximizing);
 
   // Time control
-  if (deadline !== undefined && performance.now() >= deadline) {
+  if ((shouldStop && shouldStop()) || (deadline !== undefined && performance.now() >= deadline)) {
     const score = evaluate(state, rootPlayer);
     if (tracer) tracer.emitNode({ type: 'eval', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId(), score });
     if (tracer) tracer.nodeExit(depth, ply, score);
@@ -163,15 +164,15 @@ function alphaBeta(
       } else {
         localAlpha = localBeta - 1;
       }
-      res = alphaBeta(next, childDepth, localAlpha, localBeta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
+      res = alphaBeta(next, childDepth, localAlpha, localBeta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer, shouldStop);
       nodes += res.nodes; // contar la búsqueda de ventana estrecha
       const inWindow = res.score > alpha && res.score < beta;
       if (inWindow) {
-        res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
+        res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer, shouldStop);
         nodes += res.nodes; // sólo sumamos la re-búsqueda completa
       }
     } else {
-      res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer);
+      res = alphaBeta(next, childDepth, alpha, beta, rootPlayer, deadline, config, tt, ply + 1, killers, history, m, qPlies, tracer, shouldStop);
       nodes += res.nodes;
     }
     // Nota: no volver a sumar res.nodes aquí para evitar doble conteo.
@@ -253,7 +254,7 @@ type Tracer = {
   peekNodeId(): number;
 };
 
-function makeTracer(cfg?: TraceConfig, onTrace?: (ev: TraceEvent | TraceEvent[]) => void): Tracer | undefined {
+function makeTracer(cfg?: TraceConfig, onTrace?: (ev: TraceEvent | TraceEvent[]) => void, deadline?: number): Tracer | undefined {
   if (!cfg || !cfg.enabled) return undefined;
   const t: Tracer = {
     cfg,
@@ -262,7 +263,15 @@ function makeTracer(cfg?: TraceConfig, onTrace?: (ev: TraceEvent | TraceEvent[])
     parentStack: [],
     sampledStack: [],
     sample() {
-      const rate = typeof cfg.sampleRate === 'number' ? Math.max(0, Math.min(1, cfg.sampleRate)) : 0;
+      const base = typeof cfg.sampleRate === 'number' ? Math.max(0, Math.min(1, cfg.sampleRate)) : 0;
+      // Near-deadline throttling: if within ~100ms of deadline, reduce sampling aggressively
+      let rate = base;
+      if (deadline !== undefined) {
+        const now = performance.now();
+        const headroom = deadline - now;
+        if (headroom <= 100) rate = Math.min(rate, 0.05);
+        else if (headroom <= 250) rate = Math.min(rate, 0.2);
+      }
       return Math.random() < rate;
     },
     emit(ev) {
@@ -308,7 +317,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
   const rp: Player = rootPlayer ?? state.current;
   const deadline = params.deadlineMs;
   const cfg = params.config;
-  const tracer = makeTracer(params.traceConfig, params.onTrace);
+  const tracer = makeTracer(params.traceConfig, params.onTrace, deadline);
   const tt: Map<string, TTEntry> | undefined = cfg?.enableTT ? new Map() : undefined;
   // Data for enhanced move ordering
   const killers: AIMove[][] = [];
@@ -338,6 +347,7 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
     let bestScoreAtD = -Infinity;
     let bestPVAtD: AIMove[] = [];
     let nodesAtD = 0;
+    let completedDepth = true;
 
     // Aspiration windows around previous depth's score
     let rootAlpha = -Infinity;
@@ -349,18 +359,20 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
     }
 
     for (const m of rootMoves) {
-      if (deadline !== undefined) {
-        const now = performance.now();
-        if (now >= deadline) break;
+      // Check deadline or cooperative cancel before starting each root branch
+      if ((params.shouldStop && params.shouldStop()) || (deadline !== undefined && performance.now() >= deadline)) {
+        completedDepth = false;
+        break;
       }
       const next = applyAIMove(state, m);
-      const res = alphaBeta(next, d - 1, rootAlpha, rootBeta, rp, deadline, cfg, tt, 1, killers, history, m, 0, tracer);
+      const res = alphaBeta(next, d - 1, rootAlpha, rootBeta, rp, deadline, cfg, tt, 1, killers, history, m, 0, tracer, params.shouldStop);
       nodesAtD += res.nodes;
       rootScores.push({ move: m, score: res.score });
       if (res.score > bestScoreAtD) { bestScoreAtD = res.score; bestAtD = m; bestPVAtD = [m, ...res.pv]; }
     }
 
-    if (bestAtD !== null) {
+    // Only commit depth results if the entire iteration completed
+    if (bestAtD !== null && completedDepth) {
       globalBest = bestAtD;
       globalScore = bestScoreAtD;
       globalPV = bestPVAtD;

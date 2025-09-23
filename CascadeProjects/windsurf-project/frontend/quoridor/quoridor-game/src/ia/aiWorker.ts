@@ -31,12 +31,32 @@ interface TraceMessage {
   payload: { events: TraceEvent[] };
 }
 
+interface CancelMessage {
+  id: string;
+  type: 'cancel';
+}
+
 declare const self: DedicatedWorkerGlobalScope;
 
-self.onmessage = (ev: MessageEvent<SearchMessage>) => {
+// Track cancelled job IDs
+const cancelled = new Set<string>();
+
+type InMessage = SearchMessage | CancelMessage;
+
+self.onmessage = (ev: MessageEvent<InMessage>) => {
   const msg = ev.data;
-  if (!msg || msg.type !== 'search') {
-    const err: ErrorMessage = { id: msg?.id ?? '0', type: 'error', payload: { message: 'Mensaje inválido' } };
+  if (!msg) {
+    const err: ErrorMessage = { id: '0', type: 'error', payload: { message: 'Mensaje inválido' } };
+    self.postMessage(err);
+    return;
+  }
+  if (msg.type === 'cancel') {
+    // Mark this id as cancelled; search loop will observe and stop cooperatively
+    cancelled.add(msg.id);
+    return;
+  }
+  if (msg.type !== 'search') {
+    const err: ErrorMessage = { id: '0', type: 'error', payload: { message: 'Tipo de mensaje inválido' } };
     self.postMessage(err);
     return;
   }
@@ -46,6 +66,8 @@ self.onmessage = (ev: MessageEvent<SearchMessage>) => {
     if ((p.deadlineMs === undefined || p.deadlineMs === null) && typeof budgetMs === 'number') {
       p.deadlineMs = performance.now() + Math.max(0, budgetMs);
     }
+    // Cooperative cancel predicate bound to this job id
+    p.shouldStop = () => cancelled.has(msg.id);
     // Tracing: batch and stream to main thread
     const BATCH_SIZE = 250;
     let batch: TraceEvent[] = [];
@@ -69,6 +91,8 @@ self.onmessage = (ev: MessageEvent<SearchMessage>) => {
     flush();
     const out: ResultMessage = { id: msg.id, type: 'result', payload: result };
     self.postMessage(out);
+    // Cleanup cancellation mark for this id (idempotent)
+    cancelled.delete(msg.id);
   } catch (e: any) {
     const err: ErrorMessage = { id: msg.id, type: 'error', payload: { message: String(e?.message ?? e) } };
     self.postMessage(err);

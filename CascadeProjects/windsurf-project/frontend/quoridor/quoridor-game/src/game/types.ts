@@ -18,6 +18,11 @@ export interface Wall {
    */
   r: number;
   c: number;
+  /**
+   * Jugador que colocó la valla (opcional para compatibilidad hacia atrás).
+   * Si está presente, permite colorear la valla según el color del peón.
+   */
+  by?: Player;
 }
 
 export interface GameState {
