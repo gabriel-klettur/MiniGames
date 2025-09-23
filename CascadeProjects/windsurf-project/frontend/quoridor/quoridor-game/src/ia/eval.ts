@@ -1,27 +1,34 @@
 import type { GameState, Player, Coord } from '../game/types.ts';
 import { goalRow } from '../game/rules.ts';
 import { neighbors } from '../game/board.ts';
+import { telemetry } from './telemetry.ts';
 
 function key(c: Coord) { return `${c.row},${c.col}`; }
 
 export function shortestDistanceToGoal(state: GameState, player: Player): number {
-  const targetRow = goalRow(state.size, player);
-  const start = state.pawns[player];
-  if (start.row === targetRow) return 0;
-  const q: Array<{ c: Coord; d: number }> = [{ c: start, d: 0 }];
-  const seen = new Set<string>([key(start)]);
-  while (q.length) {
-    const { c, d } = q.shift()!;
-    for (const nb of neighbors(state.size, c.row, c.col, state.walls)) {
-      const k = key(nb);
-      if (seen.has(k)) continue;
-      if (nb.row === targetRow) return d + 1;
-      seen.add(k);
-      q.push({ c: nb, d: d + 1 });
+  const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  try {
+    const targetRow = goalRow(state.size, player);
+    const start = state.pawns[player];
+    if (start.row === targetRow) return 0;
+    const q: Array<{ c: Coord; d: number }> = [{ c: start, d: 0 }];
+    const seen = new Set<string>([key(start)]);
+    while (q.length) {
+      const { c, d } = q.shift()!;
+      for (const nb of neighbors(state.size, c.row, c.col, state.walls)) {
+        const k = key(nb);
+        if (seen.has(k)) continue;
+        if (nb.row === targetRow) return d + 1;
+        seen.add(k);
+        q.push({ c: nb, d: d + 1 });
+      }
     }
+    // Si no hay camino (no debería ocurrir por nuestras validaciones), devolver un número grande
+    return 1e9;
+  } finally {
+    const dt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+    telemetry.addShortestDistance(dt);
   }
-  // Si no hay camino (no debería ocurrir por nuestras validaciones), devolver un número grande
-  return 1e9;
 }
 
 /**

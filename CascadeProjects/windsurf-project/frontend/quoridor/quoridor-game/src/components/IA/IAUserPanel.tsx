@@ -1,77 +1,99 @@
-import type React from 'react';
+import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD, setOpeningStrategy } from '../../store/iaSlice.ts';
+import { toggleAutoplay, toggleAIForL, toggleAIForD, setOpeningStrategy, setDifficultyPreset, setPreset } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
+import TimeControls from './panel/TimeControls.tsx';
 
 /**
  * IAUserPanel — Controles compactos para el usuario:
- * - Dificultad (profundidad)
+ * - Nivel (Novato/Intermedio/Bueno/Fuerte)
  * - Botón "Mover IA"
  * - Toggle Autoplay (play/stop)
+ * - Apertura (selección compacta)
  *
  * Nota: la configuración de tiempo (auto/manual, segundos) se gestiona SOLO en IAPanel (DevTools).
  */
 export default function IAUserPanel() {
   const dispatch = useAppDispatch();
   const ia = useAppSelector((s: RootState) => s.ia);
-  const { requestAIMove, busy } = useAI();
+  const game = useAppSelector((s: RootState) => s.game);
+  const { requestAIMove, busy, stats } = useAI();
+  // Local UI state: show 'Aleatorio' by default; persist 'random' in store when chosen.
+  const [openingSel, setOpeningSel] = React.useState<string>('random');
+  React.useEffect(() => {
+    // Mirror Redux: if store is 'random', show 'random'; else show concrete value (or '').
+    const storeVal = ia.config.openingStrategy ?? '';
+    setOpeningSel(storeVal === 'random' ? 'random' : storeVal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ia.config.openingStrategy]);
 
-  const onDepthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    dispatch(setDepth(Number(e.target.value)));
-  };
-
-  const canAIMove = !busy;
+  const canAIMove = !busy && ia.control[game.current];
 
   return (
     <section className="rounded-lg border border-white/10 bg-gray-900/50 p-3" aria-label="Controles de IA">
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <label htmlFor="ia-depth" className="text-sm">Dificultad</label>
-          <select
-            id="ia-depth"
-            value={ia.depth}
-            onChange={onDepthChange}
-            className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
-          >
-            {[1,2,3,4,5,6,7,8,9,10].map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Presets compactos: Balanceado / Agresivo / Defensivo */}
-        <div className="inline-flex rounded-md overflow-hidden border border-white/10">
-          {(['balanced','aggressive','defensive'] as const).map((p) => (
-            <button
-              key={p}
-              className={[
-                'px-3 py-1.5 text-sm',
-                ia.preset === p ? 'bg-indigo-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700',
-              ].join(' ')}
-              onClick={() => dispatch(setPreset(p))}
-              aria-pressed={ia.preset === p}
-              title={p === 'balanced' ? 'Equilibrado' : p === 'aggressive' ? 'Agresivo' : 'Defensivo'}
-            >
-              {p === 'balanced' ? 'Balanceado' : p === 'aggressive' ? 'Agresivo' : 'Defensivo'}
-            </button>
-          ))}
-        </div>
+        
 
         {/* Apertura (compacto) */}
         <div className="flex items-center gap-2">
           <span className="text-sm">Apertura</span>
           <select
-            value={ia.config.openingStrategy ?? ''}
-            onChange={(e) => dispatch(setOpeningStrategy((e.target.value || undefined) as any))}
+            value={openingSel}
+            onChange={(e) => {
+              const v = e.target.value;
+              setOpeningSel(v);
+              if (v === 'random') {
+                dispatch(setOpeningStrategy('random' as any));
+              } else {
+                dispatch(setOpeningStrategy((v || undefined) as any));
+              }
+            }}
             className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
             title="Estrategia de apertura"
           >
+            <option value="random">Aleatorio</option>
             <option value="central_control">Control Central</option>
             <option value="racing">Carrera</option>
             <option value="defensive">Defensiva</option>
             <option value="mirror">Espejo</option>
             <option value="early_block">Muro Rápido</option>
+          </select>
+        </div>
+
+        {/* Nivel (Novato / Intermedio / Bueno / Fuerte) */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Nivel</span>
+          <div className="inline-flex rounded-md overflow-hidden border border-white/10">
+            {(['novato','intermedio','bueno','fuerte'] as const).map((p) => (
+              <button
+                key={p}
+                className={[
+                  'px-3 py-1.5 text-sm',
+                  ia.difficultyPreset === p ? 'bg-indigo-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700',
+                ].join(' ')}
+                onClick={() => dispatch(setDifficultyPreset(p))}
+                aria-pressed={ia.difficultyPreset === p}
+                title={p === 'novato' ? 'Novato' : p === 'intermedio' ? 'Intermedio' : p === 'bueno' ? 'Bueno' : 'Fuerte'}
+              >
+                {p === 'novato' ? 'Novato' : p === 'intermedio' ? 'Intermedio' : p === 'bueno' ? 'Bueno' : 'Fuerte'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Comportamiento (preset compacto) */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Comportamiento</span>
+          <select
+            value={ia.preset ?? 'balanced'}
+            onChange={(e) => dispatch(setPreset(e.target.value as any))}
+            className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+            title="Estilo de juego de la IA"
+          >
+            <option value="balanced">Balanceado</option>
+            <option value="aggressive">Agresivo</option>
+            <option value="defensive">Defensivo</option>
           </select>
         </div>
 
@@ -89,9 +111,9 @@ export default function IAUserPanel() {
 
           <button
             className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm text-white disabled:opacity-60"
-            onClick={() => requestAIMove(true)}
+            onClick={() => requestAIMove(false)}
             disabled={!canAIMove}
-            title="Hacer que la IA juegue su turno"
+            title={canAIMove ? "Hacer que la IA juegue su turno" : "IA no controla el turno actual"}
           >
             {/* Robot icon */}
             <svg className="" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
@@ -124,9 +146,9 @@ export default function IAUserPanel() {
           </button>
         </div>
       </div>
-      {busy && (
-        <div className="mt-2 text-xs text-gray-300">Pensando…</div>
-      )}
+      <div className="mt-2">
+        <TimeControls elapsedMs={stats.elapsedMs} showControls={false} capMode="full" />
+      </div>
     </section>
   );
 }

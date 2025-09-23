@@ -5,9 +5,11 @@ import { applyMovePawn, applyPlaceWall } from '../game/pieces.ts';
 import { goalRow } from '../game/rules.ts';
 import type { SearchConfig } from './types.ts';
 import { shortestDistanceToGoal, shortestPathToGoal } from './eval.ts';
+import { telemetry } from './telemetry.ts';
 
 /** Generate all legal AI moves for the current player. */
 export function generateMoves(state: GameState, config?: SearchConfig, atRoot = false): AIMove[] {
+  const tGenStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const player: Player = state.current;
   const moves: AIMove[] = [];
   // Helper: estimate if we are in opening phase
@@ -58,7 +60,12 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
     for (let r = 0; r <= N - 2; r++) {
       for (let c = 0; c <= N - 2; c++) {
         const wH: Wall = { o: 'H', r, c } as const;
-        if (validateWallPlacement(state, wH) && nearOpPath(wH)) {
+        {
+          const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          const ok = validateWallPlacement(state, wH);
+          const dt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+          telemetry.addValidateWall(dt);
+          if (ok && nearOpPath(wH)) {
           const ns = applyPlaceWall(state, player, wH);
           const dMe1 = shortestDistanceToGoal(ns, me);
           const dOp1 = shortestDistanceToGoal(ns, op);
@@ -80,9 +87,15 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
             // racing/mirror: no special wall boost
           }
           wallScored.push({ move: { kind: 'wall', wall: wH }, merit });
+          }
         }
         const wV: Wall = { o: 'V', r, c } as const;
-        if (validateWallPlacement(state, wV) && nearOpPath(wV)) {
+        {
+          const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+          const ok = validateWallPlacement(state, wV);
+          const dt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+          telemetry.addValidateWall(dt);
+          if (ok && nearOpPath(wV)) {
           const ns = applyPlaceWall(state, player, wV);
           const dMe1 = shortestDistanceToGoal(ns, me);
           const dOp1 = shortestDistanceToGoal(ns, op);
@@ -100,6 +113,7 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
             }
           }
           wallScored.push({ move: { kind: 'wall', wall: wV }, merit });
+          }
         }
       }
     }
@@ -169,6 +183,8 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
 
     moves.sort((a, b) => scoreMove(b) - scoreMove(a));
   }
+  const tGenEnd = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  telemetry.addGenerateMoves(tGenEnd - tGenStart);
   return moves;
 }
 
