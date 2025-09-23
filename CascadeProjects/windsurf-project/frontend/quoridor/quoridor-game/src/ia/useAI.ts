@@ -77,6 +77,17 @@ export function useAI() {
     if (!force && !ia.control[game.current]) return;
 
     // Increment turn counter and announce turn
+    // Reset fast-opening counter if we detect initial starting position
+    try {
+      const mid = Math.floor(game.size / 2);
+      const atStart =
+        game.walls.length === 0 &&
+        game.pawns['L'].row === (game.size - 1) && game.pawns['L'].col === mid &&
+        game.pawns['D'].row === 0 && game.pawns['D'].col === mid;
+      if (atStart && turnSeqRef.current > 0) {
+        turnSeqRef.current = 0;
+      }
+    } catch {}
     const seq = ++turnSeqRef.current;
     console.info(`[IA][#${seq}] Turno ${game.current}`);
 
@@ -114,7 +125,19 @@ export function useAI() {
 
     const manualBudgetMs = ia.timeMode === 'manual' ? Math.max(0, ia.timeSeconds * 1000 - safetyMs) : undefined;
     const autoBudgetMsRaw = ia.timeMode === 'auto' ? computeAutoBudgetMs() : undefined;
-    const effectiveBudgetMs = (manualBudgetMs ?? (autoBudgetMsRaw != null ? Math.max(0, autoBudgetMsRaw - safetyMs) : undefined));
+    let effectiveBudgetMs = (manualBudgetMs ?? (autoBudgetMsRaw != null ? Math.max(0, autoBudgetMsRaw - safetyMs) : undefined));
+
+    // Fast-opening override: cap budget for first N IA moves from game start
+    const fastEnabled = ia.config.openingFastEnabled ?? false;
+    const fastPlies = ia.config.openingFastPlies ?? 0;
+    const fastSec = ia.config.openingFastSeconds ?? 0;
+    const fastBudgetMs = Math.max(0, fastSec * 1000 - safetyMs);
+    let fastApplied = false;
+    if (fastEnabled && fastPlies > 0 && seq <= fastPlies) {
+      if (effectiveBudgetMs == null) effectiveBudgetMs = fastBudgetMs;
+      else effectiveBudgetMs = Math.min(effectiveBudgetMs, fastBudgetMs);
+      fastApplied = true;
+    }
     const deadline = effectiveBudgetMs != null ? (performance.now() + effectiveBudgetMs) : undefined;
 
     let result: ReturnType<typeof searchBestMove>;
@@ -135,6 +158,7 @@ export function useAI() {
         tt: ia.config.enableTT,
         ttSize: ia.config.ttSize,
       },
+      fastOpening: { enabled: fastEnabled, seq, fastPlies, fastSec, applied: fastApplied },
     };
     if (ia.timeMode === 'auto') {
       const rp = game.current; const op = rp === 'L' ? 'D' : 'L';

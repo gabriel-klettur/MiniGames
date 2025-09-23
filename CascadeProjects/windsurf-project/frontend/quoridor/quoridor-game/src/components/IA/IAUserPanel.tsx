@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD } from '../../store/iaSlice.ts';
+import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD, setOpeningStrategy } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 
 /**
@@ -56,6 +56,23 @@ export default function IAUserPanel() {
               {p === 'balanced' ? 'Balanceado' : p === 'aggressive' ? 'Agresivo' : 'Defensivo'}
             </button>
           ))}
+        </div>
+
+        {/* Apertura (compacto) */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Apertura</span>
+          <select
+            value={ia.config.openingStrategy ?? ''}
+            onChange={(e) => dispatch(setOpeningStrategy((e.target.value || undefined) as any))}
+            className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+            title="Estrategia de apertura"
+          >
+            <option value="central_control">Control Central</option>
+            <option value="racing">Carrera</option>
+            <option value="defensive">Defensiva</option>
+            <option value="mirror">Espejo</option>
+            <option value="early_block">Muro Rápido</option>
+          </select>
         </div>
 
         <div className="ml-auto flex items-center gap-3">

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { TraceConfig } from '../ia/types.ts';
+import type { TraceConfig, OpeningStrategy } from '../ia/types.ts';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -68,6 +68,13 @@ export interface IAState<M = any> {
     reserveWallsMin?: number; // reserva mínima de vallas a conservar
     // Infraestructura
     enableWorker?: boolean; // usar Web Worker para el cálculo de IA
+    // Aperturas
+    openingStrategy?: OpeningStrategy;
+    openingPliesMax?: number;
+    // Apertura rápida: limitar presupuesto de tiempo en los primeros plies
+    openingFastEnabled?: boolean;
+    openingFastPlies?: number; // cuántos plies aplicar el límite rápido (p. ej., 3)
+    openingFastSeconds?: number; // presupuesto por jugada rápida (p. ej., 0.8s)
   };
   // Estadísticas/resultados del último cálculo
   stats: IAStats<M>;
@@ -108,6 +115,11 @@ const initialState: IAState = {
     wallVsPawnTauBase: 0.75,
     reserveWallsMin: 1,
     enableWorker: true,
+    openingStrategy: 'central_control',
+    openingPliesMax: 6,
+    openingFastEnabled: true,
+    openingFastPlies: 3,
+    openingFastSeconds: 0.8,
   },
   stats: {
     busy: false,
@@ -282,6 +294,25 @@ const iaSlice = createSlice({
     setEnableWorker(state, action: PayloadAction<boolean | undefined>) {
       state.config.enableWorker = !!action.payload;
     },
+    // Aperturas
+    setOpeningStrategy(state, action: PayloadAction<OpeningStrategy | undefined>) {
+      state.config.openingStrategy = action.payload;
+    },
+    setOpeningPliesMax(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingPliesMax = typeof v === 'number' ? Math.max(0, Math.round(v)) : undefined;
+    },
+    setOpeningFastEnabled(state, action: PayloadAction<boolean | undefined>) {
+      state.config.openingFastEnabled = !!action.payload;
+    },
+    setOpeningFastPlies(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingFastPlies = typeof v === 'number' ? Math.max(0, Math.round(v)) : undefined;
+    },
+    setOpeningFastSeconds(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingFastSeconds = typeof v === 'number' ? Math.max(0, Number(v)) : undefined;
+    },
     setWallMeritLambda(state, action: PayloadAction<number | undefined>) {
       const v = action.payload;
       if (typeof v === 'number') {
@@ -366,6 +397,11 @@ export const {
   setWallVsPawnTauBase,
   setReserveWallsMin,
   setEnableWorker,
+  setOpeningStrategy,
+  setOpeningPliesMax,
+  setOpeningFastEnabled,
+  setOpeningFastPlies,
+  setOpeningFastSeconds,
   setBusy,
   setStats,
   resetStats,

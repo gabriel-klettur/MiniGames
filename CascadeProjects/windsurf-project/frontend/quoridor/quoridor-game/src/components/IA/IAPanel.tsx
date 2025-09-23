@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAIForL, toggleAIForD, setDifficultyPreset } from '../../store/iaSlice.ts';
+import { setDepth, toggleAIForL, toggleAIForD, setDifficultyPreset, setOpeningStrategy, setOpeningPliesMax, setOpeningFastEnabled, setOpeningFastPlies, setOpeningFastSeconds } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 import TimeControls from './panel/TimeControls.tsx';
 import RootMovesList from './panel/RootMovesList.tsx';
@@ -81,6 +81,71 @@ export default function IAPanel() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Aperturas: estrategia + plies de apertura */}
+            <div className="flex items-center gap-2">
+              <label htmlFor="ia-opening" className="text-sm">Apertura</label>
+              <select
+                id="ia-opening"
+                value={ia.config.openingStrategy ?? ''}
+                onChange={(e) => dispatch(setOpeningStrategy((e.target.value || undefined) as any))}
+                className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+                title="Estrategia de apertura para los primeros turnos"
+              >
+                <option value="central_control">Control Central</option>
+                <option value="racing">Carrera</option>
+                <option value="defensive">Defensiva</option>
+                <option value="mirror">Espejo</option>
+                <option value="early_block">Muro Rápido</option>
+              </select>
+
+              <label htmlFor="ia-opening-plies" className="text-sm">Plies</label>
+              <input
+                id="ia-opening-plies"
+                type="number"
+                min={0}
+                max={20}
+                value={ia.config.openingPliesMax ?? 6}
+                onChange={(e) => dispatch(setOpeningPliesMax(Number(e.target.value)))}
+                className="w-16 bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+                title="Duración aproximada de la fase de apertura (en medio-movimientos)"
+              />
+            </div>
+
+            {/* Apertura rápida: primeros N movimientos con presupuesto fijo */}
+            <div className="flex items-center gap-2">
+              <label className="inline-flex items-center gap-2 text-sm" title="Limitar tiempo por jugada en los primeros N movimientos de la IA">
+                <input
+                  type="checkbox"
+                  checked={!!ia.config.openingFastEnabled}
+                  onChange={(e) => dispatch(setOpeningFastEnabled(e.target.checked))}
+                />
+                Apertura rápida
+              </label>
+              <label htmlFor="ia-opening-fast-plies" className="text-sm">Movs</label>
+              <input
+                id="ia-opening-fast-plies"
+                type="number"
+                min={0}
+                max={10}
+                value={ia.config.openingFastPlies ?? 3}
+                onChange={(e) => dispatch(setOpeningFastPlies(Number(e.target.value)))}
+                className="w-16 bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+                title="Número de movimientos rápidos de IA desde el inicio"
+              />
+              <label htmlFor="ia-opening-fast-sec" className="text-sm">seg</label>
+              <input
+                id="ia-opening-fast-sec"
+                type="number"
+                min={0}
+                max={5}
+                step={0.1}
+                value={ia.config.openingFastSeconds ?? 0.8}
+                onChange={(e) => dispatch(setOpeningFastSeconds(Number(e.target.value)))}
+                className="w-20 bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+                title="Tiempo por jugada durante la apertura rápida"
+              />
             </div>
 
             <TimeControls elapsedMs={stats.elapsedMs} />
