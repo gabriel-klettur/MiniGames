@@ -8,8 +8,8 @@ function id(): string {
 
 // Generate random points inside a centered ellipse within [0..1]x[0..1]
 // ellipse radii (relative): a (x-radius), b (y-radius)
-// Smaller radii to keep tokens well away from the visual edge, especially on phones
-function randomPointInEllipse(a = 0.40, b = 0.31): { x: number; y: number } {
+// Slightly larger radii so we have more area to spread tokens while keeping safe margins
+function randomPointInEllipse(a = 0.44, b = 0.35): { x: number; y: number } {
   // Rejection sampling within bounding box
   for (let tries = 0; tries < 5000; tries++) {
     const x = Math.random();
@@ -30,7 +30,7 @@ function dist(a: { x: number; y: number }, b: { x: number; y: number }): number 
 export function randomInitialTowers(): Tower[] {
   const towers: Tower[] = [];
   const placed: { x: number; y: number }[] = [];
-  const minDist = 0.105; // separation to avoid overlap in normalized space
+  const minDist = 0.14; // increased separation to avoid clusters in normalized space
   for (let i = 0; i < 12; i++) {
     const top = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
     const stack: SymbolType[] = [top];
@@ -51,7 +51,12 @@ export function randomInitialTowers(): Tower[] {
 
 export function canMerge(a: Tower, b: Tower): boolean {
   if (a.id === b.id) return false;
-  return a.height === b.height || a.top === b.top;
+  // Regla: solo se puede fusionar si
+  //  - tienen el mismo símbolo, o
+  //  - tienen la misma altura y dicha altura es >= 2 (la altura 1 NO cuenta para apilar por altura)
+  const sameHeight = a.height >= 2 && b.height >= 2 && a.height === b.height;
+  const sameSymbol = a.top === b.top;
+  return sameHeight || sameSymbol;
 }
 
 export function mergeTowers(source: Tower, target: Tower): Tower {

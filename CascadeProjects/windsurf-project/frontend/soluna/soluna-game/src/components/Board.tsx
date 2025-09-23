@@ -162,20 +162,13 @@ export default function Board() {
                 key={t.id}
                 className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''}`}
                 style={{
-                  // clamp center within bounds using measured sizes
+                  // Allow placing tokens anywhere within play-field bounds (center can reach edges)
                   left: sizes.w
-                    ? clamp(
-                        t.pos.x * sizes.w,
-                        sizes.token / 2 + 4,           // +4px fudge for 3px borders/outline
-                        sizes.w - (sizes.token / 2 + 4)
-                      )
+                    ? clamp(t.pos.x * sizes.w, 0, sizes.w)
                     : `${t.pos.x * 100}%`,
-                  top: (() => {
-                    if (!sizes.h) return `${t.pos.y * 100}%`;
-                    const stackPx = 12 + Math.min(10, t.height - 1) * sizes.stackStep; // must match CSS calc
-                    const margin = sizes.token / 2 + stackPx / 2 + 2; // +2px for borders
-                    return clamp(t.pos.y * sizes.h, margin, sizes.h - margin);
-                  })(),
+                  top: sizes.h
+                    ? clamp(t.pos.y * sizes.h, 0, sizes.h)
+                    : `${t.pos.y * 100}%`,
                   // Ordenar por Y para simular profundidad (más abajo, por encima)
                   zIndex: dragId === t.id ? 999999 : Math.round(t.pos.y * 1000),
                   ['--stack-level' as any]: Math.min(10, t.height - 1),

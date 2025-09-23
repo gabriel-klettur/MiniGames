@@ -1,5 +1,9 @@
 /* Global layout paddings with symmetric left/right margins */
-:root { --page-pad-x: 2rem; --app-padding: 2rem; --board-width-factor: 1; --board-max: 48rem; --play-card-pad: 16px; }
+:root { --page-pad-x: 2rem; --app-padding: 2rem; --board-width-factor: 1; --board-max: 48rem; --play-card-pad: 16px; --board-zoom: 1.25; }
+/* Small tablets/phones up to 1023px: no gap */
+@media (max-width: 1023px) {
+  .board-wrapper { margin-top: 0 !important; }
+}
 
 html, body { overflow-x: hidden; }
 
@@ -147,22 +151,34 @@ html, body { overflow-x: hidden; }
   /* allow the board column to shrink without enforcing a floor that may overflow */
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
   align-items: start;
-  gap: 0.75rem;
+  column-gap: 0.75rem;
+  row-gap: 0; /* we'll control vertical spacing explicitly */
 }
 
+/* When DevTools are hidden, use a single column so the board centers */
+.main-area.no-dev {
+  grid-template-columns: 1fr;
+}
+
+/* Desktop mappings added in @media (min-width: 1024px); no base mappings to keep mobile simple */
+
+.main-area .iauser-panel { margin-bottom: 0; }
 .board-wrapper {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  /* Base: no extra separation on mobile */
+  margin-top: 0;
 }
 
 .play-area {
-  /* Quoridor-style: full width up to a comfortable max */
-  width: min(100%, var(--board-max), calc(100vw - (2 * var(--page-pad-x)) - (2 * var(--play-card-pad))));
-  min-width: 0; /* allow shrinking to viewport width */
+  /* Full width of its column up to a comfortable max; avoid 100vw to prevent overflow */
+  width: min(100%, var(--board-max));
+  min-width: 0; /* allow shrinking to container width */
   margin-left: auto;
   margin-right: auto;
-  overflow-x: hidden;
+  /* Allow tokens that reach beyond ellipse to be visible */
+  overflow: visible;
   /* Professional card styling */
   box-sizing: border-box;
   padding: var(--play-card-pad, clamp(10px, 2.2vw, 18px));
@@ -186,6 +202,7 @@ html, body { overflow-x: hidden; }
 /* Board */
 .board-wrapper {
   position: relative;
+  overflow: visible; /* don't clip tokens near the edges */
 }
 
 .board-grid {
@@ -325,7 +342,8 @@ html, body { overflow-x: hidden; }
   min-height: 0;
   aspect-ratio: 4 / 3; /* ellipse proportion */
   border-radius: 50% / 50%;
-  overflow: hidden;
+  /* Let tokens render above and outside the ellipse if needed */
+  overflow: visible;
   /* cosmic background */
   background:
     radial-gradient(100% 100% at 50% 50%, rgba(21, 44, 125, 0.85) 30%, rgba(10, 28, 86, 0.95) 70%, rgba(13, 20, 64, 0.98) 100%),
@@ -345,12 +363,21 @@ html, body { overflow-x: hidden; }
   /* Inner safe area for tokens to avoid clipping against ellipse edge */
   .play-field {
     position: absolute;
-    /* Use dynamic insets based on token size to keep full tokens inside frame */
-    inset:
-      max(6%, calc(var(--token-size) * 0.50))        /* top */
-      max(6%, calc(var(--token-size) * 0.50))        /* right */
-      max(12%, calc(var(--token-size) * 0.90))       /* bottom (extra for side height) */
-      max(6%, calc(var(--token-size) * 0.50));       /* left */
+    /* Allow placing tokens anywhere inside play-area (full ellipse) */
+    inset: 0;
+    /* Ensure tokens within play-field are above decorative layers */
+    z-index: 1;
+  }
+
+  /* Keep decorative glow behind tokens */
+  .play-ellipse::before { z-index: 0; }
+
+  /* Prevent page scroll while interacting with the board on touch devices */
+  .play-area,
+  .play-ellipse,
+  .play-field {
+    touch-action: none;
+    overscroll-behavior: contain;
   }
 
 @media (max-width: 1200px) {
@@ -358,6 +385,7 @@ html, body { overflow-x: hidden; }
     grid-template-columns: 1fr;
     gap: 0.75rem;
   }
+  /* In single column, normal flow; grid-column hints are ignored */
   .devtools-panel {
     position: static;
     max-height: none;
@@ -370,12 +398,24 @@ html, body { overflow-x: hidden; }
   }
 }
 
-/* Optional: adjust max board width on larger screens if desired */
+/* Make the board larger on desktops */
 @media (min-width: 1024px) {
-  :root { --board-max: 52rem; }
+  :root { --board-max: 62rem; }
+  /* Left column: IA controls on top, Board below; Right column: dev tools */
+  .main-area .iauser-panel { grid-column: 1; grid-row: 1; justify-self: start; }
+  .main-area .board-wrapper { grid-column: 1; grid-row: 2; }
+  .main-area .devtools-card { grid-column: 2; grid-row: 1 / span 2; }
+  /* Desktop: place the board 100px below IAUserPanel */
+  .board-wrapper { margin-top: 100px; }
+}
+@media (min-width: 1366px) {
+  :root { --board-max: 74rem; }
 }
 /* Tablet landscape / medium screens */
 @media (max-width: 900px) {
+  /* On mobile, ensure there is no gap between IA panel and board */
+  .board-wrapper { margin-top: 0 !important; }
+  .main-area .iauser-panel { margin-bottom: 0; }
   :root { --page-pad-x: 16px; }
   :root { --app-padding: 16px; }
   #root { padding: 1rem; }
@@ -405,13 +445,7 @@ html, body { overflow-x: hidden; }
     --token-base: clamp(30px, 13.5vw, 60px);
     background-size: auto, 120px 120px, 160px 160px, 140px 140px, 140px 140px, auto;
   }
-  .play-field {
-    inset:
-      max(7%, calc(var(--token-size) * 0.52))
-      max(7%, calc(var(--token-size) * 0.52))
-      max(14%, calc(var(--token-size) * 0.95))
-      max(7%, calc(var(--token-size) * 0.52));
-  }
+  .play-field { inset: 0; }
   /* Use safe-area paddings for iOS notch */
   body { padding-left: 0; padding-right: 0; }
   /* Token borders look too thick at small size */
@@ -454,13 +488,15 @@ html, body { overflow-x: hidden; }
   cursor: grab;
   padding: 0;
   user-select: none;
-  touch-action: manipulation;
+  touch-action: none;
   transition: left 300ms ease, top 300ms ease, transform 80ms ease;
+  z-index: 2; /* keep tokens over board visuals */
 }
 
 .token.dragging {
   cursor: grabbing;
   transition: none;
+  z-index: 1000000; /* over most UI, but still below .board-overlay (1000001) */
 }
 
 .token-top {
