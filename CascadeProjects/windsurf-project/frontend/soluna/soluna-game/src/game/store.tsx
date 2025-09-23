@@ -76,7 +76,7 @@ function reducer(state: GameState, action: GameAction): GameState {
       return { ...state, towers };
     }
     case 'new-round': {
-      if (!state.roundOver && !state.gameOver) return state; // solo cuando terminó la ronda o juego
+      if (!state.roundOver || state.gameOver) return state; // solo cuando terminó la ronda y NO el juego
       const starter: 1 | 2 = state.lastMover ? (state.lastMover === 1 ? 2 : 1) : 1;
       return {
         ...state,

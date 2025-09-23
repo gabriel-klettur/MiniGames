@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../game/store';
 import { canMerge } from '../game/rules';
 import { SymbolIcon } from './Icons';
+import GameOverModal from './GameOverModal';
 
 export default function Board() {
   const { state, dispatch } = useGame();
@@ -119,8 +120,8 @@ export default function Board() {
       const d = Math.hypot(dx, dy);
       if (!best || d < best.d) best = { id: t.id, d };
     }
-    // Threshold to consider 'dropping onto' another: ~0.6 token diameter
-    const threshold = sizes.token * 0.6;
+    // Threshold to consider 'dropping onto' another: CSS-configured merge factor
+    const threshold = sizes.token * sizes.mergeFactor;
     if (best && best.d <= threshold) {
       const dst = state.towers.find(t => t.id === best!.id);
       if (dst && canMerge(src, dst)) {
@@ -205,23 +206,22 @@ export default function Board() {
         </div>
       </div>
 
-      {state.roundOver && (
-        <div className="board-overlay">
-          <div className="overlay-card card">
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Ronda terminada</div>
-            {state.lastMover && <div style={{ marginBottom: 10 }}>Ganador: Jugador {state.lastMover}</div>}
-            <button className="btn btn-primary" onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
-          </div>
-        </div>
+      {state.roundOver && !state.gameOver && (
+        <GameOverModal
+          title="Ronda terminada"
+          message={`Ronda terminada — Ganador: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: obtiene 1 estrella y espera a que el rival inicie la siguiente ronda • Perdedor: empieza la siguiente ronda.`}
+          buttonLabel="Nueva ronda"
+          onConfirm={() => dispatch({ type: 'new-round' })}
+        />
       )}
+
       {state.gameOver && (
-        <div className="board-overlay">
-          <div className="overlay-card card">
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Partida terminada</div>
-            {state.lastMover && <div style={{ marginBottom: 10 }}>Campeón: Jugador {state.lastMover}</div>}
-            <button className="btn btn-primary" onClick={() => dispatch({ type: 'reset-game' })}>Reiniciar juego</button>
-          </div>
-        </div>
+        <GameOverModal
+          title="Partida terminada"
+          message={`Partida terminada — Campeón: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: Campeón de la partida • Perdedor: puedes reiniciar para comenzar una nueva partida.`}
+          buttonLabel="Nueva partida"
+          onConfirm={() => dispatch({ type: 'reset-game' })}
+        />
       )}
     </div>
   );

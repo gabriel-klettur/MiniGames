@@ -19,7 +19,7 @@ export default function DevToolsPanel({
   onToggleUX = () => {},
   onToggleRules = () => {},
 }: DevToolsPanelProps) {
-  const { dispatch } = useGame();
+  const { state, dispatch } = useGame();
   const [showState, setShowState] = useState(false);
   return (
     <div className={["devtools-panel", className ?? ""].join(" ").trim()}>
@@ -40,7 +40,13 @@ export default function DevToolsPanel({
         >
           UI/UX
         </button>
-        <button className="btn btn-primary" onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
+        <button
+          className="btn btn-primary"
+          disabled={!state.roundOver || state.gameOver}
+          onClick={() => dispatch({ type: 'new-round' })}
+        >
+          Nueva ronda
+        </button>
         <button className="btn btn-secondary" onClick={() => dispatch({ type: 'reset-game' })}>Reset juego</button>
         <label className="toggle">
           <input type="checkbox" checked={showState} onChange={(e) => setShowState(e.target.checked)} /> Mostrar estado

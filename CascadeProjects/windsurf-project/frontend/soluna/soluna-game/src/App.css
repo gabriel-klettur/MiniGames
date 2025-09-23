@@ -46,6 +46,21 @@ html, body { overflow-x: hidden; }
 .btn-secondary { background: rgba(31, 41, 55, 0.85); border-color: rgba(255,255,255,0.18); }
 .btn-secondary:hover { background: rgba(55, 65, 81, 0.92); }
 
+/* Success (green) button, matching Quoridor's emerald look */
+.btn-success {
+  background: rgba(5, 150, 105, 0.95); /* emerald-600 */
+  border-color: rgba(110, 231, 183, 0.35); /* emerald-300 */
+  color: #ecfdf5; /* emerald-50 */
+}
+.btn-success:hover {
+  background: rgba(5, 150, 105, 1);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) inset;
+}
+.btn-success:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.45), 0 0 0 3px rgba(16, 185, 129, 0.25) inset;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -214,12 +229,19 @@ html, body { overflow-x: hidden; }
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(2px);
+  /* Ensure overlay sits above draggable tokens */
+  z-index: 1000001; /* higher than token dragging z-index (999999) */
+  /* Subtle dark backdrop to increase text contrast */
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1rem;
 }
 .overlay-card {
   padding: 1rem;
   border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
+  /* Force readable text over dark background */
+  color: #ffffff;
 }
 
 /* DevTools */
