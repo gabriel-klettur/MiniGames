@@ -24,6 +24,13 @@ export default function IAPanel() {
   const [tab, setTab] = React.useState<'ajustes' | 'viz'>(() => 'ajustes');
 
   // (mantenemos helpers locales; TimeControls calcula su propio progreso)
+  const openingLabels: Record<'central_control' | 'racing' | 'defensive' | 'mirror' | 'early_block', string> = {
+    central_control: 'Control Central',
+    racing: 'Carrera',
+    defensive: 'Defensiva',
+    mirror: 'Espejo',
+    early_block: 'Muro Rápido',
+  };
 
   return (
     <section className="rounded-lg border border-white/10 bg-gray-900/60 p-4 space-y-4" aria-label="IA (desarrollo)">
@@ -93,12 +100,19 @@ export default function IAPanel() {
                 className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
                 title="Estrategia de apertura para los primeros turnos"
               >
+                <option value="random">Aleatorio</option>
                 <option value="central_control">Control Central</option>
                 <option value="racing">Carrera</option>
                 <option value="defensive">Defensiva</option>
                 <option value="mirror">Espejo</option>
                 <option value="early_block">Muro Rápido</option>
               </select>
+
+              {ia.config.openingStrategy === 'random' && ia.openingResolved && (
+                <span className="text-xs text-gray-300 px-2 py-1 rounded bg-gray-800/80 border border-white/10">
+                  Aleatoria → {openingLabels[ia.openingResolved]}
+                </span>
+              )}
 
               <label htmlFor="ia-opening-plies" className="text-sm">Plies</label>
               <input

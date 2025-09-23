@@ -78,6 +78,8 @@ export interface IAState<M = any> {
   };
   // Estadísticas/resultados del último cálculo
   stats: IAStats<M>;
+  /** Si openingStrategy === 'random', aquí guardamos la apertura elegida por partida. */
+  openingResolved?: Exclude<OpeningStrategy, 'random'>;
 }
 
 const initialState: IAState = {
@@ -115,7 +117,7 @@ const initialState: IAState = {
     wallVsPawnTauBase: 0.75,
     reserveWallsMin: 1,
     enableWorker: true,
-    openingStrategy: 'central_control',
+    openingStrategy: 'random',
     openingPliesMax: 6,
     openingFastEnabled: true,
     openingFastPlies: 3,
@@ -132,6 +134,7 @@ const initialState: IAState = {
     dMe: 0,
     dOp: 0,
   },
+  openingResolved: undefined,
 };
 
 const iaSlice = createSlice({
@@ -338,6 +341,9 @@ const iaSlice = createSlice({
     setStats<M>(state: IAState<M>, action: PayloadAction<Partial<IAStats<M>>>) {
       state.stats = { ...state.stats, ...(action.payload as any) };
     },
+    setOpeningResolved(state, action: PayloadAction<Exclude<OpeningStrategy, 'random'> | undefined>) {
+      state.openingResolved = action.payload;
+    },
     resetStats(state) {
       state.stats = initialState.stats;
     },
@@ -410,6 +416,7 @@ export const {
   setTraceSampleRate,
   setTraceMaxDepth,
   setTraceCap,
+  setOpeningResolved,
 } = iaSlice.actions;
 
 export default iaSlice.reducer;

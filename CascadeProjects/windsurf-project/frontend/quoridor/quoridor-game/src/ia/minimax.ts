@@ -4,6 +4,7 @@ import { evaluate } from './eval.ts';
 import { applyAIMove, generateMoves } from './moves.ts';
 import type { AIMove, SearchParams, SearchResult, SearchConfig, TraceConfig, TraceEvent } from './types.ts';
 import { stateKey } from './hash.ts';
+import { telemetry } from './telemetry.ts';
 
 interface ABResult {
   score: number;
@@ -44,6 +45,7 @@ function alphaBeta(
   const maximizing = state.current === rootPlayer;
   // Enter node first so any early return still has a matching exit
   if (tracer) tracer.nodeEnter(depth, ply, alpha, beta, maximizing);
+  telemetry.incNodes(1);
 
   // Time control
   if ((shouldStop && shouldStop()) || (deadline !== undefined && performance.now() >= deadline)) {
@@ -91,8 +93,10 @@ function alphaBeta(
   // Transposition table lookup (very simple, no flags)
   const key = config?.enableTT ? stateKey(state) : undefined;
   if (key && tt) {
+    telemetry.incTTLookup();
     const e = tt.get(key);
     if (e && e.depth >= depth && e.alpha <= alpha && e.beta >= beta) {
+      telemetry.incTTHit();
       // Use stored score as exact within current window
       if (tracer) tracer.emitNode({ type: 'tt_hit', t: performance.now(), depth, ply, nodeId: tracer.peekNodeId() });
       if (tracer) tracer.nodeExit(depth, ply, e.score);
@@ -184,6 +188,7 @@ function alphaBeta(
       if (bestScore > alpha) alpha = bestScore;
       if (config?.enableAlphaBeta !== false && alpha >= beta) {
         // Beta cutoff: update killers and history
+        telemetry.incCutBeta(1);
         if (config?.enableKillerHeuristic && killers) {
           const arr = killers[ply] ?? [];
           const mk = moveKey(m);
@@ -207,6 +212,7 @@ function alphaBeta(
       if (bestScore < beta) beta = bestScore;
       if (config?.enableAlphaBeta !== false && alpha >= beta) {
         // Alpha cutoff: update killers and history
+        telemetry.incCutAlpha(1);
         if (config?.enableKillerHeuristic && killers) {
           const arr = killers[ply] ?? [];
           const mk = moveKey(m);
@@ -314,6 +320,7 @@ function makeTracer(cfg?: TraceConfig, onTrace?: (ev: TraceEvent | TraceEvent[])
 
 export function searchBestMove(state: GameState, params: SearchParams, rootPlayer?: Player): SearchResult {
   const start = performance.now();
+  telemetry.reset();
   const rp: Player = rootPlayer ?? state.current;
   const deadline = params.deadlineMs;
   const cfg = params.config;
@@ -342,6 +349,9 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
 
   // Iterative deepening (optional): dStart..maxDepth or until deadline
   for (let d = dStart; d <= dEnd; d++) {
+    telemetry.startIter(d);
+    const iterStart = performance.now();
+    const t0 = telemetry.snapshot().total; // baseline counters
     if (tracer) tracer.emit({ type: 'iter_start', t: performance.now(), depth: d });
     let bestAtD: AIMove | null = null;
     let bestScoreAtD = -Infinity;
@@ -381,6 +391,17 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
       prevScore = bestScoreAtD;
     }
 
+    // Iteration telemetry sample
+    const t1 = telemetry.snapshot().total;
+    const iterEnd = performance.now();
+    telemetry.addIterSample(
+      d,
+      Math.max(0, t1.nodes - t0.nodes),
+      Math.max(0, t1.cutAlpha - t0.cutAlpha),
+      Math.max(0, t1.cutBeta - t0.cutBeta),
+      iterEnd - iterStart,
+    );
+
     if (deadline !== undefined) {
       const now = performance.now();
       if (now >= deadline) break;
@@ -390,6 +411,9 @@ export function searchBestMove(state: GameState, params: SearchParams, rootPlaye
   }
 
   const elapsedMs = performance.now() - start;
+  try {
+    telemetry.logSummary(elapsedMs);
+  } catch {}
   return {
     best: globalBest,
     score: Number.isFinite(globalScore) ? globalScore : evaluate(state, rp),

@@ -5,13 +5,24 @@ import { setTimeMode, setTimeSeconds, setSafetyMarginSeconds } from '../../../st
 
 interface Props {
   elapsedMs: number;
+  /** When false, hides time mode and sliders; shows only elapsed and progress bar. */
+  showControls?: boolean;
+  /**
+   * Selects the cap for progress when in manual mode.
+   * - 'effective': uses (timeSeconds - safetyMargin)
+   * - 'full': uses full timeSeconds (ignores safety margin)
+   */
+  capMode?: 'effective' | 'full';
 }
 
-export default function TimeControls({ elapsedMs }: Props) {
+export default function TimeControls({ elapsedMs, showControls = true, capMode = 'effective' }: Props) {
   const dispatch = useAppDispatch();
   const ia = useAppSelector((s: RootState) => s.ia);
   const safetyMargin = ia.config.safetyMarginSeconds ?? 0.15;
-  const timeCapMs = ia.timeMode === 'manual' ? Math.max(0, ia.timeSeconds * 1000 - safetyMargin * 1000) : null;
+  const baseCapMs = ia.timeMode === 'manual' ? ia.timeSeconds * 1000 : null;
+  const timeCapMs = ia.timeMode === 'manual'
+    ? Math.max(0, (capMode === 'full' ? (baseCapMs ?? 0) : (baseCapMs ?? 0) - safetyMargin * 1000))
+    : null;
 
   // Animate elapsed with rAF while busy for smooth updates
   const [animatedElapsed, setAnimatedElapsed] = React.useState(elapsedMs);
@@ -61,19 +72,21 @@ export default function TimeControls({ elapsedMs }: Props) {
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm">Tiempo</span>
-        <div className="inline-flex rounded-md overflow-hidden border border-white/10">
-          <button
-            className={["px-3 py-1.5 text-sm", ia.timeMode === 'auto' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
-            onClick={() => dispatch(setTimeMode('auto'))}
-            aria-pressed={ia.timeMode === 'auto'}
-          >Auto</button>
-          <button
-            className={["px-3 py-1.5 text-sm", ia.timeMode === 'manual' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
-            onClick={() => dispatch(setTimeMode('manual'))}
-            aria-pressed={ia.timeMode === 'manual'}
-          >Manual</button>
-        </div>
-        {ia.timeMode === 'manual' && (
+        {showControls && (
+          <div className="inline-flex rounded-md overflow-hidden border border-white/10">
+            <button
+              className={["px-3 py-1.5 text-sm", ia.timeMode === 'auto' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
+              onClick={() => dispatch(setTimeMode('auto'))}
+              aria-pressed={ia.timeMode === 'auto'}
+            >Auto</button>
+            <button
+              className={["px-3 py-1.5 text-sm", ia.timeMode === 'manual' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
+              onClick={() => dispatch(setTimeMode('manual'))}
+              aria-pressed={ia.timeMode === 'manual'}
+            >Manual</button>
+          </div>
+        )}
+        {showControls && ia.timeMode === 'manual' && (
           <div className="flex items-center gap-2">
             <input
               type="range"
@@ -86,7 +99,7 @@ export default function TimeControls({ elapsedMs }: Props) {
             <span className="text-xs text-gray-300 w-14 text-right">{Number(ia.timeSeconds).toFixed(1)} s</span>
           </div>
         )}
-        {ia.timeMode === 'manual' && (
+        {showControls && ia.timeMode === 'manual' && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">Margen</span>
             <input

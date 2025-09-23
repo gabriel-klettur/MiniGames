@@ -15,6 +15,7 @@ export type AIMove = PawnMove | WallMove;
 
 // Opening strategies supported by the AI
 export type OpeningStrategy =
+  | 'random'            // Selección aleatoria por partida
   | 'racing'            // Apertura de Carrera
   | 'defensive'         // Apertura Defensiva
   | 'central_control'   // Apertura de Control Central

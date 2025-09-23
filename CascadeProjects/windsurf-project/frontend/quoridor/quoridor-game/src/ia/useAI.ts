@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts';
 import type { RootState } from '../store/index.ts';
-import { setBusy, setStats } from '../store/iaSlice.ts';
+import { setBusy, setStats, setOpeningResolved } from '../store/iaSlice.ts';
 import { movePawn, placeWall } from '../store/gameSlice.ts';
 import { searchBestMove } from './minimax.ts';
-import type { AIMove, TraceEvent } from './types.ts';
+import type { AIMove, TraceEvent, OpeningStrategy } from './types.ts';
 import { goalRow } from '../game/rules.ts';
 import { shortestDistanceToGoal } from './eval.ts';
 import { traceBuffer } from './trace.ts';
@@ -18,6 +18,8 @@ export function useAI() {
   const tickRef = useRef<number | null>(null);
   const jobIdRef = useRef<string | null>(null);
   const turnSeqRef = useRef<number>(0);
+  // Opening choice for 'random' mode, resolved per game start
+  const openingChoiceRef = useRef<Exclude<OpeningStrategy, 'random'> | null>(null);
   // Throttled trace processing
   const traceQueueRef = useRef<TraceEvent[][]>([]);
   const traceRafRef = useRef<number | null>(null);
@@ -86,6 +88,8 @@ export function useAI() {
         game.pawns['D'].row === 0 && game.pawns['D'].col === mid;
       if (atStart && turnSeqRef.current > 0) {
         turnSeqRef.current = 0;
+        openingChoiceRef.current = null; // reset resolved opening on new start detection
+        try { dispatch(setOpeningResolved(undefined)); } catch {}
       }
     } catch {}
     const seq = ++turnSeqRef.current;
@@ -141,6 +145,25 @@ export function useAI() {
     const deadline = effectiveBudgetMs != null ? (performance.now() + effectiveBudgetMs) : undefined;
 
     let result: ReturnType<typeof searchBestMove>;
+    // Resolve opening strategy if 'random' is selected in config
+    const resolveOpening = (): Exclude<OpeningStrategy, 'random'> | undefined => {
+      const cfgOpening = ia.config.openingStrategy as OpeningStrategy | undefined;
+      if (!cfgOpening) return undefined;
+      if (cfgOpening !== 'random') {
+        // Ensure any previous resolved marker is cleared
+        if (ia.openingResolved != null) try { dispatch(setOpeningResolved(undefined)); } catch {}
+        return cfgOpening;
+      }
+      if (!openingChoiceRef.current) {
+        const choices: Exclude<OpeningStrategy, 'random'>[] = ['central_control','racing','defensive','mirror','early_block'];
+        openingChoiceRef.current = choices[Math.floor(Math.random() * choices.length)];
+        console.info('[IA] Apertura aleatoria elegida:', openingChoiceRef.current);
+        try { dispatch(setOpeningResolved(openingChoiceRef.current)); } catch {}
+      }
+      return openingChoiceRef.current;
+    };
+    const resolvedOpening = resolveOpening();
+    const cfgResolved = { ...ia.config, openingStrategy: resolvedOpening } as typeof ia.config;
     // Telemetry context
     const tele = {
       mode: ia.timeMode,
@@ -231,7 +254,7 @@ export function useAI() {
           payload: {
             state: game,
             // IMPORTANT: pass relative budgetMs so worker can compute its own deadline
-            params: { maxDepth: ia.depth, /* no absolute deadlineMs to avoid cross-context time origin issues */ config: ia.config },
+            params: { maxDepth: ia.depth, /* no absolute deadlineMs to avoid cross-context time origin issues */ config: cfgResolved },
             rootPlayer: game.current,
             budgetMs: effectiveBudgetMs,
             traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
@@ -250,7 +273,7 @@ export function useAI() {
             {
               maxDepth: ia.depth,
               deadlineMs: deadline, // in auto mode we already computed deadline from effectiveBudgetMs
-              config: ia.config,
+              config: cfgResolved,
               traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
               onTrace: (ev) => { if (ia.trace.enabled) traceBuffer.add(ev as any); },
               shouldStop: () => false, // no cooperative cancel in fallback single-thread
