@@ -71,7 +71,7 @@ export default function TimeControls({ elapsedMs, showControls = true, capMode =
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm">Tiempo</span>
+        <span className="text-sm">Tiempo respuesta</span>
         {showControls && (
           <div className="inline-flex rounded-md overflow-hidden border border-white/10">
             <button

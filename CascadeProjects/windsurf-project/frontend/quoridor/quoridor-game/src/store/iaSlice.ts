@@ -22,6 +22,8 @@ export interface IAStats<M> {
   dOp?: number;
 }
 
+export type IAPreset = 'balanced' | 'aggressive' | 'defensive' | 'random';
+
 export interface IAState<M = any> {
   depth: number; // dificultad 1..10
   timeMode: TimeMode; // solo configurable en IAPanel (DevTools)
@@ -30,7 +32,7 @@ export interface IAState<M = any> {
   /** Motor de IA seleccionado (para tabs del panel Dev). */
   engine?: 'minimax' | 'mcts' | 'hybrid';
   /** Preset de estilo de evaluación/estrategia. */
-  preset?: 'balanced' | 'aggressive' | 'defensive';
+  preset?: IAPreset;
   /** Preset de dificultad (mapea a profundidad y algunos parámetros). */
   difficultyPreset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte';
   /** Qué bandos están controlados por la IA (para jugar vs IA). */
@@ -80,6 +82,8 @@ export interface IAState<M = any> {
   stats: IAStats<M>;
   /** Si openingStrategy === 'random', aquí guardamos la apertura elegida por partida. */
   openingResolved?: Exclude<OpeningStrategy, 'random'>;
+  /** Si preset === 'random', aquí guardamos el preset elegido por partida. */
+  presetResolved?: Exclude<IAPreset, 'random'>;
 }
 
 const initialState: IAState = {
@@ -88,7 +92,7 @@ const initialState: IAState = {
   timeSeconds: 8,
   autoplay: false,
   engine: 'minimax',
-  preset: 'balanced',
+  preset: 'random',
   difficultyPreset: 'intermedio',
   control: { L: false, D: true },
   trace: { enabled: false, sampleRate: 0.25, maxDepth: 4, cap: 5000 },
@@ -135,6 +139,7 @@ const initialState: IAState = {
     dOp: 0,
   },
   openingResolved: undefined,
+  presetResolved: undefined,
 };
 
 const iaSlice = createSlice({
@@ -144,10 +149,15 @@ const iaSlice = createSlice({
     setEngine(state, action: PayloadAction<'minimax' | 'mcts' | 'hybrid'>) {
       state.engine = action.payload;
     },
-    setPreset(state, action: PayloadAction<'balanced' | 'aggressive' | 'defensive'>) {
+    setPreset(state, action: PayloadAction<IAPreset>) {
       state.preset = action.payload;
-      // Aplicar preset sobre config existente
+      // Al seleccionar 'random' no mutamos la config; se resolverá por partida
       const p = action.payload;
+      if (p === 'random') {
+        state.presetResolved = undefined;
+        return;
+      }
+      // Aplicar preset concreto sobre config existente
       if (p === 'balanced') {
         state.config.wallMeritLambda = 0.6;
         state.config.enableWallPathFilter = true;
@@ -344,6 +354,9 @@ const iaSlice = createSlice({
     setOpeningResolved(state, action: PayloadAction<Exclude<OpeningStrategy, 'random'> | undefined>) {
       state.openingResolved = action.payload;
     },
+    setPresetResolved(state, action: PayloadAction<Exclude<IAPreset, 'random'> | undefined>) {
+      state.presetResolved = action.payload;
+    },
     resetStats(state) {
       state.stats = initialState.stats;
     },
@@ -417,6 +430,7 @@ export const {
   setTraceMaxDepth,
   setTraceCap,
   setOpeningResolved,
+  setPresetResolved,
 } = iaSlice.actions;
 
 export default iaSlice.reducer;

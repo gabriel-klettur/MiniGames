@@ -76,10 +76,9 @@ function App() {
         <section className="col-span-1 md:col-span-12 w-full rounded-lg border border-white/10 bg-gray-900/40 p-4">
           <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />
           {/* Controles IA principales para el usuario */}
-          <IAUserPanel />
-          <h2 className="text-lg font-medium mb-3">Tablero</h2>
+          <IAUserPanel />          
           <Board
-            className="w-full max-w-[48rem] mx-auto"
+            className="w-full max-w-[48rem] mx-auto mt-3"
             onCellClick={onCellClick}
             onWallClick={onWallClick}
             highlightCells={highlightCells}

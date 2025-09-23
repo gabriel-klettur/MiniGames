@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAIForL, toggleAIForD, setDifficultyPreset, setOpeningStrategy, setOpeningPliesMax, setOpeningFastEnabled, setOpeningFastPlies, setOpeningFastSeconds } from '../../store/iaSlice.ts';
+import { setDepth, toggleAIForL, toggleAIForD, setDifficultyPreset, setOpeningStrategy, setOpeningPliesMax, setOpeningFastEnabled, setOpeningFastPlies, setOpeningFastSeconds, setPreset } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 import TimeControls from './panel/TimeControls.tsx';
 import RootMovesList from './panel/RootMovesList.tsx';
@@ -30,6 +30,11 @@ export default function IAPanel() {
     defensive: 'Defensiva',
     mirror: 'Espejo',
     early_block: 'Muro Rápido',
+  };
+  const presetLabels: Record<'balanced' | 'aggressive' | 'defensive', string> = {
+    balanced: 'Balanceado',
+    aggressive: 'Agresivo',
+    defensive: 'Defensivo',
   };
 
   return (
@@ -88,6 +93,27 @@ export default function IAPanel() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Comportamiento (balanceado/agresivo/defensivo/aleatorio) */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Comportamiento</span>
+              <select
+                value={ia.preset ?? 'random'}
+                onChange={(e) => dispatch(setPreset(e.target.value as any))}
+                className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+                title="Estilo de juego de la IA"
+              >
+                <option value="random">Aleatorio</option>
+                <option value="balanced">Balanceado</option>
+                <option value="aggressive">Agresivo</option>
+                <option value="defensive">Defensivo</option>
+              </select>
+              {ia.preset === 'random' && ia.presetResolved && (
+                <span className="text-xs text-gray-300 px-2 py-1 rounded bg-gray-800/80 border border-white/10">
+                  Aleatorio → {presetLabels[ia.presetResolved]}
+                </span>
+              )}
             </div>
 
             {/* Aperturas: estrategia + plies de apertura */}

@@ -29,6 +29,18 @@ export default function IAUserPanel() {
   }, [ia.config.openingStrategy]);
 
   const canAIMove = !busy && ia.control[game.current];
+  const openingLabels: Record<'central_control' | 'racing' | 'defensive' | 'mirror' | 'early_block', string> = {
+    central_control: 'Control Central',
+    racing: 'Carrera',
+    defensive: 'Defensiva',
+    mirror: 'Espejo',
+    early_block: 'Muro Rápido',
+  };
+  const presetLabels: Record<'balanced' | 'aggressive' | 'defensive', string> = {
+    balanced: 'Balanceado',
+    aggressive: 'Agresivo',
+    defensive: 'Defensivo',
+  };
 
   return (
     <section className="rounded-lg border border-white/10 bg-gray-900/50 p-3" aria-label="Controles de IA">
@@ -59,6 +71,11 @@ export default function IAUserPanel() {
             <option value="mirror">Espejo</option>
             <option value="early_block">Muro Rápido</option>
           </select>
+          {ia.config.openingStrategy === 'random' && ia.openingResolved && (
+            <span className="text-xs text-gray-300 px-2 py-1 rounded bg-gray-800/80 border border-white/10">
+              Aleatoria → {openingLabels[ia.openingResolved]}
+            </span>
+          )}
         </div>
 
         {/* Nivel (Novato / Intermedio / Bueno / Fuerte) */}
@@ -85,15 +102,21 @@ export default function IAUserPanel() {
         <div className="flex items-center gap-2">
           <span className="text-sm">Comportamiento</span>
           <select
-            value={ia.preset ?? 'balanced'}
+            value={ia.preset ?? 'random'}
             onChange={(e) => dispatch(setPreset(e.target.value as any))}
             className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
             title="Estilo de juego de la IA"
           >
+            <option value="random">Aleatorio</option>
             <option value="balanced">Balanceado</option>
             <option value="aggressive">Agresivo</option>
             <option value="defensive">Defensivo</option>
           </select>
+          {ia.preset === 'random' && ia.presetResolved && (
+            <span className="text-xs text-gray-300 px-2 py-1 rounded bg-gray-800/80 border border-white/10">
+              Aleatorio → {presetLabels[ia.presetResolved]}
+            </span>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-3">

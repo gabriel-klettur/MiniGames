@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts';
 import type { RootState } from '../store/index.ts';
-import { setBusy, setStats, setOpeningResolved } from '../store/iaSlice.ts';
+import { setBusy, setStats, setOpeningResolved, setPresetResolved } from '../store/iaSlice.ts';
 import { movePawn, placeWall } from '../store/gameSlice.ts';
 import { searchBestMove } from './minimax.ts';
 import type { AIMove, TraceEvent, OpeningStrategy } from './types.ts';
@@ -20,6 +20,8 @@ export function useAI() {
   const turnSeqRef = useRef<number>(0);
   // Opening choice for 'random' mode, resolved per game start
   const openingChoiceRef = useRef<Exclude<OpeningStrategy, 'random'> | null>(null);
+  // Behavior preset choice for 'random' mode, resolved per game start
+  const presetChoiceRef = useRef<'balanced' | 'aggressive' | 'defensive' | null>(null);
   // Throttled trace processing
   const traceQueueRef = useRef<TraceEvent[][]>([]);
   const traceRafRef = useRef<number | null>(null);
@@ -90,6 +92,9 @@ export function useAI() {
         turnSeqRef.current = 0;
         openingChoiceRef.current = null; // reset resolved opening on new start detection
         try { dispatch(setOpeningResolved(undefined)); } catch {}
+        // reset resolved behavior preset as well
+        presetChoiceRef.current = null;
+        try { dispatch(setPresetResolved(undefined)); } catch {}
       }
     } catch {}
     const seq = ++turnSeqRef.current;
@@ -163,7 +168,65 @@ export function useAI() {
       return openingChoiceRef.current;
     };
     const resolvedOpening = resolveOpening();
-    const cfgResolved = { ...ia.config, openingStrategy: resolvedOpening } as typeof ia.config;
+    let cfgResolved = { ...ia.config, openingStrategy: resolvedOpening } as typeof ia.config;
+
+    // Resolve behavior preset if 'random' selected; apply overrides per resolved preset
+    const resolvePreset = (): ('balanced' | 'aggressive' | 'defensive') | undefined => {
+      const p = ia.preset as ('balanced' | 'aggressive' | 'defensive' | 'random' | undefined);
+      if (!p) return undefined;
+      if (p !== 'random') {
+        // If a concrete preset is selected, clear any previous resolution and DO NOT apply runtime overrides
+        if (ia.presetResolved != null) try { dispatch(setPresetResolved(undefined)); } catch {}
+        return undefined;
+      }
+      if (!presetChoiceRef.current) {
+        const choices: Array<'balanced' | 'aggressive' | 'defensive'> = ['balanced','aggressive','defensive'];
+        presetChoiceRef.current = choices[Math.floor(Math.random() * choices.length)];
+        console.info('[IA] Comportamiento aleatorio elegido:', presetChoiceRef.current);
+        try { dispatch(setPresetResolved(presetChoiceRef.current)); } catch {}
+      }
+      return presetChoiceRef.current ?? undefined;
+    };
+
+    const applyPresetToConfig = (base: typeof ia.config, p?: 'balanced' | 'aggressive' | 'defensive') => {
+      if (!p) return base;
+      const c = { ...base };
+      if (p === 'balanced') {
+        c.wallMeritLambda = 0.6;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 1;
+        c.maxWallsRoot = 24;
+        c.maxWallsNode = 12;
+        c.wallVsPawnTauBase = 0.75;
+        c.reserveWallsMin = 1;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      } else if (p === 'aggressive') {
+        c.wallMeritLambda = 0.4;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 1;
+        c.maxWallsRoot = 20;
+        c.maxWallsNode = 10;
+        c.wallVsPawnTauBase = 0.6;
+        c.reserveWallsMin = 0;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      } else if (p === 'defensive') {
+        c.wallMeritLambda = 0.8;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 2;
+        c.maxWallsRoot = 28;
+        c.maxWallsNode = 14;
+        c.wallVsPawnTauBase = 1.0;
+        c.reserveWallsMin = 2;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      }
+      return c;
+    };
+
+    const resolvedPreset = resolvePreset();
+    cfgResolved = applyPresetToConfig(cfgResolved, resolvedPreset);
     // Telemetry context
     const tele = {
       mode: ia.timeMode,

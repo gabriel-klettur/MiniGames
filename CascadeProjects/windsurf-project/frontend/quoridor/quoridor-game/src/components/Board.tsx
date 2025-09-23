@@ -206,11 +206,6 @@ export default function Board({
           onPointerCancel={clearLongPress}
           onPointerLeave={clearLongPress}
         >
-          {isCoarsePointer && (
-            <div className="pointer-events-none absolute left-2 top-2 z-20 text-[11px] rounded-md bg-black/50 border border-white/10 px-2 py-1 text-gray-100">
-              Modo: {inputMode === 'wall' ? 'Vallas' : 'Mover'}
-            </div>
-          )}
           {Array.from({ length: gridCount }).map((_, gr) => (
             <React.Fragment key={gr}>
               {Array.from({ length: gridCount }).map((__, gc) => {
