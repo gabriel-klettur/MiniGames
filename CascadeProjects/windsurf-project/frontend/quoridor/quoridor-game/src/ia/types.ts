@@ -13,6 +13,14 @@ export type WallMove = {
 
 export type AIMove = PawnMove | WallMove;
 
+// Opening strategies supported by the AI
+export type OpeningStrategy =
+  | 'racing'            // Apertura de Carrera
+  | 'defensive'         // Apertura Defensiva
+  | 'central_control'   // Apertura de Control Central
+  | 'mirror'            // Apertura Espejo
+  | 'early_block';      // Apertura de “Muro Rápido”
+
 export interface SearchParams {
   maxDepth: number; // 1..10
   deadlineMs?: number; // Date.now() deadline for time control (optional)
@@ -21,6 +29,8 @@ export interface SearchParams {
   onTrace?: (ev: TraceEvent | TraceEvent[]) => void;
   /** Optional trace configuration to control verbosity and sampling. */
   traceConfig?: TraceConfig;
+  /** Cooperative-cancel predicate; when returns true, search should stop ASAP. */
+  shouldStop?: () => boolean;
 }
 
 export interface SearchResult {
@@ -61,6 +71,10 @@ export interface SearchConfig {
   /** Priorización valla vs movimiento en raíz: umbral base τ y reserva mínima de vallas. */
   wallVsPawnTauBase?: number;
   reserveWallsMin?: number;
+  /** Estrategia de apertura seleccionada. */
+  openingStrategy?: OpeningStrategy;
+  /** Hasta cuántos plies se considera la fase de apertura (aprox). */
+  openingPliesMax?: number;
 }
 
 // --- Tracing model ---

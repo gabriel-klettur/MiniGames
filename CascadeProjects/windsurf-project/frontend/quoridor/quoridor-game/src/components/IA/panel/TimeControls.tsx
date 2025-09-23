@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.ts';
 import type { RootState } from '../../../store/index.ts';
-import { setTimeMode, setTimeSeconds } from '../../../store/iaSlice.ts';
+import { setTimeMode, setTimeSeconds, setSafetyMarginSeconds } from '../../../store/iaSlice.ts';
 
 interface Props {
   elapsedMs: number;
@@ -10,7 +10,8 @@ interface Props {
 export default function TimeControls({ elapsedMs }: Props) {
   const dispatch = useAppDispatch();
   const ia = useAppSelector((s: RootState) => s.ia);
-  const timeCapMs = ia.timeMode === 'manual' ? ia.timeSeconds * 1000 : null;
+  const safetyMargin = ia.config.safetyMarginSeconds ?? 0.15;
+  const timeCapMs = ia.timeMode === 'manual' ? Math.max(0, ia.timeSeconds * 1000 - safetyMargin * 1000) : null;
 
   // Animate elapsed with rAF while busy for smooth updates
   const [animatedElapsed, setAnimatedElapsed] = React.useState(elapsedMs);
@@ -83,6 +84,20 @@ export default function TimeControls({ elapsedMs }: Props) {
               onChange={(e) => dispatch(setTimeSeconds(Number(e.target.value)))}
             />
             <span className="text-xs text-gray-300 w-14 text-right">{Number(ia.timeSeconds).toFixed(1)} s</span>
+          </div>
+        )}
+        {ia.timeMode === 'manual' && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">Margen</span>
+            <input
+              type="range"
+              min={0}
+              max={5}
+              step={0.05}
+              value={safetyMargin}
+              onChange={(e) => dispatch(setSafetyMarginSeconds(Number(e.target.value)))}
+            />
+            <span className="text-xs text-gray-300 w-14 text-right">{safetyMargin.toFixed(2)} s</span>
           </div>
         )}
         <div className="ml-auto text-xs text-gray-300">{(shownElapsed / 1000).toFixed(1)} s</div>

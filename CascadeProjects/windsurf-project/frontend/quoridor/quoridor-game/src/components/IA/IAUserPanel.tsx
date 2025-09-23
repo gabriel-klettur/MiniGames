@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import type { RootState } from '../../store/index.ts';
-import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD } from '../../store/iaSlice.ts';
+import { setDepth, toggleAutoplay, setPreset, toggleAIForL, toggleAIForD, setOpeningStrategy } from '../../store/iaSlice.ts';
 import { useAI } from '../../ia/useAI.ts';
 
 /**
@@ -58,18 +58,35 @@ export default function IAUserPanel() {
           ))}
         </div>
 
-        {/* Control IA (compacto) */}
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-xs text-gray-300">Control IA:</span>
-          <label className="inline-flex items-center gap-1">
-            <input type="checkbox" checked={ia.control.L} onChange={() => dispatch(toggleAIForL())} /> L
-          </label>
-          <label className="inline-flex items-center gap-1">
-            <input type="checkbox" checked={ia.control.D} onChange={() => dispatch(toggleAIForD())} /> D
-          </label>
+        {/* Apertura (compacto) */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Apertura</span>
+          <select
+            value={ia.config.openingStrategy ?? ''}
+            onChange={(e) => dispatch(setOpeningStrategy((e.target.value || undefined) as any))}
+            className="bg-gray-800 text-gray-100 text-sm rounded-md px-2 py-1 border border-white/10"
+            title="Estrategia de apertura"
+          >
+            <option value="central_control">Control Central</option>
+            <option value="racing">Carrera</option>
+            <option value="defensive">Defensiva</option>
+            <option value="mirror">Espejo</option>
+            <option value="early_block">Muro Rápido</option>
+          </select>
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          {/* Control IA (compacto) movido a la izquierda del botón */}
+          <div className="flex items-center gap-2 text-sm" aria-label="Control IA">
+            <span className="text-xs text-gray-300">Control IA:</span>
+            <label className="inline-flex items-center gap-1">
+              <input type="checkbox" checked={ia.control.L} onChange={() => dispatch(toggleAIForL())} /> L
+            </label>
+            <label className="inline-flex items-center gap-1">
+              <input type="checkbox" checked={ia.control.D} onChange={() => dispatch(toggleAIForD())} /> D
+            </label>
+          </div>
+
           <button
             className="inline-flex items-center gap-2 rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-sm text-white disabled:opacity-60"
             onClick={() => requestAIMove(true)}

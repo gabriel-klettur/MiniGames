@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { TraceConfig } from '../ia/types.ts';
+import type { TraceConfig, OpeningStrategy } from '../ia/types.ts';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -31,6 +31,8 @@ export interface IAState<M = any> {
   engine?: 'minimax' | 'mcts' | 'hybrid';
   /** Preset de estilo de evaluación/estrategia. */
   preset?: 'balanced' | 'aggressive' | 'defensive';
+  /** Preset de dificultad (mapea a profundidad y algunos parámetros). */
+  difficultyPreset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte';
   /** Qué bandos están controlados por la IA (para jugar vs IA). */
   control: { L: boolean; D: boolean };
   /** Configuración de trazas para visualización. */
@@ -46,6 +48,8 @@ export interface IAState<M = any> {
     enableAlphaBeta: boolean; // activa poda AB (si no, minimax puro)
     randomTieBreak: boolean; // desempate aleatorio entre empates
     hardTimeLimit: boolean; // cortar estrictamente por deadline
+    /** Margen de seguridad (segundos) restado al presupuesto antes de fijar el deadline */
+    safetyMarginSeconds?: number;
     // Heurística de vallas
     wallMeritLambda?: number; // 0..1 peso para penalizar Δd_me en mérito de valla
     enableWallPathFilter?: boolean; // filtrar vallas por cercanía a ruta mínima del rival
@@ -64,6 +68,13 @@ export interface IAState<M = any> {
     reserveWallsMin?: number; // reserva mínima de vallas a conservar
     // Infraestructura
     enableWorker?: boolean; // usar Web Worker para el cálculo de IA
+    // Aperturas
+    openingStrategy?: OpeningStrategy;
+    openingPliesMax?: number;
+    // Apertura rápida: limitar presupuesto de tiempo en los primeros plies
+    openingFastEnabled?: boolean;
+    openingFastPlies?: number; // cuántos plies aplicar el límite rápido (p. ej., 3)
+    openingFastSeconds?: number; // presupuesto por jugada rápida (p. ej., 0.8s)
   };
   // Estadísticas/resultados del último cálculo
   stats: IAStats<M>;
@@ -76,6 +87,7 @@ const initialState: IAState = {
   autoplay: false,
   engine: 'minimax',
   preset: 'balanced',
+  difficultyPreset: 'intermedio',
   control: { L: false, D: true },
   trace: { enabled: false, sampleRate: 0.25, maxDepth: 4, cap: 5000 },
   config: {
@@ -88,6 +100,7 @@ const initialState: IAState = {
     enableAlphaBeta: true,
     randomTieBreak: true,
     hardTimeLimit: true,
+    safetyMarginSeconds: 0.15,
     wallMeritLambda: 0.6,
     enableWallPathFilter: true,
     wallPathRadius: 1,
@@ -102,6 +115,11 @@ const initialState: IAState = {
     wallVsPawnTauBase: 0.75,
     reserveWallsMin: 1,
     enableWorker: true,
+    openingStrategy: 'central_control',
+    openingPliesMax: 6,
+    openingFastEnabled: true,
+    openingFastPlies: 3,
+    openingFastSeconds: 0.8,
   },
   stats: {
     busy: false,
@@ -159,6 +177,48 @@ const iaSlice = createSlice({
         state.config.enableLMR = true;
       }
     },
+    /**
+     * Selección de preset de dificultad (Novato, Intermedio, Bueno, Fuerte).
+     * Ajusta profundidad y algunos parámetros por defecto pensados para cada nivel.
+     */
+    setDifficultyPreset(state, action: PayloadAction<'novato' | 'intermedio' | 'bueno' | 'fuerte'>) {
+      state.difficultyPreset = action.payload;
+      const p = action.payload;
+      if (p === 'novato') {
+        state.depth = 2;
+        // Config menos agresiva y más rápida
+        state.config.maxWallsRoot = 16;
+        state.config.maxWallsNode = 8;
+        state.config.enableIterative = true;
+        state.config.enableLMR = false;
+        state.config.enablePVS = true;
+        state.config.ttSize = 16384;
+      } else if (p === 'intermedio') {
+        state.depth = 4;
+        state.config.maxWallsRoot = 20;
+        state.config.maxWallsNode = 10;
+        state.config.enableIterative = true;
+        state.config.enableLMR = false;
+        state.config.enablePVS = true;
+        state.config.ttSize = 32768;
+      } else if (p === 'bueno') {
+        state.depth = 6;
+        state.config.maxWallsRoot = 24;
+        state.config.maxWallsNode = 12;
+        state.config.enableIterative = true;
+        state.config.enableLMR = true;
+        state.config.enablePVS = true;
+        state.config.ttSize = 49152;
+      } else if (p === 'fuerte') {
+        state.depth = 8;
+        state.config.maxWallsRoot = 28;
+        state.config.maxWallsNode = 14;
+        state.config.enableIterative = true;
+        state.config.enableLMR = true;
+        state.config.enablePVS = true;
+        state.config.ttSize = 65536;
+      }
+    },
     setDepth(state, action: PayloadAction<number>) {
       let d = Math.max(1, Math.min(10, Math.round(action.payload)));
       state.depth = d;
@@ -188,6 +248,14 @@ const iaSlice = createSlice({
     setEnableAlphaBeta(state, action: PayloadAction<boolean>) { state.config.enableAlphaBeta = action.payload; },
     setRandomTieBreak(state, action: PayloadAction<boolean>) { state.config.randomTieBreak = action.payload; },
     setHardTimeLimit(state, action: PayloadAction<boolean>) { state.config.hardTimeLimit = action.payload; },
+    setSafetyMarginSeconds(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      if (typeof v === 'number') {
+        state.config.safetyMarginSeconds = Math.max(0, Math.min(5, Number(v)));
+      } else {
+        state.config.safetyMarginSeconds = undefined;
+      }
+    },
     // Avanzado: heurísticas/optimizaciones
     setEnableKillerHeuristic(state, action: PayloadAction<boolean | undefined>) {
       state.config.enableKillerHeuristic = !!action.payload;
@@ -225,6 +293,25 @@ const iaSlice = createSlice({
     },
     setEnableWorker(state, action: PayloadAction<boolean | undefined>) {
       state.config.enableWorker = !!action.payload;
+    },
+    // Aperturas
+    setOpeningStrategy(state, action: PayloadAction<OpeningStrategy | undefined>) {
+      state.config.openingStrategy = action.payload;
+    },
+    setOpeningPliesMax(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingPliesMax = typeof v === 'number' ? Math.max(0, Math.round(v)) : undefined;
+    },
+    setOpeningFastEnabled(state, action: PayloadAction<boolean | undefined>) {
+      state.config.openingFastEnabled = !!action.payload;
+    },
+    setOpeningFastPlies(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingFastPlies = typeof v === 'number' ? Math.max(0, Math.round(v)) : undefined;
+    },
+    setOpeningFastSeconds(state, action: PayloadAction<number | undefined>) {
+      const v = action.payload;
+      state.config.openingFastSeconds = typeof v === 'number' ? Math.max(0, Number(v)) : undefined;
     },
     setWallMeritLambda(state, action: PayloadAction<number | undefined>) {
       const v = action.payload;
@@ -279,6 +366,7 @@ const iaSlice = createSlice({
 export const {
   setEngine,
   setPreset,
+  setDifficultyPreset,
   setDepth,
   setTimeMode,
   setTimeSeconds,
@@ -294,6 +382,7 @@ export const {
   setEnableAlphaBeta,
   setRandomTieBreak,
   setHardTimeLimit,
+  setSafetyMarginSeconds,
   setWallMeritLambda,
   setEnableWallPathFilter,
   setWallPathRadius,
@@ -308,6 +397,11 @@ export const {
   setWallVsPawnTauBase,
   setReserveWallsMin,
   setEnableWorker,
+  setOpeningStrategy,
+  setOpeningPliesMax,
+  setOpeningFastEnabled,
+  setOpeningFastPlies,
+  setOpeningFastSeconds,
   setBusy,
   setStats,
   resetStats,

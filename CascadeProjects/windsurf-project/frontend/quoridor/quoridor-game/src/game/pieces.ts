@@ -35,7 +35,7 @@ export function applyPlaceWall(state: GameState, player: Player, wall: Wall): Ga
   if (!validateWallPlacement(state, wall)) return state;
   return {
     ...state,
-    walls: [...state.walls, wall],
+    walls: [...state.walls, { ...wall, by: player }],
     wallsLeft: { ...state.wallsLeft, [player]: state.wallsLeft[player] - 1 },
     current: otherPlayer(state.current),
   };

@@ -10,6 +10,17 @@ import { shortestDistanceToGoal, shortestPathToGoal } from './eval.ts';
 export function generateMoves(state: GameState, config?: SearchConfig, atRoot = false): AIMove[] {
   const player: Player = state.current;
   const moves: AIMove[] = [];
+  // Helper: estimate if we are in opening phase
+  const isOpening = (() => {
+    const pliesMax = Math.max(0, config?.openingPliesMax ?? 6);
+    const startRowL = state.size - 1;
+    const startRowD = 0;
+    const progL = Math.abs(state.pawns['L'].row - startRowL);
+    const progD = Math.abs(state.pawns['D'].row - startRowD);
+    const plyEstimate = state.walls.length + progL + progD;
+    return plyEstimate <= pliesMax;
+  })();
+  const opening = config?.openingStrategy;
   // Pawn moves first
   for (const c of legalPawnMoves(state, player)) {
     moves.push({ kind: 'pawn', to: { row: c.row, col: c.col } });
@@ -51,7 +62,23 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
           const ns = applyPlaceWall(state, player, wH);
           const dMe1 = shortestDistanceToGoal(ns, me);
           const dOp1 = shortestDistanceToGoal(ns, op);
-          const merit = (dOp1 - dOp0) - LAMBDA * (dMe1 - dMe0);
+          let merit = (dOp1 - dOp0) - LAMBDA * (dMe1 - dMe0);
+          // Opening bonuses for walls
+          if (isOpening) {
+            const mid = Math.floor((N - 1) / 2);
+            const nearCenterBonus = - (Math.abs(r - mid) + Math.abs(c - mid)) * 0.05; // closer to center -> smaller penalty
+            if (opening === 'defensive') merit += 0.5 + nearCenterBonus;
+            else if (opening === 'central_control') merit += 0.25 + nearCenterBonus;
+            else if (opening === 'early_block') {
+              // Bonus if wall is adjacent to opponent and perpendicular to their advance direction
+              const opPos = state.pawns[op];
+              const opGoalRow = goalRow(N, op);
+              const dir = opGoalRow > opPos.row ? 1 : -1; // down or up
+              const blocksForward = (wH.o === 'H') && (r === opPos.row + (dir > 0 ? 0 : -1)) && (c === opPos.col || c === opPos.col - 1);
+              if (blocksForward) merit += 1.0;
+            }
+            // racing/mirror: no special wall boost
+          }
           wallScored.push({ move: { kind: 'wall', wall: wH }, merit });
         }
         const wV: Wall = { o: 'V', r, c } as const;
@@ -59,7 +86,19 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
           const ns = applyPlaceWall(state, player, wV);
           const dMe1 = shortestDistanceToGoal(ns, me);
           const dOp1 = shortestDistanceToGoal(ns, op);
-          const merit = (dOp1 - dOp0) - LAMBDA * (dMe1 - dMe0);
+          let merit = (dOp1 - dOp0) - LAMBDA * (dMe1 - dMe0);
+          if (isOpening) {
+            const mid = Math.floor((N - 1) / 2);
+            const nearCenterBonus = - (Math.abs(r - mid) + Math.abs(c - mid)) * 0.05;
+            if (opening === 'defensive') merit += 0.5 + nearCenterBonus;
+            else if (opening === 'central_control') merit += 0.25 + nearCenterBonus;
+            else if (opening === 'early_block') {
+              const opPos = state.pawns[op];
+              // Vertical walls do not block straight forward directly; small bonus if very near
+              const near = Math.abs(r - opPos.row) + Math.abs(c - opPos.col) <= 1 ? 0.3 : 0;
+              merit += near;
+            }
+          }
           wallScored.push({ move: { kind: 'wall', wall: wV }, merit });
         }
       }
@@ -84,6 +123,51 @@ export function generateMoves(state: GameState, config?: SearchConfig, atRoot = 
       }
       return 0;
     });
+  }
+
+  // Opening-specific ordering tweaks
+  if (isOpening && opening) {
+    const N = state.size;
+    const mid = Math.floor(N / 2);
+    const op: Player = player === 'L' ? 'D' : 'L';
+    const opPos = state.pawns[op];
+    const targetRow = goalRow(N, player);
+    const sign = targetRow < state.pawns[player].row ? -1 : 1;
+
+    const scoreMove = (m: AIMove): number => {
+      let s = 0;
+      if (m.kind === 'pawn') {
+        const progress = sign * (m.to.row - state.pawns[player].row);
+        if (opening === 'racing') {
+          s += 2.0 * progress;
+        } else if (opening === 'central_control') {
+          const centerBias = -Math.abs(m.to.col - mid) * 0.5;
+          s += 1.2 * progress + centerBias;
+        } else if (opening === 'mirror') {
+          const colMatch = -Math.abs(m.to.col - opPos.col);
+          s += 1.0 * progress + 0.8 * colMatch;
+        } else if (opening === 'defensive') {
+          // Slightly deprioritize pawn moves
+          s += 0.2 * progress - 1.0;
+        } else if (opening === 'early_block') {
+          // Neutral for pawn; walls will get boosted above
+          s += 0.3 * progress - 0.5;
+        }
+      } else {
+        // Walls
+        if (opening === 'defensive') s += 2.0;
+        else if (opening === 'central_control') s += 0.8;
+        else if (opening === 'early_block') {
+          // Favor walls very near opponent
+          const near = Math.abs(m.wall.r - opPos.row) + Math.abs(m.wall.c - opPos.col);
+          s += 1.5 - 0.3 * near;
+        }
+        // racing/mirror: no extra wall score
+      }
+      return s;
+    };
+
+    moves.sort((a, b) => scoreMove(b) - scoreMove(a));
   }
   return moves;
 }
