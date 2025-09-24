@@ -78,7 +78,7 @@ function App() {
       />
 
       <main className="mx-auto max-w-6xl w-full px-4 py-6 grid grid-cols-1 gap-4 md:grid-cols-12">
-        <section className="col-span-1 md:col-span-12 w-full rounded-lg border border-white/10 bg-gray-900/40 p-4">          
+        <section className="col-span-1 md:col-span-12 w-full">          
           {showIAUserPanel && <IAUserPanel />}          
           <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />          
           <Board
