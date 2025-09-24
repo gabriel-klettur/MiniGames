@@ -30,8 +30,11 @@ try {
 } catch {}
 
 function initialState(): GameState {
+  const MIN_D_DEFAULT = 0.06;
+  const t0 = randomInitialTowers();
+  const t1 = resolveAllOverlaps(t0, MIN_D_DEFAULT);
   return {
-    towers: randomInitialTowers(),
+    towers: t1,
     selectedId: null,
     currentPlayer: 1,
     lastMover: null,
@@ -39,6 +42,72 @@ function initialState(): GameState {
     gameOver: false,
     players: { 1: { stars: 0 }, 2: { stars: 0 } },
   };
+}
+
+// -----------------------------
+// Overlap resolution utilities
+// -----------------------------
+function distN(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+
+function isFreeAtPos(towers: Tower[], id: string, pos: { x: number; y: number }, minD: number): boolean {
+  for (const t of towers) {
+    if (t.id === id) continue;
+    if (distN(pos, t.pos) < minD) return false;
+  }
+  return true;
+}
+
+function clamp01(v: number) { return Math.max(0, Math.min(1, v)); }
+
+function findNonOverlappingPosition(towers: Tower[], id: string, start: { x: number; y: number }, minD: number): { x: number; y: number } {
+  // If current position is already free, keep it
+  if (isFreeAtPos(towers, id, start, minD)) return start;
+  // Spiral/ring search around start position
+  const RINGS = 16;
+  const STEPS_PER_RING = 24;
+  for (let r = 1; r <= RINGS; r++) {
+    const radius = r * minD; // grow by minD increments
+    for (let k = 0; k < STEPS_PER_RING; k++) {
+      const ang = (k / STEPS_PER_RING) * Math.PI * 2;
+      const cand = { x: clamp01(start.x + radius * Math.cos(ang)), y: clamp01(start.y + radius * Math.sin(ang)) };
+      if (isFreeAtPos(towers, id, cand, minD)) return cand;
+    }
+  }
+  // Fallback: nudge away from nearest neighbor to reach minD
+  let nearest: Tower | null = null;
+  let bestD = Infinity;
+  for (const t of towers) {
+    if (t.id === id) continue;
+    const d = distN(start, t.pos);
+    if (d < bestD) { bestD = d; nearest = t; }
+  }
+  if (nearest && bestD > 0) {
+    const ux = (start.x - nearest.pos.x) / bestD;
+    const uy = (start.y - nearest.pos.y) / bestD;
+    const cand = { x: clamp01(nearest.pos.x + ux * (minD + 1e-3)), y: clamp01(nearest.pos.y + uy * (minD + 1e-3)) };
+    return cand;
+  }
+  return start;
+}
+
+function resolveAllOverlaps(towers: Tower[], minD: number, maxIters = 8): Tower[] {
+  let arr = towers.slice();
+  for (let iter = 0; iter < maxIters; iter++) {
+    let changed = false;
+    for (const t of arr) {
+      const newPos = findNonOverlappingPosition(arr, t.id, t.pos, minD);
+      if (newPos.x !== t.pos.x || newPos.y !== t.pos.y) {
+        arr = arr.map(tt => (tt.id === t.id ? { ...tt, pos: newPos } : tt));
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  return arr;
 }
 
 function reducer(state: GameState, action: GameAction): GameState {
@@ -88,7 +157,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       }
 
       const merged: Tower = mergeTowers(source, target);
-      const towers = replaceAfterMerge(state.towers, source.id, target.id, merged);
+      let towers = replaceAfterMerge(state.towers, source.id, target.id, merged);
+      // After merging, resolve overlaps globally to ensure no tokens remain overlapped
+      const MIN_D_AFTER_MERGE = 0.08; // slightly larger spacing after merges
+      towers = resolveAllOverlaps(towers, MIN_D_AFTER_MERGE);
 
       // Debug/Telemetry: registrar cada fusión válida en consola
       if (shouldLog()) {
@@ -150,17 +222,40 @@ function reducer(state: GameState, action: GameAction): GameState {
         currentPlayer: nextPlayer,
       };
     }
+    case 'resolve-overlaps': {
+      if (state.roundOver || state.gameOver) return state;
+      const tgt = findById(state.towers, action.id);
+      if (!tgt) return state;
+      const minD = action.minD != null ? action.minD : 0.06;
+      const newPos = findNonOverlappingPosition(state.towers, tgt.id, tgt.pos, minD);
+      if (newPos.x === tgt.pos.x && newPos.y === tgt.pos.y) return state;
+      const towers = state.towers.map(t => (t.id === tgt.id ? { ...t, pos: newPos } : t));
+      return { ...state, towers };
+    }
+    case 'resolve-all-overlaps': {
+      if (state.roundOver || state.gameOver) return state;
+      const minD = action.minD != null ? action.minD : 0.06;
+      const towers = resolveAllOverlaps(state.towers, minD);
+      return { ...state, towers };
+    }
     case 'move-tower': {
       if (state.roundOver || state.gameOver) return state;
-      const towers = state.towers.map(t => (t.id === action.id ? { ...t, pos: { x: action.pos.x, y: action.pos.y } } : t));
+      const minD = action.minD;
+      let desired = { x: action.pos.x, y: action.pos.y };
+      if (typeof minD === 'number' && !Number.isNaN(minD)) {
+        desired = findNonOverlappingPosition(state.towers, action.id, desired, Math.max(0, minD));
+      }
+      const towers = state.towers.map(t => (t.id === action.id ? { ...t, pos: desired } : t));
       return { ...state, towers };
     }
     case 'new-round': {
       if (!state.roundOver || state.gameOver) return state; // solo cuando terminó la ronda y NO el juego
       const starter: 1 | 2 = state.lastMover ? (state.lastMover === 1 ? 2 : 1) : 1;
+      const MIN_D_DEFAULT = 0.06;
+      const newTowers = resolveAllOverlaps(randomInitialTowers(), MIN_D_DEFAULT);
       return {
         ...state,
-        towers: randomInitialTowers(),
+        towers: newTowers,
         selectedId: null,
         currentPlayer: starter,
         lastMover: null,

@@ -249,12 +249,29 @@ export default function Board() {
       </div>
     );
 
+    // Compute a compact grid for this cell to place all pieces without overlap
+    const m = ps.length;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(m)));
+    const rows = Math.max(1, Math.ceil(m / cols));
+    const padIn = 2;
+    const gapIn = 4;
+    const tileW = Math.max(8, Math.floor((cellPx - padIn * 2 - gapIn * (cols - 1)) / cols));
+    const tileH = Math.max(12, Math.floor((cellPx - padIn * 2 - gapIn * (rows - 1)) / rows));
+
     return (
       <div key={key} className="flex items-center justify-center rounded-md bg-neutral-800 border border-neutral-700" style={cellStyle}>
-        <div className="flex gap-1" style={{ display: 'flex', gap: 6 }}>
-          {ps.map((p) => {
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {ps.map((p, idx) => {
             const isLight = p.owner === 'Light';
             const isActive = p.owner === turn;
+            // Grid placement within the cell
+            const r = Math.floor(idx / cols);
+            const c = idx % cols;
+            const w = Math.min(pieceWidth, tileW);
+            const h = Math.min(pieceHeight, tileH);
+            const left = padIn + c * (tileW + gapIn) + Math.max(0, Math.floor((tileW - w) / 2));
+            const top = padIn + r * (tileH + gapIn) + Math.max(0, Math.floor((tileH - h) / 2));
+
             // Determine forward tip side based on owner and current state
             const tipSide: 'left' | 'right' | 'top' | 'bottom' = isLight
               ? (p.state === 'en_ida' ? 'left' : 'right')
@@ -263,8 +280,8 @@ export default function Board() {
             // Style per side: both use the same prism design; only color differs
             const pieceStyle: React.CSSProperties = isLight
               ? {
-                  width: pieceWidth,
-                  height: pieceHeight,
+                  width: w,
+                  height: h,
                   clipPath: 'polygon(50% 0%, 85% 15%, 85% 85%, 50% 100%, 15% 85%, 15% 15%)',
                   background: 'linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%)',
                   transform: 'rotate(90deg)',
@@ -274,9 +291,8 @@ export default function Board() {
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 }
               : {
-                  width: pieceWidth,
-                  height: pieceHeight,
-                  // Vertical hex/diamond-like prism to match the reference orientation
+                  width: w,
+                  height: h,
                   clipPath: 'polygon(50% 0%, 85% 15%, 85% 85%, 50% 100%, 15% 85%, 15% 15%)',
                   background: 'linear-gradient(180deg, #a54d5b 0%, #6e2430 100%)',
                   boxShadow: isActive ? '0 0 0 2px rgba(8, 145, 178, 0.35)' : 'none',
@@ -284,7 +300,7 @@ export default function Board() {
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 };
 
-            const tipSize = Math.max(12, Math.round(Math.min(pieceWidth, pieceHeight) * 0.5));
+            const tipSize = Math.max(10, Math.round(Math.min(w, h) * 0.5));
             const theme = p.owner === 'Light' ? THEMES.Light : THEMES.Dark;
             const tipGlowStyle: React.CSSProperties = (() => {
               const base: React.CSSProperties = {
@@ -304,9 +320,9 @@ export default function Board() {
               return { ...base, bottom: 2, left: '50%', transform: 'translateX(-50%)' };
             })();
 
-            // Add a triangular light cone towards the movement direction for extra emphasis
-            const coneW = Math.max(16, Math.round(pieceWidth * 0.65));
-            const coneH = Math.max(16, Math.round(pieceHeight * 0.65));
+            // Directional cone scaled to the adaptive size
+            const coneW = Math.max(12, Math.round(w * 0.65));
+            const coneH = Math.max(12, Math.round(h * 0.65));
             const coneBase: React.CSSProperties = {
               position: 'absolute',
               pointerEvents: 'none',
@@ -322,7 +338,7 @@ export default function Board() {
                 return {
                   ...coneBase,
                   width: coneW,
-                  height: Math.round(pieceHeight * 0.8),
+                  height: Math.round(h * 0.8),
                   left: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
@@ -335,7 +351,7 @@ export default function Board() {
                 return {
                   ...coneBase,
                   width: coneW,
-                  height: Math.round(pieceHeight * 0.8),
+                  height: Math.round(h * 0.8),
                   right: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
@@ -347,7 +363,7 @@ export default function Board() {
               if (tipSide === 'top') {
                 return {
                   ...coneBase,
-                  width: Math.round(pieceWidth * 0.8),
+                  width: Math.round(w * 0.8),
                   height: coneH,
                   top: 0,
                   left: '50%',
@@ -359,7 +375,7 @@ export default function Board() {
               }
               return {
                 ...coneBase,
-                width: Math.round(pieceWidth * 0.8),
+                width: Math.round(w * 0.8),
                 height: coneH,
                 bottom: 0,
                 left: '50%',
@@ -371,7 +387,7 @@ export default function Board() {
             })();
 
             return (
-              <div key={p.id} style={{ position: 'relative', width: pieceWidth, height: pieceHeight }}>
+              <div key={p.id} style={{ position: 'absolute', left, top, width: w, height: h }}>
                 <button
                   onClick={() => handleClickPiece(p.id)}
                   title={`${p.owner} ${p.laneIndex} • ${p.state}`}

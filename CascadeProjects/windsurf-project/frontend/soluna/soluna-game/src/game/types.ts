@@ -26,6 +26,8 @@ export interface GameState {
 export type GameAction =
   | { type: 'select'; id: string }
   | { type: 'attempt-merge'; targetId: string }
-  | { type: 'move-tower'; id: string; pos: { x: number; y: number } }
+  | { type: 'move-tower'; id: string; pos: { x: number; y: number }; minD?: number }
+  | { type: 'resolve-overlaps'; id: string; minD?: number }
+  | { type: 'resolve-all-overlaps'; minD?: number }
   | { type: 'new-round' }
   | { type: 'reset-game' };
