@@ -7,12 +7,48 @@ import { coordOfPiece } from '../game/rules';
 import type { RootState } from '../store';
 
 const CELL_SIZE = 56; // px, slightly larger
+const DOT_SIZE = 5; // px
+const DOT_COLOR = '#f5e0a3'; // warm ivory/gold-like, inspired by reference
 
 export default function Board() {
   const dispatch = useAppDispatch();
-  const { pieces, winner, turn, ui } = useAppSelector((s: RootState) => s.game);
+  const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
+
+  // Derive pip counts from the game's lane speeds so visuals and rules always match.
+  // Mapping of edges to speeds:
+  // - Left edge (c=0, rows 1..L-1): Light speedBack per laneIndex (row-1)
+  // - Right edge (c=L, rows 1..L-1): Light speedOut per laneIndex (row-1)
+  // - Top edge (r=0, cols 1..L-1): Dark speedBack per laneIndex (col-1)
+  // - Bottom edge (r=L, cols 1..L-1): Dark speedOut per laneIndex (col-1)
+  const getPipInfo = (
+    row: number,
+    col: number,
+  ): { count: number; side?: 'left' | 'right' | 'top' | 'bottom' } => {
+    const L = DEFAULT_LANE_LENGTH; // equals size - 1
+    // Left edge (Light back)
+    if (col === 0 && row >= 1 && row <= L) {
+      const lane = lanesByPlayer.Light[row - 1];
+      if (lane) return { count: lane.speedBack, side: 'left' };
+    }
+    // Right edge (Light out)
+    if (col === L && row >= 1 && row <= L) {
+      const lane = lanesByPlayer.Light[row - 1];
+      if (lane) return { count: lane.speedOut, side: 'right' };
+    }
+    // Top edge (Dark back)
+    if (row === 0 && col >= 1 && col <= L) {
+      const lane = lanesByPlayer.Dark[col - 1];
+      if (lane) return { count: lane.speedBack, side: 'top' };
+    }
+    // Bottom edge (Dark out)
+    if (row === L && col >= 1 && col <= L) {
+      const lane = lanesByPlayer.Dark[col - 1];
+      if (lane) return { count: lane.speedOut, side: 'bottom' };
+    }
+    return { count: 0 };
+  };
 
   const gridStyle: React.CSSProperties = {
     display: 'grid',
@@ -76,11 +112,59 @@ export default function Board() {
       position: 'relative',
     };
 
-    // (enumeration mode: no dot renderer)
+    // Pips: indicators inspired by the physical board. Only some cells render dots for now.
+    const pipInfo = getPipInfo(row, col);
+    const pipContainerStyle: React.CSSProperties = (() => {
+      const base: React.CSSProperties = {
+        position: 'absolute',
+        display: 'flex',
+        gap: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
+      };
+      if (pipInfo.side === 'left' || pipInfo.side === 'right') {
+        return {
+          ...base,
+          left: pipInfo.side === 'left' ? 4 : undefined,
+          right: pipInfo.side === 'right' ? 4 : undefined,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          flexDirection: 'column',
+        };
+      }
+      if (pipInfo.side === 'top' || pipInfo.side === 'bottom') {
+        return {
+          ...base,
+          left: '50%',
+          top: pipInfo.side === 'top' ? 4 : undefined,
+          bottom: pipInfo.side === 'bottom' ? 4 : undefined,
+          transform: 'translateX(-50%)',
+          flexDirection: 'column', // keep vertical stacks for top/bottom as well
+        };
+      }
+      return base;
+    })();
 
-    // Build overlay elements for this cell: global coordinate badge rX,cY
+    // Build overlay elements for this cell: pip markers + coordinate badge rX,cY
     const overlay = (
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        {pipInfo.count > 0 && (
+          <div aria-hidden style={pipContainerStyle}>
+            {Array.from({ length: pipInfo.count }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  width: DOT_SIZE,
+                  height: DOT_SIZE,
+                  borderRadius: DOT_SIZE,
+                  backgroundColor: DOT_COLOR,
+                  boxShadow: '0 0 0 1px rgba(0,0,0,0.35)',
+                  opacity: 0.95,
+                }}
+              />
+            ))}
+          </div>
+        )}
         <div
           style={{
             position: 'absolute',
