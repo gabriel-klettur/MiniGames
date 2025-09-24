@@ -15,6 +15,10 @@ export interface InfoPanelProps {
    */
   aiLastMove?: 'L' | 'D' | null;
   /**
+   * Whether the AI is currently thinking. Used to blink the robot icon subtly.
+   */
+  aiThinking?: boolean;
+  /**
    * Optional override for reserves to support optimistic UI during animations
    * (e.g., decrement when placing from reserve, increment when recovering)
    */
@@ -35,20 +39,22 @@ export interface InfoPanelProps {
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * Botones contextuales se gestionan fuera de este panel.
  */
-function InfoPanel({ state, aiEnemy = null, aiLastMove = null, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
+function InfoPanel({ state, aiEnemy = null, aiLastMove = null, aiThinking = false, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
   const { currentPlayer, reserves } = state;
   const reservesDisplay = reservesOverride ?? reserves;
   const showEnemyL = aiEnemy === 'L';
   const showEnemyD = aiEnemy === 'D';
   const showMoveL = aiLastMove === 'L';
   const showMoveD = aiLastMove === 'D';
+  const thinkL = aiThinking && aiEnemy === 'L';
+  const thinkD = aiThinking && aiEnemy === 'D';
 
   return (
     <section className="info-panel" aria-label="Panel de información y acciones">
       <div className="row grid-3">
         <div>
           {(showEnemyL || showMoveL) && (
-            <svg className={["robot-icon", showMoveL ? 'is-active' : 'is-passive'].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className={["robot-icon", (showMoveL || thinkL) ? 'is-active' : 'is-passive', thinkL ? 'is-thinking' : ''].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M11 2h2v3h-2z"/>
               <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
               <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
@@ -97,7 +103,7 @@ function InfoPanel({ state, aiEnemy = null, aiLastMove = null, reservesOverride,
         </div>
         <div>
           {(showEnemyD || showMoveD) && (
-            <svg className={["robot-icon", showMoveD ? 'is-active' : 'is-passive'].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className={["robot-icon", (showMoveD || thinkD) ? 'is-active' : 'is-passive', thinkD ? 'is-thinking' : ''].join(' ')} width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M11 2h2v3h-2z"/>
               <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
               <circle cx="9" cy="12" r="1.6" fill="currentColor"/>

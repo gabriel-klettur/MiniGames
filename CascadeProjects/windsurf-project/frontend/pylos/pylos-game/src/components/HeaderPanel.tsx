@@ -16,13 +16,16 @@ export interface HeaderPanelProps {
   showDevToggle?: boolean;
   // Iniciar partida contra IA (selección de lado y dificultad)
   onStartVsAI?: (enemy: 'L' | 'D', depth: number) => void;
+  // Nuevo: controlar la velocidad (tiempo máximo de la IA por jugada)
+  speedSeconds?: number; // e.g., 5 | 10 | 30
+  onChangeSpeed?: (seconds: number) => void;
 }
 
 /**
  * HeaderPanel: muestra el nombre del juego y acciones principales (Nuevo, Dev).
  * Se piensa para el Sidebar y busca ser compacto en altura.
  */
-function HeaderPanel({ title = 'Pylos', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
+function HeaderPanel({ title = 'Pylos', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {}, speedSeconds, onChangeSpeed }: HeaderPanelProps) {
   // Estado del popover para Partida Vs IA
   const [vsOpen, setVsOpen] = useState<boolean>(false);
   const [selectedSide, setSelectedSide] = useState<'L' | 'D' | null>(null);
@@ -173,22 +176,52 @@ function HeaderPanel({ title = 'Pylos', onNewGame, showTools, onToggleDev, showI
                 <span>Marrón</span>
               </button>
             </div>
-          </div>
-          <div className="vsai-section" aria-label="Seleccionar dificultad">
-            <div className="vsai-title">Dificultad</div>
-            <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">
-              {[1,2,3,4,5,6,7,8,9,10].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => onPickDifficulty(d)}
-                  disabled={!selectedSide}
-                  title={selectedSide ? `Comenzar vs IA (nivel ${d})` : 'Elige un lado primero'}
-                >{d}</button>
-              ))}
-            </div>
-            <div className="vsai-hint">El juego comienza tras elegir dificultad.</div>
+        </div>
+        {/* Nuevo apartado: Velocidad (antes de dificultad) */}
+        <div className="vsai-section" aria-label="Seleccionar velocidad">
+          <div className="vsai-title">Velocidad</div>
+          <div className="vsai-speeds" role="group" aria-label="Velocidad de cálculo de IA">
+            <button
+              className={speedSeconds === 5 ? 'active' : ''}
+              onClick={() => onChangeSpeed?.(5)}
+              title="Máximo 5s por jugada"
+              aria-pressed={speedSeconds === 5}
+            >
+              Rápido
+            </button>
+            <button
+              className={speedSeconds === 10 ? 'active' : ''}
+              onClick={() => onChangeSpeed?.(10)}
+              title="Máximo 10s por jugada"
+              aria-pressed={speedSeconds === 10}
+            >
+              Normal
+            </button>
+            <button
+              className={speedSeconds === 30 ? 'active' : ''}
+              onClick={() => onChangeSpeed?.(30)}
+              title="Máximo 30s por jugada"
+              aria-pressed={speedSeconds === 30}
+            >
+              Lento
+            </button>
           </div>
         </div>
+        <div className="vsai-section" aria-label="Seleccionar dificultad">
+          <div className="vsai-title">Dificultad</div>
+          <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">
+            {[1,2,3,4,5,6,7,8,9,10].map((d) => (
+              <button
+                key={d}
+                onClick={() => onPickDifficulty(d)}
+                disabled={!selectedSide}
+                title={selectedSide ? `Comenzar vs IA (nivel ${d})` : 'Elige un lado primero'}
+              >{d}</button>
+            ))}
+          </div>
+          <div className="vsai-hint">El juego comienza tras elegir dificultad.</div>
+        </div>
+      </div>
       )}
     </section>
   );

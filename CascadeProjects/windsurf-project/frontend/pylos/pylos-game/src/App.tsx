@@ -823,6 +823,12 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
+        speedSeconds={iaTimeSeconds}
+        onChangeSpeed={(secs) => {
+          // Selección de velocidad fuerza modo manual y asigna el tiempo máximo
+          setIaTimeMode('manual');
+          setIaTimeSeconds(secs);
+        }}
       />
       {showIAUser && (
         <IAUserPanel
@@ -852,6 +858,7 @@ function App() {
           state={state}
           aiEnemy={vsAI?.enemy ?? null}
           aiLastMove={lastIaMove}
+          aiThinking={iaBusy}
           reservesOverride={reservesForDisplay}
           currentPieceRef={currentPieceRef}
           reserveLightRef={reserveLightRef}

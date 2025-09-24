@@ -27,11 +27,17 @@ self.onmessage = (e: MessageEvent) => {
   let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }> } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
   let reached = 0;
   let nodes = 0;
+  const shouldStop = () => {
+    if (aborted) return true;
+    if (timeMs === undefined) return false;
+    const elapsed = performance.now() - start;
+    return elapsed >= timeMs;
+  };
 
   for (let d = 1; d <= depthMax; d++) {
     if (aborted) return;
     const stats: SearchStats = { nodes: 0 };
-    const cur = bestMove(state, d, stats);
+    const cur = bestMove(state, d, stats, { shouldStop });
     nodes += stats.nodes;
     if (cur.move !== null) {
       best = cur as any;
