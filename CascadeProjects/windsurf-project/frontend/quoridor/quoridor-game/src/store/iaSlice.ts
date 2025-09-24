@@ -22,6 +22,47 @@ export interface IAStats<M> {
   dOp?: number;
 }
 
+export type IAPreset = 'balanced' | 'aggressive' | 'defensive' | 'random';
+
+export interface IAConfig {
+  enableMoveOrdering: boolean;
+  maxWallsRoot: number; // límite de vallas evaluadas en raíz
+  maxWallsNode: number; // límite por nodo interno
+  enableTT: boolean; // transposition table
+  ttSize: number; // tamaño aproximado
+  enableIterative: boolean; // profundización iterativa
+  enableAlphaBeta: boolean; // activa poda AB (si no, minimax puro)
+  randomTieBreak: boolean; // desempate aleatorio entre empates
+  hardTimeLimit: boolean; // cortar estrictamente por deadline
+  /** Margen de seguridad (segundos) restado al presupuesto antes de fijar el deadline */
+  safetyMarginSeconds?: number;
+  // Heurística de vallas
+  wallMeritLambda?: number; // 0..1 peso para penalizar Δd_me en mérito de valla
+  enableWallPathFilter?: boolean; // filtrar vallas por cercanía a ruta mínima del rival
+  wallPathRadius?: number; // radio de cercanía (en celdas)
+  // Ordenación/optimización avanzada (opcional)
+  enableKillerHeuristic?: boolean;
+  enableHistoryHeuristic?: boolean;
+  enableQuiescence?: boolean;
+  quiescenceMaxPlies?: number;
+  enableLMR?: boolean;
+  enablePVS?: boolean;
+  enableAspirationWindows?: boolean;
+  aspirationWindow?: number; // tamaño de ventana (p. ej., 0.5)
+  // Priorización valla vs movimiento en raíz
+  wallVsPawnTauBase?: number; // umbral base de mérito para preferir valla
+  reserveWallsMin?: number; // reserva mínima de vallas a conservar
+  // Infraestructura
+  enableWorker?: boolean; // usar Web Worker para el cálculo de IA
+  // Aperturas
+  openingStrategy?: OpeningStrategy;
+  openingPliesMax?: number;
+  // Apertura rápida: limitar presupuesto de tiempo en los primeros plies
+  openingFastEnabled?: boolean;
+  openingFastPlies?: number; // cuántos plies aplicar el límite rápido (p. ej., 3)
+  openingFastSeconds?: number; // presupuesto por jugada rápida (p. ej., 0.8s)
+}
+
 export interface IAState<M = any> {
   depth: number; // dificultad 1..10
   timeMode: TimeMode; // solo configurable en IAPanel (DevTools)
@@ -30,7 +71,7 @@ export interface IAState<M = any> {
   /** Motor de IA seleccionado (para tabs del panel Dev). */
   engine?: 'minimax' | 'mcts' | 'hybrid';
   /** Preset de estilo de evaluación/estrategia. */
-  preset?: 'balanced' | 'aggressive' | 'defensive';
+  preset?: IAPreset;
   /** Preset de dificultad (mapea a profundidad y algunos parámetros). */
   difficultyPreset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte';
   /** Qué bandos están controlados por la IA (para jugar vs IA). */
@@ -38,48 +79,25 @@ export interface IAState<M = any> {
   /** Configuración de trazas para visualización. */
   trace: TraceConfig & { cap: number };
   /** Configuración avanzada (extensibilidad) */
-  config: {
-    enableMoveOrdering: boolean;
-    maxWallsRoot: number; // límite de vallas evaluadas en raíz
-    maxWallsNode: number; // límite por nodo interno
-    enableTT: boolean; // transposition table
-    ttSize: number; // tamaño aproximado
-    enableIterative: boolean; // profundización iterativa
-    enableAlphaBeta: boolean; // activa poda AB (si no, minimax puro)
-    randomTieBreak: boolean; // desempate aleatorio entre empates
-    hardTimeLimit: boolean; // cortar estrictamente por deadline
-    /** Margen de seguridad (segundos) restado al presupuesto antes de fijar el deadline */
-    safetyMarginSeconds?: number;
-    // Heurística de vallas
-    wallMeritLambda?: number; // 0..1 peso para penalizar Δd_me en mérito de valla
-    enableWallPathFilter?: boolean; // filtrar vallas por cercanía a ruta mínima del rival
-    wallPathRadius?: number; // radio de cercanía (en celdas)
-    // Ordenación/optimización avanzada (opcional)
-    enableKillerHeuristic?: boolean;
-    enableHistoryHeuristic?: boolean;
-    enableQuiescence?: boolean;
-    quiescenceMaxPlies?: number;
-    enableLMR?: boolean;
-    enablePVS?: boolean;
-    enableAspirationWindows?: boolean;
-    aspirationWindow?: number; // tamaño de ventana (p. ej., 0.5)
-    // Priorización valla vs movimiento en raíz
-    wallVsPawnTauBase?: number; // umbral base de mérito para preferir valla
-    reserveWallsMin?: number; // reserva mínima de vallas a conservar
-    // Infraestructura
-    enableWorker?: boolean; // usar Web Worker para el cálculo de IA
-    // Aperturas
-    openingStrategy?: OpeningStrategy;
-    openingPliesMax?: number;
-    // Apertura rápida: limitar presupuesto de tiempo en los primeros plies
-    openingFastEnabled?: boolean;
-    openingFastPlies?: number; // cuántos plies aplicar el límite rápido (p. ej., 3)
-    openingFastSeconds?: number; // presupuesto por jugada rápida (p. ej., 0.8s)
-  };
+  config: IAConfig;
+  /**
+   * bySide — Overrides por bando (L/D). Si un campo está definido para un bando,
+   * tiene prioridad sobre el global al pensar para ese bando.
+   */
+  bySide: Record<'L' | 'D', {
+    depth?: number;
+    timeMode?: TimeMode;
+    timeSeconds?: number;
+    difficultyPreset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte';
+    preset?: IAPreset;
+    config?: Partial<IAConfig>;
+  }>;
   // Estadísticas/resultados del último cálculo
   stats: IAStats<M>;
   /** Si openingStrategy === 'random', aquí guardamos la apertura elegida por partida. */
   openingResolved?: Exclude<OpeningStrategy, 'random'>;
+  /** Si preset === 'random', aquí guardamos el preset elegido por partida. */
+  presetResolved?: Exclude<IAPreset, 'random'>;
 }
 
 const initialState: IAState = {
@@ -88,7 +106,7 @@ const initialState: IAState = {
   timeSeconds: 8,
   autoplay: false,
   engine: 'minimax',
-  preset: 'balanced',
+  preset: 'random',
   difficultyPreset: 'intermedio',
   control: { L: false, D: true },
   trace: { enabled: false, sampleRate: 0.25, maxDepth: 4, cap: 5000 },
@@ -123,6 +141,10 @@ const initialState: IAState = {
     openingFastPlies: 3,
     openingFastSeconds: 0.8,
   },
+  bySide: {
+    L: {},
+    D: {},
+  },
   stats: {
     busy: false,
     nodes: 0,
@@ -135,6 +157,7 @@ const initialState: IAState = {
     dOp: 0,
   },
   openingResolved: undefined,
+  presetResolved: undefined,
 };
 
 const iaSlice = createSlice({
@@ -144,10 +167,15 @@ const iaSlice = createSlice({
     setEngine(state, action: PayloadAction<'minimax' | 'mcts' | 'hybrid'>) {
       state.engine = action.payload;
     },
-    setPreset(state, action: PayloadAction<'balanced' | 'aggressive' | 'defensive'>) {
+    setPreset(state, action: PayloadAction<IAPreset>) {
       state.preset = action.payload;
-      // Aplicar preset sobre config existente
+      // Al seleccionar 'random' no mutamos la config; se resolverá por partida
       const p = action.payload;
+      if (p === 'random') {
+        state.presetResolved = undefined;
+        return;
+      }
+      // Aplicar preset concreto sobre config existente
       if (p === 'balanced') {
         state.config.wallMeritLambda = 0.6;
         state.config.enableWallPathFilter = true;
@@ -241,6 +269,57 @@ const iaSlice = createSlice({
     },
     toggleAIForD(state) {
       state.control.D = !state.control.D;
+    },
+    // --- Overrides por bando ---
+    setSideDepth(state, action: PayloadAction<{ side: 'L' | 'D'; value: number | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].depth = typeof value === 'number' ? Math.max(1, Math.min(10, Math.round(value))) : undefined;
+    },
+    setSideTimeMode(state, action: PayloadAction<{ side: 'L' | 'D'; value: TimeMode | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].timeMode = value;
+    },
+    setSideTimeSeconds(state, action: PayloadAction<{ side: 'L' | 'D'; value: number | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].timeSeconds = typeof value === 'number' ? Math.max(0, Math.min(60, Number(value))) : undefined;
+    },
+    setSideDifficultyPreset(state, action: PayloadAction<{ side: 'L' | 'D'; value: 'novato' | 'intermedio' | 'bueno' | 'fuerte' | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].difficultyPreset = value;
+      // Nota: el mapeo de dificultad → (depth, config) se aplicará en tiempo de uso (useAI)
+      // para no mutar la config global al configurar un bando.
+    },
+    setSidePreset(state, action: PayloadAction<{ side: 'L' | 'D'; value: IAPreset | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].preset = value;
+      // Si value === 'random', la resolución se hará por partida en runtime, igual que global.
+    },
+    setSideOpeningStrategy(state, action: PayloadAction<{ side: 'L' | 'D'; value: OpeningStrategy | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].config = { ...(state.bySide[side].config ?? {}), openingStrategy: value };
+    },
+    setSideOpeningPliesMax(state, action: PayloadAction<{ side: 'L' | 'D'; value: number | undefined }>) {
+      const { side, value } = action.payload;
+      const v = typeof value === 'number' ? Math.max(0, Math.round(value)) : undefined;
+      state.bySide[side].config = { ...(state.bySide[side].config ?? {}), openingPliesMax: v };
+    },
+    setSideOpeningFastEnabled(state, action: PayloadAction<{ side: 'L' | 'D'; value: boolean | undefined }>) {
+      const { side, value } = action.payload;
+      state.bySide[side].config = { ...(state.bySide[side].config ?? {}), openingFastEnabled: !!value };
+    },
+    setSideOpeningFastPlies(state, action: PayloadAction<{ side: 'L' | 'D'; value: number | undefined }>) {
+      const { side, value } = action.payload;
+      const v = typeof value === 'number' ? Math.max(0, Math.round(value)) : undefined;
+      state.bySide[side].config = { ...(state.bySide[side].config ?? {}), openingFastPlies: v };
+    },
+    setSideOpeningFastSeconds(state, action: PayloadAction<{ side: 'L' | 'D'; value: number | undefined }>) {
+      const { side, value } = action.payload;
+      const v = typeof value === 'number' ? Math.max(0, Number(value)) : undefined;
+      state.bySide[side].config = { ...(state.bySide[side].config ?? {}), openingFastSeconds: v };
+    },
+    clearSideOverrides(state, action: PayloadAction<'L' | 'D'>) {
+      const side = action.payload;
+      state.bySide[side] = {};
     },
     setEnableMoveOrdering(state, action: PayloadAction<boolean>) { state.config.enableMoveOrdering = action.payload; },
     setMaxWallsRoot(state, action: PayloadAction<number>) { state.config.maxWallsRoot = Math.max(0, Math.round(action.payload)); },
@@ -344,6 +423,9 @@ const iaSlice = createSlice({
     setOpeningResolved(state, action: PayloadAction<Exclude<OpeningStrategy, 'random'> | undefined>) {
       state.openingResolved = action.payload;
     },
+    setPresetResolved(state, action: PayloadAction<Exclude<IAPreset, 'random'> | undefined>) {
+      state.presetResolved = action.payload;
+    },
     resetStats(state) {
       state.stats = initialState.stats;
     },
@@ -379,6 +461,17 @@ export const {
   toggleAutoplay,
   toggleAIForL,
   toggleAIForD,
+  setSideDepth,
+  setSideTimeMode,
+  setSideTimeSeconds,
+  setSideDifficultyPreset,
+  setSidePreset,
+  setSideOpeningStrategy,
+  setSideOpeningPliesMax,
+  setSideOpeningFastEnabled,
+  setSideOpeningFastPlies,
+  setSideOpeningFastSeconds,
+  clearSideOverrides,
   setEnableMoveOrdering,
   setMaxWallsRoot,
   setMaxWallsNode,
@@ -417,6 +510,7 @@ export const {
   setTraceMaxDepth,
   setTraceCap,
   setOpeningResolved,
+  setPresetResolved,
 } = iaSlice.actions;
 
 export default iaSlice.reducer;

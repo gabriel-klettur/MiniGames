@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks.ts';
 import type { RootState } from '../store/index.ts';
-import { setBusy, setStats, setOpeningResolved } from '../store/iaSlice.ts';
+import { setBusy, setStats, setOpeningResolved, setPresetResolved } from '../store/iaSlice.ts';
 import { movePawn, placeWall } from '../store/gameSlice.ts';
 import { searchBestMove } from './minimax.ts';
 import type { AIMove, TraceEvent, OpeningStrategy } from './types.ts';
@@ -18,8 +18,10 @@ export function useAI() {
   const tickRef = useRef<number | null>(null);
   const jobIdRef = useRef<string | null>(null);
   const turnSeqRef = useRef<number>(0);
-  // Opening choice for 'random' mode, resolved per game start
+  // Opening choice for 'random' mode, resolved per game start (single resolution for now)
   const openingChoiceRef = useRef<Exclude<OpeningStrategy, 'random'> | null>(null);
+  // Behavior preset choice for 'random' mode, resolved per game start (single resolution for now)
+  const presetChoiceRef = useRef<'balanced' | 'aggressive' | 'defensive' | null>(null);
   // Throttled trace processing
   const traceQueueRef = useRef<TraceEvent[][]>([]);
   const traceRafRef = useRef<number | null>(null);
@@ -90,6 +92,9 @@ export function useAI() {
         turnSeqRef.current = 0;
         openingChoiceRef.current = null; // reset resolved opening on new start detection
         try { dispatch(setOpeningResolved(undefined)); } catch {}
+        // reset resolved behavior preset as well
+        presetChoiceRef.current = null;
+        try { dispatch(setPresetResolved(undefined)); } catch {}
       }
     } catch {}
     const seq = ++turnSeqRef.current;
@@ -108,6 +113,65 @@ export function useAI() {
     // Compute deadline/budget with configurable safety margin (seconds)
     const safetyMs = Math.max(0, (ia.config.safetyMarginSeconds ?? 0) * 1000);
 
+    // --- Effective configuration by side (L/D) ---
+    const side = game.current; // 'L' | 'D'
+    const sideOv = ia.bySide[side] ?? {};
+
+    // Helper: apply difficulty preset to a base config and return { depth, config }
+    const applyDifficulty = (base: typeof ia.config, preset?: 'novato' | 'intermedio' | 'bueno' | 'fuerte') => {
+      let depth = ia.depth;
+      const cfg = { ...base };
+      if (!preset) return { depth, cfg } as const;
+      if (preset === 'novato') {
+        depth = 2;
+        cfg.maxWallsRoot = 16;
+        cfg.maxWallsNode = 8;
+        cfg.enableIterative = true;
+        cfg.enableLMR = false;
+        cfg.enablePVS = true;
+        cfg.ttSize = 16384;
+      } else if (preset === 'intermedio') {
+        depth = 4;
+        cfg.maxWallsRoot = 20;
+        cfg.maxWallsNode = 10;
+        cfg.enableIterative = true;
+        cfg.enableLMR = false;
+        cfg.enablePVS = true;
+        cfg.ttSize = 32768;
+      } else if (preset === 'bueno') {
+        depth = 6;
+        cfg.maxWallsRoot = 24;
+        cfg.maxWallsNode = 12;
+        cfg.enableIterative = true;
+        cfg.enableLMR = true;
+        cfg.enablePVS = true;
+        cfg.ttSize = 49152;
+      } else if (preset === 'fuerte') {
+        depth = 8;
+        cfg.maxWallsRoot = 28;
+        cfg.maxWallsNode = 14;
+        cfg.enableIterative = true;
+        cfg.enableLMR = true;
+        cfg.enablePVS = true;
+        cfg.ttSize = 65536;
+      }
+      return { depth, cfg } as const;
+    };
+
+    // Start from global config, then merge side-specific config overrides
+    let effConfig = { ...ia.config, ...(sideOv.config ?? {}) } as typeof ia.config;
+    // Determine effective difficulty preset (side override > global)
+    const effDiff = sideOv.difficultyPreset ?? ia.difficultyPreset;
+    // Derive depth and config from difficulty, then allow explicit side depth to override
+    const diffApplied = applyDifficulty(effConfig, effDiff);
+    effConfig = diffApplied.cfg;
+    let effDepth = diffApplied.depth;
+    if (typeof sideOv.depth === 'number') effDepth = Math.max(1, Math.min(10, Math.round(sideOv.depth)));
+
+    // Effective time settings
+    const effTimeMode = sideOv.timeMode ?? ia.timeMode;
+    const effTimeSeconds = sideOv.timeSeconds ?? ia.timeSeconds;
+
     // Heuristic Auto-mode: allocate time based on game complexity
     const computeAutoBudgetMs = (): number => {
       const rp = game.current;
@@ -120,15 +184,15 @@ export function useAI() {
       if (wallsTotal >= 14) sec += 0.8; else if (wallsTotal >= 8) sec += 0.4;
       // Critical race: near goal -> add time
       if (dMe <= 2 || dOp <= 2) sec += 0.6; else if (dMe <= 3 || dOp <= 3) sec += 0.3;
-      // Light scaling with difficulty depth
-      if (ia.depth >= 7) sec += 0.4; else if (ia.depth >= 5) sec += 0.2;
+      // Light scaling with difficulty depth (per-side effective depth)
+      if (effDepth >= 7) sec += 0.4; else if (effDepth >= 5) sec += 0.2;
       // Clamp bounds
       sec = Math.max(0.5, Math.min(5.0, sec));
       return Math.round(sec * 1000);
     };
 
-    const manualBudgetMs = ia.timeMode === 'manual' ? Math.max(0, ia.timeSeconds * 1000 - safetyMs) : undefined;
-    const autoBudgetMsRaw = ia.timeMode === 'auto' ? computeAutoBudgetMs() : undefined;
+    const manualBudgetMs = effTimeMode === 'manual' ? Math.max(0, effTimeSeconds * 1000 - safetyMs) : undefined;
+    const autoBudgetMsRaw = effTimeMode === 'auto' ? computeAutoBudgetMs() : undefined;
     let effectiveBudgetMs = (manualBudgetMs ?? (autoBudgetMsRaw != null ? Math.max(0, autoBudgetMsRaw - safetyMs) : undefined));
 
     // Fast-opening override: cap budget for first N IA moves from game start
@@ -147,7 +211,7 @@ export function useAI() {
     let result: ReturnType<typeof searchBestMove>;
     // Resolve opening strategy if 'random' is selected in config
     const resolveOpening = (): Exclude<OpeningStrategy, 'random'> | undefined => {
-      const cfgOpening = ia.config.openingStrategy as OpeningStrategy | undefined;
+      const cfgOpening = effConfig.openingStrategy as OpeningStrategy | undefined;
       if (!cfgOpening) return undefined;
       if (cfgOpening !== 'random') {
         // Ensure any previous resolved marker is cleared
@@ -163,27 +227,85 @@ export function useAI() {
       return openingChoiceRef.current;
     };
     const resolvedOpening = resolveOpening();
-    const cfgResolved = { ...ia.config, openingStrategy: resolvedOpening } as typeof ia.config;
+    let cfgResolved = { ...effConfig, openingStrategy: resolvedOpening } as typeof ia.config;
+
+    // Resolve behavior preset if 'random' selected; apply overrides per resolved preset
+    const resolvePreset = (): ('balanced' | 'aggressive' | 'defensive') | undefined => {
+      const p = (sideOv.preset ?? ia.preset) as ('balanced' | 'aggressive' | 'defensive' | 'random' | undefined);
+      if (!p) return undefined;
+      if (p !== 'random') {
+        // If a concrete preset is selected, clear any previous resolution and DO NOT apply runtime overrides
+        if (ia.presetResolved != null) try { dispatch(setPresetResolved(undefined)); } catch {}
+        return undefined;
+      }
+      if (!presetChoiceRef.current) {
+        const choices: Array<'balanced' | 'aggressive' | 'defensive'> = ['balanced','aggressive','defensive'];
+        presetChoiceRef.current = choices[Math.floor(Math.random() * choices.length)];
+        console.info('[IA] Comportamiento aleatorio elegido:', presetChoiceRef.current);
+        try { dispatch(setPresetResolved(presetChoiceRef.current)); } catch {}
+      }
+      return presetChoiceRef.current ?? undefined;
+    };
+
+    const applyPresetToConfig = (base: typeof ia.config, p?: 'balanced' | 'aggressive' | 'defensive') => {
+      if (!p) return base;
+      const c = { ...base };
+      if (p === 'balanced') {
+        c.wallMeritLambda = 0.6;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 1;
+        c.maxWallsRoot = 24;
+        c.maxWallsNode = 12;
+        c.wallVsPawnTauBase = 0.75;
+        c.reserveWallsMin = 1;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      } else if (p === 'aggressive') {
+        c.wallMeritLambda = 0.4;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 1;
+        c.maxWallsRoot = 20;
+        c.maxWallsNode = 10;
+        c.wallVsPawnTauBase = 0.6;
+        c.reserveWallsMin = 0;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      } else if (p === 'defensive') {
+        c.wallMeritLambda = 0.8;
+        c.enableWallPathFilter = true;
+        c.wallPathRadius = 2;
+        c.maxWallsRoot = 28;
+        c.maxWallsNode = 14;
+        c.wallVsPawnTauBase = 1.0;
+        c.reserveWallsMin = 2;
+        c.enablePVS = true;
+        c.enableLMR = true;
+      }
+      return c;
+    };
+
+    const resolvedPreset = resolvePreset();
+    cfgResolved = applyPresetToConfig(cfgResolved, resolvedPreset);
     // Telemetry context
     const tele = {
-      mode: ia.timeMode,
-      depth: ia.depth,
+      mode: effTimeMode,
+      depth: effDepth,
       safetyMs,
-      autoBudgetMsRaw: ia.timeMode === 'auto' ? (undefined as number | undefined) : undefined,
+      autoBudgetMsRaw: effTimeMode === 'auto' ? (undefined as number | undefined) : undefined,
       effectiveBudgetMs: effectiveBudgetMs as number | undefined,
       deadline,
       traceCfg: { enabled: ia.trace.enabled, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth, cap: ia.trace.cap },
       cfg: {
-        iterative: ia.config.enableIterative,
-        alphaBeta: ia.config.enableAlphaBeta,
-        pvs: ia.config.enablePVS,
-        lmr: ia.config.enableLMR,
-        tt: ia.config.enableTT,
-        ttSize: ia.config.ttSize,
+        iterative: cfgResolved.enableIterative,
+        alphaBeta: cfgResolved.enableAlphaBeta,
+        pvs: cfgResolved.enablePVS,
+        lmr: cfgResolved.enableLMR,
+        tt: cfgResolved.enableTT,
+        ttSize: cfgResolved.ttSize,
       },
       fastOpening: { enabled: fastEnabled, seq, fastPlies, fastSec, applied: fastApplied },
     };
-    if (ia.timeMode === 'auto') {
+    if (effTimeMode === 'auto') {
       const rp = game.current; const op = rp === 'L' ? 'D' : 'L';
       const wallsTotal = (game.wallsLeft['L'] ?? 0) + (game.wallsLeft['D'] ?? 0);
       const dMe = shortestDistanceToGoal(game, rp);
@@ -193,7 +315,7 @@ export function useAI() {
         let sec = 1.2;
         if (wallsTotal >= 14) sec += 0.8; else if (wallsTotal >= 8) sec += 0.4;
         if (dMe <= 2 || dOp <= 2) sec += 0.6; else if (dMe <= 3 || dOp <= 3) sec += 0.3;
-        if (ia.depth >= 7) sec += 0.4; else if (ia.depth >= 5) sec += 0.2;
+        if (effDepth >= 7) sec += 0.4; else if (effDepth >= 5) sec += 0.2;
         sec = Math.max(0.5, Math.min(5.0, sec));
         return Math.round(sec * 1000);
       };
@@ -254,7 +376,7 @@ export function useAI() {
           payload: {
             state: game,
             // IMPORTANT: pass relative budgetMs so worker can compute its own deadline
-            params: { maxDepth: ia.depth, /* no absolute deadlineMs to avoid cross-context time origin issues */ config: cfgResolved },
+            params: { maxDepth: effDepth, /* no absolute deadlineMs to avoid cross-context time origin issues */ config: cfgResolved },
             rootPlayer: game.current,
             budgetMs: effectiveBudgetMs,
             traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
@@ -271,7 +393,7 @@ export function useAI() {
           resolve(searchBestMove(
             game,
             {
-              maxDepth: ia.depth,
+              maxDepth: effDepth,
               deadlineMs: deadline, // in auto mode we already computed deadline from effectiveBudgetMs
               config: cfgResolved,
               traceConfig: ia.trace.enabled ? { enabled: true, sampleRate: ia.trace.sampleRate, maxDepth: ia.trace.maxDepth } : { enabled: false, sampleRate: 0 },
@@ -304,8 +426,8 @@ export function useAI() {
     }));
 
     // Telemetry result & overshoot
-    const requestedMs = ia.timeMode === 'manual'
-      ? Math.max(0, ia.timeSeconds * 1000 - safetyMs)
+    const requestedMs = effTimeMode === 'manual'
+      ? Math.max(0, effTimeSeconds * 1000 - safetyMs)
       : (tele.effectiveBudgetMs ?? 0);
     const overshootMs = requestedMs ? (elapsedMs - requestedMs) : 0;
     console.log(`[IA][#${seq}] Resultado`, {

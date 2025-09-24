@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../store/hooks.ts';
 import type { RootState } from '../../../store/index.ts';
-import { setTimeMode, setTimeSeconds, setSafetyMarginSeconds } from '../../../store/iaSlice.ts';
+import { setTimeMode, setTimeSeconds, setSafetyMarginSeconds, setSideTimeMode, setSideTimeSeconds } from '../../../store/iaSlice.ts';
 
 interface Props {
   elapsedMs: number;
@@ -13,14 +13,18 @@ interface Props {
    * - 'full': uses full timeSeconds (ignores safety margin)
    */
   capMode?: 'effective' | 'full';
+  /** Optional side to operate on per-side overrides. */
+  side?: 'L' | 'D';
 }
 
-export default function TimeControls({ elapsedMs, showControls = true, capMode = 'effective' }: Props) {
+export default function TimeControls({ elapsedMs, showControls = true, capMode = 'effective', side }: Props) {
   const dispatch = useAppDispatch();
   const ia = useAppSelector((s: RootState) => s.ia);
   const safetyMargin = ia.config.safetyMarginSeconds ?? 0.15;
-  const baseCapMs = ia.timeMode === 'manual' ? ia.timeSeconds * 1000 : null;
-  const timeCapMs = ia.timeMode === 'manual'
+  const effTimeMode = side ? (ia.bySide[side].timeMode ?? ia.timeMode) : ia.timeMode;
+  const effTimeSeconds = side ? (ia.bySide[side].timeSeconds ?? ia.timeSeconds) : ia.timeSeconds;
+  const baseCapMs = effTimeMode === 'manual' ? effTimeSeconds * 1000 : null;
+  const timeCapMs = effTimeMode === 'manual'
     ? Math.max(0, (capMode === 'full' ? (baseCapMs ?? 0) : (baseCapMs ?? 0) - safetyMargin * 1000))
     : null;
 
@@ -71,35 +75,35 @@ export default function TimeControls({ elapsedMs, showControls = true, capMode =
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm">Tiempo</span>
+        <span className="text-sm">Tiempo respuesta</span>
         {showControls && (
           <div className="inline-flex rounded-md overflow-hidden border border-white/10">
             <button
-              className={["px-3 py-1.5 text-sm", ia.timeMode === 'auto' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
-              onClick={() => dispatch(setTimeMode('auto'))}
-              aria-pressed={ia.timeMode === 'auto'}
+              className={["px-3 py-1.5 text-sm", effTimeMode === 'auto' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
+              onClick={() => side ? dispatch(setSideTimeMode({ side, value: 'auto' })) : dispatch(setTimeMode('auto'))}
+              aria-pressed={effTimeMode === 'auto'}
             >Auto</button>
             <button
-              className={["px-3 py-1.5 text-sm", ia.timeMode === 'manual' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
-              onClick={() => dispatch(setTimeMode('manual'))}
-              aria-pressed={ia.timeMode === 'manual'}
+              className={["px-3 py-1.5 text-sm", effTimeMode === 'manual' ? 'bg-emerald-700 text-white' : 'bg-gray-800 text-gray-100 hover:bg-gray-700'].join(' ')}
+              onClick={() => side ? dispatch(setSideTimeMode({ side, value: 'manual' })) : dispatch(setTimeMode('manual'))}
+              aria-pressed={effTimeMode === 'manual'}
             >Manual</button>
           </div>
         )}
-        {showControls && ia.timeMode === 'manual' && (
+        {showControls && effTimeMode === 'manual' && (
           <div className="flex items-center gap-2">
             <input
               type="range"
               min={0}
               max={60}
               step={0.5}
-              value={ia.timeSeconds}
-              onChange={(e) => dispatch(setTimeSeconds(Number(e.target.value)))}
+              value={effTimeSeconds}
+              onChange={(e) => side ? dispatch(setSideTimeSeconds({ side, value: Number(e.target.value) })) : dispatch(setTimeSeconds(Number(e.target.value)))}
             />
-            <span className="text-xs text-gray-300 w-14 text-right">{Number(ia.timeSeconds).toFixed(1)} s</span>
+            <span className="text-xs text-gray-300 w-14 text-right">{Number(effTimeSeconds).toFixed(1)} s</span>
           </div>
         )}
-        {showControls && ia.timeMode === 'manual' && (
+        {showControls && effTimeMode === 'manual' && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">Margen</span>
             <input
@@ -115,7 +119,7 @@ export default function TimeControls({ elapsedMs, showControls = true, capMode =
         )}
         <div className="ml-auto text-xs text-gray-300">{(shownElapsed / 1000).toFixed(1)} s</div>
       </div>
-      {ia.timeMode === 'manual' && (
+      {effTimeMode === 'manual' && (
         <div className="w-full h-1.5 bg-gray-800/70 rounded overflow-hidden">
           <div
             className={['h-full transition-all', timeProgress < 1 ? 'bg-emerald-600' : 'bg-rose-500'].join(' ')}
