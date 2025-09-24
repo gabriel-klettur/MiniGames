@@ -9,6 +9,21 @@ import type { RootState } from '../store';
 const CELL_SIZE = 56; // px, slightly larger
 const DOT_SIZE = 5; // px
 const DOT_COLOR = '#f5e0a3'; // warm ivory/gold-like, inspired by reference
+// Unified visual themes so both sides share the same design and only differ by color
+const THEMES = {
+  Light: {
+    tipGradient:
+      'radial-gradient(circle at 50% 50%, rgba(255,255,235,1) 0%, rgba(255,240,180,0.9) 40%, rgba(255,220,150,0.65) 60%, rgba(0,0,0,0) 80%)',
+    coneBright: 'rgba(255, 235, 180, 0.95)',
+    coneFade: 'rgba(255, 215, 130, 0)',
+  },
+  Dark: {
+    tipGradient:
+      'radial-gradient(circle at 50% 50%, rgba(255,220,225,1) 0%, rgba(255,170,185,0.9) 40%, rgba(220,120,140,0.55) 60%, rgba(0,0,0,0) 80%)',
+    coneBright: 'rgba(255, 170, 185, 0.95)',
+    coneFade: 'rgba(220, 120, 140, 0)',
+  },
+} as const;
 
 export default function Board() {
   const dispatch = useAppDispatch();
@@ -192,7 +207,12 @@ export default function Board() {
           {ps.map((p) => {
             const isLight = p.owner === 'Light';
             const isActive = p.owner === turn;
-            // Style per side: both use a vertical hex/diamond prism; only color differs
+            // Determine forward tip side based on owner and current state
+            const tipSide: 'left' | 'right' | 'top' | 'bottom' = isLight
+              ? (p.state === 'en_ida' ? 'left' : 'right')
+              : (p.state === 'en_ida' ? 'top' : 'bottom');
+
+            // Style per side: both use the same prism design; only color differs
             const pieceStyle: React.CSSProperties = isLight
               ? {
                   width: pieceWidth,
@@ -215,16 +235,107 @@ export default function Board() {
                   opacity: isActive ? 1 : 0.6,
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 };
+
+            const tipSize = Math.max(12, Math.round(Math.min(pieceWidth, pieceHeight) * 0.5));
+            const theme = p.owner === 'Light' ? THEMES.Light : THEMES.Dark;
+            const tipGlowStyle: React.CSSProperties = (() => {
+              const base: React.CSSProperties = {
+                position: 'absolute',
+                width: tipSize,
+                height: tipSize,
+                borderRadius: '50%',
+                background: theme.tipGradient,
+                filter: 'blur(1px)',
+                pointerEvents: 'none',
+                mixBlendMode: 'screen',
+                boxShadow: `0 0 12px ${theme.coneBright}, 0 0 24px ${theme.coneBright}`,
+              };
+              if (tipSide === 'left') return { ...base, left: 2, top: '50%', transform: 'translateY(-50%)' };
+              if (tipSide === 'right') return { ...base, right: 2, top: '50%', transform: 'translateY(-50%)' };
+              if (tipSide === 'top') return { ...base, top: 2, left: '50%', transform: 'translateX(-50%)' };
+              return { ...base, bottom: 2, left: '50%', transform: 'translateX(-50%)' };
+            })();
+
+            // Add a triangular light cone towards the movement direction for extra emphasis
+            const coneW = Math.max(16, Math.round(pieceWidth * 0.65));
+            const coneH = Math.max(16, Math.round(pieceHeight * 0.65));
+            const coneBase: React.CSSProperties = {
+              position: 'absolute',
+              pointerEvents: 'none',
+              opacity: 0.9,
+              mixBlendMode: 'screen',
+              filter: 'blur(0.6px)',
+              zIndex: 1,
+            };
+            const bright = theme.coneBright;
+            const fade = theme.coneFade;
+            const directionConeStyle: React.CSSProperties = (() => {
+              if (tipSide === 'left') {
+                return {
+                  ...coneBase,
+                  width: coneW,
+                  height: Math.round(pieceHeight * 0.8),
+                  left: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  clipPath: 'polygon(100% 0%, 0% 50%, 100% 100%)',
+                  background: `linear-gradient(90deg, ${bright} 0%, ${fade} 70%)`,
+                  boxShadow: '0 0 18px rgba(255,230,150,0.9) inset',
+                };
+              }
+              if (tipSide === 'right') {
+                return {
+                  ...coneBase,
+                  width: coneW,
+                  height: Math.round(pieceHeight * 0.8),
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  clipPath: 'polygon(0% 0%, 100% 50%, 0% 100%)',
+                  background: `linear-gradient(270deg, ${bright} 0%, ${fade} 70%)`,
+                  boxShadow: '0 0 18px rgba(255,230,150,0.9) inset',
+                };
+              }
+              if (tipSide === 'top') {
+                return {
+                  ...coneBase,
+                  width: Math.round(pieceWidth * 0.8),
+                  height: coneH,
+                  top: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  clipPath: 'polygon(0% 100%, 50% 0%, 100% 100%)',
+                  background: `linear-gradient(180deg, ${bright} 0%, ${fade} 70%)`,
+                  boxShadow: '0 0 18px rgba(255,230,150,0.9) inset',
+                };
+              }
+              return {
+                ...coneBase,
+                width: Math.round(pieceWidth * 0.8),
+                height: coneH,
+                bottom: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                clipPath: 'polygon(0% 0%, 50% 100%, 100% 0%)',
+                background: `linear-gradient(0deg, ${bright} 0%, ${fade} 70%)`,
+                boxShadow: '0 0 18px rgba(255,230,150,0.9) inset',
+              };
+            })();
+
             return (
-              <button
-                key={p.id}
-                onClick={() => handleClickPiece(p.id)}
-                title={`${p.owner} ${p.laneIndex} • ${p.state}`}
-                aria-label={`Mover pieza ${p.id}`}
-                className="transition-colors hover:ring-2 hover:ring-cyan-400 focus:outline-none"
-                style={pieceStyle}
-                disabled={!isActive}
-              />
+              <div key={p.id} style={{ position: 'relative', width: pieceWidth, height: pieceHeight }}>
+                <button
+                  onClick={() => handleClickPiece(p.id)}
+                  title={`${p.owner} ${p.laneIndex} • ${p.state}`}
+                  aria-label={`Mover pieza ${p.id}`}
+                  className="transition-colors hover:ring-2 hover:ring-cyan-400 focus:outline-none"
+                  style={pieceStyle}
+                  disabled={!isActive}
+                />
+                {/* Directional emphasis: cone + tip glow */}
+                <span aria-hidden style={directionConeStyle} />
+                <span aria-hidden style={tipGlowStyle} />
+              </div>
             );
           })}
         </div>
