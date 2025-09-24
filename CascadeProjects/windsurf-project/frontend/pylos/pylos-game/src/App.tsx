@@ -323,93 +323,6 @@ function App() {
     }
   };
 
-  // Redo last undone move WITH animation when possible
-  const onRedo = () => {
-    if (flying || autoRunningRef.current) return;
-    let redoLog: MoveEntry | undefined = undefined;
-    redoingRef.current = true;
-    setRedo((r) => {
-      if (r.length === 0) return r;
-      const next = r[r.length - 1];
-      // Push current into history
-      setHistory((h) => [...h, state]);
-      // Capture last redo log entry; actual push to moves happens on apply
-      setRedoMoves((rm) => {
-        if (rm.length === 0) return rm;
-        const last = rm[rm.length - 1];
-        redoLog = last;
-        return rm.slice(0, -1);
-      });
-
-      // Helper to try measurement and animate; retries once on next frame
-      const tryAnimate = (retry: boolean) => {
-        let fromRect: Rect | null = null;
-        let toRect: Rect | null = null;
-        let imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
-        let appearKey = '';
-        if (redoLog) {
-          const p = redoLog.player;
-          imgSrc = p === 'L' ? bolaB : bolaA;
-          if (redoLog.text.startsWith('colocar ')) {
-            const key = redoLog.text.replace('colocar ', '').trim();
-            const srcEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
-            const srcRect = srcEl?.getBoundingClientRect();
-            const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
-            const destRect = destBtn?.getBoundingClientRect();
-            if (srcRect && destRect) {
-              fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
-              toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-              appearKey = key;
-            }
-          } else if (redoLog.text.startsWith('subir ')) {
-            const rest = redoLog.text.replace('subir ', '').trim();
-            const [src, dst] = rest.split('->').map((s) => s.trim());
-            const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${src}"]`);
-            const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${dst}"]`);
-            const sRect = srcBtn?.getBoundingClientRect();
-            const dRect = destBtn?.getBoundingClientRect();
-            if (sRect && dRect) {
-              fromRect = { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height };
-              toRect = { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height };
-              appearKey = dst;
-            }
-          } else if (redoLog.text.startsWith('recuperar ')) {
-            const key = redoLog.text.replace('recuperar ', '').trim();
-            const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
-            const srcRect = srcBtn?.getBoundingClientRect();
-            const destEl = p === 'L' ? reserveLightRef.current : reserveDarkRef.current;
-            const destRect = destEl?.getBoundingClientRect();
-            if (srcRect && destRect) {
-              fromRect = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
-              toRect = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-              // No appear on board for recovery redo (piece is leaving the board)
-              appearKey = '';
-            }
-          }
-        }
-
-        if (fromRect && toRect) {
-          setPendingState(next);
-          setPendingLog(redoLog ?? null);
-          pendingApplyRef.current = { pushHistory: false, clearRedo: false };
-          // Defer appear animation until after state apply
-          lastAppearKeyRef.current = appearKey || "";
-          setFlying({ from: fromRect, to: toRect, imgSrc, destKey: appearKey });
-        } else if (!retry) {
-          // Retry once on next animation frame
-          requestAnimationFrame(() => tryAnimate(true));
-        } else {
-          updateAndCheck(next, false, false, redoLog);
-          // End of redo without animation
-          redoingRef.current = false;
-        }
-      };
-
-      tryAnimate(false);
-
-      return r.slice(0, -1);
-    });
-  };
 
   const onCellClick = (pos: Position) => {
     if (gameOver) return;
@@ -687,7 +600,6 @@ function App() {
   const [iaBusy, setIaBusy] = useState<boolean>(false);
   // Undo/Redo availability flags (used in board actions panel)
   const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
-  const canRedo = redo.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
   const [iaProgress, setIaProgress] = useState<{ depth: number; score: number } | null>(null);
   // Últimos resultados para visualización
   const [iaEval, setIaEval] = useState<number | null>(null);
@@ -707,11 +619,23 @@ function App() {
     if (!over.over || !over.winner) return '';
     if (vsAI) {
       const label = over.winner === vsAI.enemy ? 'IA' : 'Humano';
+      try { console.info('[winnerMessage] VsAI mode', { winner: over.winner, enemy: vsAI.enemy, label }); } catch {}
       return `Ganador: ${label}`;
     }
-    // Fallback fuera de modo Vs IA
-    return 'Ganador: Humano';
-  }, [gameOver, state, vsAI]);
+    // Fallback fuera de modo Vs IA: infer from last move source
+    // If the last recorded move was done by the AI helper, show IA; otherwise Humano.
+    const last = moves.length > 0 ? moves[moves.length - 1] : null;
+    let label: 'IA' | 'Humano' = 'Humano';
+    if (last?.source === 'IA') label = 'IA';
+    // If the game ended via auto-completion, clarify by side color to avoid confusion.
+    if (last?.source === 'AUTO') {
+      const side = over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)';
+      try { console.info('[winnerMessage] AUTO completion', { winner: over.winner, side }); } catch {}
+      return `Ganador: ${side}`;
+    }
+    try { console.info('[winnerMessage] Non VsAI mode', { lastSource: last?.source, inferred: label, winner: over.winner }); } catch {}
+    return `Ganador: ${label}`;
+  }, [gameOver, state, vsAI, moves]);
   const onAIMove = async () => {
     if (aiDisabled || iaBusy) return;
     setIaBusy(true);
@@ -899,6 +823,12 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
+        speedSeconds={iaTimeSeconds}
+        onChangeSpeed={(secs) => {
+          // Selección de velocidad fuerza modo manual y asigna el tiempo máximo
+          setIaTimeMode('manual');
+          setIaTimeSeconds(secs);
+        }}
       />
       {showIAUser && (
         <IAUserPanel
@@ -928,6 +858,7 @@ function App() {
           state={state}
           aiEnemy={vsAI?.enemy ?? null}
           aiLastMove={lastIaMove}
+          aiThinking={iaBusy}
           reservesOverride={reservesForDisplay}
           currentPieceRef={currentPieceRef}
           reserveLightRef={reserveLightRef}
@@ -947,36 +878,34 @@ function App() {
           shadeOnlyHoles={shadeOnlyHoles}
           showHoleBorders={holeBorders}
         />
-        {/* Board actions: Undo / Redo (icon-only) */}
+        {/* Board actions: Undo only (icon button) */}
         <div className="panel board-actions" role="group" aria-label="Acciones del tablero">
           <div className="row actions">
             <button
-              onClick={onUndo}
+              className="undo-btn"
               disabled={!canUndo}
+              onClick={onUndo}
               aria-label="Deshacer última jugada"
               title="Deshacer"
             >
               <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5 4 12l7 7v-4h5a4 4 0 0 0 0-8h-5V5z"/></svg>
               <span className="sr-only">Deshacer</span>
             </button>
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              aria-label="Rehacer jugada"
-              title="Rehacer"
-            >
-              <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 5 20 12l-7 7v-4H8a4 4 0 0 1 0-8h5V5z"/></svg>
-              <span className="sr-only">Rehacer</span>
-            </button>
             {state.phase === 'recover' && (
               <div style={{ marginLeft: 'auto', display: 'inline-flex' }}>
                 <button
-                  className="primary finish-recovery"
+                  className="finish-recovery"
                   onClick={onFinishRecovery}
                   aria-label="Terminar recuperación"
                   title="Terminar recuperación"
                 >
-                  Terminar recuperación
+                  <svg className="header-btn__icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    {/* Bola tachada: usa currentColor para heredar el blanco del botón */}
+                    <circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.12" />
+                    <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth={1.8} />
+                    <path d="M5 19 L19 5" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
+                  </svg>
+                  
                 </button>
               </div>
             )}

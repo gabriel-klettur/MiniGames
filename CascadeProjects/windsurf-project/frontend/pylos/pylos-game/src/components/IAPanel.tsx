@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '../game/types';
 import type { AIMove } from '../ia/moves';
 
@@ -35,6 +36,42 @@ export default function IAPanel(props: IAPanelProps) {
     aiAutoplayActive = false, onToggleAiAutoplay } = props;
   const current = state.currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)';
   const atRootLabel = rootPlayer ? (rootPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)') : current;
+
+  // Presupuesto de tiempo actual (ms), en función del modo
+  const limitMs = useMemo(() => {
+    if (timeMode === 'manual') {
+      const secs = Math.max(0, Math.min(30, timeSeconds));
+      return secs * 1000;
+    }
+    // Heurística usada en App.onAIMove para modo auto
+    return depth > 5 ? 1800 : 800;
+  }, [timeMode, timeSeconds, depth]);
+
+  // Elapsed local animado mientras busy = true
+  const [localElapsedMs, setLocalElapsedMs] = useState<number>(0);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (busy) {
+      startRef.current = performance.now();
+      setLocalElapsedMs(0);
+      const id = window.setInterval(() => {
+        const start = startRef.current ?? performance.now();
+        setLocalElapsedMs(performance.now() - start);
+      }, 100);
+      return () => {
+        clearInterval(id);
+      };
+    } else {
+      startRef.current = null;
+      // Congelar en el elapsed real reportado por la IA
+      setLocalElapsedMs(elapsedMs || 0);
+    }
+  }, [busy, elapsedMs]);
+
+  const shownElapsedMs = busy ? localElapsedMs : (elapsedMs || 0);
+  const ratio = limitMs > 0 ? Math.max(0, Math.min(1, shownElapsedMs / limitMs)) : 0;
+  const isOver = limitMs > 0 && shownElapsedMs >= limitMs;
 
   function normEval(v: number): number {
     // Normalizar a [-1, 1] usando tanh para estabilidad
@@ -96,6 +133,16 @@ export default function IAPanel(props: IAPanelProps) {
             <span className="range-value">{timeSeconds.toFixed(1)} s</span>
           </div>
         )}
+        {/* Barra de tiempo para visualizar el progreso respecto al límite */}
+        <div className="ia-panel__timebar" aria-label="Progreso de tiempo">
+          <div className="timebar" data-busy={busy} data-over={isOver} title={`Tiempo: ${(shownElapsedMs/1000).toFixed(2)}s / ${(limitMs/1000).toFixed(2)}s`}>
+            <div className="timebar__fill" style={{ width: `${ratio * 100}%` }} />
+          </div>
+          <div className="timebar__meta">
+            <span>{(shownElapsedMs / 1000).toFixed(2)} s</span>
+            <span>{(limitMs / 1000).toFixed(2)} s</span>
+          </div>
+        </div>
         <div className="ia-panel__actions">
           <button
             className="primary"

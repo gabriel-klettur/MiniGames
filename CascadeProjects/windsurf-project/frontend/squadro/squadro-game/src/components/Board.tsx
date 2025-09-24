@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { movePiece } from '../store/gameSlice';
 import { DEFAULT_LANE_LENGTH } from '../game/board';
@@ -6,7 +6,8 @@ import type { Piece } from '../game/types';
 import { coordOfPiece } from '../game/rules';
 import type { RootState } from '../store';
 
-const CELL_SIZE = 56; // px, slightly larger
+const GAP = 8; // px between cells
+const EDGE_SAFE = 12; // px safety on each side to avoid visual clipping at edges
 const DOT_SIZE = 5; // px
 const DOT_COLOR = '#f5e0a3'; // warm ivory/gold-like, inspired by reference
 // Unified visual themes so both sides share the same design and only differ by color
@@ -30,6 +31,49 @@ export default function Board() {
   const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
+
+  // Dynamically compute cell size so the board (square) fits in the viewport
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [cellPx, setCellPx] = useState<number>(48);
+
+  useLayoutEffect(() => {
+    function compute() {
+      const vh = window.innerHeight;
+      // Prefer the parent container's inner width to avoid scrollbar/calc mismatches
+      const parentEl = gridRef.current?.parentElement;
+      const parentRectWidth = parentEl?.getBoundingClientRect().width;
+      const cs = parentEl ? getComputedStyle(parentEl) : null;
+      const padL = cs ? parseFloat(cs.paddingLeft || '0') : 0;
+      const padR = cs ? parseFloat(cs.paddingRight || '0') : 0;
+      const fallbackWidth = document.documentElement.clientWidth; // excludes scrollbar
+      const containerWidth = (parentRectWidth ?? fallbackWidth);
+      // Use content width by subtracting paddings
+      const availableWidth = Math.max(0, containerWidth - padL - padR);
+      // Measure the distance from the grid to the bottom of the viewport
+      const top = gridRef.current?.getBoundingClientRect().top ?? 0;
+      // Reserve a small bottom padding so content below doesn't force scroll
+      const bottomReserve = 12;
+      const availableHeight = Math.max(0, vh - top - bottomReserve);
+      // Compute max cell size by width and height constraints
+      const byWidth = (availableWidth - EDGE_SAFE * 2 - GAP * (size - 1)) / size;
+      const byHeight = (availableHeight - GAP * (size - 1)) / size;
+      const px = Math.floor(Math.max(10, Math.min(byWidth, byHeight)));
+      setCellPx(px);
+    }
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (gridRef.current) ro.observe(gridRef.current);
+    window.addEventListener('resize', compute);
+    window.addEventListener('orientationchange', compute);
+    // Recompute after initial paint in case fonts/layout shift
+    const t = setTimeout(compute, 0);
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('orientationchange', compute);
+    };
+  }, [size]);
 
   // Derive pip counts from the game's lane speeds so visuals and rules always match.
   // Mapping of edges to speeds:
@@ -67,14 +111,17 @@ export default function Board() {
 
   const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: `repeat(${size}, ${CELL_SIZE}px)`,
-    gridTemplateRows: `repeat(${size}, ${CELL_SIZE}px)`,
-    gap: 8,
+    gridTemplateColumns: `repeat(${size}, ${cellPx}px)`,
+    gridTemplateRows: `repeat(${size}, ${cellPx}px)`,
+    gap: GAP,
     backgroundColor: 'transparent',
-    padding: 8,
+    padding: 0,
     borderRadius: 12,
     boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-  };
+    width: Math.max(0, size * cellPx + GAP * (size - 1)),
+    maxWidth: '100%',
+    overflow: 'hidden',
+  } as React.CSSProperties;
 
   // Build mapping from (row,col) to pieces present there
   const cells: Record<string, Piece[]> = {};
@@ -95,9 +142,9 @@ export default function Board() {
     const key = `${row}:${col}`;
     const ps = cells[key] ?? [];
     // Dimensions controlled by UI settings
-    const pieceWidth = Math.max(8, Math.min(48, ui?.pieceWidth ?? 16));
+    const pieceWidth = Math.max(8, Math.min(Math.floor(cellPx * 0.8), ui?.pieceWidth ?? 16));
     const fallbackH = Math.round(pieceWidth * 2.2);
-    const pieceHeight = Math.max(24, Math.min(120, ui?.pieceHeight ?? fallbackH));
+    const pieceHeight = Math.max(24, Math.min(Math.floor(cellPx * 0.9), ui?.pieceHeight ?? fallbackH));
     // Fallback inline styles for visibility without Tailwind
     // Hide unused corner intersections as transparent spacers
     const size = DEFAULT_LANE_LENGTH + 1;
@@ -107,8 +154,8 @@ export default function Board() {
         <div
           key={key}
           style={{
-            width: CELL_SIZE,
-            height: CELL_SIZE,
+            width: cellPx,
+            height: cellPx,
             background: 'transparent',
           }}
         />
@@ -116,8 +163,9 @@ export default function Board() {
     }
 
     const cellStyle: React.CSSProperties = {
-      width: CELL_SIZE,
-      height: CELL_SIZE,
+      width: cellPx,
+      height: cellPx,
+      boxSizing: 'border-box',
       borderRadius: 10,
       backgroundColor: '#1f2937', // gray-800
       border: '1px solid #374151', // gray-700
@@ -201,12 +249,29 @@ export default function Board() {
       </div>
     );
 
+    // Compute a compact grid for this cell to place all pieces without overlap
+    const m = ps.length;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(m)));
+    const rows = Math.max(1, Math.ceil(m / cols));
+    const padIn = 2;
+    const gapIn = 4;
+    const tileW = Math.max(8, Math.floor((cellPx - padIn * 2 - gapIn * (cols - 1)) / cols));
+    const tileH = Math.max(12, Math.floor((cellPx - padIn * 2 - gapIn * (rows - 1)) / rows));
+
     return (
       <div key={key} className="flex items-center justify-center rounded-md bg-neutral-800 border border-neutral-700" style={cellStyle}>
-        <div className="flex gap-1" style={{ display: 'flex', gap: 6 }}>
-          {ps.map((p) => {
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {ps.map((p, idx) => {
             const isLight = p.owner === 'Light';
             const isActive = p.owner === turn;
+            // Grid placement within the cell
+            const r = Math.floor(idx / cols);
+            const c = idx % cols;
+            const w = Math.min(pieceWidth, tileW);
+            const h = Math.min(pieceHeight, tileH);
+            const left = padIn + c * (tileW + gapIn) + Math.max(0, Math.floor((tileW - w) / 2));
+            const top = padIn + r * (tileH + gapIn) + Math.max(0, Math.floor((tileH - h) / 2));
+
             // Determine forward tip side based on owner and current state
             const tipSide: 'left' | 'right' | 'top' | 'bottom' = isLight
               ? (p.state === 'en_ida' ? 'left' : 'right')
@@ -215,8 +280,8 @@ export default function Board() {
             // Style per side: both use the same prism design; only color differs
             const pieceStyle: React.CSSProperties = isLight
               ? {
-                  width: pieceWidth,
-                  height: pieceHeight,
+                  width: w,
+                  height: h,
                   clipPath: 'polygon(50% 0%, 85% 15%, 85% 85%, 50% 100%, 15% 85%, 15% 15%)',
                   background: 'linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%)',
                   transform: 'rotate(90deg)',
@@ -226,9 +291,8 @@ export default function Board() {
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 }
               : {
-                  width: pieceWidth,
-                  height: pieceHeight,
-                  // Vertical hex/diamond-like prism to match the reference orientation
+                  width: w,
+                  height: h,
                   clipPath: 'polygon(50% 0%, 85% 15%, 85% 85%, 50% 100%, 15% 85%, 15% 15%)',
                   background: 'linear-gradient(180deg, #a54d5b 0%, #6e2430 100%)',
                   boxShadow: isActive ? '0 0 0 2px rgba(8, 145, 178, 0.35)' : 'none',
@@ -236,7 +300,7 @@ export default function Board() {
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 };
 
-            const tipSize = Math.max(12, Math.round(Math.min(pieceWidth, pieceHeight) * 0.5));
+            const tipSize = Math.max(10, Math.round(Math.min(w, h) * 0.5));
             const theme = p.owner === 'Light' ? THEMES.Light : THEMES.Dark;
             const tipGlowStyle: React.CSSProperties = (() => {
               const base: React.CSSProperties = {
@@ -256,9 +320,9 @@ export default function Board() {
               return { ...base, bottom: 2, left: '50%', transform: 'translateX(-50%)' };
             })();
 
-            // Add a triangular light cone towards the movement direction for extra emphasis
-            const coneW = Math.max(16, Math.round(pieceWidth * 0.65));
-            const coneH = Math.max(16, Math.round(pieceHeight * 0.65));
+            // Directional cone scaled to the adaptive size
+            const coneW = Math.max(12, Math.round(w * 0.65));
+            const coneH = Math.max(12, Math.round(h * 0.65));
             const coneBase: React.CSSProperties = {
               position: 'absolute',
               pointerEvents: 'none',
@@ -274,7 +338,7 @@ export default function Board() {
                 return {
                   ...coneBase,
                   width: coneW,
-                  height: Math.round(pieceHeight * 0.8),
+                  height: Math.round(h * 0.8),
                   left: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
@@ -287,7 +351,7 @@ export default function Board() {
                 return {
                   ...coneBase,
                   width: coneW,
-                  height: Math.round(pieceHeight * 0.8),
+                  height: Math.round(h * 0.8),
                   right: 0,
                   top: '50%',
                   transform: 'translateY(-50%)',
@@ -299,7 +363,7 @@ export default function Board() {
               if (tipSide === 'top') {
                 return {
                   ...coneBase,
-                  width: Math.round(pieceWidth * 0.8),
+                  width: Math.round(w * 0.8),
                   height: coneH,
                   top: 0,
                   left: '50%',
@@ -311,7 +375,7 @@ export default function Board() {
               }
               return {
                 ...coneBase,
-                width: Math.round(pieceWidth * 0.8),
+                width: Math.round(w * 0.8),
                 height: coneH,
                 bottom: 0,
                 left: '50%',
@@ -323,7 +387,7 @@ export default function Board() {
             })();
 
             return (
-              <div key={p.id} style={{ position: 'relative', width: pieceWidth, height: pieceHeight }}>
+              <div key={p.id} style={{ position: 'absolute', left, top, width: w, height: h }}>
                 <button
                   onClick={() => handleClickPiece(p.id)}
                   title={`${p.owner} ${p.laneIndex} • ${p.state}`}
@@ -359,7 +423,7 @@ export default function Board() {
           <span className="ml-3 text-emerald-400 font-semibold">Ganador: {winner}</span>
         )}
       </div>
-      <div style={gridStyle}>{cellsArray}</div>
+      <div ref={gridRef} style={gridStyle}>{cellsArray}</div>
       <div className="text-xs text-neutral-400">
         Consejo: Haz clic sobre una pieza para moverla según las reglas.
       </div>

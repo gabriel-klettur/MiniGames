@@ -51,10 +51,10 @@ export function randomInitialTowers(): Tower[] {
 
 export function canMerge(a: Tower, b: Tower): boolean {
   if (a.id === b.id) return false;
-  // Regla: solo se puede fusionar si
+  // Regla: se puede fusionar si
   //  - tienen el mismo símbolo, o
-  //  - tienen la misma altura y dicha altura es >= 2 (la altura 1 NO cuenta para apilar por altura)
-  const sameHeight = a.height >= 2 && b.height >= 2 && a.height === b.height;
+  //  - tienen la misma altura (incluida altura 1: las fichas sin agrupar pueden apilarse entre sí)
+  const sameHeight = a.height === b.height;
   const sameSymbol = a.top === b.top;
   return sameHeight || sameSymbol;
 }

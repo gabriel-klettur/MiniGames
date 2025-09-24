@@ -110,7 +110,10 @@ export default function Board() {
     // Only move if we are actively dragging (after long press)
     if (dragId !== id) return;
     const pos = pointToNormalized(e.clientX, e.clientY);
-    dispatch({ type: 'move-tower', id, pos });
+    // Enforce strict non-overlap while dragging by sending a normalized minD
+    const minWH = Math.max(1, Math.min(sizes.w, sizes.h));
+    const minD = Math.max(0.06, (sizes.token * 1.1) / minWH);
+    dispatch({ type: 'move-tower', id, pos, minD });
     // compute nearest valid target while dragging
     const field = fieldRef.current;
     if (field) {
@@ -177,20 +180,49 @@ export default function Board() {
     const threshold = sizes.token * sizes.mergeFactor;
     if (best && best.d <= threshold) {
       const dst = state.towers.find(t => t.id === best!.id);
-      if (dst && canMerge(src, dst)) {
-        // attempt merge (source on top of target)
-        dispatch({ type: 'attempt-merge', targetId: dst.id });
-        dragStartRef.current = null;
-        setDropTargetId(null);
-        // keep moved flag true briefly to suppress the click that follows pointerup
-        setTimeout(() => { movedDuringDragRef.current = false; }, 0);
-        return;
+      if (dst) {
+        if (canMerge(src, dst)) {
+          // attempt merge (source on top of target)
+          dispatch({ type: 'attempt-merge', targetId: dst.id });
+          dragStartRef.current = null;
+          setDropTargetId(null);
+          // keep moved flag true briefly to suppress the click that follows pointerup
+          setTimeout(() => { movedDuringDragRef.current = false; }, 0);
+          return;
+        } else {
+          // Snap around the target at a minimum radius so it never stays overlapped
+          const minWH = Math.max(1, Math.min(rect.width, rect.height));
+          const rNorm = Math.max(0.06, (sizes.token * 1.1) / minWH);
+          const dstPx = { x: dst.pos.x * rect.width, y: dst.pos.y * rect.height };
+          let vx = srcPx.x - dstPx.x;
+          let vy = srcPx.y - dstPx.y;
+          const vlen = Math.hypot(vx, vy);
+          if (vlen < 1e-6) { vx = 1; vy = 0; }
+          else { vx /= vlen; vy /= vlen; }
+          const newPos = {
+            x: clamp(dst.pos.x + (vx * rNorm), 0, 1),
+            y: clamp(dst.pos.y + (vy * rNorm), 0, 1),
+          };
+          dispatch({ type: 'move-tower', id, pos: newPos });
+          // Resolve any residual overlap globally to ensure nothing remains overlapped
+          dispatch({ type: 'resolve-all-overlaps', minD: rNorm });
+          dragStartRef.current = null;
+          setDropTargetId(null);
+          setTimeout(() => { movedDuringDragRef.current = false; }, 0);
+          return;
+        }
       }
     }
     // Free move: keep last position; otherwise revert to start
     const start = dragStartRef.current;
     if (!sizes.freeMove && start && start.id === id) {
       dispatch({ type: 'move-tower', id, pos: start.pos });
+    }
+    // After dropping without merge, resolve overlaps globally using normalized min distance
+    if (field) {
+      const minWH = Math.max(1, Math.min(rect.width, rect.height));
+      const minD = Math.max(0.06, (sizes.token * 1.1) / minWH);
+      dispatch({ type: 'resolve-all-overlaps', minD });
     }
     dragStartRef.current = null;
     setDropTargetId(null);
@@ -225,7 +257,7 @@ export default function Board() {
             {state.towers.map((t) => (
               <button
                 key={t.id}
-                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && selectedTower.height >= 2 && t.height === selectedTower.height ? 'height-match' : ''}`}
+                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && t.height === selectedTower.height ? 'height-match' : ''}`}
                 data-symbol={t.top}
                 data-height={t.height}
                 style={{

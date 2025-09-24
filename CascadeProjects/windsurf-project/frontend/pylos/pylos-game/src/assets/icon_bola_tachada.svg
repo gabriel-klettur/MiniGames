@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <!-- Ball silhouette (subtle) -->
+  <circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.12" />
+  <!-- Ball outline -->
+  <circle cx="12" cy="12" r="7" />
+  <!-- Slash -->
+  <path d="M5 19 L19 5" />
+</svg>

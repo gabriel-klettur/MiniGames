@@ -24,8 +24,9 @@ function orderMoves(moves: AIMove[]): AIMove[] {
 
 export interface SearchStats { nodes: number }
 export interface SearchResult { score: number; pv: AIMove[] }
+export interface SearchOptions { shouldStop?: () => boolean }
 
-function alphabeta(state: GameState, depth: number, alpha: number, beta: number, me: Player, stats?: SearchStats): SearchResult {
+function alphabeta(state: GameState, depth: number, alpha: number, beta: number, me: Player, stats?: SearchStats, opts?: SearchOptions): SearchResult {
   if (stats) stats.nodes++;
   const maximizing = state.currentPlayer === me;
   if (depth === 0) {
@@ -40,32 +41,41 @@ function alphabeta(state: GameState, depth: number, alpha: number, beta: number,
 
   if (maximizing) {
     let best: SearchResult | null = null;
+    // Cutoff check before exploring children
+    if (opts?.shouldStop && opts.shouldStop()) {
+      return { score: evaluate(state, me), pv: [] };
+    }
     for (const m of moves) {
       const nxt = applyMove(state, m);
-      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats);
+      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts);
       if (!best || child.score > best.score) {
         best = { score: child.score, pv: [m, ...child.pv] };
       }
       alpha = Math.max(alpha, best!.score);
       if (alpha >= beta) break;
+      if (opts?.shouldStop && opts.shouldStop()) break;
     }
     return best ?? { score: -Infinity, pv: [] };
   } else {
     let best: SearchResult | null = null;
+    if (opts?.shouldStop && opts.shouldStop()) {
+      return { score: evaluate(state, me), pv: [] };
+    }
     for (const m of moves) {
       const nxt = applyMove(state, m);
-      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats);
+      const child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts);
       if (!best || child.score < best.score) {
         best = { score: child.score, pv: [m, ...child.pv] };
       }
       beta = Math.min(beta, best!.score);
       if (alpha >= beta) break;
+      if (opts?.shouldStop && opts.shouldStop()) break;
     }
     return best ?? { score: +Infinity, pv: [] };
   }
 }
 
-export function bestMove(state: GameState, depth: number, stats?: SearchStats): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
+export function bestMove(state: GameState, depth: number, stats?: SearchStats, opts?: SearchOptions): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
   const me: Player = state.currentPlayer;
   const moves = orderMoves(generateAllMoves(state));
   if (moves.length === 0) return { move: null, score: evaluate(state, me), pv: [], rootMoves: [] };
@@ -75,14 +85,22 @@ export function bestMove(state: GameState, depth: number, stats?: SearchStats): 
   const beta = +Infinity;
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
 
+  // Early cutoff before starting exploration
+  if (opts?.shouldStop && opts.shouldStop()) {
+    const m0 = moves[0];
+    const score0 = evaluate(applyMove(state, m0), me);
+    return { move: m0, score: score0, pv: [m0], rootMoves: [{ move: m0, score: score0 }] };
+  }
+
   for (const m of moves) {
     const nxt = applyMove(state, m);
-    const res = alphabeta(nxt, Math.max(0, depth - 1), alpha, beta, me, stats);
+    const res = alphabeta(nxt, Math.max(0, depth - 1), alpha, beta, me, stats, opts);
     rootMoves.push({ move: m, score: res.score });
     if (!best || res.score > best.score) {
       best = { move: m, score: res.score, pv: [m, ...res.pv] };
       alpha = Math.max(alpha, best.score);
     }
+    if (opts?.shouldStop && opts.shouldStop()) break;
   }
   return { move: best?.move ?? null, score: best?.score ?? -Infinity, pv: best?.pv ?? [], rootMoves };
 }

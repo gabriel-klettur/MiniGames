@@ -22,17 +22,26 @@
   --app-gap: 16px;          /* must match .app gap */
   --app-padding: 16px;      /* must match .app padding */
   /* Professional spacing between InfoPanel and board */
-  --board-top-gap: 110px;    /* total visual gap desired */
+  --board-top-gap: 0px;    /* net space between InfoPanel and board */
   /* Fine alignment offsets for background art (positive = move art right/down) */
   --board-offset-x: 0px;
-  --board-offset-y: 0px;
+  --board-offset-y: -60px; /* lift board art to reduce perceived gap */
   /* Spacing below the board for Undo/Redo */
-  --board-actions-gap: 24px;
+  --board-actions-gap: -40px;
   /* Board width factor relative to content width (1 = 100%, 0.5 = 50%) */
   --board-width-factor: 1;
   /* Board art width multiplier (matches .level--board ratios) */
   --board-w-mult-root: 1.799; /* 1024 / 569 ≈ 1.799 */
   /* use base spacing values, then derive scaled ones */
+  --overlay-nudge-x: 0px;                 /* horizontal shift for overlays (positive moves right) */
+  --overlay-nudge-3-y: calc(12px * var(--scale)); /* vertical lift for 3x3 overlay (positive lifts up via transform -) */
+  --overlay-nudge-2-y: calc(12px * var(--scale)); /* vertical lift for 2x2 overlay */
+  --overlay-nudge-1-y: calc(12px * var(--scale)); /* vertical lift for 1x1 overlay */
+  /* Manual fine-tune for the WHOLE grid (base + overlays) relative to board art */
+  --grid-offset-extra-x: 0px; /* extra delta beyond board art */
+  --grid-offset-extra-y: 0px; /* extra delta beyond board art */
+  --grid-offset-x: calc(var(--board-offset-x) + var(--grid-offset-extra-x));
+  --grid-offset-y: calc(var(--board-offset-y) + var(--grid-offset-extra-y));
   --level-gap-base: 8px;         /* base gap between cells */
   --level-padding-base: 8px;     /* base padding inside level */
   --level-gap: calc(var(--level-gap-base) * var(--scale));
@@ -248,6 +257,24 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 .vsai-diffs button:disabled { opacity: 0.6; cursor: not-allowed; }
 .vsai-hint { font-size: 11px; color: var(--muted); }
 
+/* Velocidad selector (Rápido/Normal/Lento) */
+.vsai-speeds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; justify-items: center; }
+.vsai-speeds button {
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  font-size: 12px;
+  padding: 0 10px;
+}
+.vsai-speeds button.active,
+.vsai-speeds button[aria-pressed="true"] {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.35);
+}
+
 /* Header button icon styling */
 .header-btn__icon {
   display: inline-block;
@@ -273,7 +300,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 /* Slightly tighter vertical rhythm on wide screens */
 @media (min-width: 1024px) {
   .app { gap: 8px; } /* compacta aún más entre secciones en escritorio */
-  :root { --board-top-gap: 120px; }
+  :root { --board-top-gap: 10px; }
 }
 
 /* Tablet and up: board uses half of the content width */
@@ -355,6 +382,13 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   color: var(--accent);
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
 }
+.info-panel .robot-icon.is-thinking {
+  animation: aiBlink 1.2s ease-in-out infinite;
+}
+@keyframes aiBlink {
+  0%, 100% { opacity: 0.9; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+  50% { opacity: 0.45; filter: drop-shadow(0 0px 1px rgba(0,0,0,0.25)); }
+}
 .info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }
 
 .board { display: block; margin-top: calc(var(--board-top-gap) - var(--content-gap)); width: 100%; position: relative; }
@@ -409,7 +443,7 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 /* Board actions (Undo/Redo) under the board */
 .board-actions {
   align-self: center; /* center panel under the board */
-  margin-top: var(--board-actions-gap);   /* clearer breathing room below the board */
+  margin-top: calc(var(--board-actions-gap) - var(--content-gap));   /* cancel content gap so it sits flush under the board */
   /* Remove panel chrome: no background, no border, no shadow/blur, no padding */
   background: transparent;
   border: none;
@@ -421,8 +455,87 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   z-index: 20;        /* ensure above any board overlays */
 }
 
+/* Center the single Undo button under the board */
+.panel.board-actions .row.actions { justify-content: center; }
+
+/* Professional blue glass button for Undo */
+.panel.board-actions .row.actions .undo-btn {
+  /* Same size/layout as finish-recovery, but in blue */
+  background: #2563eb !important; /* blue-600 */
+  border: 1px solid rgba(147,197,253,0.28) !important; /* blue-300 */
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35) !important; /* blue-600 shadow */
+  border-radius: 14px;
+  min-height: 36px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: filter 150ms ease, transform 120ms ease;
+}
+
+.panel.board-actions .row.actions .undo-btn:hover {
+  filter: brightness(1.06);
+}
+
+.panel.board-actions .row.actions .undo-btn:active {
+  transform: translateY(0.5px);
+  filter: brightness(0.98);
+}
+
+.panel.board-actions .row.actions .undo-btn:focus-visible {
+  outline: 2px solid rgba(147,197,253,0.85); /* blue ring */
+  outline-offset: 2px;
+}
+
+.panel.board-actions .row.actions .undo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+/* Icon inside the black Undo button */
+.panel.board-actions .row.actions .undo-btn .header-btn__icon {
+  width: 16px;
+  height: 16px;
+  color: #ffffff; /* currentColor -> white */
+  opacity: 1;
+}
+
+/* Solid black button for "Terminar recuperación" with white icon/text */
+.panel.board-actions .row.actions .finish-recovery {
+  background: #000000 !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+  border-radius: 14px;
+  min-height: 36px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel.board-actions .row.actions .finish-recovery:hover {
+  filter: brightness(1.06);
+}
+.panel.board-actions .row.actions .finish-recovery:active {
+  transform: translateY(0.5px);
+  filter: brightness(0.98);
+}
+.panel.board-actions .row.actions .finish-recovery:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 2px;
+}
+.panel.board-actions .row.actions .finish-recovery .header-btn__icon {
+  width: 16px;
+  height: 16px;
+  color: #ffffff; /* currentColor -> white */
+  opacity: 1;
+}
+
 /* iOS/Safari + Glassy style for Undo/Redo buttons under the board */
-.panel.board-actions .row.actions button {
+.panel.board-actions .row.actions button:not(.undo-btn) {
   /* Neutralize native appearance that can add white borders on iOS */
   -webkit-appearance: none;
   appearance: none;
@@ -528,6 +641,8 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
   z-index: 2; /* ensure base grid is above any other decorative layers */
   /* No extra padding; the background is handled by .board::before */
   padding: 0;
+  /* Allow manual alignment of the grid relative to the background board art */
+  transform: translate(var(--grid-offset-x), var(--grid-offset-y));
 }
 
 .level--board::before { content: none; }
@@ -554,18 +669,18 @@ button.primary { background: var(--accent); color: #0b1220; border: none; paddin
 
 /* Fine-tune alignment: in pyramid mode, nudge the first upper level (3x3) slightly upwards */
 .board--pyramid .level--board > .level--overlay[data-overlay-cols="3"] {
-  /* Move up a few pixels; scaled to respect global --scale */
-  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+  /* Move up a few pixels; scaled to respect global --scale (tunable) */
+  transform: translate(calc(-50% + var(--overlay-nudge-x)), calc(-50% - var(--overlay-nudge-3-y)));
 }
 
 /* Nudge second upper level (2x2) upward slightly */
 .board--pyramid .level--board > .level--overlay[data-overlay-cols="2"] {
-  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+  transform: translate(calc(-50% + var(--overlay-nudge-x)), calc(-50% - var(--overlay-nudge-2-y)));
 }
 
 /* Nudge top level (1x1) upward as well */
 .board--pyramid .level--board > .level--overlay[data-overlay-cols="1"] {
-  transform: translate(-50%, calc(-50% - (12px * var(--scale))));
+  transform: translate(calc(-50% + var(--overlay-nudge-x)), calc(-50% - var(--overlay-nudge-1-y)));
 }
 
 /* re-enable interaction on actual cells inside overlays */
@@ -1218,6 +1333,43 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
 .ia-panel__controls .label { color: var(--muted); }
 .ia-panel__range { display: inline-flex; align-items: center; gap: 8px; }
 .ia-panel__actions { margin-top: 4px; }
+
+/* Time progress bar inside IA panel */
+.ia-panel__timebar {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+}
+.ia-panel__timebar .timebar {
+  position: relative;
+  height: 8px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  border-radius: 9999px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+.ia-panel__timebar .timebar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #f59e0b);
+}
+.ia-panel__timebar .timebar[data-over="true"] .timebar__fill {
+  background: #ef4444; /* red-500 */
+}
+.ia-panel__timebar .timebar[data-busy="false"] .timebar__fill {
+  transition: width 200ms ease;
+}
+.ia-panel__timebar .timebar__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
 
 .ia-panel__evaluation .eval {
   display: inline-flex;

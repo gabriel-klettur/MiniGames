@@ -7,20 +7,21 @@ import './App.css';
 
 function App() {
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-start gap-6 p-6 bg-[#111827] text-neutral-100">
-      <div className="w-full max-w-4xl">
+    <div className="min-h-screen bg-gray-950 text-gray-100 overflow-x-hidden">
+      <div className="w-full px-[10px]">
         <HeaderPanel />
       </div>
-      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
-        <aside className="flex flex-col gap-4">
-          <div className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
-            <InfoPanel />
-          </div>
-          <DevToolsPanel />
-        </aside>
-        <main className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-4 overflow-auto">
+      {/* Full-width play area with exact 10px side margins (no horizontal overflow) */}
+      <div className="w-full px-[10px] flex flex-col gap-4 overflow-x-hidden">
+        {/* InfoPanel above the board */}
+        <div className=" p-4">
+          <InfoPanel />
+        </div>
+        <main className="w-full overflow-x-hidden">
           <Board />
         </main>
+        {/* DevTools placed directly below the board */}
+        <DevToolsPanel />
       </div>
       <footer className="w-full max-w-4xl">
         <FootPanel />
