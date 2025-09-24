@@ -1,5 +1,5 @@
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
-import { setWallGap, toggleBoardWarp, resetBoardWarp, setBoardWarpVertex } from '../../store/uiSlice.ts';
+import { setWallGap, toggleBoardWarp, resetBoardWarp, setBoardWarpVertex, toggleWallHitboxes } from '../../store/uiSlice.ts';
 
 /**
  * UIUX — Panel de controles de UI/UX para desarrollo.
@@ -9,6 +9,7 @@ export default function UIUX() {
   const dispatch = useAppDispatch();
   const wallGap = useAppSelector((s) => s.ui.wallGap);
   const warp = useAppSelector((s) => s.ui.boardWarp);
+  const showWallHitboxes = useAppSelector((s) => s.ui.showWallHitboxes);
 
   const onChange = (v: number) => {
     dispatch(setWallGap(v));
@@ -45,6 +46,21 @@ export default function UIUX() {
         </div>
       </div>
       <p className="mt-2 text-[11px] text-gray-400">Consejo: un valor mayor facilita la selección en pantallas táctiles.</p>
+
+      {/* Mostrar/ocultar hitbox de vallas */}
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <label className="text-xs text-gray-300">Mostrar hitbox de vallas</label>
+        <button
+          className={[
+            'px-2 py-1 rounded text-xs',
+            showWallHitboxes ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-gray-800 hover:bg-gray-700',
+          ].join(' ')}
+          aria-pressed={showWallHitboxes}
+          onClick={() => dispatch(toggleWallHitboxes())}
+        >
+          {showWallHitboxes ? 'Visible' : 'Oculto'}
+        </button>
+      </div>
 
       {/* Warp del tablero */}
       <hr className="my-4 border-white/10" />
