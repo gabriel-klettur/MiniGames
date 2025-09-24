@@ -597,8 +597,10 @@ html, body { overflow-x: hidden; }
   box-shadow:
     inset 0 8px 16px rgba(255,255,255,0.12),
     inset 0 -8px 16px rgba(0,0,0,0.45),
-    0 0 0 3px rgba(97,218,251,0.35),
+    0 0 0 4px rgba(255, 210, 0, 0.9),
     0 10px 14px rgba(0,0,0,0.45);
+  border-color: #ffd200;
+  filter: brightness(1.05);
 }
 
 .token:hover .token-top {
@@ -607,6 +609,47 @@ html, body { overflow-x: hidden; }
 
 .token:active {
   transform: translate(-50%, calc(-50% - var(--stack-px) / 2)) scale(0.98);
+}
+
+/* Remove default button focus outline and tap highlight for tokens */
+.token:focus,
+.token:focus-visible {
+  outline: none;
+}
+.token:focus-within {
+  outline: none;
+}
+.token::-moz-focus-inner {
+  border: 0;
+}
+.token {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Outline in light-cyan for tokens that match the selected height (>=2). Placed BEFORE symbol-match so symbol-match stays dominant */
+.play-field.has-selection .token.height-match:not(.selected):not(.droppable-target) .token-top {
+  box-shadow:
+    inset 0 6px 12px rgba(255,255,255,0.06),
+    inset 0 -6px 12px rgba(0,0,0,0.32),
+    0 0 0 2px rgba(173, 216, 230, 0.8), /* light cyan ring */
+    0 6px 10px rgba(0,0,0,0.38);
+  border-color: rgba(173, 216, 230, 0.85);
+}
+
+/* When a token is selected, outline in white ONLY tokens with the same symbol */
+.play-field.has-selection.selected-sol .token[data-symbol="sol"]:not(.selected):not(.droppable-target) .token-top,
+.play-field.has-selection.selected-luna .token[data-symbol="luna"]:not(.selected):not(.droppable-target) .token-top,
+.play-field.has-selection.selected-estrella .token[data-symbol="estrella"]:not(.selected):not(.droppable-target) .token-top,
+.play-field.has-selection.selected-fugaz .token[data-symbol="fugaz"]:not(.selected):not(.droppable-target) .token-top {
+  box-shadow:
+    inset 0 6px 12px rgba(255,255,255,0.08),
+    inset 0 -6px 12px rgba(0,0,0,0.35),
+    0 0 0 2px rgba(255,255,255,0.85),
+    0 6px 10px rgba(0,0,0,0.40);
+  border-color: rgba(255,255,255,0.9);
 }
 
 /* Floating Dev toggle button */
