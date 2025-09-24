@@ -29,12 +29,22 @@ export function createPlayerLanes(
  */
 export function createDefaultLanesByPlayer(
   length: number = DEFAULT_LANE_LENGTH,
-  speedsOut: number[] = [1, 2, 3, 2, 1],
-  speedsBack: number[] = [3, 2, 1, 2, 3],
 ): Record<Player, Lane[]> {
+  // Align logical speeds with the visual pip markers rendered on the board:
+  // - Light (horizontal) starts at the right edge and goes left (out), then returns right (back).
+  //   Right edge pips per row r1..r5: 3,1,2,1,3  => speedOut
+  //   Left edge pips per row r1..r5:  1,3,2,3,1  => speedBack
+  // - Dark (vertical) starts at the bottom edge and goes up (out), then returns down (back).
+  //   Bottom pips per col c1..c5:     1,3,2,3,1  => speedOut
+  //   Top pips per col c1..c5:        3,1,2,1,3  => speedBack
+  const lightOut = [3, 1, 2, 1, 3];
+  const lightBack = [1, 3, 2, 3, 1];
+  const darkOut = [1, 3, 2, 3, 1];
+  const darkBack = [3, 1, 2, 1, 3];
+
   return {
-    Light: createPlayerLanes(length, speedsOut, speedsBack),
-    Dark: createPlayerLanes(length, speedsOut, speedsBack),
+    Light: createPlayerLanes(length, lightOut, lightBack),
+    Dark: createPlayerLanes(length, darkOut, darkBack),
   };
 }
 
