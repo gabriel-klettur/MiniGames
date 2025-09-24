@@ -1,29 +1,29 @@
 import Board from './components/Board';
-import { useAppDispatch, useAppSelector } from './store/hooks';
-import { resetGame } from './store/gameSlice';
+import HeaderPanel from './components/HeaderPanel';
+import InfoPanel from './components/InfoPanel';
+import DevToolsPanel from './components/DevTools/DevToolsPanel';
+import FootPanel from './components/FootPanel';
 import './App.css';
-import type { RootState } from './store';
 
 function App() {
-  const dispatch = useAppDispatch();
-  const winner = useAppSelector((s: RootState) => s.game.winner);
-
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-start gap-6 p-6 bg-[#242424] text-white">
-      <header className="w-full max-w-3xl flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Squadro</h1>
-        <div className="flex items-center gap-3">
-          {winner && (
-            <span className="text-emerald-400 font-semibold">Ganador: {winner}</span>
-          )}
-          <button onClick={() => dispatch(resetGame())}>Reiniciar</button>
-        </div>
-      </header>
-      <main className="w-full max-w-3xl">
-        <Board />
-      </main>
-      <footer className="w-full max-w-3xl text-xs text-neutral-400">
-        Estilo inspirado en Quoridor frontend (texto en español, tema oscuro, Redux).
+    <div className="min-h-screen w-full flex flex-col items-center justify-start gap-6 p-6 bg-[#111827] text-neutral-100">
+      <div className="w-full max-w-4xl">
+        <HeaderPanel />
+      </div>
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+        <aside className="flex flex-col gap-4">
+          <div className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
+            <InfoPanel />
+          </div>
+          <DevToolsPanel />
+        </aside>
+        <main className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-4 overflow-auto">
+          <Board />
+        </main>
+      </div>
+      <footer className="w-full max-w-4xl">
+        <FootPanel />
       </footer>
     </div>
   );
