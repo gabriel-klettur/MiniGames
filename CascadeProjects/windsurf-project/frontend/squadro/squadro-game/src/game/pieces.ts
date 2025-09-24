@@ -27,6 +27,10 @@ export function createInitialState(): GameState {
     pieces,
     turn: 'Light',
     winner: undefined,
+    ui: {
+      pieceWidth: 16, // default thinner width in px
+      pieceHeight: 44, // default height in px
+    },
   };
   return state;
 }

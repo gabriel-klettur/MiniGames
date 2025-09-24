@@ -16,6 +16,7 @@ const gameSlice = createSlice({
       state.pieces = next.pieces;
       state.turn = next.turn;
       state.winner = next.winner;
+      state.ui = next.ui;
     },
     movePiece(state: GameState, action: PayloadAction<string>) {
       // Immer allows us to "mutate" safely. Guard against invalid moves.
@@ -26,8 +27,16 @@ const gameSlice = createSlice({
         console.warn('Movimiento inválido:', err);
       }
     },
+    setPieceWidth(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(8, Math.min(48, Math.round(action.payload)));
+      state.ui.pieceWidth = v;
+    },
+    setPieceHeight(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(24, Math.min(120, Math.round(action.payload)));
+      state.ui.pieceHeight = v;
+    },
   },
 });
 
-export const { resetGame, movePiece } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight } = gameSlice.actions;
 export default gameSlice.reducer;

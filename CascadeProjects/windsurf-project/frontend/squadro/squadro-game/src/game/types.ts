@@ -26,6 +26,8 @@ export interface GameState {
   pieces: Piece[]; // 10 pieces total
   turn: Player;
   winner?: Player;
+  // UI configuration (visual only; does not affect rules)
+  ui: UISettings;
 }
 
 // Board grid coordinate (row, col) for visual collision checks at intersections.
@@ -36,4 +38,10 @@ export interface Coord {
 }
 
 export const PLAYERS: Player[] = ['Light', 'Dark'];
+
+// Visual/UI settings not tied to game rules
+export interface UISettings {
+  pieceWidth: number; // px width of the prism-shaped piece
+  pieceHeight: number; // px height of the prism-shaped piece
+}
 

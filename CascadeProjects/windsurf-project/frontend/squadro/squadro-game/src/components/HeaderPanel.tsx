@@ -17,7 +17,7 @@ export default function HeaderPanel() {
         )}
         <button
           onClick={() => dispatch(resetGame())}
-          className="px-3 py-1.5 rounded-md bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-sm"
+          className="px-3 py-1.5 rounded-md bg-blue-700 hover:bg-blue-600 active:bg-blue-600 border border-blue-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/30 shadow-sm"
         >
           Reiniciar
         </button>

@@ -1,4 +1,5 @@
 import type { GameState, Lane, Piece, Player } from './types';
+import { DEFAULT_LANE_LENGTH } from './board';
 
 // Helper: opponent side
 export function other(p: Player): Player {
@@ -14,12 +15,21 @@ export function getPiece(gs: GameState, id: string): Piece {
 
 // Helper: compute board coordinate (row, col) for a piece at current pos
 export function coordOfPiece(piece: Piece): { row: number; col: number } {
-  if (piece.owner === 'Light') {
-    // horizontal lanes: row = laneIndex, col = pos
-    return { row: piece.laneIndex, col: piece.pos };
+  return coordOf(piece.owner, piece.laneIndex, piece.pos);
+}
+
+// Centralized coordinate transform used across the rules and rendering.
+// - Light (yellow): horizontal lanes occupy interior rows 1..L-1 and start at right edge
+//   -> (row = laneIndex + 1, col = L - pos)
+// - Dark (green): vertical lanes occupy interior cols 1..L-1 and start at bottom edge
+//   -> (row = L - pos, col = laneIndex + 1)
+function coordOf(owner: Player, laneIndex: number, pos: number): { row: number; col: number } {
+  const L = DEFAULT_LANE_LENGTH; // number of steps from one edge to the opposite
+  const offset = 1; // push lanes to interior intersections (1..L-1)
+  if (owner === 'Light') {
+    return { row: laneIndex + offset, col: L - pos };
   }
-  // Dark vertical lanes: row = pos, col = laneIndex
-  return { row: piece.pos, col: piece.laneIndex };
+  return { row: L - pos, col: laneIndex + offset };
 }
 
 // Helper: Determine if an opponent occupies the intersection at (owner, laneIndex, pos)
@@ -29,9 +39,7 @@ function getOpponentsAt(
   laneIndex: number,
   pos: number,
 ): Piece[] {
-  const meIsLight = owner === 'Light';
-  const targetRow = meIsLight ? laneIndex : pos;
-  const targetCol = meIsLight ? pos : laneIndex;
+  const { row: targetRow, col: targetCol } = coordOf(owner, laneIndex, pos);
   const oppSide = other(owner);
   return gs.pieces.filter((q) => {
     if (q.owner !== oppSide) return false;
