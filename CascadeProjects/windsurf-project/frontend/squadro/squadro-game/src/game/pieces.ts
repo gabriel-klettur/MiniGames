@@ -1,5 +1,6 @@
 import type { GameState, Piece } from './types';
 import { PLAYERS } from './types';
+import { STARTING_PLAYER } from './types';
 import { createDefaultLanesByPlayer } from './board';
 
 export function createInitialPieces(): Piece[] {
@@ -25,7 +26,7 @@ export function createInitialState(): GameState {
   const state: GameState = {
     lanesByPlayer,
     pieces,
-    turn: 'Light',
+    turn: STARTING_PLAYER,
     winner: undefined,
     ui: {
       pieceWidth: 16, // default thinner width in px

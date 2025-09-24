@@ -11,7 +11,7 @@ export default function DevToolsPanel() {
   const [showEstado, setShowEstado] = useState(true);
 
   return (
-    <div className="rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
+    <div className="w-full overflow-x-auto rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-neutral-300">DevTools</h2>
         <div className="flex items-center gap-2">

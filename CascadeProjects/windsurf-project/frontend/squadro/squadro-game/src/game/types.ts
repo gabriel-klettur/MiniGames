@@ -45,3 +45,6 @@ export interface UISettings {
   pieceHeight: number; // px height of the prism-shaped piece
 }
 
+// Centralized starting player to ensure deterministic game start
+export const STARTING_PLAYER: Player = 'Light';
+

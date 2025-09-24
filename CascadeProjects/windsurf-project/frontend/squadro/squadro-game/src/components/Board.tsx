@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { movePiece } from '../store/gameSlice';
 import { DEFAULT_LANE_LENGTH } from '../game/board';
@@ -6,7 +6,8 @@ import type { Piece } from '../game/types';
 import { coordOfPiece } from '../game/rules';
 import type { RootState } from '../store';
 
-const CELL_SIZE = 56; // px, slightly larger
+const GAP = 8; // px between cells
+const EDGE_SAFE = 12; // px safety on each side to avoid visual clipping at edges
 const DOT_SIZE = 5; // px
 const DOT_COLOR = '#f5e0a3'; // warm ivory/gold-like, inspired by reference
 // Unified visual themes so both sides share the same design and only differ by color
@@ -30,6 +31,49 @@ export default function Board() {
   const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
+
+  // Dynamically compute cell size so the board (square) fits in the viewport
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [cellPx, setCellPx] = useState<number>(48);
+
+  useLayoutEffect(() => {
+    function compute() {
+      const vh = window.innerHeight;
+      // Prefer the parent container's inner width to avoid scrollbar/calc mismatches
+      const parentEl = gridRef.current?.parentElement;
+      const parentRectWidth = parentEl?.getBoundingClientRect().width;
+      const cs = parentEl ? getComputedStyle(parentEl) : null;
+      const padL = cs ? parseFloat(cs.paddingLeft || '0') : 0;
+      const padR = cs ? parseFloat(cs.paddingRight || '0') : 0;
+      const fallbackWidth = document.documentElement.clientWidth; // excludes scrollbar
+      const containerWidth = (parentRectWidth ?? fallbackWidth);
+      // Use content width by subtracting paddings
+      const availableWidth = Math.max(0, containerWidth - padL - padR);
+      // Measure the distance from the grid to the bottom of the viewport
+      const top = gridRef.current?.getBoundingClientRect().top ?? 0;
+      // Reserve a small bottom padding so content below doesn't force scroll
+      const bottomReserve = 12;
+      const availableHeight = Math.max(0, vh - top - bottomReserve);
+      // Compute max cell size by width and height constraints
+      const byWidth = (availableWidth - EDGE_SAFE * 2 - GAP * (size - 1)) / size;
+      const byHeight = (availableHeight - GAP * (size - 1)) / size;
+      const px = Math.floor(Math.max(10, Math.min(byWidth, byHeight)));
+      setCellPx(px);
+    }
+    compute();
+    const ro = new ResizeObserver(compute);
+    if (gridRef.current) ro.observe(gridRef.current);
+    window.addEventListener('resize', compute);
+    window.addEventListener('orientationchange', compute);
+    // Recompute after initial paint in case fonts/layout shift
+    const t = setTimeout(compute, 0);
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('orientationchange', compute);
+    };
+  }, [size]);
 
   // Derive pip counts from the game's lane speeds so visuals and rules always match.
   // Mapping of edges to speeds:
@@ -67,14 +111,17 @@ export default function Board() {
 
   const gridStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: `repeat(${size}, ${CELL_SIZE}px)`,
-    gridTemplateRows: `repeat(${size}, ${CELL_SIZE}px)`,
-    gap: 8,
+    gridTemplateColumns: `repeat(${size}, ${cellPx}px)`,
+    gridTemplateRows: `repeat(${size}, ${cellPx}px)`,
+    gap: GAP,
     backgroundColor: 'transparent',
-    padding: 8,
+    padding: 0,
     borderRadius: 12,
     boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-  };
+    width: Math.max(0, size * cellPx + GAP * (size - 1)),
+    maxWidth: '100%',
+    overflow: 'hidden',
+  } as React.CSSProperties;
 
   // Build mapping from (row,col) to pieces present there
   const cells: Record<string, Piece[]> = {};
@@ -95,9 +142,9 @@ export default function Board() {
     const key = `${row}:${col}`;
     const ps = cells[key] ?? [];
     // Dimensions controlled by UI settings
-    const pieceWidth = Math.max(8, Math.min(48, ui?.pieceWidth ?? 16));
+    const pieceWidth = Math.max(8, Math.min(Math.floor(cellPx * 0.8), ui?.pieceWidth ?? 16));
     const fallbackH = Math.round(pieceWidth * 2.2);
-    const pieceHeight = Math.max(24, Math.min(120, ui?.pieceHeight ?? fallbackH));
+    const pieceHeight = Math.max(24, Math.min(Math.floor(cellPx * 0.9), ui?.pieceHeight ?? fallbackH));
     // Fallback inline styles for visibility without Tailwind
     // Hide unused corner intersections as transparent spacers
     const size = DEFAULT_LANE_LENGTH + 1;
@@ -107,8 +154,8 @@ export default function Board() {
         <div
           key={key}
           style={{
-            width: CELL_SIZE,
-            height: CELL_SIZE,
+            width: cellPx,
+            height: cellPx,
             background: 'transparent',
           }}
         />
@@ -116,8 +163,9 @@ export default function Board() {
     }
 
     const cellStyle: React.CSSProperties = {
-      width: CELL_SIZE,
-      height: CELL_SIZE,
+      width: cellPx,
+      height: cellPx,
+      boxSizing: 'border-box',
       borderRadius: 10,
       backgroundColor: '#1f2937', // gray-800
       border: '1px solid #374151', // gray-700
@@ -359,7 +407,7 @@ export default function Board() {
           <span className="ml-3 text-emerald-400 font-semibold">Ganador: {winner}</span>
         )}
       </div>
-      <div style={gridStyle}>{cellsArray}</div>
+      <div ref={gridRef} style={gridStyle}>{cellsArray}</div>
       <div className="text-xs text-neutral-400">
         Consejo: Haz clic sobre una pieza para moverla según las reglas.
       </div>
