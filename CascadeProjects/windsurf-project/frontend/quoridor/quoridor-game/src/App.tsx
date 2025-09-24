@@ -41,6 +41,9 @@ function App() {
   const [inputMode, setInputMode] = useState<'move' | 'wall'>('move')
   const toggleInputMode = () => setInputMode((m) => (m === 'move' ? 'wall' : 'move'))
 
+  // Visibilidad del panel de IA para el usuario (por defecto oculto)
+  const [showIAUserPanel, setShowIAUserPanel] = useState<boolean>(false)
+
   const onNewGame = () => {
     dispatch(newGame({ size: 9 }))
   }
@@ -70,13 +73,14 @@ function App() {
       <HeaderPanel
         title="Quoridor"
         onNewGame={onNewGame}
+        onToggleIAUser={() => setShowIAUserPanel((v) => !v)}
+        showIAUser={showIAUserPanel}
       />
 
       <main className="mx-auto max-w-6xl w-full px-4 py-6 grid grid-cols-1 gap-4 md:grid-cols-12">
-        <section className="col-span-1 md:col-span-12 w-full rounded-lg border border-white/10 bg-gray-900/40 p-4">
-          <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />
-          {/* Controles IA principales para el usuario */}
-          <IAUserPanel />          
+        <section className="col-span-1 md:col-span-12 w-full rounded-lg border border-white/10 bg-gray-900/40 p-4">          
+          {showIAUserPanel && <IAUserPanel />}          
+          <InfoPanel current={game.current} wallsLeft={game.wallsLeft} className="mb-3" />          
           <Board
             className="w-full max-w-[48rem] mx-auto mt-3"
             onCellClick={onCellClick}
