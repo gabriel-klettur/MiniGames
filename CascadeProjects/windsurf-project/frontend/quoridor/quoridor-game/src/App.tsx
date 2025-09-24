@@ -88,10 +88,16 @@ function App() {
             highlightCells={highlightCells}
             inputMode={inputMode}
             onToggleInputMode={toggleInputMode}
-            isCoarsePointer={isCoarsePointer}
             wallGap={ui.wallGap}
             warp={ui.boardWarp}
-            showWallHitboxes={ui.showWallHitboxes}
+            wallHitboxColor={ui.wallHitboxColor}
+            wallPreviewMonochrome={ui.wallPreviewMonochrome}
+            wallHitboxOpacity={ui.wallHitboxOpacity}
+            previewOnHoverWhenHidden={ui.previewOnHoverWhenHidden}
+            wallHitboxShape={ui.wallHitboxShape}
+            wallHitboxThicknessPx={ui.wallHitboxThicknessPx}
+            expandClickableWithShape={ui.expandClickableWithShape}
+            restrictClickToHitbox={ui.restrictClickToHitbox}
             pawns={{
               L: [game.pawns.L.row, game.pawns.L.col],
               D: [game.pawns.D.row, game.pawns.D.col],
@@ -104,7 +110,6 @@ function App() {
             {showDevTools && (
               <DevToolsPanel
                 onToggleRules={() => dispatch(toggleRules())}
-                showFases={showFases}
                 onToggleFases={() => dispatch(toggleFases())}
                 showHistory={showHistory}
                 onToggleHistory={() => dispatch(toggleHistory())}

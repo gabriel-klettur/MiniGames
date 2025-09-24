@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
-import { setWallGap, toggleBoardWarp, resetBoardWarp, setBoardWarpVertex, toggleWallHitboxes } from '../../store/uiSlice.ts';
+import { setWallGap, toggleBoardWarp, resetBoardWarp, setBoardWarpVertex } from '../../store/uiSlice.ts';
+import WallsHitBox from './WallsHitBox.tsx';
 
 /**
  * UIUX — Panel de controles de UI/UX para desarrollo.
@@ -9,7 +10,6 @@ export default function UIUX() {
   const dispatch = useAppDispatch();
   const wallGap = useAppSelector((s) => s.ui.wallGap);
   const warp = useAppSelector((s) => s.ui.boardWarp);
-  const showWallHitboxes = useAppSelector((s) => s.ui.showWallHitboxes);
 
   const onChange = (v: number) => {
     dispatch(setWallGap(v));
@@ -47,56 +47,49 @@ export default function UIUX() {
       </div>
       <p className="mt-2 text-[11px] text-gray-400">Consejo: un valor mayor facilita la selección en pantallas táctiles.</p>
 
-      {/* Mostrar/ocultar hitbox de vallas */}
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <label className="text-xs text-gray-300">Mostrar hitbox de vallas</label>
-        <button
-          className={[
-            'px-2 py-1 rounded text-xs',
-            showWallHitboxes ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-gray-800 hover:bg-gray-700',
-          ].join(' ')}
-          aria-pressed={showWallHitboxes}
-          onClick={() => dispatch(toggleWallHitboxes())}
-        >
-          {showWallHitboxes ? 'Visible' : 'Oculto'}
-        </button>
+      {/* Controles de hitbox en componente dedicado */}
+      <div className="mt-4">
+        <WallsHitBox />
       </div>
 
       {/* Warp del tablero */}
       <hr className="my-4 border-white/10" />
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-xs text-gray-300">Deformación del tablero (clip-path)</div>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <div className="text-xs text-gray-300">Warp del tablero</div>
         <div className="flex items-center gap-2">
           <button
             className={[
               'px-2 py-1 rounded text-xs',
-              warp.enabled ? 'bg-blue-700 hover:bg-blue-600' : 'bg-gray-800 hover:bg-gray-700',
+              warp.enabled ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-800 hover:bg-gray-700',
             ].join(' ')}
             aria-pressed={warp.enabled}
             onClick={() => dispatch(toggleBoardWarp())}
           >
-            {warp.enabled ? 'Activo' : 'Inactivo'}
+            {warp.enabled ? 'Warp: Activado' : 'Warp: Desactivado'}
           </button>
           <button
             className="px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700"
             onClick={() => dispatch(resetBoardWarp())}
+            disabled={!warp.enabled}
+            aria-disabled={!warp.enabled}
+            title="Restablecer vértices a rectángulo"
           >
             Reset
           </button>
         </div>
       </div>
-
+      {/* Vértices del warp */}
       <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {(['tl', 'tr', 'br', 'bl'] as const).map((key) => (
-          <fieldset key={key} className="border border-white/10 rounded p-2">
-            <legend className="px-1 text-[11px] uppercase tracking-wide text-gray-400">{key.toUpperCase()}</legend>
+        {(['tl','tr','br','bl'] as const).map((k) => (
+          <fieldset key={k} className="border border-white/10 rounded p-2">
+            <legend className="px-1 text-[11px] uppercase tracking-wide text-gray-400">{k.toUpperCase()}</legend>
             <label className="block text-[11px] text-gray-400 mb-1">X (0-100)</label>
             <input
               type="number"
               min={0}
               max={100}
-              value={warp[key].x}
-              onChange={(e) => dispatch(setBoardWarpVertex({ key, x: Number(e.target.value) }))}
+              value={warp[k].x}
+              onChange={(e) => dispatch(setBoardWarpVertex({ key: k, x: Number(e.target.value) }))}
               className="w-full bg-gray-800 border border-white/10 rounded px-2 py-1 text-xs"
               disabled={!warp.enabled}
             />
@@ -105,8 +98,8 @@ export default function UIUX() {
               type="number"
               min={0}
               max={100}
-              value={warp[key].y}
-              onChange={(e) => dispatch(setBoardWarpVertex({ key, y: Number(e.target.value) }))}
+              value={warp[k].y}
+              onChange={(e) => dispatch(setBoardWarpVertex({ key: k, y: Number(e.target.value) }))}
               className="w-full bg-gray-800 border border-white/10 rounded px-2 py-1 text-xs"
               disabled={!warp.enabled}
             />
@@ -116,4 +109,3 @@ export default function UIUX() {
     </section>
   );
 }
-
