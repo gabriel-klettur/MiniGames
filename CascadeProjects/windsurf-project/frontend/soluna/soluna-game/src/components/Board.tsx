@@ -225,7 +225,7 @@ export default function Board() {
             {state.towers.map((t) => (
               <button
                 key={t.id}
-                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && selectedTower.height >= 2 && t.height === selectedTower.height ? 'height-match' : ''}`}
+                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && t.height === selectedTower.height ? 'height-match' : ''}`}
                 data-symbol={t.top}
                 data-height={t.height}
                 style={{

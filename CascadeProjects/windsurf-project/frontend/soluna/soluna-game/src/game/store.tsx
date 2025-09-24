@@ -66,14 +66,11 @@ function reducer(state: GameState, action: GameAction): GameState {
             const title = `[Soluna] FUSIÓN BLOQUEADA J${state.currentPlayer}: ${source.top}/${source.height} + ${target.top}/${target.height}`;
             const sameSymbol = source.top === target.top;
             const sameHeight = source.height === target.height;
-            const heightTooLow = sameHeight && (source.height < 2 || target.height < 2);
             const reason = sameSymbol
-              ? 'mismo símbolo (debería ser válido) — revisar reglas'
-              : heightTooLow
-                ? 'misma altura pero altura=1 no cuenta'
-                : sameHeight
-                  ? 'misma altura (>=2) — debería ser válido'
-                  : 'ni mismo símbolo ni misma altura';
+              ? 'mismo símbolo — debería ser válido'
+              : sameHeight
+                ? 'misma altura — debería ser válido'
+                : 'ni mismo símbolo ni misma altura';
             if (typeof console !== 'undefined' && typeof console.groupCollapsed === 'function') {
               console.groupCollapsed(title);
               console.warn('Motivo:', reason);
