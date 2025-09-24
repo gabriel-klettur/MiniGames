@@ -91,6 +91,7 @@ function App() {
             isCoarsePointer={isCoarsePointer}
             wallGap={ui.wallGap}
             warp={ui.boardWarp}
+            showWallHitboxes={ui.showWallHitboxes}
             pawns={{
               L: [game.pawns.L.row, game.pawns.L.col],
               D: [game.pawns.D.row, game.pawns.D.col],

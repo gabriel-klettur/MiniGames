@@ -35,6 +35,8 @@ export interface BoardProps {
     br: { x: number; y: number };
     bl: { x: number; y: number };
   };
+  /** Mostrar los hitboxes visuales de vallas (sigue permitiendo clic incluso ocultos). */
+  showWallHitboxes?: boolean;
 }
 
 /**
@@ -53,6 +55,7 @@ export default function Board({
   onToggleInputMode = () => {},
   isCoarsePointer = false,
   warp,
+  showWallHitboxes = true,
 }: BoardProps) {
   // Construimos una rejilla de (2*size - 1) con pistas alternas: celda (1fr), valla (wallGap px)
   const gridCount = size * 2 - 1;
@@ -159,6 +162,8 @@ export default function Board({
 
   // Estado local para previsualización (hover) de valla de 2 segmentos
   const [hover, setHover] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
+  // Estado de pulsación para mostrar preview aunque los hitboxes estén ocultos
+  const [pressingWall, setPressingWall] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
 
   // Long-press para alternar modo en móvil/tablet
   const longPressTimer = React.useRef<number | null>(null);
@@ -225,8 +230,16 @@ export default function Board({
                     <button
                       key={`${gr}-${gc}`}
                       style={baseStyle}
-                      className="relative bg-gray-900/60 hover:bg-gray-800 active:bg-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      onClick={() => { if (!isCoarsePointer || inputMode === 'move') onCellClick(r, c); }}
+                      className={[
+                        'relative bg-gray-900/60 focus:outline-none',
+                        highlighted && (!isCoarsePointer || inputMode === 'move')
+                          ? 'hover:bg-gray-800 active:bg-gray-700 focus:ring-1 focus:ring-emerald-500 cursor-pointer'
+                          : 'cursor-default',
+                      ].join(' ')}
+                      onClick={() => {
+                        // Solo permitir clic si la celda está resaltada (movimiento legal)
+                        if ((!isCoarsePointer || inputMode === 'move') && highlighted) onCellClick(r, c);
+                      }}
                       title={`(${r}, ${c})`}
                     >
                       {highlighted && (
@@ -263,19 +276,27 @@ export default function Board({
                       <button
                         key={`${gr}-${gc}`}
                         style={baseStyle}
-                        className="w-full h-full bg-transparent hover:bg-amber-500/30 rounded-[2px]"
+                        className={[
+                          'w-full h-full rounded-[2px]',
+                          showWallHitboxes ? 'bg-purple-500/20 hover:bg-purple-500/30' : 'bg-transparent hover:bg-transparent',
+                        ].join(' ')}
                         title={`Valla H @ (${r},${proxyC})`}
                         onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('H', r, proxyC); }}
                         onMouseEnter={() => setHover({ o: 'H', r, c: proxyC })}
                         onPointerEnter={() => setHover({ o: 'H', r, c: proxyC })}
-                        onMouseLeave={() => setHover(null)}
-                        onPointerLeave={() => setHover(null)}
+                        onMouseLeave={() => { setHover(null); setPressingWall(null); }}
+                        onPointerLeave={() => { setHover(null); setPressingWall(null); }}
+                        onPointerDown={() => { setPressingWall({ o: 'H', r, c: proxyC }); setHover({ o: 'H', r, c: proxyC }); }}
+                        onPointerUp={() => { setPressingWall(null); setHover(null); }}
+                        onPointerCancel={() => { setPressingWall(null); setHover(null); }}
                         aria-label={`Edge proxy H (${r},${proxyC})`}
                       />
                     );
                   }
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
-                  const invalidPlacement = !!isHover && !validateWallPlacement(
+                  const hoverEnabled = (showWallHitboxes && !!isHover)
+                    || (!!pressingWall && pressingWall.o === 'H' && pressingWall.r === r && pressingWall.c === c && !active);
+                  const invalidPlacement = hoverEnabled && !validateWallPlacement(
                     {
                       size,
                       pawns: {
@@ -296,7 +317,7 @@ export default function Board({
                   const baseSpanH: React.CSSProperties | undefined =
                     c === size - 2 ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` } : undefined;
                   const spanStyle: React.CSSProperties | undefined =
-                    active || isHover
+                    active || hoverEnabled
                       ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` }
                       : undefined;
                   return (
@@ -311,16 +332,19 @@ export default function Board({
                               : wobjH?.by === 'D'
                                 ? 'bg-amber-900/90 pointer-events-none z-10'
                                 : 'bg-amber-500/90 pointer-events-none z-10')
-                          : isHover
+                          : hoverEnabled
                             ? hoverClass
-                            : 'bg-transparent hover:bg-amber-500/50',
+                            : (showWallHitboxes ? 'bg-purple-500/20 hover:bg-purple-500/30' : 'bg-transparent hover:bg-transparent'),
                       ].join(' ')}
                       title={`Valla H @ (${r},${c})`}
                       onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('H', r, c); }}
                       onMouseEnter={() => setHover({ o: 'H', r, c })}
                       onPointerEnter={() => setHover({ o: 'H', r, c })}
-                      onMouseLeave={() => setHover(null)}
-                      onPointerLeave={() => setHover(null)}
+                      onMouseLeave={() => { setHover(null); setPressingWall(null); }}
+                      onPointerLeave={() => { setHover(null); setPressingWall(null); }}
+                      onPointerDown={() => { setPressingWall({ o: 'H', r, c }); setHover({ o: 'H', r, c }); }}
+                      onPointerUp={() => { setPressingWall(null); setHover(null); }}
+                      onPointerCancel={() => { setPressingWall(null); setHover(null); }}
                       aria-pressed={active}
                     />
                   );
@@ -340,19 +364,27 @@ export default function Board({
                       <button
                         key={`${gr}-${gc}`}
                         style={baseStyle}
-                        className="w-full h-full bg-transparent hover:bg-amber-500/30 rounded-[2px]"
+                        className={[
+                          'w-full h-full rounded-[2px]',
+                          showWallHitboxes ? 'bg-purple-500/20 hover:bg-purple-500/30' : 'bg-transparent hover:bg-transparent',
+                        ].join(' ')}
                         title={`Valla V @ (${proxyR},${c})`}
                         onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('V', proxyR, c); }}
                         onMouseEnter={() => setHover({ o: 'V', r: proxyR, c })}
                         onPointerEnter={() => setHover({ o: 'V', r: proxyR, c })}
-                        onMouseLeave={() => setHover(null)}
-                        onPointerLeave={() => setHover(null)}
+                        onMouseLeave={() => { setHover(null); setPressingWall(null); }}
+                        onPointerLeave={() => { setHover(null); setPressingWall(null); }}
+                        onPointerDown={() => { setPressingWall({ o: 'V', r: proxyR, c }); setHover({ o: 'V', r: proxyR, c }); }}
+                        onPointerUp={() => { setPressingWall(null); setHover(null); }}
+                        onPointerCancel={() => { setPressingWall(null); setHover(null); }}
                         aria-label={`Edge proxy V (${proxyR},${c})`}
                       />
                     );
                   }
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
-                  const invalidPlacement = !!isHover && !validateWallPlacement(
+                  const hoverEnabled = (showWallHitboxes && !!isHover)
+                    || (!!pressingWall && pressingWall.o === 'V' && pressingWall.r === r && pressingWall.c === c && !active);
+                  const invalidPlacement = hoverEnabled && !validateWallPlacement(
                     {
                       size,
                       pawns: {
@@ -373,7 +405,7 @@ export default function Board({
                   const baseSpanV: React.CSSProperties | undefined =
                     r === size - 2 ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` } : undefined;
                   const spanStyle: React.CSSProperties | undefined =
-                    active || isHover
+                    active || hoverEnabled
                       ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` }
                       : undefined;
                   return (
@@ -388,16 +420,19 @@ export default function Board({
                               : wobjV?.by === 'D'
                                 ? 'bg-amber-900/90 pointer-events-none z-10'
                                 : 'bg-amber-500/90 pointer-events-none z-10')
-                          : isHover
+                          : hoverEnabled
                             ? hoverClass
-                            : 'bg-transparent hover:bg-amber-500/50',
+                            : (showWallHitboxes ? 'bg-purple-500/20 hover:bg-purple-500/30' : 'bg-transparent hover:bg-transparent'),
                       ].join(' ')}
                       title={`Valla V @ (${r},${c})`}
                       onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('V', r, c); }}
                       onMouseEnter={() => setHover({ o: 'V', r, c })}
                       onPointerEnter={() => setHover({ o: 'V', r, c })}
-                      onMouseLeave={() => setHover(null)}
-                      onPointerLeave={() => setHover(null)}
+                      onMouseLeave={() => { setHover(null); setPressingWall(null); }}
+                      onPointerLeave={() => { setHover(null); setPressingWall(null); }}
+                      onPointerDown={() => { setPressingWall({ o: 'V', r, c }); setHover({ o: 'V', r, c }); }}
+                      onPointerUp={() => { setPressingWall(null); setHover(null); }}
+                      onPointerCancel={() => { setPressingWall(null); setHover(null); }}
                       aria-pressed={active}
                     />
                   );

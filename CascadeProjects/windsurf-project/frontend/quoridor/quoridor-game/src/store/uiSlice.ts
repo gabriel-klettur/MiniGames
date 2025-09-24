@@ -9,6 +9,8 @@ export interface UIState {
   showHistory: boolean;
   showFases: boolean;
   showUX: boolean;
+  /** Mostrar u ocultar visualmente el hitbox de las vallas (sigue siendo clickeable). */
+  showWallHitboxes: boolean;
   /** Grosor de las vallas en píxeles (afecta solo a la presentación). */
   wallGap: number;
   /** Deformación del tablero (warp) a un cuadrilátero definido por 4 vértices en % del ancho/alto. */
@@ -29,6 +31,7 @@ const initialState: UIState = {
   showHistory: false,
   showFases: false,
   showUX: false,
+  showWallHitboxes: false,
   wallGap: 8,
   boardWarp: {
     enabled: false,
@@ -49,6 +52,8 @@ const uiSlice = createSlice({
     toggleHistory(state) { state.showHistory = !state.showHistory; },
     toggleFases(state) { state.showFases = !state.showFases; },
     toggleUX(state) { state.showUX = !state.showUX; },
+    /** Alterna la visibilidad visual de los hitboxes de vallas. */
+    toggleWallHitboxes(state) { state.showWallHitboxes = !state.showWallHitboxes; },
     /** Ajusta el grosor de vallas (clamp: 8..32 px). */
     setWallGap(state, action: PayloadAction<number>) {
       let v = Math.round(action.payload);
@@ -89,6 +94,7 @@ export const {
   toggleHistory,
   toggleFases,
   toggleUX,
+  toggleWallHitboxes,
   setWallGap,
   toggleBoardWarp,
   resetBoardWarp,
