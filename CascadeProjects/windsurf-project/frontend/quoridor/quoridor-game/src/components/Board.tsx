@@ -255,7 +255,25 @@ export default function Board({
                   const valid = c < size - 1; // índices válidos 0..size-2
                   const wobjH = getWall('H', r, c);
                   const active = !!wobjH;
-                  if (!valid) return <div key={`${gr}-${gc}`} />;
+                  if (!valid) {
+                    // Borde derecho: hacer clic aquí debe actuar como si clicaras en la
+                    // penúltima columna (c = size-2). También propagamos hover para el preview.
+                    const proxyC = Math.max(0, size - 2);
+                    return (
+                      <button
+                        key={`${gr}-${gc}`}
+                        style={baseStyle}
+                        className="w-full h-full bg-transparent hover:bg-amber-500/30 rounded-[2px]"
+                        title={`Valla H @ (${r},${proxyC})`}
+                        onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('H', r, proxyC); }}
+                        onMouseEnter={() => setHover({ o: 'H', r, c: proxyC })}
+                        onPointerEnter={() => setHover({ o: 'H', r, c: proxyC })}
+                        onMouseLeave={() => setHover(null)}
+                        onPointerLeave={() => setHover(null)}
+                        aria-label={`Edge proxy H (${r},${proxyC})`}
+                      />
+                    );
+                  }
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
                   const invalidPlacement = !!isHover && !validateWallPlacement(
                     {
@@ -271,8 +289,12 @@ export default function Board({
                     { o: 'H', r, c },
                   );
                   const hoverClass = invalidPlacement
-                    ? 'bg-red-500/15 ring-2 ring-red-500/60'
-                    : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
+                    ? 'bg-red-500/15 ring-2 ring-red-500/60 relative z-10'
+                    : 'bg-emerald-400/10 ring-2 ring-emerald-500/50 relative z-10';
+                  // Para el último slot válido (c === size-2), ampliamos SIEMPRE el área clicable
+                  // para cubrir también la columna exterior.
+                  const baseSpanH: React.CSSProperties | undefined =
+                    c === size - 2 ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` } : undefined;
                   const spanStyle: React.CSSProperties | undefined =
                     active || isHover
                       ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` }
@@ -280,7 +302,7 @@ export default function Board({
                   return (
                     <button
                       key={`${gr}-${gc}`}
-                      style={spanStyle ? { ...baseStyle, ...spanStyle } : baseStyle}
+                      style={spanStyle || baseSpanH ? { ...baseStyle, ...(baseSpanH ?? {}), ...(spanStyle ?? {}) } : baseStyle}
                       className={[
                         'w-full h-full rounded-[2px] transition-colors',
                         active
@@ -310,7 +332,25 @@ export default function Board({
                   const valid = r < size - 1; // índices válidos 0..size-2
                   const wobjV = getWall('V', r, c);
                   const active = !!wobjV;
-                  if (!valid) return <div key={`${gr}-${gc}`} />;
+                  if (!valid) {
+                    // Borde inferior: hacer clic aquí debe actuar como si clicaras en la
+                    // penúltima fila (r = size-2). También propagamos hover para el preview.
+                    const proxyR = Math.max(0, size - 2);
+                    return (
+                      <button
+                        key={`${gr}-${gc}`}
+                        style={baseStyle}
+                        className="w-full h-full bg-transparent hover:bg-amber-500/30 rounded-[2px]"
+                        title={`Valla V @ (${proxyR},${c})`}
+                        onClick={() => { if (!isCoarsePointer || inputMode === 'wall') onWallClick('V', proxyR, c); }}
+                        onMouseEnter={() => setHover({ o: 'V', r: proxyR, c })}
+                        onPointerEnter={() => setHover({ o: 'V', r: proxyR, c })}
+                        onMouseLeave={() => setHover(null)}
+                        onPointerLeave={() => setHover(null)}
+                        aria-label={`Edge proxy V (${proxyR},${c})`}
+                      />
+                    );
+                  }
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
                   const invalidPlacement = !!isHover && !validateWallPlacement(
                     {
@@ -328,6 +368,10 @@ export default function Board({
                   const hoverClass = invalidPlacement
                     ? 'bg-red-500/15 ring-2 ring-red-500/60'
                     : 'bg-emerald-400/10 ring-2 ring-emerald-500/50';
+                  // Para el último slot válido (r === size-2), ampliamos SIEMPRE el área clicable
+                  // para cubrir también la fila exterior.
+                  const baseSpanV: React.CSSProperties | undefined =
+                    r === size - 2 ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` } : undefined;
                   const spanStyle: React.CSSProperties | undefined =
                     active || isHover
                       ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` }
@@ -335,7 +379,7 @@ export default function Board({
                   return (
                     <button
                       key={`${gr}-${gc}`}
-                      style={spanStyle ? { ...baseStyle, ...spanStyle } : baseStyle}
+                      style={spanStyle || baseSpanV ? { ...baseStyle, ...(baseSpanV ?? {}), ...(spanStyle ?? {}) } : baseStyle}
                       className={[
                         'w-full h-full rounded-[2px] transition-colors',
                         active
@@ -359,7 +403,7 @@ export default function Board({
                   );
                 }
                 // Junta (intersección de vallas)
-                return <div key={`${gr}-${gc}`} style={baseStyle} className="w-full h-full bg-gray-800/80 rounded-sm" />;
+                return <div key={`${gr}-${gc}`} style={baseStyle} className="w-full h-full bg-gray-800/80 rounded-sm pointer-events-none" aria-hidden />;
               })}
             </React.Fragment>
           ))}
