@@ -62,7 +62,7 @@ const initialState: UIState = {
     H: { widthPct: 100, heightPct: 100 },
     V: { widthPct: 100, heightPct: 100 },
   },
-  wallHitboxThicknessPx: { H: 0, V: 0 },
+  wallHitboxThicknessPx: { H: 18, V: 18 },
   expandClickableWithShape: true,
   restrictClickToHitbox: true,
   wallGap: 8,

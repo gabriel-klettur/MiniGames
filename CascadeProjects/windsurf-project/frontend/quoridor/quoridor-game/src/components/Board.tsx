@@ -78,7 +78,6 @@ export default function Board({
   wallHitboxColor = 'purple',
   wallPreviewMonochrome = false,
   wallHitboxOpacity = 20,
-  previewOnHoverWhenHidden = false,
   wallHitboxShape = { H: { widthPct: 100, heightPct: 100 }, V: { widthPct: 100, heightPct: 100 } },
   wallHitboxThicknessPx = { H: 0, V: 0 },
   expandClickableWithShape = false,
@@ -392,8 +391,8 @@ export default function Board({
                     );
                   }
                   const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
-                  const hoverEnabled = (((showWallHitboxes || previewOnHoverWhenHidden) && !!isHover))
-                    || (!!pressingWall && pressingWall.o === 'H' && pressingWall.r === r && pressingWall.c === c && !active);
+                  // Solo mostrar previsualización cuando showWallHitboxes es true
+                  const hoverEnabled = showWallHitboxes && !!isHover;
                   const invalidPlacement = hoverEnabled && !validateWallPlacement(
                     {
                       size,
@@ -431,11 +430,18 @@ export default function Board({
                   const leaderStartRowH = Math.max(1, startRowHRaw);
                   const wantsPctExpandH = expandClickableWithShape && ((wallHitboxShape.H.widthPct > 100) || (wallHitboxShape.H.heightPct > 100));
                   const wantsPxExpandH = Math.max(0, wallHitboxThicknessPx.H) > 0;
-                  const shouldExpandH = !active && (hoverEnabled || !!pressingWall) && (wantsPctExpandH || wantsPxExpandH);
-                  const spanStyle: React.CSSProperties | undefined =
-                    (shouldExpandH && wantsPctExpandH)
-                      ? { gridRow: `${leaderStartRowH} / ${leaderEndRowH}`, gridColumn: `${leaderStartCol} / ${leaderEndCol}` }
-                      : undefined;
+                  const shouldExpandH = !active && showWallHitboxes && (hoverEnabled || !!pressingWall) && (wantsPctExpandH || wantsPxExpandH);
+                  let spanStyle: React.CSSProperties | undefined = undefined;
+                  if (shouldExpandH) {
+                    if (wantsPctExpandH) {
+                      spanStyle = { gridRow: `${leaderStartRowH} / ${leaderEndRowH}`, gridColumn: `${leaderStartCol} / ${leaderEndCol}` };
+                    } else if (wantsPxExpandH) {
+                      // Expandir una pista arriba y abajo para cubrir grosor extra en PX
+                      const startRowPx = Math.max(1, gr + 1 - 1);
+                      const endRowPx = Math.min(gridCount + 1, gr + 2 + 1);
+                      spanStyle = { gridRow: `${startRowPx} / ${endRowPx}` };
+                    }
+                  }
                   // Visual: longitud en %; grosor en PX usando wallGap (independiente del span y del thicknessPx)
                   const innerW_H = Math.min(100, wallHitboxShape.H.widthPct);
                   const innerH_HPx = Math.max(0, Math.round((wallGap * Math.min(100, wallHitboxShape.H.heightPct)) / 100));
@@ -459,6 +465,7 @@ export default function Board({
                     ...(spanStyle ?? {}),
                     ...(activeLeaderSpanH ?? {}),
                   };
+                  const hasPxOverlayH = restrictClickToHitbox && !active && (wantsPctExpandH || wantsPxExpandH);
                   return (
                     <button
                       key={`${gr}-${gc}`}
@@ -466,7 +473,7 @@ export default function Board({
                       className={[
                         'relative w-full h-full rounded-[2px] transition-colors grid place-items-center',
                         // Elevar cuando expandimos el span para evitar solapamientos de pointer-events
-                        (spanStyle || baseSpanH) ? 'z-20' : '',
+                        (spanStyle || baseSpanH || hasPxOverlayH) ? 'z-20' : '',
                         active && isLeaderH
                           ? (coverH?.by === 'L'
                               ? 'bg-orange-500/90 pointer-events-none z-10'
@@ -489,7 +496,7 @@ export default function Board({
                       aria-pressed={active}
                     >
                       {/* Outline visual del hitbox total clickeable (no altera el rectángulo verde de preview) */}
-                      {!active && (showWallHitboxes || hoverEnabled || !!pressingWall) && (
+                      {!active && showWallHitboxes && (
                         <span
                           aria-hidden
                           className={[
@@ -585,8 +592,8 @@ export default function Board({
                     );
                   }
                   const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
-                  const hoverEnabled = (((showWallHitboxes || previewOnHoverWhenHidden) && !!isHover))
-                    || (!!pressingWall && pressingWall.o === 'V' && pressingWall.r === r && pressingWall.c === c && !active);
+                  // Solo mostrar previsualización cuando showWallHitboxes es true
+                  const hoverEnabled = showWallHitboxes && !!isHover;
                   const invalidPlacement = hoverEnabled && !validateWallPlacement(
                     {
                       size,
@@ -624,11 +631,18 @@ export default function Board({
                   const leaderStartColV = Math.max(1, startColVRaw);
                   const wantsPctExpandV = expandClickableWithShape && (wallHitboxShape.V.widthPct > 100 || wallHitboxShape.V.heightPct > 100);
                   const wantsPxExpandV = Math.max(0, wallHitboxThicknessPx.V) > 0;
-                  const shouldExpandV = !active && (hoverEnabled || !!pressingWall) && (wantsPctExpandV || wantsPxExpandV);
-                  const spanStyle: React.CSSProperties | undefined =
-                    (shouldExpandV && wantsPctExpandV)
-                      ? { gridColumn: `${leaderStartColV} / ${leaderEndColV}`, gridRow: `${leaderStartRow} / ${leaderEndRow}` }
-                      : undefined;
+                  const shouldExpandV = !active && showWallHitboxes && (hoverEnabled || !!pressingWall) && (wantsPctExpandV || wantsPxExpandV);
+                  let spanStyle: React.CSSProperties | undefined = undefined;
+                  if (shouldExpandV) {
+                    if (wantsPctExpandV) {
+                      spanStyle = { gridColumn: `${leaderStartColV} / ${leaderEndColV}`, gridRow: `${leaderStartRow} / ${leaderEndRow}` };
+                    } else if (wantsPxExpandV) {
+                      // Expandir una pista a izquierda y derecha para cubrir grosor extra en PX
+                      const startColPx = Math.max(1, gc + 1 - 1);
+                      const endColPx = Math.min(gridCount + 1, gc + 2 + 1);
+                      spanStyle = { gridColumn: `${startColPx} / ${endColPx}` };
+                    }
+                  }
                   // Visual: grosor en PX usando wallGap (independiente del span y del thicknessPx); longitud en %
                   const innerW_VPx = Math.max(0, Math.round((wallGap * Math.min(100, wallHitboxShape.V.widthPct)) / 100));
                   const innerH_V = Math.min(100, wallHitboxShape.V.heightPct);
@@ -653,6 +667,7 @@ export default function Board({
                     ...(spanStyle ?? {}),
                     ...(activeLeaderSpanV ?? {}),
                   };
+                  const hasPxOverlayV = restrictClickToHitbox && !active && (wantsPctExpandV || wantsPxExpandV);
                   return (
                     <button
                       key={`${gr}-${gc}`}
@@ -660,7 +675,7 @@ export default function Board({
                       className={[
                         'relative w-full h-full rounded-[2px] transition-colors grid place-items-center',
                         // Elevar cuando expandimos el span para evitar solapamientos de pointer-events
-                        (spanStyle || baseSpanV) ? 'z-20' : '',
+                        (spanStyle || baseSpanV || hasPxOverlayV) ? 'z-20' : '',
                         active && isLeaderV
                           ? (coverV?.by === 'L'
                               ? 'bg-orange-500/90 pointer-events-none z-10'
@@ -683,7 +698,7 @@ export default function Board({
                       aria-pressed={active}
                     >
                       {/* Outline visual del hitbox total clickeable (no altera el rectángulo verde de preview) */}
-                      {!active && (showWallHitboxes || hoverEnabled || !!pressingWall) && (
+                      {!active && showWallHitboxes && (
                         <span
                           aria-hidden
                           className={[

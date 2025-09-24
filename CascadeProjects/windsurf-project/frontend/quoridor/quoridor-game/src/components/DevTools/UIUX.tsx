@@ -1,6 +1,124 @@
 import { useAppDispatch, useAppSelector } from '../../store/hooks.ts';
 import { setWallGap, toggleBoardWarp, resetBoardWarp, setBoardWarpVertex } from '../../store/uiSlice.ts';
 import WallsHitBox from './WallsHitBox.tsx';
+import type { ReactNode } from 'react';
+
+// Subcomponentes locales para consistencia visual y accesibilidad
+function TogglePill({
+  pressed,
+  onClick,
+  labelOn,
+  labelOff,
+  colorOn = 'bg-teal-700 hover:bg-teal-600',
+  disabled,
+  title,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  labelOn: string;
+  labelOff: string;
+  colorOn?: string;
+  disabled?: boolean;
+  title?: string;
+}) {
+  const base =
+    'px-2 py-1 rounded text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed';
+  const off = 'bg-gray-800 hover:bg-gray-700';
+  return (
+    <button
+      type="button"
+      className={[base, pressed ? colorOn : off].join(' ')}
+      aria-pressed={pressed}
+      onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      title={title}
+    >
+      {pressed ? labelOn : labelOff}
+    </button>
+  );
+}
+
+function SecondaryButton({
+  children,
+  onClick,
+  disabled,
+  title,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+      onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+      title={title}
+    >
+      {children}
+    </button>
+  );
+}
+
+function RangeNumberControl({
+  id,
+  label,
+  min,
+  max,
+  step = 1,
+  value,
+  onChange,
+  disabled,
+  hint,
+}: {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  step?: number;
+  value: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+  hint?: string;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-center">
+      <label htmlFor={id} className="text-xs text-gray-300">
+        {label}
+      </label>
+      <div className="flex items-center gap-3">
+        <input
+          id={id}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-40"
+          disabled={disabled}
+          aria-disabled={disabled}
+        />
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
+          disabled={disabled}
+          aria-disabled={disabled}
+        />
+      </div>
+      {hint ? <p className="sm:col-span-2 mt-1 text-[11px] text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
 
 /**
  * UIUX — Panel de controles de UI/UX para desarrollo.
@@ -19,33 +137,16 @@ export default function UIUX() {
     <section className="rounded-lg border border-white/10 bg-gray-900/50 p-4">
       <h3 className="text-sm font-semibold mb-3">UI/UX</h3>
       {/* Grosor de vallas */}
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-center">
-        <label htmlFor="wallGap" className="text-xs text-gray-300">
-          Grosor de vallas (px)
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            id="wallGap"
-            type="range"
-            min={8}
-            max={32}
-            step={1}
-            value={wallGap}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-40"
-          />
-          <input
-            type="number"
-            min={8}
-            max={32}
-            step={1}
-            value={wallGap}
-            onChange={(e) => onChange(Number(e.target.value))}
-            className="w-16 bg-gray-800 border border-white/10 rounded px-2 py-1 text-sm"
-          />
-        </div>
-      </div>
-      <p className="mt-2 text-[11px] text-gray-400">Consejo: un valor mayor facilita la selección en pantallas táctiles.</p>
+      <RangeNumberControl
+        id="wallGap"
+        label="Grosor de vallas (px)"
+        min={8}
+        max={32}
+        step={1}
+        value={wallGap}
+        onChange={onChange}
+        hint="Consejo: un valor mayor facilita la selección en pantallas táctiles."
+      />
 
       {/* Controles de hitbox en componente dedicado */}
       <div className="mt-4">
@@ -57,25 +158,20 @@ export default function UIUX() {
       <div className="mt-2 flex items-center justify-between gap-3">
         <div className="text-xs text-gray-300">Warp del tablero</div>
         <div className="flex items-center gap-2">
-          <button
-            className={[
-              'px-2 py-1 rounded text-xs',
-              warp.enabled ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-800 hover:bg-gray-700',
-            ].join(' ')}
-            aria-pressed={warp.enabled}
+          <TogglePill
+            pressed={warp.enabled}
             onClick={() => dispatch(toggleBoardWarp())}
-          >
-            {warp.enabled ? 'Warp: Activado' : 'Warp: Desactivado'}
-          </button>
-          <button
-            className="px-2 py-1 rounded text-xs bg-gray-800 hover:bg-gray-700"
+            labelOn="Warp: Activado"
+            labelOff="Warp: Desactivado"
+            colorOn="bg-teal-700 hover:bg-teal-600"
+          />
+          <SecondaryButton
             onClick={() => dispatch(resetBoardWarp())}
             disabled={!warp.enabled}
-            aria-disabled={!warp.enabled}
             title="Restablecer vértices a rectángulo"
           >
             Reset
-          </button>
+          </SecondaryButton>
         </div>
       </div>
       {/* Vértices del warp */}
@@ -109,3 +205,4 @@ export default function UIUX() {
     </section>
   );
 }
+
