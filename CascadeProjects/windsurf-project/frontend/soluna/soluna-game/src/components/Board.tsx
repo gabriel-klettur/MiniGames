@@ -13,7 +13,11 @@ export default function Board() {
   const dragStartRef = useRef<{ id: string; pos: { x: number; y: number } } | null>(null);
   const movedDuringDragRef = useRef(false);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-
+  const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;
+  // Long-press to start dragging
+  const LONG_PRESS_MS = 220;
+  const pressTimerRef = useRef<number | null>(null);
+  const pressingRef = useRef<{ id: string } | null>(null);
   useEffect(() => {
     const el = fieldRef.current;
     const ellipse = ellipseRef.current;
@@ -39,13 +43,26 @@ export default function Board() {
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
   const onCellClick = (id: string) => {
-    if (dragId || movedDuringDragRef.current) return; // ignore clicks when dragging or just dragged
+    // ignore clicks when dragging or just dragged
+    if (dragId || movedDuringDragRef.current) return;
+    // If nothing selected, select this one
     if (!state.selectedId) {
       dispatch({ type: 'select', id });
       return;
     }
-    // Intentar fusionar la torre seleccionada encima de la torre destino
-    dispatch({ type: 'attempt-merge', targetId: id });
+    // If clicking again the same selected token, keep it selected (no toggle off)
+    if (state.selectedId === id) {
+      return;
+    }
+    // If symbols are the same, try click-to-merge; otherwise switch focus/selection to the clicked token
+    const source = state.towers.find(t => t.id === state.selectedId);
+    const target = state.towers.find(t => t.id === id);
+    if (!source || !target) return;
+    if (canMerge(source, target)) {
+      dispatch({ type: 'attempt-merge', targetId: id });
+    } else {
+      dispatch({ type: 'select', id });
+    }
   };
 
   // Helpers to convert pointer to normalized [0..1] inside play-field
@@ -59,17 +76,38 @@ export default function Board() {
   };
 
   const handlePointerDown = (e: React.PointerEvent, id: string) => {
-    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-    setDragId(id);
-    const t = state.towers.find(tt => tt.id === id);
-    if (t) dragStartRef.current = { id, pos: { x: t.pos.x, y: t.pos.y } };
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture?.(e.pointerId);
+    // Mark selection immediately on press ONLY if nothing is selected yet.
+    // If another token is selected, keep it for potential click-to-merge on click.
+    if (!state.selectedId) {
+      dispatch({ type: 'select', id });
+    }
     movedDuringDragRef.current = false;
-    dispatch({ type: 'select', id });
-    e.preventDefault();
-    e.stopPropagation();
+    pressingRef.current = { id };
+    // clear any previous timer
+    if (pressTimerRef.current != null) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    // Start long-press timer to enable dragging
+    pressTimerRef.current = window.setTimeout(() => {
+      // Start drag only if still pressing same id and not already dragging
+      if (pressingRef.current?.id === id && !dragId) {
+        // If another token was selected, switch selection to this one as we begin dragging
+        if (state.selectedId !== id) {
+          dispatch({ type: 'select', id });
+        }
+        setDragId(id);
+        const t = state.towers.find(tt => tt.id === id);
+        if (t) dragStartRef.current = { id, pos: { x: t.pos.x, y: t.pos.y } };
+      }
+    }, LONG_PRESS_MS);
+    // Do not prevent default here to allow the subsequent click to fire on quick taps
   };
 
   const handlePointerMove = (e: React.PointerEvent, id: string) => {
+    // Only move if we are actively dragging (after long press)
     if (dragId !== id) return;
     const pos = pointToNormalized(e.clientX, e.clientY);
     dispatch({ type: 'move-tower', id, pos });
@@ -102,8 +140,23 @@ export default function Board() {
   };
 
   const handlePointerUp = (e: React.PointerEvent, id: string) => {
-    if (dragId !== id) return;
-    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    const el = e.currentTarget as HTMLElement;
+    el.releasePointerCapture?.(e.pointerId);
+    // Clear any pending long-press
+    if (pressTimerRef.current != null) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    pressingRef.current = null;
+
+    const wasDragging = dragId === id;
+    if (!wasDragging) {
+      // Simple tap/click: keep selection as set on pointerDown
+      setDropTargetId(null);
+      movedDuringDragRef.current = false;
+      return;
+    }
+
     setDragId(null);
     // On drop, try to merge if near a valid target
     const field = fieldRef.current;
@@ -129,6 +182,8 @@ export default function Board() {
         dispatch({ type: 'attempt-merge', targetId: dst.id });
         dragStartRef.current = null;
         setDropTargetId(null);
+        // keep moved flag true briefly to suppress the click that follows pointerup
+        setTimeout(() => { movedDuringDragRef.current = false; }, 0);
         return;
       }
     }
@@ -144,9 +199,16 @@ export default function Board() {
   };
 
   const handlePointerCancel = (e: React.PointerEvent, id: string) => {
-    if (dragId !== id) return;
-    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
-    setDragId(null);
+    const el = e.currentTarget as HTMLElement;
+    el.releasePointerCapture?.(e.pointerId);
+    if (pressTimerRef.current != null) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    pressingRef.current = null;
+    if (dragId === id) {
+      setDragId(null);
+    }
     setDropTargetId(null);
     e.preventDefault();
     e.stopPropagation();
@@ -156,11 +218,16 @@ export default function Board() {
     <div className="board-wrapper">
       <div className="play-area">
         <div className="play-ellipse" ref={ellipseRef}>
-          <div className="play-field" ref={fieldRef}>
+          <div
+            className={`play-field ${selectedTower ? `has-selection selected-${selectedTower.top}` : ''}`}
+            ref={fieldRef}
+          >
             {state.towers.map((t) => (
               <button
                 key={t.id}
-                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''}`}
+                className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && selectedTower.height >= 2 && t.height === selectedTower.height ? 'height-match' : ''}`}
+                data-symbol={t.top}
+                data-height={t.height}
                 style={{
                   // Allow placing tokens anywhere within play-field bounds (center can reach edges)
                   left: sizes.w
