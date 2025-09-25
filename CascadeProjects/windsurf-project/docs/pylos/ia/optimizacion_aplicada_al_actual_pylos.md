@@ -29,11 +29,11 @@ Referencias de código (rutas clave):
 
 Fase 1 (alto impacto, bajo riesgo):
 
-- Transposition Table (TT) + Zobrist hashing.
-- Move ordering completo: PV move, hash move, killers, history heuristic.
-- Aspiration windows.
-- Principal Variation Search (PVS).
-- Ajustes de `evaluate` con amenazas y tapered eval.
+- [X] Transposition Table (TT) + Zobrist hashing.
+- [X] Move ordering completo: PV move, hash move, killers, history heuristic.
+- [X] Aspiration windows.
+- [X] Principal Variation Search (PVS).
+- [X] Ajustes de `evaluate` con amenazas y tapered eval.
 
 Fase 2 (control del horizonte y tiempos percibidos):
 
