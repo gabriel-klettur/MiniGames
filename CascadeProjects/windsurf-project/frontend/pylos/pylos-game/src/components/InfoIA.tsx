@@ -47,6 +47,9 @@ export default function InfoIA() {
   const [timeSeconds, setTimeSeconds] = useState<number>(8);
   const [pliesLimit, setPliesLimit] = useState<number>(80);
   const [gamesCount, setGamesCount] = useState<number>(5);
+ 
+  // Tabs UI: 'sim' for Simulaciones y Métricas, 'charts' for Gráficos
+  const [activeTab, setActiveTab] = useState<'sim' | 'charts'>('sim');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -253,10 +256,92 @@ export default function InfoIA() {
     setRecords([]);
   }, []);
 
+  // Aggregates for charts (group by dificultad/depth)
+  type AggRow = { depth: number; avgSec: number; minSec: number; maxSec: number };
+  const aggregates = useMemo<AggRow[]>(() => {
+    const map = new Map<number, { count: number; sumAvg: number; min: number; max: number }>();
+    for (const r of records) {
+      const d = r.depth;
+      const recAvg = (r.avgThinkMs ?? 0) / 1000;
+      // Compute per-record min/max over moves
+      let recMin = Number.POSITIVE_INFINITY;
+      let recMax = 0;
+      for (const pm of r.perMove || []) {
+        const v = (pm.elapsedMs ?? 0) / 1000;
+        if (v < recMin) recMin = v;
+        if (v > recMax) recMax = v;
+      }
+      if (!isFinite(recMin)) recMin = 0;
+      const prev = map.get(d) ?? { count: 0, sumAvg: 0, min: Number.POSITIVE_INFINITY, max: 0 };
+      prev.count += 1;
+      prev.sumAvg += recAvg;
+      if (recMin < prev.min) prev.min = recMin;
+      if (recMax > prev.max) prev.max = recMax;
+      map.set(d, prev);
+    }
+    const out: AggRow[] = [];
+    for (const [d, v] of map.entries()) {
+      const avgSec = v.count > 0 ? v.sumAvg / v.count : 0;
+      const minSec = isFinite(v.min) ? v.min : 0;
+      const maxSec = v.max;
+      out.push({ depth: d, avgSec, minSec, maxSec });
+    }
+    out.sort((a, b) => a.depth - b.depth);
+    return out;
+  }, [records]);
+
+  // Chart helpers (X: depth categories, Y: seconds)
+  const chartDims = useMemo(() => {
+    const margin = { top: 56, right: 32, bottom: 64, left: 90 };
+    const width = 900;
+    const height = 420;
+    // Determine max Y across all series (seconds)
+    let maxY = 1;
+    for (const a of aggregates) {
+      maxY = Math.max(maxY, a.avgSec, a.minSec, a.maxSec);
+    }
+    // Nice ticks for Y
+    const targetTicks = 5;
+    const niceStep = (rawMax: number, target: number) => {
+      if (!(rawMax > 0)) return 1;
+      const raw = rawMax / target;
+      const pow10 = Math.pow(10, Math.floor(Math.log10(raw)));
+      const candidates = [1, 2, 2.5, 5, 10].map((m) => m * pow10);
+      for (const c of candidates) if (raw <= c) return c;
+      return 10 * pow10;
+    };
+    const step = niceStep(maxY, targetTicks);
+    const niceMaxY = Math.ceil(maxY / step) * step;
+    const ticksY: number[] = [];
+    for (let y = 0; y <= niceMaxY + 1e-9; y += step) ticksY.push(Number(y.toFixed(6)));
+    const countX = aggregates.length;
+    return { width, height, margin, niceMaxY, ticksY, countX };
+  }, [aggregates]);
+
   return (
     <section className="panel infoia-panel" aria-label="InfoIA (simulaciones de IA)">
-      <div className="infoia__header">
-        <h3 className="ia-panel__title">InfoIA — Simulaciones y Métricas</h3>
+      <div className="infoia__header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>InfoIA</h3>
+        <div className="infoia__tabs segmented" role="tablist" aria-label="Secciones de InfoIA">
+          <button
+            className={activeTab === 'sim' ? 'active' : ''}
+            role="tab"
+            aria-selected={activeTab === 'sim'}
+            onClick={() => setActiveTab('sim')}
+            title="Ver simulaciones y métricas"
+          >
+            Simulaciones y Métricas
+          </button>
+          <button
+            className={activeTab === 'charts' ? 'active' : ''}
+            role="tab"
+            aria-selected={activeTab === 'charts'}
+            onClick={() => setActiveTab('charts')}
+            title="Ver gráficos"
+          >
+            Gráficos
+          </button>
+        </div>
         <div className="infoia__status" aria-live="polite">
           {running && (
             <span className="kpi kpi--accent" title="Ejecución en curso">
@@ -267,162 +352,278 @@ export default function InfoIA() {
         </div>
       </div>
 
-      <div className="row infoia__controls" style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <label className="label" htmlFor="infoia-depth">Dificultad</label>
-        <select id="infoia-depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
-          {[1,2,3,4,5,6,7,8,9,10].map((d) => (
-            <option key={d} value={d}>{d}</option>
-          ))}
-        </select>
-
-        <label className="label">Tiempo</label>
-        <div className="segmented" role="group" aria-label="Modo de tiempo de simulación">
-          <button className={timeMode === 'auto' ? 'active' : ''} onClick={() => setTimeMode('auto')} aria-pressed={timeMode === 'auto'}>Auto</button>
-          <button className={timeMode === 'manual' ? 'active' : ''} onClick={() => setTimeMode('manual')} aria-pressed={timeMode === 'manual'}>Manual</button>
-        </div>
-        {timeMode === 'manual' && (
-          <div className="ia-panel__range" aria-label="Selector de tiempo manual">
-            <input
-              type="range"
-              min={0}
-              max={30}
-              step={0.5}
-              value={timeSeconds}
-              onChange={(e) => setTimeSeconds(Number(e.target.value))}
-              aria-valuemin={0}
-              aria-valuemax={30}
-              aria-valuenow={timeSeconds}
-            />
-            <span className="range-value badge">{timeSeconds.toFixed(1)} s</span>
+      {activeTab === 'sim' && (
+        <>
+          <div className="row infoia__controls" style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <label className="label" htmlFor="infoia-depth">Dificultad</label>
+            <select id="infoia-depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+              {[1,2,3,4,5,6,7,8,9,10].map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+ 
+            <label className="label">Tiempo</label>
+            <div className="segmented" role="group" aria-label="Modo de tiempo de simulación">
+              <button className={timeMode === 'auto' ? 'active' : ''} onClick={() => setTimeMode('auto')} aria-pressed={timeMode === 'auto'}>Auto</button>
+              <button className={timeMode === 'manual' ? 'active' : ''} onClick={() => setTimeMode('manual')} aria-pressed={timeMode === 'manual'}>Manual</button>
+            </div>
+            {timeMode === 'manual' && (
+              <div className="ia-panel__range" aria-label="Selector de tiempo manual">
+                <input
+                  type="range"
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  value={timeSeconds}
+                  onChange={(e) => setTimeSeconds(Number(e.target.value))}
+                  aria-valuemin={0}
+                  aria-valuemax={30}
+                  aria-valuenow={timeSeconds}
+                />
+                <span className="range-value badge">{timeSeconds.toFixed(1)} s</span>
+              </div>
+            )}
+ 
+            <label className="label" htmlFor="infoia-plies">Límite jugadas</label>
+            <input id="infoia-plies" className="field-num" type="number" min={1} max={400} value={pliesLimit} onChange={(e) => setPliesLimit(Number(e.target.value))} style={{ width: 90 }} />
+ 
+            <label className="label" htmlFor="infoia-count">Partidas</label>
+            <input id="infoia-count" className="field-num" type="number" min={1} max={1000} value={gamesCount} onChange={(e) => setGamesCount(Number(e.target.value))} style={{ width: 90 }} />
+ 
+            <div className="infoia__actions" style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
+              {!running ? (
+                <button className="primary" onClick={onStart} disabled={loading} title="Iniciar simulaciones">Iniciar</button>
+              ) : (
+                <button className="btn-stop" onClick={onStop} title="Detener simulación en curso">Detener</button>
+              )}
+              <button className="btn-ghost" onClick={onExportJSON} disabled={records.length === 0}>Exportar JSON</button>
+              <button className="btn-ghost" onClick={onExportCSV} disabled={records.length === 0}>Exportar CSV</button>
+              <button className="btn-ghost" onClick={onImportClick}>Importar…</button>
+              <input ref={fileInputRef} type="file" accept="application/json" onChange={onImportFile} style={{ display: 'none' }} />
+              <button className="btn-danger" onClick={onClearAll} disabled={records.length === 0}>Borrar todo</button>
+            </div>
           </div>
-        )}
-
-        <label className="label" htmlFor="infoia-plies">Límite jugadas</label>
-        <input id="infoia-plies" className="field-num" type="number" min={1} max={400} value={pliesLimit} onChange={(e) => setPliesLimit(Number(e.target.value))} style={{ width: 90 }} />
-
-        <label className="label" htmlFor="infoia-count">Partidas</label>
-        <input id="infoia-count" className="field-num" type="number" min={1} max={1000} value={gamesCount} onChange={(e) => setGamesCount(Number(e.target.value))} style={{ width: 90 }} />
-
-        <div className="infoia__actions" style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
-          {!running ? (
-            <button className="primary" onClick={onStart} disabled={loading} title="Iniciar simulaciones">Iniciar</button>
-          ) : (
-            <button className="btn-stop" onClick={onStop} title="Detener simulación en curso">Detener</button>
+ 
+          {/* Per-move time progress */}
+          {running && (
+            <div className="ia-panel__timebar" role="status" aria-live="polite">
+              <div
+                className="timebar"
+                data-busy={true}
+                data-over={!!moveTargetMs && moveElapsedMs >= moveTargetMs}
+                data-auto={moveTargetMs == null}
+              >
+                <div
+                  className="timebar__fill"
+                  style={moveTargetMs != null ? { width: `${Math.min(100, (moveElapsedMs / moveTargetMs) * 100).toFixed(2)}%` } : undefined}
+                />
+              </div>
+              <div className="timebar__meta">
+                <span>Jugada #{moveIndex}</span>
+                <span>
+                  {`${(moveElapsedMs / 1000).toFixed(3)} s`}
+                  {moveTargetMs != null ? ` / ${(moveTargetMs / 1000).toFixed(3)} s` : ' (Auto)'}
+                </span>
+              </div>
+            </div>
           )}
-          <button className="btn-ghost" onClick={onExportJSON} disabled={records.length === 0}>Exportar JSON</button>
-          <button className="btn-ghost" onClick={onExportCSV} disabled={records.length === 0}>Exportar CSV</button>
-          <button className="btn-ghost" onClick={onImportClick}>Importar…</button>
-          <input ref={fileInputRef} type="file" accept="application/json" onChange={onImportFile} style={{ display: 'none' }} />
-          <button className="btn-danger" onClick={onClearAll} disabled={records.length === 0}>Borrar todo</button>
-        </div>
-      </div>
-
-      {/* Per-move time progress */}
-      {running && (
-        <div className="ia-panel__timebar" role="status" aria-live="polite">
-          <div
-            className="timebar"
-            data-busy={true}
-            data-over={!!moveTargetMs && moveElapsedMs >= moveTargetMs}
-            data-auto={moveTargetMs == null}
-          >
-            <div
-              className="timebar__fill"
-              style={moveTargetMs != null ? { width: `${Math.min(100, (moveElapsedMs / moveTargetMs) * 100).toFixed(2)}%` } : undefined}
-            />
+ 
+          <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th className="text-center">Dificultad</th>
+                  <th className="text-center">Tiempo</th>
+                  <th className="text-right">Jugadas</th>
+                  <th className="text-right">Promedio (s)</th>
+                  <th className="text-right">Mín (s)</th>
+                  <th className="text-right">Máx (s)</th>
+                  <th className="text-right">Total (s)</th>
+                  <th className="text-center">Ganador</th>
+                  <th>Motivo</th>
+                  <th className="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={12}>Cargando…</td></tr>
+                ) : records.length === 0 ? (
+                  <tr><td colSpan={12}>Sin registros aún</td></tr>
+                ) : (
+                  records.map((r) => (
+                    <tr key={r.id}>
+                      <td title={r.id} className="mono ellipsis">{r.id}</td>
+                      <td>{fmtDate(r.createdAt)}</td>
+                      <td className="text-center">{r.depth}</td>
+                      <td className="text-center">
+                        <span className="badge">
+                          {r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}
+                        </span>
+                      </td>
+                      <td className="text-right">{r.moves}</td>
+                      <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
+                      <td className="text-right">{
+                        (() => {
+                          const times = (r.perMove || []).map(pm => pm.elapsedMs || 0);
+                          if (times.length === 0) return (0).toFixed(3);
+                          let min = times[0];
+                          for (let i = 1; i < times.length; i++) if (times[i] < min) min = times[i];
+                          return (min / 1000).toFixed(3);
+                        })()
+                      }</td>
+                      <td className="text-right">{
+                        (() => {
+                          const times = (r.perMove || []).map(pm => pm.elapsedMs || 0);
+                          if (times.length === 0) return (0).toFixed(3);
+                          let max = times[0];
+                          for (let i = 1; i < times.length; i++) if (times[i] > max) max = times[i];
+                          return (max / 1000).toFixed(3);
+                        })()
+                      }</td>
+                      <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
+                      <td className="text-center">
+                        {r.winner ? (
+                          <span className={"badge " + (r.winner === 'L' ? 'badge--light' : 'badge--dark')}>{r.winner}</span>
+                        ) : '—'}
+                      </td>
+                      <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>{r.endedReason ?? '—'}</td>
+                      <td className="text-center">
+                        <button className="chip-btn"
+                          onClick={() => {
+                            const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `pylos-infoia-${r.id}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                          title="Descargar JSON"
+                        >Descargar</button>
+                        <button className="chip-btn btn-danger" onClick={() => onDelete(r.id)} title="Eliminar">Eliminar</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-          <div className="timebar__meta">
-            <span>Jugada #{moveIndex}</span>
-            <span>
-              {`${(moveElapsedMs / 1000).toFixed(3)} s`}
-              {moveTargetMs != null ? ` / ${(moveTargetMs / 1000).toFixed(3)} s` : ' (Auto)'}
-            </span>
-          </div>
-        </div>
+        </>
       )}
 
-      <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th className="text-center">Dificultad</th>
-              <th className="text-center">Tiempo</th>
-              <th className="text-right">Jugadas</th>
-              <th className="text-right">Promedio por jugada (s)</th>
-              <th className="text-right">Mín (s)</th>
-              <th className="text-right">Máx (s)</th>
-              <th className="text-right">Total de todas las jugadas (s)</th>
-              <th className="text-center">Ganador</th>
-              <th>Motivo</th>
-              <th className="text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={12}>Cargando…</td></tr>
-            ) : records.length === 0 ? (
-              <tr><td colSpan={12}>Sin registros aún</td></tr>
-            ) : (
-              records.map((r) => (
-                <tr key={r.id}>
-                  <td title={r.id} className="mono ellipsis">{r.id}</td>
-                  <td>{fmtDate(r.createdAt)}</td>
-                  <td className="text-center">{r.depth}</td>
-                  <td className="text-center">
-                    <span className="badge">
-                      {r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}
-                    </span>
-                  </td>
-                  <td className="text-right">{r.moves}</td>
-                  <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
-                  <td className="text-right">{
-                    (() => {
-                      const times = (r.perMove || []).map(pm => pm.elapsedMs || 0);
-                      if (times.length === 0) return (0).toFixed(3);
-                      let min = times[0];
-                      for (let i = 1; i < times.length; i++) if (times[i] < min) min = times[i];
-                      return (min / 1000).toFixed(3);
-                    })()
-                  }</td>
-                  <td className="text-right">{
-                    (() => {
-                      const times = (r.perMove || []).map(pm => pm.elapsedMs || 0);
-                      if (times.length === 0) return (0).toFixed(3);
-                      let max = times[0];
-                      for (let i = 1; i < times.length; i++) if (times[i] > max) max = times[i];
-                      return (max / 1000).toFixed(3);
-                    })()
-                  }</td>
-                  <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
-                  <td className="text-center">
-                    {r.winner ? (
-                      <span className={"badge " + (r.winner === 'L' ? 'badge--light' : 'badge--dark')}>{r.winner}</span>
-                    ) : '—'}
-                  </td>
-                  <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>{r.endedReason ?? '—'}</td>
-                  <td className="text-center">
-                    <button className="chip-btn"
-                      onClick={() => {
-                        const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `pylos-infoia-${r.id}.json`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                      title="Descargar JSON"
-                    >Descargar</button>
-                    <button className="chip-btn btn-danger" onClick={() => onDelete(r.id)} title="Eliminar">Eliminar</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {activeTab === 'charts' && (
+        <div className="infoia__charts" style={{ paddingTop: 8 }}>
+          {aggregates.length === 0 ? (
+            <p style={{ opacity: 0.8 }}>Sin datos todavía. Ejecuta simulaciones en la pestaña "Simulaciones y Métricas".</p>
+          ) : (
+            (() => {
+              const { width, height, margin, niceMaxY, ticksY, countX } = chartDims;
+              const innerW = width - margin.left - margin.right;
+              const innerH = height - margin.top - margin.bottom;
+              const depths = aggregates.map((a) => a.depth);
+              const xForIndex = (i: number) =>
+                margin.left + (countX <= 1 ? innerW / 2 : (i * innerW) / (countX - 1));
+              const yScale = (s: number) => height - margin.bottom - innerH * (s / (niceMaxY || 1));
+              const series: { key: keyof AggRow; label: string; color: string }[] = [
+                { key: 'avgSec', label: 'Promedio', color: '#22c55e' },
+                { key: 'minSec', label: 'Mín', color: '#f59e0b' },
+                { key: 'maxSec', label: 'Máx', color: '#ef4444' },
+              ];
+              const pathForSeries = (key: keyof AggRow) => {
+                const pts = aggregates.map((a, idx) => `${xForIndex(idx)},${yScale(a[key] as number)}`);
+                return pts.length > 0 ? `M${pts[0]} L${pts.slice(1).join(' L')}` : '';
+              };
+              return (
+                <svg width={width} height={height} role="img" aria-label="Gráfico de métricas por dificultad">
+                  <defs>
+                    {/* Soft shadow for lines/points */}
+                    <filter id="ds" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                      <feOffset dy="1" result="offset" />
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.25" />
+                      </feComponentTransfer>
+                      <feMerge>
+                        <feMergeNode in="offset" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  {/* Legend */}
+                  <g transform={`translate(${margin.left}, ${margin.top - 28})`} aria-hidden="false">
+                    {series.map((s, i) => (
+                      <g key={s.key as string} transform={`translate(${i * 160}, 0)`}>
+                        <rect x={0} y={-12} width={14} height={14} fill={s.color} rx={3} ry={3} />
+                        <text x={20} y={0} className="mono" fontSize={12} fill="#e5e7eb">{s.label}</text>
+                      </g>
+                    ))}
+                  </g>
+
+                  {/* Horizontal grid and Y axis */}
+                  <g aria-hidden="true">
+                    {ticksY.map((t, i) => (
+                      <g key={i}>
+                        <line x1={margin.left} y1={yScale(t)} x2={width - margin.right} y2={yScale(t)} stroke="#334155" strokeDasharray="2,4" />
+                        <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={11} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
+                      </g>
+                    ))}
+                    {/* Y axis label */}
+                    <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={12} opacity={0.9} fill="#ffffff">Segundos (s)</text>
+                  </g>
+
+                  {/* Vertical guides and X axis */}
+                  <g aria-hidden="true">
+                    {depths.map((d, i) => (
+                      <g key={d} transform={`translate(${xForIndex(i)}, 0)`}>
+                        <line y1={margin.top} y2={height - margin.bottom} stroke="#1f2937" strokeOpacity={0.25} />
+                        <line y1={height - margin.bottom} y2={height - margin.bottom + 6} stroke="#64748b" />
+                        <text y={height - margin.bottom + 18} textAnchor="middle" fontSize={11} fill="#ffffff">Dificultad {d}</text>
+                      </g>
+                    ))}
+                    {/* X axis label */}
+                    <text x={width - margin.right} y={height - 8} textAnchor="end" fontSize={12} opacity={0.9} fill="#ffffff">Dificultad</text>
+                  </g>
+
+                  {/* Series lines (behind points) */}
+                  {series.map((s) => (
+                    <path
+                      key={s.key as string}
+                      d={pathForSeries(s.key)}
+                      fill="none"
+                      stroke={s.color}
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={0.95}
+                      filter="url(#ds)"
+                    />
+                  ))}
+
+                  {/* Points */}
+                  {aggregates.map((a, idx) => (
+                    <g key={a.depth}>
+                      {series.map((s) => {
+                        const val = a[s.key] as number;
+                        const cx = xForIndex(idx);
+                        const cy = yScale(val);
+                        return (
+                          <g key={s.key as string} filter="url(#ds)">
+                            <circle cx={cx} cy={cy} r={5} fill={s.color} stroke="#ffffff" strokeWidth={1.2} />
+                            <circle cx={cx} cy={cy} r={7} fill="none" stroke={s.color} strokeOpacity={0.25} />
+                            <title>{`${s.label}: ${val.toFixed(3)}s @ Dificultad ${a.depth}`}</title>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  ))}
+                </svg>
+              );
+            })()
+          )}
+        </div>
+      )}
     </section>
   );
 }
