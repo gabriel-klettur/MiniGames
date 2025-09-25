@@ -1,3 +1,8 @@
+// Default URL for the opening book (can be changed at runtime)
+let BOOK_URL = '/aperturas_book.json';
+export function setBookUrl(url: string): void {
+  if (typeof url === 'string' && url.trim().length > 0) BOOK_URL = url.trim();
+}
 import type { GameState } from '../game/types';
 import type { AIMove } from './moves';
 import { computeKey } from './zobrist';
@@ -64,7 +69,7 @@ async function dbSave(rec: DbRecord): Promise<void> {
 
 async function fetchBookFile(): Promise<BookFile | null> {
   try {
-    const res = await fetch('/book.json', { cache: 'force-cache' });
+    const res = await fetch(BOOK_URL, { cache: 'force-cache' });
     if (!res.ok) return null;
     const json = await res.json();
     const file = json as BookFile;

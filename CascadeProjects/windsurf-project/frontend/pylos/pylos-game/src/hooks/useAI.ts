@@ -20,6 +20,7 @@ export interface UseAIParams {
     qNodeCap: number;
     futilityMargin: number;
     bookEnabled: boolean;
+    bookUrl?: string;
   };
 
   // Environment flags and refs
@@ -135,6 +136,7 @@ export function useAI(params: UseAIParams): UseAIResult {
             futilityMargin: iaConfig?.futilityMargin ?? 100,
           },
           bookEnabled: iaConfig?.bookEnabled ?? true,
+          bookUrl: iaConfig?.bookUrl,
         },
       });
       // Save metrics and PV for visualization ALWAYS

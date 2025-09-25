@@ -2,7 +2,7 @@
 import type { GameState } from '../../game/types';
 import { bestMove, setSearchConfig } from '../search/search';
 import type { SearchStats } from '../search/search';
-import { probeBook } from '../book.ts';
+import { probeBook, setBookUrl } from '../book.ts';
 import { TT } from '../tt';
 
 // Messages from main thread
@@ -25,8 +25,9 @@ self.onmessage = async (e: MessageEvent) => {
   const depthMax: number = Math.max(1, Math.min(10, Math.floor(data.depth ?? 3)));
   const timeMs: number | undefined = typeof data.timeMs === 'number' ? Math.max(50, data.timeMs) : undefined;
   // Optional AI configuration
-  const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean };
+  const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean; bookUrl?: string };
   try { setSearchConfig(cfg.search || {}); } catch {}
+  try { if (cfg.bookUrl) setBookUrl(cfg.bookUrl); } catch {}
   const bookEnabled = cfg.bookEnabled !== false; // default true
   // Clear TT per root search to avoid mixing scores across different 'me' perspectives
   try { TT.clear(); } catch {}

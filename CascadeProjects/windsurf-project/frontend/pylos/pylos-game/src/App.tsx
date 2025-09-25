@@ -61,7 +61,7 @@ function App() {
   // InfoIA panel (simulaciones y métricas) dentro de DevTools
   const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
   // IA advanced configuration (quiescence/book)
-  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean }>(() => {
+  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>(() => {
     try {
       const raw = localStorage.getItem('pylos.ia.advanced.v1');
       if (raw) {
@@ -73,11 +73,12 @@ function App() {
             qNodeCap: Number.isFinite(p.qNodeCap) ? Math.max(1, Math.min(128, Math.floor(p.qNodeCap))) : 24,
             futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
             bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
+            bookUrl: typeof p.bookUrl === 'string' && p.bookUrl.trim().length > 0 ? p.bookUrl : '/aperturas_book.json',
           };
         }
       }
     } catch {}
-    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true };
+    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json' };
   });
   useEffect(() => {
     try { localStorage.setItem('pylos.ia.advanced.v1', JSON.stringify(iaConfig)); } catch {}

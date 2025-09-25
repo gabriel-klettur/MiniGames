@@ -35,8 +35,9 @@ export interface IAPanelProps {
     qNodeCap: number;
     futilityMargin: number;
     bookEnabled: boolean;
+    bookUrl: string;
   };
-  onChangeIaConfig: (cfg: Partial<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean }>) => void;
+  onChangeIaConfig: (cfg: Partial<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>) => void;
 }
 
 export default function IAPanel(props: IAPanelProps) {
@@ -120,6 +121,18 @@ export default function IAPanel(props: IAPanelProps) {
           <div>
             <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} />
             <label htmlFor="ia-book" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+
+          <label>URL del libro</label>
+          <div>
+            <input
+              id="ia-book-url"
+              type="text"
+              value={iaConfig.bookUrl}
+              onChange={(e) => onChangeIaConfig({ bookUrl: e.target.value })}
+              placeholder="/aperturas_book.json"
+              style={{ width: 260 }}
+            />
           </div>
 
           <label>Quiescence</label>

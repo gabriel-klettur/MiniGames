@@ -44,6 +44,7 @@ export type ComputeOptions = {
   cfg?: {
     search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>;
     bookEnabled?: boolean;
+    bookUrl?: string;
   };
 };
 
