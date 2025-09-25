@@ -16,7 +16,7 @@ const gameSlice = createSlice({
       state.pieces = next.pieces;
       state.turn = next.turn;
       state.winner = next.winner;
-      state.ui = next.ui;
+      // Preserve UI settings (including orientation and piece sizes) across resets
     },
     movePiece(state: GameState, action: PayloadAction<string>) {
       // Immer allows us to "mutate" safely. Guard against invalid moves.
@@ -35,8 +35,14 @@ const gameSlice = createSlice({
       const v = Math.max(24, Math.min(120, Math.round(action.payload)));
       state.ui.pieceHeight = v;
     },
+    setOrientation(state: GameState, action: PayloadAction<'classic' | 'bga'>) {
+      state.ui.orientation = action.payload;
+    },
+    toggleOrientation(state: GameState) {
+      state.ui.orientation = state.ui.orientation === 'classic' ? 'bga' : 'classic';
+    },
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation } = gameSlice.actions;
 export default gameSlice.reducer;

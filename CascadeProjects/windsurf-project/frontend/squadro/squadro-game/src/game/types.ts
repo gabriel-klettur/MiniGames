@@ -40,9 +40,11 @@ export interface Coord {
 export const PLAYERS: Player[] = ['Light', 'Dark'];
 
 // Visual/UI settings not tied to game rules
+export type Orientation = 'classic' | 'bga';
 export interface UISettings {
   pieceWidth: number; // px width of the prism-shaped piece
   pieceHeight: number; // px height of the prism-shaped piece
+  orientation: Orientation; // board rendering orientation
 }
 
 // Centralized starting player to ensure deterministic game start

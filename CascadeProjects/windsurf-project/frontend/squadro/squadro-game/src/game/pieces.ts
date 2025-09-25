@@ -31,6 +31,7 @@ export function createInitialState(): GameState {
     ui: {
       pieceWidth: 16, // default thinner width in px
       pieceHeight: 44, // default height in px
+      orientation: 'classic',
     },
   };
   return state;

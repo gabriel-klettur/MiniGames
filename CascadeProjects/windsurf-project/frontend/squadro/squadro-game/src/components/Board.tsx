@@ -29,6 +29,7 @@ const THEMES = {
 export default function Board() {
   const dispatch = useAppDispatch();
   const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
+  const orientation = ui?.orientation ?? 'classic';
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
 
@@ -139,7 +140,11 @@ export default function Board() {
   };
 
   const renderCell = (row: number, col: number): React.ReactElement => {
-    const key = `${row}:${col}`;
+    // Map display coordinates to source coordinates depending on orientation
+    const L = DEFAULT_LANE_LENGTH;
+    const srcRow = orientation === 'classic' ? row : L - row;
+    const srcCol = orientation === 'classic' ? col : L - col;
+    const key = `${srcRow}:${srcCol}`;
     const ps = cells[key] ?? [];
     // Dimensions controlled by UI settings
     const pieceWidth = Math.max(8, Math.min(Math.floor(cellPx * 0.8), ui?.pieceWidth ?? 16));
@@ -176,7 +181,16 @@ export default function Board() {
     };
 
     // Pips: indicators inspired by the physical board. Only some cells render dots for now.
-    const pipInfo = getPipInfo(row, col);
+    const pipInfo = getPipInfo(srcRow, srcCol);
+    const mapSide = (s: 'left' | 'right' | 'top' | 'bottom' | undefined) => {
+      if (!s) return undefined;
+      if (orientation === 'classic') return s;
+      if (s === 'left') return 'right';
+      if (s === 'right') return 'left';
+      if (s === 'top') return 'bottom';
+      return 'top';
+    };
+    const displaySide = mapSide(pipInfo.side);
     const pipContainerStyle: React.CSSProperties = (() => {
       const base: React.CSSProperties = {
         position: 'absolute',
@@ -185,22 +199,22 @@ export default function Board() {
         alignItems: 'center',
         justifyContent: 'center',
       };
-      if (pipInfo.side === 'left' || pipInfo.side === 'right') {
+      if (displaySide === 'left' || displaySide === 'right') {
         return {
           ...base,
-          left: pipInfo.side === 'left' ? 4 : undefined,
-          right: pipInfo.side === 'right' ? 4 : undefined,
+          left: displaySide === 'left' ? 4 : undefined,
+          right: displaySide === 'right' ? 4 : undefined,
           top: '50%',
           transform: 'translateY(-50%)',
           flexDirection: 'column',
         };
       }
-      if (pipInfo.side === 'top' || pipInfo.side === 'bottom') {
+      if (displaySide === 'top' || displaySide === 'bottom') {
         return {
           ...base,
           left: '50%',
-          top: pipInfo.side === 'top' ? 4 : undefined,
-          bottom: pipInfo.side === 'bottom' ? 4 : undefined,
+          top: displaySide === 'top' ? 4 : undefined,
+          bottom: displaySide === 'bottom' ? 4 : undefined,
           transform: 'translateX(-50%)',
           flexDirection: 'column', // keep vertical stacks for top/bottom as well
         };
@@ -273,9 +287,10 @@ export default function Board() {
             const top = padIn + r * (tileH + gapIn) + Math.max(0, Math.floor((tileH - h) / 2));
 
             // Determine forward tip side based on owner and current state
-            const tipSide: 'left' | 'right' | 'top' | 'bottom' = isLight
+            const tipSideRaw: 'left' | 'right' | 'top' | 'bottom' = isLight
               ? (p.state === 'en_ida' ? 'left' : 'right')
               : (p.state === 'en_ida' ? 'top' : 'bottom');
+            const tipSide: 'left' | 'right' | 'top' | 'bottom' = mapSide(tipSideRaw) ?? tipSideRaw;
 
             // Style per side: both use the same prism design; only color differs
             const pieceStyle: React.CSSProperties = isLight
