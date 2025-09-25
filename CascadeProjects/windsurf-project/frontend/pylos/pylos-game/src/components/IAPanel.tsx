@@ -38,14 +38,14 @@ export default function IAPanel(props: IAPanelProps) {
   const atRootLabel = rootPlayer ? (rootPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)') : current;
 
   // Presupuesto de tiempo actual (ms), en función del modo
-  const limitMs = useMemo(() => {
+  // Auto: sin límite (undefined). Manual: segundos seleccionados.
+  const limitMs = useMemo<number | undefined>(() => {
     if (timeMode === 'manual') {
       const secs = Math.max(0, Math.min(30, timeSeconds));
       return secs * 1000;
     }
-    // Heurística usada en App.onAIMove para modo auto
-    return depth > 5 ? 1800 : 800;
-  }, [timeMode, timeSeconds, depth]);
+    return undefined;
+  }, [timeMode, timeSeconds]);
 
   // Elapsed local animado mientras busy = true
   const [localElapsedMs, setLocalElapsedMs] = useState<number>(0);
@@ -70,8 +70,8 @@ export default function IAPanel(props: IAPanelProps) {
   }, [busy, elapsedMs]);
 
   const shownElapsedMs = busy ? localElapsedMs : (elapsedMs || 0);
-  const ratio = limitMs > 0 ? Math.max(0, Math.min(1, shownElapsedMs / limitMs)) : 0;
-  const isOver = limitMs > 0 && shownElapsedMs >= limitMs;
+  const ratio = typeof limitMs === 'number' && limitMs > 0 ? Math.max(0, Math.min(1, shownElapsedMs / limitMs)) : 0;
+  const isOver = typeof limitMs === 'number' && limitMs > 0 && shownElapsedMs >= limitMs;
 
   function normEval(v: number): number {
     // Normalizar a [-1, 1] usando tanh para estabilidad
@@ -135,12 +135,17 @@ export default function IAPanel(props: IAPanelProps) {
         )}
         {/* Barra de tiempo para visualizar el progreso respecto al límite */}
         <div className="ia-panel__timebar" aria-label="Progreso de tiempo">
-          <div className="timebar" data-busy={busy} data-over={isOver} title={`Tiempo: ${(shownElapsedMs/1000).toFixed(2)}s / ${(limitMs/1000).toFixed(2)}s`}>
+          <div
+            className="timebar"
+            data-busy={busy}
+            data-over={isOver}
+            title={`Tiempo: ${(shownElapsedMs/1000).toFixed(2)}s / ${typeof limitMs === 'number' ? (limitMs/1000).toFixed(2) + 's' : '∞'}`}
+          >
             <div className="timebar__fill" style={{ width: `${ratio * 100}%` }} />
           </div>
           <div className="timebar__meta">
             <span>{(shownElapsedMs / 1000).toFixed(2)} s</span>
-            <span>{(limitMs / 1000).toFixed(2)} s</span>
+            <span>{typeof limitMs === 'number' ? (limitMs / 1000).toFixed(2) + ' s' : '∞'}</span>
           </div>
         </div>
         <div className="ia-panel__actions">

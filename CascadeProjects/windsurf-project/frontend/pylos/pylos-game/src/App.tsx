@@ -654,8 +654,9 @@ function App() {
     iaAbortRef.current = ac;
     try {
       // Resolver presupuesto de tiempo según selección del panel
+      // Auto: sin límite (undefined => el worker no corta por tiempo)
       const timeMs = iaTimeMode === 'auto'
-        ? (iaDepth > 5 ? 1800 : 800)
+        ? undefined
         : Math.max(0, Math.min(30, iaTimeSeconds)) * 1000;
       const res = await computeBestMoveAsync(state, {
         depth: iaDepth,
@@ -823,12 +824,10 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
-        speedSeconds={iaTimeSeconds}
-        onChangeSpeed={(secs) => {
-          // Selección de velocidad fuerza modo manual y asigna el tiempo máximo
-          setIaTimeMode('manual');
-          setIaTimeSeconds(secs);
-        }}
+        timeMode={iaTimeMode}
+        timeSeconds={iaTimeSeconds}
+        onChangeTimeMode={setIaTimeMode}
+        onChangeTimeSeconds={setIaTimeSeconds}
       />
       {showIAUser && (
         <IAUserPanel
@@ -848,6 +847,10 @@ function App() {
               return next;
             });
           }}
+          timeMode={iaTimeMode}
+          timeSeconds={iaTimeSeconds}
+          onChangeTimeMode={setIaTimeMode}
+          onChangeTimeSeconds={setIaTimeSeconds}
         />
       )}
       {showRules && (

@@ -6,6 +6,11 @@ export interface IAUserPanelProps {
   // Nuevo: autoplay de IA (Play/Stop)
   aiAutoplayActive?: boolean;
   onToggleAiAutoplay?: () => void;
+  // Nuevo: control de velocidad/tiempo (sin slider): Auto, Rápido (5s), Normal (10s), Lento (30s)
+  timeMode?: 'auto' | 'manual';
+  timeSeconds?: number; // 0..30
+  onChangeTimeMode?: (m: 'auto' | 'manual') => void;
+  onChangeTimeSeconds?: (secs: number) => void;
 }
 
 /**
@@ -22,6 +27,10 @@ export default function IAUserPanel(props: IAUserPanelProps) {
     disabled = false,
     aiAutoplayActive = false,
     onToggleAiAutoplay,
+    timeMode = 'manual',
+    timeSeconds = 8,
+    onChangeTimeMode,
+    onChangeTimeSeconds,
   } = props;
 
   return (
@@ -38,6 +47,44 @@ export default function IAUserPanel(props: IAUserPanelProps) {
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
+        </div>
+        {/* Velocidad de IA (Auto/Rápido/Normal/Lento) */}
+        <div className="iauser-speed" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 12 }}>
+          <label className="sr-only" aria-hidden="true">Velocidad</label>
+          <div className="segmented" role="group" aria-label="Velocidad de cálculo de IA">
+            <button
+              className={timeMode === 'auto' ? 'active' : ''}
+              onClick={() => onChangeTimeMode?.('auto')}
+              aria-pressed={timeMode === 'auto'}
+              title="Sin límite de tiempo (termina al alcanzar la profundidad)"
+            >
+              Auto
+            </button>
+            <button
+              className={timeMode === 'manual' && timeSeconds === 5 ? 'active' : ''}
+              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(5); }}
+              aria-pressed={timeMode === 'manual' && timeSeconds === 5}
+              title="Máximo 5s por jugada"
+            >
+              Rápido
+            </button>
+            <button
+              className={timeMode === 'manual' && timeSeconds === 10 ? 'active' : ''}
+              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(10); }}
+              aria-pressed={timeMode === 'manual' && timeSeconds === 10}
+              title="Máximo 10s por jugada"
+            >
+              Normal
+            </button>
+            <button
+              className={timeMode === 'manual' && timeSeconds === 30 ? 'active' : ''}
+              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(30); }}
+              aria-pressed={timeMode === 'manual' && timeSeconds === 30}
+              title="Máximo 30s por jugada"
+            >
+              Lento
+            </button>
+          </div>
         </div>
         <div className="iauser-right" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <button
@@ -83,3 +130,4 @@ export default function IAUserPanel(props: IAUserPanelProps) {
     </section>
   );
 }
+
