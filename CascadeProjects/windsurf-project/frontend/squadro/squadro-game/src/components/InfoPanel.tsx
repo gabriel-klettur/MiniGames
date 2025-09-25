@@ -66,10 +66,6 @@ export default function InfoPanel() {
           <div className="text-xl font-bold text-emerald-400">{retiredDark} / 4</div>
         </div>
       </div>
-
-      <div className="text-xs text-neutral-400">
-        Consejo: haz clic sobre una pieza del jugador en turno para moverla.
-      </div>
     </div>
   );
 }
