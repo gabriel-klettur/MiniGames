@@ -1357,6 +1357,16 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
   width: 0%;
   background: linear-gradient(90deg, #22c55e, #f59e0b);
 }
+.ia-panel__timebar .timebar[data-auto="true"] .timebar__fill {
+  width: 30%;
+  left: -30%;
+  background: linear-gradient(90deg, rgba(34,197,94,0.8), rgba(245,158,11,0.8));
+  animation: timebarIndeterminate 1.25s ease-in-out infinite;
+}
+@keyframes timebarIndeterminate {
+  from { left: -30%; }
+  to { left: 100%; }
+}
 .ia-panel__timebar .timebar[data-over="true"] .timebar__fill {
   background: #ef4444; /* red-500 */
 }
@@ -1467,4 +1477,150 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
   filter: drop-shadow(0 0 1px rgba(0,0,0,0.6));
   pointer-events: none; /* icon purely decorative */
 }
-.iauser-btn__label { line-height: 1; }
+.infoia-panel .row.actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.infoia-panel .row.actions .iauser-btn__icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 1px rgba(0,0,0,0.6));
+  pointer-events: none; /* icon purely decorative */
+}
+.infoia-panel .row.actions .iauser-btn__label { line-height: 1; }
+
+/* === InfoIA (Simulaciones y Métricas) ===================================== */
+.infoia-panel { display: grid; gap: 10px; }
+.infoia__header { display: flex; align-items: center; justify-content: space-between; }
+.infoia__status { display: inline-flex; align-items: center; gap: 8px; }
+.infoia__controls .label { color: var(--muted); }
+
+/* Segmented control (shared) */
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.segmented > button {
+  height: 24px;
+  min-width: 56px;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+}
+.segmented > button.active,
+.segmented > button[aria-pressed="true"] {
+  background: rgba(17,24,39,0.72);
+  border: 1px solid rgba(255,255,255,0.28);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+/* InfoIA form fields */
+.infoia-panel select,
+.infoia-panel .field-num {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.infoia-panel .field-num { text-align: right; font-variant-numeric: tabular-nums; }
+.infoia-panel select:hover,
+.infoia-panel .field-num:hover { filter: brightness(1.07); }
+.infoia-panel select:focus-visible,
+.infoia-panel .field-num:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+
+/* Inline badges */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 9999px;
+  background: rgba(17,24,39,0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+}
+.badge--light { background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.35); }
+.badge--dark  { background: rgba(59, 130, 246, 0.16); border-color: rgba(59, 130, 246, 0.35); }
+
+/* Chip buttons in table actions */
+.chip-btn {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.btn-ghost {
+  background: rgba(17, 24, 39, 0.45) !important;
+  border: 1px solid var(--panel-border-color) !important;
+  color: var(--text) !important;
+}
+.btn-danger {
+  background: rgba(239, 68, 68, 0.18) !important;   /* red-500 tint */
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #fecaca !important; /* red-200 text */
+}
+.btn-stop {
+  background: rgba(245, 158, 11, 0.20) !important;   /* amber-500 tint */
+  border: 1px solid rgba(245, 158, 11, 0.40) !important;
+  color: #fde68a !important; /* amber-200 */
+}
+
+/* Professional table styling */
+.infoia-panel .table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 780px;
+}
+.infoia-panel .table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(17, 24, 39, 0.72);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  border-bottom: 1px solid var(--panel-border-color);
+  text-align: left;
+  font-weight: 600;
+  padding: 10px 12px;
+}
+.infoia-panel .table thead th.text-right { text-align: right; }
+.infoia-panel .table thead th.text-center { text-align: center; }
+.infoia-panel .table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  vertical-align: middle;
+}
+.infoia-panel .table tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.02); }
+.infoia-panel .table tbody tr:hover td { background: rgba(255,255,255,0.04); }
+
+/* Helpers */
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.ellipsis { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.infoia-panel .motivo-cell { max-width: min(36ch, 45vw); }

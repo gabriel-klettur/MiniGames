@@ -5,6 +5,7 @@ import InfoPanel from './components/InfoPanel';
 import HeaderPanel from './components/HeaderPanel';
 import FasePanel from './components/FasePanel';
 import DevToolsPanel from './components/DevToolsPanel';
+import InfoIA from './components/InfoIA';
 import RulesPanel from './components/RulesPanel';
 import { useGameLogger } from './hooks/useGameLogger';
 import type { GameState, Position } from './game/types';
@@ -57,6 +58,8 @@ function App() {
   // FasePanel (inicialmente oculto)
   const [showFases, setShowFases] = useState<boolean>(false);
   const [showRules, setShowRules] = useState<boolean>(false);
+  // InfoIA panel (simulaciones y métricas) dentro de DevTools
+  const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
   const { logSnapshot } = useGameLogger(state);
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
@@ -531,15 +534,7 @@ function App() {
     try { console.info('[winnerMessage] Non VsAI mode', { lastSource: last?.source, inferred: label, winner: over.winner }); } catch {}
     return `Ganador: ${label}`;
   }, [gameOver, state, vsAI, moves]);
-  // onAIMove handled by useAI
 
-  // IA abort handled by useAI
-
-  // VS IA auto handled by useAI
-
-  // IA autoplay handled by useAI
-
-  // (auto-IA desactivada) — eliminamos auto-play automático para evitar confusión
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
@@ -668,6 +663,8 @@ function App() {
             onToggleRules={() => setShowRules((v) => !v)}
             showIA={showIATools}
             onToggleIA={() => setShowIATools((v) => !v)}
+            showInfoIA={showInfoIA}
+            onToggleInfoIA={() => setShowInfoIA((v) => !v)}
             showHistory={showHistory}
             onToggleHistory={() => setShowHistory((v) => !v)}
             showFases={showFases}
@@ -702,6 +699,9 @@ function App() {
                   setIaAutoplay((v) => !v);
                 }}
               />
+            )}
+            infoIAPanel={(
+              <InfoIA />
             )}
             uxPanel={(
               <UXPanel
