@@ -33,6 +33,14 @@ export function createInitialState(): GameState {
       pieceHeight: 44, // default height in px
       orientation: 'classic',
     },
+    ai: {
+      enabled: false,
+      aiSide: 'Dark',
+      difficulty: 3,
+      speed: 'normal',
+      timeMode: 'manual',
+      timeSeconds: 10,
+    },
   };
   return state;
 }

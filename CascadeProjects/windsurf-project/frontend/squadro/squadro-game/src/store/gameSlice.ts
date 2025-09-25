@@ -1,6 +1,6 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
-import type { GameState } from '../game/types';
+import type { GameState, Player, AISpeed } from '../game/types';
 import { createInitialState } from '../game/pieces';
 import { movePiece as movePieceRules } from '../game/rules';
 
@@ -41,8 +41,54 @@ const gameSlice = createSlice({
     toggleOrientation(state: GameState) {
       state.ui.orientation = state.ui.orientation === 'classic' ? 'bga' : 'classic';
     },
+    // --- AI settings ---
+    setAIEnabled(state: GameState, action: PayloadAction<boolean>) {
+      if (!state.ai) state.ai = {
+        enabled: false,
+        aiSide: 'Dark',
+        difficulty: 3,
+        speed: 'normal',
+        timeMode: 'manual',
+        timeSeconds: 10,
+      };
+      state.ai.enabled = action.payload;
+    },
+    setAISide(state: GameState, action: PayloadAction<Player>) {
+      if (!state.ai) return;
+      state.ai.aiSide = action.payload;
+    },
+    setAIDifficulty(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return;
+      const d = Math.max(1, Math.min(10, Math.round(action.payload)));
+      state.ai.difficulty = d;
+    },
+    setAISpeed(state: GameState, action: PayloadAction<AISpeed>) {
+      if (!state.ai) return;
+      const speed = action.payload;
+      state.ai.speed = speed;
+      if (speed === 'auto') {
+        state.ai.timeMode = 'auto';
+        state.ai.timeSeconds = 0;
+      } else {
+        state.ai.timeMode = 'manual';
+        state.ai.timeSeconds = speed === 'rapido' ? 5 : speed === 'normal' ? 10 : 30;
+      }
+    },
+    setAITimeMode(state: GameState, action: PayloadAction<'auto' | 'manual'>) {
+      if (!state.ai) return;
+      state.ai.timeMode = action.payload;
+    },
+    setAITimeSeconds(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return;
+      const secs = Math.max(0, Math.min(60, Math.round(action.payload)));
+      state.ai.timeSeconds = secs;
+    },
+    setAIBusy(state: GameState, action: PayloadAction<boolean>) {
+      if (!state.ai) return;
+      state.ai.busy = action.payload;
+    },
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAITimeMode, setAITimeSeconds, setAIBusy } = gameSlice.actions;
 export default gameSlice.reducer;

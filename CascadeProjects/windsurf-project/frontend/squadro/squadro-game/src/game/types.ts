@@ -28,6 +28,8 @@ export interface GameState {
   winner?: Player;
   // UI configuration (visual only; does not affect rules)
   ui: UISettings;
+  // Optional AI configuration (does not affect rules directly)
+  ai?: AISettings;
 }
 
 // Board grid coordinate (row, col) for visual collision checks at intersections.
@@ -45,6 +47,18 @@ export interface UISettings {
   pieceWidth: number; // px width of the prism-shaped piece
   pieceHeight: number; // px height of the prism-shaped piece
   orientation: Orientation; // board rendering orientation
+}
+
+// AI configuration for vs AI games
+export type AISpeed = 'auto' | 'rapido' | 'normal' | 'lento';
+export interface AISettings {
+  enabled: boolean;          // if true, game is vs AI
+  aiSide: Player;            // which side AI plays
+  difficulty: number;        // 1..10
+  speed: AISpeed;            // UI label; maps to time budget
+  timeMode: 'auto' | 'manual';
+  timeSeconds: number;       // when manual, budget per move
+  busy?: boolean;            // ephemeral: IA pensando
 }
 
 // Centralized starting player to ensure deterministic game start
