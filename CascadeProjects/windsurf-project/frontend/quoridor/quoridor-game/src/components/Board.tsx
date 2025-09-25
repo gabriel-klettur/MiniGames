@@ -47,8 +47,8 @@ export interface BoardProps {
   previewOnHoverWhenHidden?: boolean;
   /** Forma del hitbox visual por orientación (porcentajes 10..100). */
   wallHitboxShape?: {
-    H: { widthPct: number; heightPct: number };
-    V: { widthPct: number; heightPct: number };
+    H: { widthPct: number; heightPct: number; preset?: 'rect' | 'diamond' | 'hex6'; hex?: { aPct: number; bPct: number } };
+    V: { widthPct: number; heightPct: number; preset?: 'rect' | 'diamond' | 'hex6'; hex?: { aPct: number; bPct: number } };
   };
   /** Grosor extra del hitbox en píxeles por orientación. */
   wallHitboxThicknessPx?: { H: number; V: number };
@@ -77,8 +77,7 @@ export default function Board({
   showWallHitboxes = true,
   wallHitboxColor = 'purple',
   wallPreviewMonochrome = false,
-  wallHitboxOpacity = 20,
-  previewOnHoverWhenHidden = false,
+  // wallHitboxOpacity se deja de usar porque los huecos deben ser totalmente transparentes
   wallHitboxShape = { H: { widthPct: 100, heightPct: 100 }, V: { widthPct: 100, heightPct: 100 } },
   wallHitboxThicknessPx = { H: 0, V: 0 },
   expandClickableWithShape = false,
@@ -150,10 +149,49 @@ export default function Board({
     },
   } as const;
   const t = themeVariants[wallHitboxColor] ?? themeVariants.purple;
-  const variant = t[wallHitboxOpacity] ?? t[20];
-  const baseHitboxClass = showWallHitboxes ? `${variant.base} ${variant.hover}` : 'bg-transparent hover:bg-transparent';
+  // Tablero solicitado: huecos de valla totalmente transparentes.
+  // Base del hitbox siempre transparente; las vistas de preview/agujeros se muestran con ring/clip-path según presets.
+  const baseHitboxClass = 'bg-transparent hover:bg-transparent';
 
   type Pt = { x: number; y: number };
+
+  // Genera clip-path para presets de forma por orientación
+  function buildClipPath(
+    o: 'H' | 'V',
+    preset: 'rect' | 'diamond' | 'hex6' | undefined,
+    hex: { aPct: number; bPct: number } | undefined,
+  ): string | undefined {
+    if (!preset || preset === 'rect') return undefined;
+    if (preset === 'diamond') {
+      // Rombo centrado
+      return o === 'V'
+        ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+        : 'polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%)';
+    }
+    // Hexágono convexo irregular con simetría según orientación
+    const a = Math.max(0, Math.min(50, hex?.aPct ?? 50));
+    const b = Math.max(0, Math.min(50, hex?.bPct ?? 20));
+    if (o === 'V') {
+      const pts = [
+        [50, 0],
+        [50 + a, 50 - b],
+        [50 + a, 50 + b],
+        [50, 100],
+        [50 - a, 50 + b],
+        [50 - a, 50 - b],
+      ];
+      return `polygon(${pts.map(([x, y]) => `${x}% ${y}%`).join(', ')})`;
+    }
+    const pts = [
+      [0, 50],
+      [50 - b, 50 - a],
+      [50 + b, 50 - a],
+      [100, 50],
+      [50 + b, 50 + a],
+      [50 - b, 50 + a],
+    ];
+    return `polygon(${pts.map(([x, y]) => `${x}% ${y}%`).join(', ')})`;
+  }
 
   // Pequeño solver Gauss para 8x8 (n=8)
   function solve(A: number[][], b: number[]): number[] {
@@ -240,6 +278,20 @@ export default function Board({
   const [hover, setHover] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
   // Estado de pulsación para mostrar preview aunque los hitboxes estén ocultos
   const [pressingWall, setPressingWall] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
+  // Requiere doble clic para confirmar la colocación de una valla
+  const [confirmWall, setConfirmWall] = React.useState<null | { o: 'H' | 'V'; r: number; c: number }>(null);
+
+  const requestOrConfirmWall = (o: 'H' | 'V', r: number, c: number) => {
+    if (confirmWall && confirmWall.o === o && confirmWall.r === r && confirmWall.c === c) {
+      onWallClick(o, r, c);
+      setConfirmWall(null);
+      setHover(null);
+      setPressingWall(null);
+    } else {
+      setConfirmWall({ o, r, c });
+      setHover({ o, r, c });
+    }
+  };
 
   // Long-press para alternar modo en móvil/tablet
   const longPressTimer = React.useRef<number | null>(null);
@@ -280,7 +332,7 @@ export default function Board({
         style={{ transformOrigin: '0 0', transform: matrix3d }}
       >
         <div
-          className="relative grid w-full h-full bg-gray-800/60 p-1 rounded-md"
+          className="relative grid w-full h-full bg-transparent p-1 rounded-md"
           style={gridStyle}
           onPointerDown={onPointerDownRoot}
           onPointerUp={onPointerUpRoot}
@@ -321,7 +373,7 @@ export default function Board({
                       {highlighted && (
                         <span
                           aria-hidden
-                          className="absolute inset-0 rounded-md ring-2 ring-emerald-500/40 bg-emerald-400/5"
+                          className="absolute inset-0 rounded-md ring-2 ring-emerald-500/40"
                         />
                       )}
                       {type && (
@@ -366,7 +418,7 @@ export default function Board({
                           'w-full h-full rounded-[2px] grid place-items-center',
                         ].join(' ')}
                         title={`Valla H @ (${r},${proxyC})`}
-                        onClick={restrictClickToHitbox ? undefined : (() => { onWallClick('H', r, proxyC); })}
+                        onClick={restrictClickToHitbox ? undefined : (() => { requestOrConfirmWall('H', r, proxyC); })}
                         onMouseEnter={() => setHover({ o: 'H', r, c: proxyC })}
                         onPointerEnter={() => setHover({ o: 'H', r, c: proxyC })}
                         onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -379,7 +431,7 @@ export default function Board({
                         <span
                           className={[ 'block rounded-[2px]', innerClass ].join(' ')}
                           style={innerStyle}
-                          onClick={restrictClickToHitbox ? (() => { onWallClick('H', r, proxyC); }) : undefined}
+                          onClick={restrictClickToHitbox ? (() => { requestOrConfirmWall('H', r, proxyC); }) : undefined}
                           onMouseEnter={() => setHover({ o: 'H', r, c: proxyC })}
                           onPointerEnter={() => setHover({ o: 'H', r, c: proxyC })}
                           onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -391,10 +443,11 @@ export default function Board({
                       </button>
                     );
                   }
-                  const isHover = hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
-                  const hoverEnabled = (((showWallHitboxes || previewOnHoverWhenHidden) && !!isHover))
-                    || (!!pressingWall && pressingWall.o === 'H' && pressingWall.r === r && pressingWall.c === c && !active);
-                  const invalidPlacement = hoverEnabled && !validateWallPlacement(
+                  const isHoverMatchH = !!hover && hover.o === 'H' && hover.r === r && hover.c === c && !active;
+                  const isConfirmMatchH = !!confirmWall && confirmWall.o === 'H' && confirmWall.r === r && confirmWall.c === c && !active;
+                  // Mostrar previsualización si hay selección confirmable o si hay hover con hitboxes visibles
+                  const wantPreviewH = (!active) && (isConfirmMatchH || (showWallHitboxes && isHoverMatchH));
+                  const invalidPlacement = wantPreviewH && !validateWallPlacement(
                     {
                       size,
                       pawns: {
@@ -431,22 +484,31 @@ export default function Board({
                   const leaderStartRowH = Math.max(1, startRowHRaw);
                   const wantsPctExpandH = expandClickableWithShape && ((wallHitboxShape.H.widthPct > 100) || (wallHitboxShape.H.heightPct > 100));
                   const wantsPxExpandH = Math.max(0, wallHitboxThicknessPx.H) > 0;
-                  const shouldExpandH = !active && (hoverEnabled || !!pressingWall) && (wantsPctExpandH || wantsPxExpandH);
-                  const spanStyle: React.CSSProperties | undefined =
-                    (shouldExpandH && wantsPctExpandH)
-                      ? { gridRow: `${leaderStartRowH} / ${leaderEndRowH}`, gridColumn: `${leaderStartCol} / ${leaderEndCol}` }
-                      : undefined;
+                  const shouldExpandH = !active && (wantPreviewH || !!pressingWall) && (wantsPctExpandH || wantsPxExpandH);
+                  let spanStyle: React.CSSProperties | undefined = undefined;
+                  if (shouldExpandH) {
+                    if (wantsPctExpandH) {
+                      spanStyle = { gridRow: `${leaderStartRowH} / ${leaderEndRowH}`, gridColumn: `${leaderStartCol} / ${leaderEndCol}` };
+                    } else if (wantsPxExpandH) {
+                      // Expandir una pista arriba y abajo para cubrir grosor extra en PX
+                      const startRowPx = Math.max(1, gr + 1 - 1);
+                      const endRowPx = Math.min(gridCount + 1, gr + 2 + 1);
+                      spanStyle = { gridRow: `${startRowPx} / ${endRowPx}` };
+                    }
+                  }
                   // Visual: longitud en %; grosor en PX usando wallGap (independiente del span y del thicknessPx)
                   const innerW_H = Math.min(100, wallHitboxShape.H.widthPct);
                   const innerH_HPx = Math.max(0, Math.round((wallGap * Math.min(100, wallHitboxShape.H.heightPct)) / 100));
+                  const clipH = buildClipPath('H', (wallHitboxShape as any)?.H?.preset, (wallHitboxShape as any)?.H?.hex);
                   const innerStyle: React.CSSProperties = {
                     width: `${innerW_H}%`,
                     height: `${innerH_HPx}px`,
+                    clipPath: clipH,
                   };
-                  const innerClass = active ? '' : (hoverEnabled ? hoverClass : baseHitboxClass);
+                  const innerClass = active ? '' : (wantPreviewH ? hoverClass : baseHitboxClass);
                   const appliedBaseSpanH = !active ? baseSpanH : undefined;
                   // Siempre previsualizar/colocar como 2 segmentos (longitud)
-                  const hoverBaseSpanH: React.CSSProperties | undefined = (!active && hoverEnabled)
+                  const hoverBaseSpanH: React.CSSProperties | undefined = (!active && wantPreviewH)
                     ? { gridRow: `${gr + 1} / ${gr + 2}`, gridColumn: `${gc + 1} / ${gc + 4}` }
                     : undefined;
                   const activeLeaderSpanH: React.CSSProperties | undefined = (active && isLeaderH)
@@ -459,6 +521,7 @@ export default function Board({
                     ...(spanStyle ?? {}),
                     ...(activeLeaderSpanH ?? {}),
                   };
+                  const hasPxOverlayH = restrictClickToHitbox && !active && (wantsPctExpandH || wantsPxExpandH);
                   return (
                     <button
                       key={`${gr}-${gc}`}
@@ -466,7 +529,7 @@ export default function Board({
                       className={[
                         'relative w-full h-full rounded-[2px] transition-colors grid place-items-center',
                         // Elevar cuando expandimos el span para evitar solapamientos de pointer-events
-                        (spanStyle || baseSpanH) ? 'z-20' : '',
+                        (spanStyle || baseSpanH || hasPxOverlayH) ? 'z-20' : '',
                         active && isLeaderH
                           ? (coverH?.by === 'L'
                               ? 'bg-orange-500/90 pointer-events-none z-10'
@@ -478,7 +541,7 @@ export default function Board({
                             : '',
                       ].join(' ')}
                       title={`Valla H @ (${r},${c})`}
-                      onClick={restrictClickToHitbox ? undefined : (() => { onWallClick('H', r, c); })}
+                      onClick={restrictClickToHitbox ? undefined : (() => { requestOrConfirmWall('H', r, c); })}
                       onMouseEnter={() => setHover({ o: 'H', r, c })}
                       onPointerEnter={() => setHover({ o: 'H', r, c })}
                       onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -489,16 +552,19 @@ export default function Board({
                       aria-pressed={active}
                     >
                       {/* Outline visual del hitbox total clickeable (no altera el rectángulo verde de preview) */}
-                      {!active && (showWallHitboxes || hoverEnabled || !!pressingWall) && (
+                      {!active && showWallHitboxes && (
                         <span
                           aria-hidden
                           className={[
                             'absolute rounded-[2px] pointer-events-none',
                             'ring-1', t.ring,
                           ].join(' ')}
-                          style={wantsPctExpandH
-                            ? { top: 0, bottom: 0, left: 0, right: 0 }
-                            : { top: -Math.max(0, wallHitboxThicknessPx.H), bottom: -Math.max(0, wallHitboxThicknessPx.H), left: 0, right: 0 }}
+                          style={{
+                            ...(wantsPctExpandH
+                              ? { top: 0, bottom: 0, left: 0, right: 0 }
+                              : { top: -Math.max(0, wallHitboxThicknessPx.H), bottom: -Math.max(0, wallHitboxThicknessPx.H), left: 0, right: 0 }),
+                            clipPath: clipH,
+                          }}
                         />
                       )}
                       {/* Overlay transparente: amplía área de click sin cambiar visual cuando restrictClickToHitbox está activo */}
@@ -512,13 +578,13 @@ export default function Board({
                             left: 0,
                             right: 0,
                           }}
-                          onClick={() => { onWallClick('H', r, c); }}
+                          onClick={() => { requestOrConfirmWall('H', r, c); }}
                         />
                       )}
                       <span
                         className={[ 'block rounded-[2px]', innerClass ].join(' ')}
                         style={innerStyle}
-                        onClick={restrictClickToHitbox ? (() => { onWallClick('H', r, c); }) : undefined}
+                        onClick={restrictClickToHitbox ? (() => { requestOrConfirmWall('H', r, c); }) : undefined}
                         onMouseEnter={() => setHover({ o: 'H', r, c })}
                         onPointerEnter={() => setHover({ o: 'H', r, c })}
                         onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -559,7 +625,7 @@ export default function Board({
                           'w-full h-full rounded-[2px] grid place-items-center',
                         ].join(' ')}
                         title={`Valla V @ (${proxyR},${c})`}
-                        onClick={restrictClickToHitbox ? undefined : (() => { onWallClick('V', proxyR, c); })}
+                        onClick={restrictClickToHitbox ? undefined : (() => { requestOrConfirmWall('V', proxyR, c); })}
                         onMouseEnter={() => setHover({ o: 'V', r: proxyR, c })}
                         onPointerEnter={() => setHover({ o: 'V', r: proxyR, c })}
                         onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -572,7 +638,7 @@ export default function Board({
                         <span
                           className={[ 'block rounded-[2px]', innerClass ].join(' ')}
                           style={innerStyle}
-                          onClick={restrictClickToHitbox ? (() => { onWallClick('V', proxyR, c); }) : undefined}
+                          onClick={restrictClickToHitbox ? (() => { requestOrConfirmWall('V', proxyR, c); }) : undefined}
                           onMouseEnter={() => setHover({ o: 'V', r: proxyR, c })}
                           onPointerEnter={() => setHover({ o: 'V', r: proxyR, c })}
                           onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -584,10 +650,12 @@ export default function Board({
                       </button>
                     );
                   }
-                  const isHover = hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
-                  const hoverEnabled = (((showWallHitboxes || previewOnHoverWhenHidden) && !!isHover))
-                    || (!!pressingWall && pressingWall.o === 'V' && pressingWall.r === r && pressingWall.c === c && !active);
-                  const invalidPlacement = hoverEnabled && !validateWallPlacement(
+                  const isHoverMatchV = !!hover && hover.o === 'V' && hover.r === r && hover.c === c && !active;
+                  const isConfirmMatchV = !!confirmWall && confirmWall.o === 'V' && confirmWall.r === r && confirmWall.c === c && !active;
+                  const hoverEnabled = showWallHitboxes && isHoverMatchV;
+                  // Mostrar previsualización si hay selección confirmable o si hay hover con hitboxes visibles
+                  const wantPreviewV = (!active) && (isConfirmMatchV || hoverEnabled);
+                  const invalidPlacement = wantPreviewV && !validateWallPlacement(
                     {
                       size,
                       pawns: {
@@ -624,23 +692,32 @@ export default function Board({
                   const leaderStartColV = Math.max(1, startColVRaw);
                   const wantsPctExpandV = expandClickableWithShape && (wallHitboxShape.V.widthPct > 100 || wallHitboxShape.V.heightPct > 100);
                   const wantsPxExpandV = Math.max(0, wallHitboxThicknessPx.V) > 0;
-                  const shouldExpandV = !active && (hoverEnabled || !!pressingWall) && (wantsPctExpandV || wantsPxExpandV);
-                  const spanStyle: React.CSSProperties | undefined =
-                    (shouldExpandV && wantsPctExpandV)
-                      ? { gridColumn: `${leaderStartColV} / ${leaderEndColV}`, gridRow: `${leaderStartRow} / ${leaderEndRow}` }
-                      : undefined;
+                  const shouldExpandV = !active && (wantPreviewV || !!pressingWall) && (wantsPctExpandV || wantsPxExpandV);
+                  let spanStyle: React.CSSProperties | undefined = undefined;
+                  if (shouldExpandV) {
+                    if (wantsPctExpandV) {
+                      spanStyle = { gridColumn: `${leaderStartColV} / ${leaderEndColV}`, gridRow: `${leaderStartRow} / ${leaderEndRow}` };
+                    } else if (wantsPxExpandV) {
+                      // Expandir una pista a izquierda y derecha para cubrir grosor extra en PX
+                      const startColPx = Math.max(1, gc + 1 - 1);
+                      const endColPx = Math.min(gridCount + 1, gc + 2 + 1);
+                      spanStyle = { gridColumn: `${startColPx} / ${endColPx}` };
+                    }
+                  }
                   // Visual: grosor en PX usando wallGap (independiente del span y del thicknessPx); longitud en %
                   const innerW_VPx = Math.max(0, Math.round((wallGap * Math.min(100, wallHitboxShape.V.widthPct)) / 100));
                   const innerH_V = Math.min(100, wallHitboxShape.V.heightPct);
+                  const clipV = buildClipPath('V', (wallHitboxShape as any)?.V?.preset, (wallHitboxShape as any)?.V?.hex);
                   const innerStyle: React.CSSProperties = {
                     // En V: grosor = width en PX basado en wallGap; longitud = height en %
                     width: `${innerW_VPx}px`,
                     height: `${innerH_V}%`,
+                    clipPath: clipV,
                   };
-                  const innerClass = active ? '' : (hoverEnabled ? hoverClass : baseHitboxClass);
+                  const innerClass = active ? '' : (wantPreviewV ? hoverClass : baseHitboxClass);
                   const appliedBaseSpanV = !active ? baseSpanV : undefined;
                   // Siempre previsualizar/colocar como 2 segmentos (longitud)
-                  const hoverBaseSpanV: React.CSSProperties | undefined = (!active && hoverEnabled)
+                  const hoverBaseSpanV: React.CSSProperties | undefined = (!active && wantPreviewV)
                     ? { gridColumn: `${gc + 1} / ${gc + 2}`, gridRow: `${gr + 1} / ${gr + 4}` }
                     : undefined;
                   const activeLeaderSpanV: React.CSSProperties | undefined = (active && isLeaderV)
@@ -653,6 +730,7 @@ export default function Board({
                     ...(spanStyle ?? {}),
                     ...(activeLeaderSpanV ?? {}),
                   };
+                  const hasPxOverlayV = restrictClickToHitbox && !active && (wantsPctExpandV || wantsPxExpandV);
                   return (
                     <button
                       key={`${gr}-${gc}`}
@@ -660,7 +738,7 @@ export default function Board({
                       className={[
                         'relative w-full h-full rounded-[2px] transition-colors grid place-items-center',
                         // Elevar cuando expandimos el span para evitar solapamientos de pointer-events
-                        (spanStyle || baseSpanV) ? 'z-20' : '',
+                        (spanStyle || baseSpanV || hasPxOverlayV) ? 'z-20' : '',
                         active && isLeaderV
                           ? (coverV?.by === 'L'
                               ? 'bg-orange-500/90 pointer-events-none z-10'
@@ -672,7 +750,7 @@ export default function Board({
                             : '',
                       ].join(' ')}
                       title={`Valla V @ (${r},${c})`}
-                      onClick={restrictClickToHitbox ? undefined : (() => { onWallClick('V', r, c); })}
+                      onClick={restrictClickToHitbox ? undefined : (() => { requestOrConfirmWall('V', r, c); })}
                       onMouseEnter={() => setHover({ o: 'V', r, c })}
                       onPointerEnter={() => setHover({ o: 'V', r, c })}
                       onMouseLeave={() => { setHover(null); setPressingWall(null); }}
@@ -683,16 +761,19 @@ export default function Board({
                       aria-pressed={active}
                     >
                       {/* Outline visual del hitbox total clickeable (no altera el rectángulo verde de preview) */}
-                      {!active && (showWallHitboxes || hoverEnabled || !!pressingWall) && (
+                      {!active && showWallHitboxes && (
                         <span
                           aria-hidden
                           className={[
                             'absolute rounded-[2px] pointer-events-none',
                             'ring-1', t.ring,
                           ].join(' ')}
-                          style={wantsPctExpandV
-                            ? { left: 0, right: 0, top: 0, bottom: 0 }
-                            : { left: -Math.max(0, wallHitboxThicknessPx.V), right: -Math.max(0, wallHitboxThicknessPx.V), top: 0, bottom: 0 }}
+                          style={{
+                            ...(wantsPctExpandV
+                              ? { left: 0, right: 0, top: 0, bottom: 0 }
+                              : { left: -Math.max(0, wallHitboxThicknessPx.V), right: -Math.max(0, wallHitboxThicknessPx.V), top: 0, bottom: 0 }),
+                            clipPath: clipV,
+                          }}
                         />
                       )}
                       {/* Overlay transparente: amplía área de click sin cambiar visual cuando restrictClickToHitbox está activo */}
@@ -706,13 +787,13 @@ export default function Board({
                             top: 0,
                             bottom: 0,
                           }}
-                          onClick={() => { onWallClick('V', r, c); }}
+                          onClick={() => { requestOrConfirmWall('V', r, c); }}
                         />
                       )}
                       <span
                         className={[ 'block rounded-[2px]', innerClass ].join(' ')}
                         style={innerStyle}
-                        onClick={restrictClickToHitbox ? (() => { onWallClick('V', r, c); }) : undefined}
+                        onClick={restrictClickToHitbox ? (() => { requestOrConfirmWall('V', r, c); }) : undefined}
                         onMouseEnter={() => setHover({ o: 'V', r, c })}
                         onPointerEnter={() => setHover({ o: 'V', r, c })}
                         onMouseLeave={() => { setHover(null); setPressingWall(null); }}

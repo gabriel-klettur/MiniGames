@@ -88,8 +88,10 @@ function App() {
             highlightCells={highlightCells}
             inputMode={inputMode}
             onToggleInputMode={toggleInputMode}
+            isCoarsePointer={isCoarsePointer}
             wallGap={ui.wallGap}
             warp={ui.boardWarp}
+            showWallHitboxes={ui.showWallHitboxes}
             wallHitboxColor={ui.wallHitboxColor}
             wallPreviewMonochrome={ui.wallPreviewMonochrome}
             wallHitboxOpacity={ui.wallHitboxOpacity}
