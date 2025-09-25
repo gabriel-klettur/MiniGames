@@ -19,10 +19,10 @@ export interface UIState {
   wallHitboxOpacity: 10 | 20 | 30 | 40;
   /** Mostrar preview al pasar el ratón cuando los hitbox están ocultos. */
   previewOnHoverWhenHidden: boolean;
-  /** Forma del hitbox visual: porcentajes de ancho/alto por orientación (1..500%). */
+  /** Forma del hitbox visual: porcentajes y preset por orientación (1..500%). */
   wallHitboxShape: {
-    H: { widthPct: number; heightPct: number };
-    V: { widthPct: number; heightPct: number };
+    H: { widthPct: number; heightPct: number; preset?: 'rect' | 'diamond' | 'hex6'; hex?: { aPct: number; bPct: number } };
+    V: { widthPct: number; heightPct: number; preset?: 'rect' | 'diamond' | 'hex6'; hex?: { aPct: number; bPct: number } };
   };
   /** Grosor extra del hitbox en píxeles por orientación (puede ser negativo para estrechar). */
   wallHitboxThicknessPx: {
@@ -59,8 +59,8 @@ const initialState: UIState = {
   wallHitboxOpacity: 20,
   previewOnHoverWhenHidden: false,
   wallHitboxShape: {
-    H: { widthPct: 100, heightPct: 100 },
-    V: { widthPct: 100, heightPct: 100 },
+    H: { widthPct: 100, heightPct: 100, preset: 'rect', hex: { aPct: 50, bPct: 20 } },
+    V: { widthPct: 100, heightPct: 100, preset: 'rect', hex: { aPct: 50, bPct: 20 } },
   },
   wallHitboxThicknessPx: { H: 18, V: 18 },
   expandClickableWithShape: true,
@@ -111,15 +111,24 @@ const uiSlice = createSlice({
     togglePreviewOnHoverWhenHidden(state) {
       state.previewOnHoverWhenHidden = !state.previewOnHoverWhenHidden;
     },
-    /** Ajusta la forma del hitbox visual (porcentajes 1..500). */
+    /** Ajusta la forma del hitbox visual (porcentajes 1..500) y preset opcional. */
     setWallHitboxShape(
       state,
-      action: PayloadAction<{ o: 'H' | 'V'; widthPct?: number; heightPct?: number }>,
+      action: PayloadAction<{ o: 'H' | 'V'; widthPct?: number; heightPct?: number; preset?: 'rect'|'diamond'|'hex6'; hexA_pct?: number; hexB_pct?: number }>,
     ) {
-      const { o, widthPct, heightPct } = action.payload;
+      const { o, widthPct, heightPct, preset, hexA_pct, hexB_pct } = action.payload;
       const clamp = (n: number) => (n < 1 ? 1 : n > 500 ? 500 : Math.round(n));
       if (typeof widthPct === 'number') state.wallHitboxShape[o].widthPct = clamp(widthPct);
       if (typeof heightPct === 'number') state.wallHitboxShape[o].heightPct = clamp(heightPct);
+      if (preset) state.wallHitboxShape[o].preset = preset;
+      if (typeof hexA_pct === 'number') {
+        const v = Math.max(0, Math.min(50, Math.round(hexA_pct)));
+        (state.wallHitboxShape[o].hex ??= { aPct: 50, bPct: 20 }).aPct = v;
+      }
+      if (typeof hexB_pct === 'number') {
+        const v = Math.max(0, Math.min(50, Math.round(hexB_pct)));
+        (state.wallHitboxShape[o].hex ??= { aPct: 50, bPct: 20 }).bPct = v;
+      }
     },
     /** Ajusta el grosor de vallas (clamp: 8..32 px). */
     setWallGap(state, action: PayloadAction<number>) {

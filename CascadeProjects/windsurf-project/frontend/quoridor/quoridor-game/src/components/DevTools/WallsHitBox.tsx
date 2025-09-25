@@ -281,6 +281,36 @@ export default function WallsHitBox() {
               value={wallHitboxThicknessPx.H}
               onChange={(v) => dispatch(setWallHitboxThicknessPx({ o: 'H', px: v }))}
             />
+            {/* Preset de forma para H */}
+            <SegmentedOptions
+              label="Preset (H)"
+              options={["rect","diamond","hex6"] as const}
+              value={(wallHitboxShape as any).H?.preset ?? 'rect'}
+              onSelect={(v) => dispatch(setWallHitboxShape({ o: 'H', preset: v } as any))}
+              renderLabel={(v) => (v === 'rect' ? 'Rectángulo' : v === 'diamond' ? 'Rombo' : v === 'hex6' ? 'Hexágono 6' : String(v))}
+            />
+            {((wallHitboxShape as any).H?.preset ?? 'rect') === 'hex6' && (
+              <>
+                <RangeNumberControl
+                  id="hitbox-H-hex-a"
+                  label="Hex (a%) — desplazamiento grosor (0-50)"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={(wallHitboxShape as any).H?.hex?.aPct ?? 50}
+                  onChange={(v) => dispatch(setWallHitboxShape({ o: 'H', hexA_pct: v } as any))}
+                />
+                <RangeNumberControl
+                  id="hitbox-H-hex-b"
+                  label="Hex (b%) — avance longitudinal (0-50)"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={(wallHitboxShape as any).H?.hex?.bPct ?? 20}
+                  onChange={(v) => dispatch(setWallHitboxShape({ o: 'H', hexB_pct: v } as any))}
+                />
+              </>
+            )}
           </div>
         </fieldset>
 
@@ -315,6 +345,36 @@ export default function WallsHitBox() {
               value={wallHitboxThicknessPx.V}
               onChange={(v) => dispatch(setWallHitboxThicknessPx({ o: 'V', px: v }))}
             />
+            {/* Preset de forma para V */}
+            <SegmentedOptions
+              label="Preset (V)"
+              options={["rect","diamond","hex6"] as const}
+              value={(wallHitboxShape as any).V?.preset ?? 'rect'}
+              onSelect={(v) => dispatch(setWallHitboxShape({ o: 'V', preset: v } as any))}
+              renderLabel={(v) => (v === 'rect' ? 'Rectángulo' : v === 'diamond' ? 'Rombo' : v === 'hex6' ? 'Hexágono 6' : String(v))}
+            />
+            {((wallHitboxShape as any).V?.preset ?? 'rect') === 'hex6' && (
+              <>
+                <RangeNumberControl
+                  id="hitbox-V-hex-a"
+                  label="Hex (a%) — desplazamiento grosor (0-50)"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={(wallHitboxShape as any).V?.hex?.aPct ?? 50}
+                  onChange={(v) => dispatch(setWallHitboxShape({ o: 'V', hexA_pct: v } as any))}
+                />
+                <RangeNumberControl
+                  id="hitbox-V-hex-b"
+                  label="Hex (b%) — avance longitudinal (0-50)"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={(wallHitboxShape as any).V?.hex?.bPct ?? 20}
+                  onChange={(v) => dispatch(setWallHitboxShape({ o: 'V', hexB_pct: v } as any))}
+                />
+              </>
+            )}
           </div>
         </fieldset>
       </div>
