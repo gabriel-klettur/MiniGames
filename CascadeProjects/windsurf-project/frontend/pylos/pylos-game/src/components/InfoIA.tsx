@@ -16,6 +16,18 @@ function fmtDate(ts: number): string {
   }
 }
 
+// Build timestamp for filenames as: day_month_year__hora_minuto_segundo
+function pad2(n: number): string { return String(n).padStart(2, '0'); }
+function buildExportTimestampName(date: Date = new Date()): string {
+  const day = pad2(date.getDate());
+  const month = pad2(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const hour = pad2(date.getHours());
+  const minute = pad2(date.getMinutes());
+  const second = pad2(date.getSeconds());
+  return `${day}_${month}_${year}__${hour}_${minute}_${second}`;
+}
+
 function toCsv(rows: Array<Record<string, string | number | null | undefined>>): string {
   if (rows.length === 0) return '';
   const headers = Object.keys(rows[0]);
@@ -193,7 +205,7 @@ export default function InfoIA() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'pylos-infoia-sims.json';
+    a.download = `data_ia_partidas_${buildExportTimestampName()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [records]);
@@ -217,7 +229,7 @@ export default function InfoIA() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'pylos-infoia-sims.csv';
+    a.download = `data_ia_partidas_${buildExportTimestampName()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, [records]);

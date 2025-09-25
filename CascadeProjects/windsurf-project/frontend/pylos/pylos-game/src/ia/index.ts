@@ -1,5 +1,6 @@
 import type { GameState } from '../game/types';
 import { bestMove } from './search/search';
+import { TT } from './tt';
 import { applyMove } from './moves';
 import type { AIMove } from './moves';
 
@@ -9,6 +10,7 @@ import type { AIMove } from './moves';
  */
 export function computeBestMove(state: GameState, depth: number): { move: AIMove | null; score: number } {
   const d = Math.max(1, Math.min(10, Math.floor(depth)));
+  try { TT.clear(); } catch {}
   return bestMove(state, d);
 }
 
@@ -50,6 +52,8 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   nodes: number;
   elapsedMs: number;
   nps: number;
+  ttReads?: number;
+  ttHits?: number;
 }>
 {
   const worker = ensureWorker();
@@ -77,6 +81,8 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           nodes: data.nodes ?? 0,
           elapsedMs: data.elapsedMs ?? 0,
           nps: data.nps ?? 0,
+          ttReads: data.ttReads,
+          ttHits: data.ttHits,
         });
       }
     };
