@@ -52,6 +52,18 @@ export default function InfoIA() {
   const [moveElapsedMs, setMoveElapsedMs] = useState<number>(0);
   const [moveTargetMs, setMoveTargetMs] = useState<number | undefined>(undefined);
   const [moveIndex, setMoveIndex] = useState<number>(0);
+  
+  // Comparison datasets for Charts tab
+  type CompareDataset = {
+    id: string;
+    name: string; // usually filename
+    source: 'json' | 'csv';
+    color: string; // base color for this dataset
+    records: InfoIAGameRecord[];
+  };
+  const [compareSets, setCompareSets] = useState<CompareDataset[]>([]);
+  const compareInputRef = useRef<HTMLInputElement | null>(null);
+  const [activeTableSourceId, setActiveTableSourceId] = useState<string>('local');
 
   // Controls
   const [depth, setDepth] = useState<number>(3);
@@ -201,17 +213,23 @@ export default function InfoIA() {
   }, [stopProgress]);
 
   const onExportJSON = useCallback(() => {
-    const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
+    const current = activeTableSourceId === 'local'
+      ? records
+      : (compareSets.find((s) => s.id === activeTableSourceId)?.records || records);
+    const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `data_ia_partidas_${buildExportTimestampName()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [records]);
+  }, [activeTableSourceId, compareSets, records]);
 
   const onExportCSV = useCallback(() => {
-    const rows = records.map((r) => ({
+    const current = activeTableSourceId === 'local'
+      ? records
+      : (compareSets.find((s) => s.id === activeTableSourceId)?.records || records);
+    const rows = current.map((r) => ({
       id: r.id,
       createdAt: fmtDate(r.createdAt),
       depth: r.depth,
@@ -232,31 +250,9 @@ export default function InfoIA() {
     a.download = `data_ia_partidas_${buildExportTimestampName()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [records]);
+  }, [activeTableSourceId, compareSets, records]);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const onImportClick = () => fileInputRef.current?.click();
-  const onImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      const list: InfoIAGameRecord[] = Array.isArray(data) ? data : [data];
-      for (const rec of list) {
-        // naive validation
-        if (!rec || typeof rec !== 'object') continue;
-        if ((rec as any).version !== 'pylos-infoia-v1') continue;
-        if (!(rec as any).id) (rec as any).id = makeId();
-        await dbSave(rec as InfoIAGameRecord);
-      }
-      await refresh();
-    } catch (err) {
-      console.error('Import error', err);
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }, [refresh]);
+  // Remove old JSON-to-DB import; we reuse compare loader for both tabs
 
   const onDelete = useCallback(async (id: string) => {
     await dbDelete(id);
@@ -270,9 +266,9 @@ export default function InfoIA() {
 
   // Aggregates for charts (group by dificultad/depth)
   type AggRow = { depth: number; avgSec: number; minSec: number; maxSec: number };
-  const aggregates = useMemo<AggRow[]>(() => {
+  const computeAggregates = useCallback((list: InfoIAGameRecord[]): AggRow[] => {
     const map = new Map<number, { count: number; sumAvg: number; min: number; max: number }>();
-    for (const r of records) {
+    for (const r of list) {
       const d = r.depth;
       const recAvg = (r.avgThinkMs ?? 0) / 1000;
       // Compute per-record min/max over moves
@@ -300,35 +296,179 @@ export default function InfoIA() {
     }
     out.sort((a, b) => a.depth - b.depth);
     return out;
-  }, [records]);
+  }, []);
+  // Note: we compute aggregates per-dataset in the charts section directly
 
-  // Chart helpers (X: depth categories, Y: seconds)
-  const chartDims = useMemo(() => {
-    const margin = { top: 56, right: 32, bottom: 64, left: 90 };
-    const width = 900;
-    const height = 420;
-    // Determine max Y across all series (seconds)
-    let maxY = 1;
-    for (const a of aggregates) {
-      maxY = Math.max(maxY, a.avgSec, a.minSec, a.maxSec);
-    }
-    // Nice ticks for Y
-    const targetTicks = 5;
-    const niceStep = (rawMax: number, target: number) => {
-      if (!(rawMax > 0)) return 1;
-      const raw = rawMax / target;
-      const pow10 = Math.pow(10, Math.floor(Math.log10(raw)));
-      const candidates = [1, 2, 2.5, 5, 10].map((m) => m * pow10);
-      for (const c of candidates) if (raw <= c) return c;
-      return 10 * pow10;
+  // Colors for comparison datasets (distinct hues)
+  const datasetColors = useMemo<string[]>(() => [
+    '#60a5fa', // blue-400
+    '#f472b6', // pink-400
+    '#34d399', // emerald-400
+    '#a78bfa', // violet-400
+    '#f59e0b', // amber-500
+    '#22d3ee', // cyan-400
+    '#fb7185', // rose-400
+    '#fbbf24', // amber-400
+  ], []);
+
+  // Parse helpers for comparison imports
+  const parseCsvToRecords = useCallback((text: string): InfoIAGameRecord[] => {
+    // Normalize BOM and choose delimiter
+    let t = text.replace(/^\uFEFF/, '');
+    const firstLineEnd = t.indexOf('\n') === -1 ? t.length : t.indexOf('\n');
+    const headerProbe = t.slice(0, firstLineEnd);
+    const commaCount = (headerProbe.match(/,/g) || []).length;
+    const semiCount = (headerProbe.match(/;/g) || []).length;
+    const DELIM = semiCount > commaCount ? ';' : ',';
+
+    // Split lines (fields should not contain newlines in our export)
+    const rawLines = t.split(/\r?\n/);
+    const lines = rawLines.filter((ln) => ln.trim().length > 0);
+    if (lines.length === 0) return [];
+
+    // Split respecting quotes
+    const splitCsvLine = (line: string): string[] => {
+      const cols: string[] = [];
+      let buf = '';
+      let q = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+          if (q && line[i + 1] === '"') { buf += '"'; i++; } else { q = !q; }
+        } else if (c === DELIM && !q) {
+          cols.push(buf); buf = '';
+        } else {
+          buf += c;
+        }
+      }
+      cols.push(buf);
+      // Unquote and trim
+      for (let i = 0; i < cols.length; i++) {
+        let v = cols[i];
+        if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1).replace(/""/g, '"');
+        cols[i] = v.trim();
+      }
+      return cols;
     };
-    const step = niceStep(maxY, targetTicks);
-    const niceMaxY = Math.ceil(maxY / step) * step;
-    const ticksY: number[] = [];
-    for (let y = 0; y <= niceMaxY + 1e-9; y += step) ticksY.push(Number(y.toFixed(6)));
-    const countX = aggregates.length;
-    return { width, height, margin, niceMaxY, ticksY, countX };
-  }, [aggregates]);
+
+    const headerRaw = splitCsvLine(lines[0]);
+    const norm = (s: string) => s.replace(/^\uFEFF/, '').trim().toLowerCase();
+    const headerMap = new Map<string, number>();
+    headerRaw.forEach((h, i) => headerMap.set(norm(h), i));
+    const get = (arr: string[], name: string) => arr[headerMap.get(norm(name)) ?? -1] ?? '';
+    const parseNum = (s: string): number => {
+      const cleaned = s.replace(/\s+/g, '').replace(/,/g, '.');
+      const n = Number(cleaned);
+      return isFinite(n) ? n : 0;
+    };
+
+    const out: InfoIAGameRecord[] = [];
+    for (let r = 1; r < lines.length; r++) {
+      const cols = splitCsvLine(lines[r]);
+      if (cols.length === 0) continue;
+      const idText = get(cols, 'id');
+      const id = (idText && idText.length > 0 ? idText : makeId()).trim();
+      const createdAtStr = get(cols, 'createdAt');
+      const createdAt = Date.parse(createdAtStr) || Date.now();
+      const depth = parseNum(get(cols, 'depth'));
+      const timeModeTxt = get(cols, 'timeMode');
+      const timeMode = (timeModeTxt === 'auto' ? 'auto' : 'manual') as TimeMode;
+      const timeSecondsVal = parseNum(get(cols, 'timeSeconds'));
+      const timeSeconds = timeMode === 'manual' && timeSecondsVal > 0 ? timeSecondsVal : undefined;
+      const pliesLimit = parseNum(get(cols, 'pliesLimit'));
+      const moves = parseNum(get(cols, 'moves'));
+      const avgThinkMs = parseNum(get(cols, 'avgThinkMs'));
+      const totalThinkMs = parseNum(get(cols, 'totalThinkMs'));
+      const winnerRaw = (get(cols, 'winner') || '').trim();
+      const winner = winnerRaw === 'L' || winnerRaw === 'D' ? (winnerRaw as 'L' | 'D') : null;
+      const endedReasonText = (get(cols, 'endedReason') || '').trim();
+      const endedReason = endedReasonText.length > 0 ? endedReasonText : undefined;
+      out.push({
+        id,
+        createdAt,
+        version: 'pylos-infoia-v1',
+        depth,
+        timeMode,
+        timeSeconds,
+        pliesLimit,
+        moves,
+        avgThinkMs,
+        totalThinkMs,
+        winner,
+        endedReason,
+        perMove: [],
+      });
+    }
+    return out;
+  }, []);
+
+  const parseJsonToRecords = useCallback((text: string): InfoIAGameRecord[] => {
+    try {
+      const data = JSON.parse(text);
+      const list: InfoIAGameRecord[] = Array.isArray(data) ? data : [data];
+      const out: InfoIAGameRecord[] = [];
+      for (const rec of list) {
+        if (!rec || typeof rec !== 'object') continue;
+        const anyRec = rec as any;
+        if (anyRec.version !== 'pylos-infoia-v1') continue;
+        if (!anyRec.id) anyRec.id = makeId();
+        out.push(anyRec as InfoIAGameRecord);
+      }
+      return out;
+    } catch (e) {
+      console.error('JSON parse error (comparación):', e);
+      return [];
+    }
+  }, []);
+
+  const pickDatasetColor = useCallback((idx: number) => datasetColors[idx % datasetColors.length], [datasetColors]);
+  const onAddCompareClick = () => compareInputRef.current?.click();
+  const onCompareFiles = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const newSets: CompareDataset[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      try {
+        const text = await f.text();
+        let records: InfoIAGameRecord[] = [];
+        if (/\.json$/i.test(f.name) || f.type.includes('json')) {
+          records = parseJsonToRecords(text);
+        } else if (/\.csv$/i.test(f.name) || f.type.includes('csv') || f.type.includes('comma-separated')) {
+          records = parseCsvToRecords(text);
+        } else {
+          // Try JSON first, then CSV as fallback
+          records = parseJsonToRecords(text);
+          if (records.length === 0) records = parseCsvToRecords(text);
+        }
+        if (records.length > 0) {
+          newSets.push({
+            id: makeId(),
+            name: f.name,
+            source: (/\.csv$/i.test(f.name) ? 'csv' : 'json'),
+            color: pickDatasetColor(compareSets.length + newSets.length),
+            records,
+          });
+        }
+      } catch (err) {
+        console.error('Error leyendo archivo de comparación:', f.name, err);
+      }
+    }
+    setCompareSets((prev) => [...prev, ...newSets]);
+    if (compareInputRef.current) compareInputRef.current.value = '';
+  }, [compareSets.length, parseCsvToRecords, parseJsonToRecords, pickDatasetColor]);
+
+  const onRemoveCompare = useCallback((id: string) => {
+    setCompareSets((prev) => prev.filter((s) => s.id !== id));
+    setActiveTableSourceId((prev) => (prev === id ? 'local' : prev));
+  }, []);
+  const onClearCompare = useCallback(() => {
+    setCompareSets([]);
+    setActiveTableSourceId('local');
+    if (compareInputRef.current) compareInputRef.current.value = '';
+  }, []);
+
+  // chartDims removed: new comparative chart computes layout per render
 
   return (
     <section className="panel infoia-panel" aria-label="InfoIA (simulaciones de IA)">
@@ -363,6 +503,15 @@ export default function InfoIA() {
           )}
         </div>
       </div>
+      {/* Shared hidden input for CSV/JSON across both tabs */}
+      <input
+        ref={compareInputRef}
+        type="file"
+        accept=".json,application/json,.csv,text/csv"
+        multiple
+        onChange={onCompareFiles}
+        style={{ display: 'none' }}
+      />
 
       {activeTab === 'sim' && (
         <>
@@ -373,6 +522,32 @@ export default function InfoIA() {
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
+
+            {/* Selector de tabla: Local o archivos agregados */}
+            <label className="label">Tabla</label>
+            <div className="segmented" role="tablist" aria-label="Seleccionar dataset para la tabla">
+              <button
+                className={activeTableSourceId === 'local' ? 'active' : ''}
+                role="tab"
+                aria-selected={activeTableSourceId === 'local'}
+                onClick={() => setActiveTableSourceId('local')}
+                title="Mostrar datos locales"
+              >Local</button>
+              {compareSets.map((s) => (
+                <button
+                  key={s.id}
+                  className={activeTableSourceId === s.id ? 'active' : ''}
+                  role="tab"
+                  aria-selected={activeTableSourceId === s.id}
+                  onClick={() => setActiveTableSourceId(s.id)}
+                  title={s.name}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: s.color }} />
+                  <span className="ellipsis" style={{ maxWidth: 160 }}>{s.name}</span>
+                </button>
+              ))}
+            </div>
  
             <label className="label">Tiempo</label>
             <div className="segmented" role="group" aria-label="Modo de tiempo de simulación">
@@ -408,11 +583,10 @@ export default function InfoIA() {
               ) : (
                 <button className="btn-stop" onClick={onStop} title="Detener simulación en curso">Detener</button>
               )}
-              <button className="btn-ghost" onClick={onExportJSON} disabled={records.length === 0}>Exportar JSON</button>
-              <button className="btn-ghost" onClick={onExportCSV} disabled={records.length === 0}>Exportar CSV</button>
-              <button className="btn-ghost" onClick={onImportClick}>Importar…</button>
-              <input ref={fileInputRef} type="file" accept="application/json" onChange={onImportFile} style={{ display: 'none' }} />
-              <button className="btn-danger" onClick={onClearAll} disabled={records.length === 0}>Borrar todo</button>
+              <button className="btn-ghost" onClick={onExportJSON}>Exportar JSON</button>
+              <button className="btn-ghost" onClick={onExportCSV}>Exportar CSV</button>
+              <button className="btn-ghost" onClick={onAddCompareClick} title="Agregar CSV o JSON">Agregar CSV o JSON</button>
+              <button className="btn-danger" onClick={onClearAll} disabled={activeTableSourceId !== 'local' || records.length === 0} title={activeTableSourceId !== 'local' ? 'Solo disponible para datos locales' : 'Borrar todos los registros locales'}>Borrar todo</button>
             </div>
           </div>
  
@@ -440,6 +614,12 @@ export default function InfoIA() {
             </div>
           )}
  
+          {(() => {
+            const activeDs = activeTableSourceId === 'local' ? null : compareSets.find((s) => s.id === activeTableSourceId) || null;
+            const tableRecs = activeDs ? activeDs.records : records;
+            const sorted = [...tableRecs].sort((a, b) => b.createdAt - a.createdAt);
+            const isLoading = activeDs ? false : loading;
+            return (
           <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
             <table className="table">
               <thead>
@@ -459,12 +639,12 @@ export default function InfoIA() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {isLoading ? (
                   <tr><td colSpan={12}>Cargando…</td></tr>
-                ) : records.length === 0 ? (
+                ) : sorted.length === 0 ? (
                   <tr><td colSpan={12}>Sin registros aún</td></tr>
                 ) : (
-                  records.map((r) => (
+                  sorted.map((r) => (
                     <tr key={r.id}>
                       <td title={r.id} className="mono ellipsis">{r.id}</td>
                       <td>{fmtDate(r.createdAt)}</td>
@@ -514,7 +694,9 @@ export default function InfoIA() {
                           }}
                           title="Descargar JSON"
                         >Descargar</button>
-                        <button className="chip-btn btn-danger" onClick={() => onDelete(r.id)} title="Eliminar">Eliminar</button>
+                        {activeDs == null && (
+                          <button className="chip-btn btn-danger" onClick={() => onDelete(r.id)} title="Eliminar">Eliminar</button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -522,118 +704,222 @@ export default function InfoIA() {
               </tbody>
             </table>
           </div>
+            );
+          })()}
         </>
       )}
 
       {activeTab === 'charts' && (
         <div className="infoia__charts" style={{ paddingTop: 8 }}>
-          {aggregates.length === 0 ? (
-            <p style={{ opacity: 0.8 }}>Sin datos todavía. Ejecuta simulaciones en la pestaña "Simulaciones y Métricas".</p>
-          ) : (
-            (() => {
-              const { width, height, margin, niceMaxY, ticksY, countX } = chartDims;
-              const innerW = width - margin.left - margin.right;
-              const innerH = height - margin.top - margin.bottom;
-              const depths = aggregates.map((a) => a.depth);
-              const xForIndex = (i: number) =>
-                margin.left + (countX <= 1 ? innerW / 2 : (i * innerW) / (countX - 1));
-              const yScale = (s: number) => height - margin.bottom - innerH * (s / (niceMaxY || 1));
-              const series: { key: keyof AggRow; label: string; color: string }[] = [
-                { key: 'avgSec', label: 'Promedio', color: '#22c55e' },
-                { key: 'minSec', label: 'Mín', color: '#f59e0b' },
-                { key: 'maxSec', label: 'Máx', color: '#ef4444' },
-              ];
-              const pathForSeries = (key: keyof AggRow) => {
-                const pts = aggregates.map((a, idx) => `${xForIndex(idx)},${yScale(a[key] as number)}`);
-                return pts.length > 0 ? `M${pts[0]} L${pts.slice(1).join(' L')}` : '';
-              };
-              return (
-                <svg width={width} height={height} role="img" aria-label="Gráfico de métricas por dificultad">
-                  <defs>
-                    {/* Soft shadow for lines/points */}
-                    <filter id="ds" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
-                      <feOffset dy="1" result="offset" />
-                      <feComponentTransfer>
-                        <feFuncA type="linear" slope="0.25" />
-                      </feComponentTransfer>
-                      <feMerge>
-                        <feMergeNode in="offset" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  {/* Legend */}
-                  <g transform={`translate(${margin.left}, ${margin.top - 28})`} aria-hidden="false">
-                    {series.map((s, i) => (
-                      <g key={s.key as string} transform={`translate(${i * 160}, 0)`}>
-                        <rect x={0} y={-12} width={14} height={14} fill={s.color} rx={3} ry={3} />
-                        <text x={20} y={0} className="mono" fontSize={12} fill="#e5e7eb">{s.label}</text>
-                      </g>
-                    ))}
-                  </g>
+          {/* Controls for comparison datasets */}
+          <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
+            <button className="btn-ghost" onClick={onAddCompareClick} title="Agregar CSV o JSON para comparar">Agregar CSV o JSON para comparar</button>
+            <input
+              ref={compareInputRef}
+              type="file"
+              accept=".json,application/json,.csv,text/csv"
+              multiple
+              onChange={onCompareFiles}
+              style={{ display: 'none' }}
+            />
+            {compareSets.map((s) => (
+              <span key={s.id} className="chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#0b1220', border: '1px solid #1f2937', padding: '4px 8px', borderRadius: 999 }}>
+                <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: 999, background: s.color }} />
+                <span className="mono" title={s.name} style={{ maxWidth: 260 }}>
+                  {s.name}
+                </span>
+                <button className="chip-btn btn-danger" onClick={() => onRemoveCompare(s.id)} title="Quitar">✕</button>
+              </span>
+            ))}
+            {compareSets.length > 0 && (
+              <button className="btn-ghost" onClick={onClearCompare} title="Quitar todas las comparaciones">Limpiar</button>
+            )}
+          </div>
 
-                  {/* Horizontal grid and Y axis */}
-                  <g aria-hidden="true">
-                    {ticksY.map((t, i) => (
-                      <g key={i}>
-                        <line x1={margin.left} y1={yScale(t)} x2={width - margin.right} y2={yScale(t)} stroke="#334155" strokeDasharray="2,4" />
-                        <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={11} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
-                      </g>
-                    ))}
-                    {/* Y axis label */}
-                    <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={12} opacity={0.9} fill="#ffffff">Segundos (s)</text>
-                  </g>
+          {(() => {
+            const local = { id: 'local', name: 'Local', color: '#22c55e', records };
+            const datasets = [local, ...compareSets];
+            // Build aggregates per dataset
+            const dsAgg = datasets.map((ds) => ({ ...ds, aggregates: computeAggregates(ds.records) }));
+            const emptyAgg = dsAgg.filter(d => d.aggregates.length === 0 && d.records.length > 0);
+            if (emptyAgg.length > 0) {
+              // Helpful console warning for diagnosis when CSV parsed but headers mismatched
+              // eslint-disable-next-line no-console
+              console.warn('[InfoIA] Algunos datasets no generaron agregados (revisa columnas esperadas: id, createdAt, depth, timeMode, timeSeconds, pliesLimit, moves, avgThinkMs, totalThinkMs, winner, endedReason):', emptyAgg.map(e => e.name));
+            }
+            const hasAnyAgg = dsAgg.some((d) => d.aggregates.length > 0);
+            if (!hasAnyAgg) {
+              return <p style={{ opacity: 0.8 }}>Sin datos todavía. Ejecuta simulaciones o agrega archivos para comparar.</p>;
+            }
 
-                  {/* Vertical guides and X axis */}
-                  <g aria-hidden="true">
-                    {depths.map((d, i) => (
-                      <g key={d} transform={`translate(${xForIndex(i)}, 0)`}>
-                        <line y1={margin.top} y2={height - margin.bottom} stroke="#1f2937" strokeOpacity={0.25} />
-                        <line y1={height - margin.bottom} y2={height - margin.bottom + 6} stroke="#64748b" />
-                        <text y={height - margin.bottom + 18} textAnchor="middle" fontSize={11} fill="#ffffff">Dificultad {d}</text>
-                      </g>
-                    ))}
-                    {/* X axis label */}
-                    <text x={width - margin.right} y={height - 8} textAnchor="end" fontSize={12} opacity={0.9} fill="#ffffff">Dificultad</text>
-                  </g>
+            // Build union of depths
+            const depthSet = new Set<number>();
+            for (const d of dsAgg) for (const a of d.aggregates) depthSet.add(a.depth);
+            const depths = Array.from(depthSet).sort((a, b) => a - b);
 
-                  {/* Series lines (behind points) */}
-                  {series.map((s) => (
-                    <path
-                      key={s.key as string}
-                      d={pathForSeries(s.key)}
-                      fill="none"
-                      stroke={s.color}
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      opacity={0.95}
-                      filter="url(#ds)"
-                    />
-                  ))}
+            // Chart dimensions and Y scale considering all datasets
+            const margin = { top: 72, right: 32, bottom: 64, left: 90 };
+            const width = 980;
+            const height = 460;
+            const innerW = width - margin.left - margin.right;
+            const innerH = height - margin.top - margin.bottom;
+            let maxY = 1;
+            for (const d of dsAgg) {
+              for (const a of d.aggregates) {
+                maxY = Math.max(maxY, a.avgSec, a.minSec, a.maxSec);
+              }
+            }
+            const targetTicks = 5;
+            const niceStep = (rawMax: number, target: number) => {
+              if (!(rawMax > 0)) return 1;
+              const raw = rawMax / target;
+              const pow10 = Math.pow(10, Math.floor(Math.log10(raw)));
+              const candidates = [1, 2, 2.5, 5, 10].map((m) => m * pow10);
+              for (const c of candidates) if (raw <= c) return c;
+              return 10 * pow10;
+            };
+            const step = niceStep(maxY, targetTicks);
+            const niceMaxY = Math.ceil(maxY / step) * step;
+            const ticksY: number[] = [];
+            for (let y = 0; y <= niceMaxY + 1e-9; y += step) ticksY.push(Number(y.toFixed(6)));
 
-                  {/* Points */}
-                  {aggregates.map((a, idx) => (
-                    <g key={a.depth}>
-                      {series.map((s) => {
-                        const val = a[s.key] as number;
-                        const cx = xForIndex(idx);
-                        const cy = yScale(val);
-                        return (
-                          <g key={s.key as string} filter="url(#ds)">
-                            <circle cx={cx} cy={cy} r={5} fill={s.color} stroke="#ffffff" strokeWidth={1.2} />
-                            <circle cx={cx} cy={cy} r={7} fill="none" stroke={s.color} strokeOpacity={0.25} />
-                            <title>{`${s.label}: ${val.toFixed(3)}s @ Dificultad ${a.depth}`}</title>
-                          </g>
-                        );
-                      })}
+            const idxOfDepth = (d: number) => depths.indexOf(d);
+            const xForIndex = (i: number) => margin.left + (depths.length <= 1 ? innerW / 2 : (i * innerW) / (depths.length - 1));
+            const yScale = (s: number) => height - margin.bottom - innerH * (s / (niceMaxY || 1));
+
+            // Build path segments for a dataset and metric key
+            const pathFor = (aggs: AggRow[], key: keyof AggRow) => {
+              const points: Array<{ x: number; y: number }> = [];
+              for (const a of aggs) {
+                const idx = idxOfDepth(a.depth);
+                if (idx < 0) continue;
+                const val = a[key] as number;
+                const x = xForIndex(idx);
+                const y = yScale(val);
+                points.push({ x, y });
+              }
+              if (points.length === 0) return '';
+              // Build continuous path (no gaps assumed if missing depths)
+              let d = `M${points[0].x},${points[0].y}`;
+              for (let i = 1; i < points.length; i++) d += ` L${points[i].x},${points[i].y}`;
+              return d;
+            };
+
+            return (
+              <svg width={width} height={height} role="img" aria-label="Gráfico comparativo de métricas por dificultad">
+                <defs>
+                  {/* Soft shadow for lines/points */}
+                  <filter id="ds" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                    <feOffset dy="1" result="offset" />
+                    <feComponentTransfer>
+                      <feFuncA type="linear" slope="0.25" />
+                    </feComponentTransfer>
+                    <feMerge>
+                      <feMergeNode in="offset" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Legend: one row per dataset with stroke samples */}
+                <g transform={`translate(${margin.left}, ${margin.top - 40})`} aria-hidden="false">
+                  {dsAgg.map((ds, i) => (
+                    <g key={ds.id || ds.name} transform={`translate(${i * 220}, 0)`}>
+                      {/* Avg (solid) */}
+                      <line x1={0} y1={-6} x2={36} y2={-6} stroke={ds.color} strokeWidth={3} />
+                      {/* Min (dashed) */}
+                      <line x1={0} y1={2} x2={36} y2={2} stroke={ds.color} strokeWidth={2} strokeDasharray="6,4" opacity={0.9} />
+                      {/* Max (dotted) */}
+                      <line x1={0} y1={10} x2={36} y2={10} stroke={ds.color} strokeWidth={2} strokeDasharray="2,5" opacity={0.9} />
+                      <text x={48} y={2} alignmentBaseline="middle" className="mono" fontSize={12} fill="#e5e7eb">{ds.name}</text>
                     </g>
                   ))}
-                </svg>
-              );
-            })()
-          )}
+                </g>
+
+                {/* Horizontal grid and Y axis */}
+                <g aria-hidden="true">
+                  {ticksY.map((t, i) => (
+                    <g key={i}>
+                      <line x1={margin.left} y1={yScale(t)} x2={width - margin.right} y2={yScale(t)} stroke="#334155" strokeDasharray="2,4" />
+                      <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={11} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
+                    </g>
+                  ))}
+                  {/* Y axis label */}
+                  <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={12} opacity={0.9} fill="#ffffff">Segundos (s)</text>
+                </g>
+
+                {/* Vertical guides and X axis */}
+                <g aria-hidden="true">
+                  {depths.map((d, i) => (
+                    <g key={d} transform={`translate(${xForIndex(i)}, 0)`}>
+                      <line y1={margin.top} y2={height - margin.bottom} stroke="#1f2937" strokeOpacity={0.25} />
+                      <line y1={height - margin.bottom} y2={height - margin.bottom + 6} stroke="#64748b" />
+                      <text y={height - margin.bottom + 18} textAnchor="middle" fontSize={11} fill="#ffffff">Dificultad {d}</text>
+                    </g>
+                  ))}
+                  {/* X axis label */}
+                  <text x={width - margin.right} y={height - 8} textAnchor="end" fontSize={12} opacity={0.9} fill="#ffffff">Dificultad</text>
+                </g>
+
+                {/* Dataset lines */}
+                {dsAgg.map((ds) => (
+                  <g key={ds.id || ds.name}>
+                    {/* Avg (solid) */}
+                    <path d={pathFor(ds.aggregates, 'avgSec')} fill="none" stroke={ds.color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.95} filter="url(#ds)" />
+                    {/* Min (dashed) */}
+                    {ds.aggregates.some(a => a.minSec > 0) && (
+                      <path d={pathFor(ds.aggregates, 'minSec')} fill="none" stroke={ds.color} strokeWidth={2} strokeDasharray="6,4" opacity={0.9} />
+                    )}
+                    {/* Max (dotted) */}
+                    {ds.aggregates.some(a => a.maxSec > 0) && (
+                      <path d={pathFor(ds.aggregates, 'maxSec')} fill="none" stroke={ds.color} strokeWidth={2} strokeDasharray="2,5" opacity={0.9} />
+                    )}
+                  </g>
+                ))}
+
+                {/* Points */}
+                {dsAgg.map((ds) => (
+                  <g key={(ds.id || ds.name) + '-pts'}>
+                    {ds.aggregates.map((a) => {
+                      const i = idxOfDepth(a.depth);
+                      const cx = xForIndex(i);
+                      const pts = [
+                        { key: 'avgSec' as const, val: a.avgSec, r: 5, strokeW: 1.2 },
+                        ...(a.minSec > 0 ? [{ key: 'minSec' as const, val: a.minSec, r: 4, strokeW: 1.0 }] : []),
+                        ...(a.maxSec > 0 ? [{ key: 'maxSec' as const, val: a.maxSec, r: 4, strokeW: 1.0 }] : []),
+                      ];
+                      return (
+                        <g key={`d${a.depth}`}> 
+                          {pts.map((p) => {
+                            const cy = yScale(p.val);
+                            return (
+                              <g key={p.key} filter="url(#ds)">
+                                <circle cx={cx} cy={cy} r={p.r} fill={ds.color} stroke="#0b1220" strokeWidth={p.strokeW} />
+                                <circle cx={cx} cy={cy} r={p.r + 2} fill="none" stroke={ds.color} strokeOpacity={0.25} />
+                                <title>{`${ds.name} · ${p.key === 'avgSec' ? 'Promedio' : p.key === 'minSec' ? 'Mín' : 'Máx'}: ${p.val.toFixed(3)}s @ Dificultad ${a.depth}`}</title>
+                              </g>
+                            );
+                          })}
+                        </g>
+                      );
+                    })}
+                  </g>
+                ))}
+              </svg>
+            );
+          })()}
+          {(() => {
+            const local = { id: 'local', name: 'Local', color: '#22c55e', records };
+            const dsAgg = [local, ...compareSets].map((ds) => ({ ...ds, aggregates: computeAggregates(ds.records) }));
+            const empties = dsAgg.filter(d => d.aggregates.length === 0 && d.records.length > 0 && d.name !== 'Local');
+            if (empties.length === 0) return null;
+            return (
+              <p style={{ marginTop: 6, fontSize: 12, opacity: 0.8 }}>
+                Nota: algunos archivos no aportaron datos al gráfico (campos faltantes o valores inválidos): {empties.map(e => e.name).join(', ')}
+              </p>
+            );
+          })()}
         </div>
       )}
     </section>
