@@ -16,18 +16,13 @@ export interface HeaderPanelProps {
   showDevToggle?: boolean;
   // Iniciar partida contra IA (selección de lado y dificultad)
   onStartVsAI?: (enemy: 'L' | 'D', depth: number) => void;
-  // Nuevo: controlar el modo/tiempo de IA (incluye 'Auto')
-  timeMode?: 'auto' | 'manual';
-  timeSeconds?: number; // 0..30
-  onChangeTimeMode?: (m: 'auto' | 'manual') => void;
-  onChangeTimeSeconds?: (secs: number) => void;
 }
 
 /**
  * HeaderPanel: muestra el nombre del juego y acciones principales (Nuevo, Dev).
  * Se piensa para el Sidebar y busca ser compacto en altura.
  */
-function HeaderPanel({ title = 'Pylos', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {}, timeMode = 'manual', timeSeconds = 8, onChangeTimeMode, onChangeTimeSeconds }: HeaderPanelProps) {
+function HeaderPanel({ title = 'Pylos v1.11.25.727', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
   // Estado del popover para Partida Vs IA
   const [vsOpen, setVsOpen] = useState<boolean>(false);
   const [selectedSide, setSelectedSide] = useState<'L' | 'D' | null>(null);
@@ -179,44 +174,7 @@ function HeaderPanel({ title = 'Pylos', onNewGame, showTools, onToggleDev, showI
               </button>
             </div>
         </div>
-        {/* Nuevo apartado: Velocidad (incluye Auto, antes de dificultad) */}
-        <div className="vsai-section" aria-label="Seleccionar velocidad">
-          <div className="vsai-title">Velocidad</div>
-          <div className="vsai-speeds" role="group" aria-label="Velocidad de cálculo de IA">
-            <button
-              className={timeMode === 'auto' ? 'active' : ''}
-              onClick={() => onChangeTimeMode?.('auto')}
-              title="Sin límite de tiempo (Auto)"
-              aria-pressed={timeMode === 'auto'}
-            >
-              Auto
-            </button>
-            <button
-              className={timeMode === 'manual' && timeSeconds === 5 ? 'active' : ''}
-              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(5); }}
-              title="Máximo 5s por jugada"
-              aria-pressed={timeMode === 'manual' && timeSeconds === 5}
-            >
-              Rápido
-            </button>
-            <button
-              className={timeMode === 'manual' && timeSeconds === 10 ? 'active' : ''}
-              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(10); }}
-              title="Máximo 10s por jugada"
-              aria-pressed={timeMode === 'manual' && timeSeconds === 10}
-            >
-              Normal
-            </button>
-            <button
-              className={timeMode === 'manual' && timeSeconds === 30 ? 'active' : ''}
-              onClick={() => { onChangeTimeMode?.('manual'); onChangeTimeSeconds?.(30); }}
-              title="Máximo 30s por jugada"
-              aria-pressed={timeMode === 'manual' && timeSeconds === 30}
-            >
-              Lento
-            </button>
-          </div>
-        </div>
+        {/* Velocidad/tiempo removidos: configuración centralizada en IAPanel (DevTools) */}
         <div className="vsai-section" aria-label="Seleccionar dificultad">
           <div className="vsai-title">Dificultad</div>
           <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">

@@ -60,6 +60,28 @@ function App() {
   const [showRules, setShowRules] = useState<boolean>(false);
   // InfoIA panel (simulaciones y métricas) dentro de DevTools
   const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
+  // IA advanced configuration (quiescence/book)
+  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean }>(() => {
+    try {
+      const raw = localStorage.getItem('pylos.ia.advanced.v1');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && typeof p === 'object') {
+          return {
+            quiescence: typeof p.quiescence === 'boolean' ? p.quiescence : true,
+            qDepthMax: Number.isFinite(p.qDepthMax) ? Math.max(0, Math.min(4, Math.floor(p.qDepthMax))) : 2,
+            qNodeCap: Number.isFinite(p.qNodeCap) ? Math.max(1, Math.min(128, Math.floor(p.qNodeCap))) : 24,
+            futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
+            bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
+          };
+        }
+      }
+    } catch {}
+    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true };
+  });
+  useEffect(() => {
+    try { localStorage.setItem('pylos.ia.advanced.v1', JSON.stringify(iaConfig)); } catch {}
+  }, [iaConfig]);
   const { logSnapshot } = useGameLogger(state);
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
@@ -492,6 +514,7 @@ function App() {
     iaDepth,
     iaTimeMode,
     iaTimeSeconds,
+    iaConfig,
     vsAI,
     atPresent,
     gameOver,
@@ -569,10 +592,6 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
-        timeMode={iaTimeMode}
-        timeSeconds={iaTimeSeconds}
-        onChangeTimeMode={setIaTimeMode}
-        onChangeTimeSeconds={setIaTimeSeconds}
       />
       {showIAUser && (
         <IAUserPanel
@@ -585,10 +604,6 @@ function App() {
             // toggle autoplay (timer is handled inside useAI)
             setIaAutoplay((v) => !v);
           }}
-          timeMode={iaTimeMode}
-          timeSeconds={iaTimeSeconds}
-          onChangeTimeMode={setIaTimeMode}
-          onChangeTimeSeconds={setIaTimeSeconds}
         />
       )}
       {showRules && (
@@ -698,6 +713,8 @@ function App() {
                 onToggleAiAutoplay={() => {
                   setIaAutoplay((v) => !v);
                 }}
+                iaConfig={iaConfig}
+                onChangeIaConfig={(patch) => setIaConfig((prev) => ({ ...prev, ...patch }))}
               />
             )}
             infoIAPanel={(

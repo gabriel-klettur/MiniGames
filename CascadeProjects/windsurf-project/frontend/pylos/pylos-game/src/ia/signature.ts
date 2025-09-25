@@ -62,3 +62,20 @@ export function sameSignature(a: MoveSignature | undefined, mv: AIMove | undefin
   if (a === undefined || !mv) return false;
   return a === makeSignature(mv);
 }
+
+export function decodeSignature(sig: MoveSignature): AIMove {
+  const kind = (sig & 0x1);
+  const a = (sig >>> 1) & 0x3f;
+  const b = (sig >>> 7) & 0x3f;
+  const recCount = (sig >>> 13) & 0x3;
+  const rec1 = (sig >>> 15) & 0x3f;
+  const rec2 = (sig >>> 21) & 0x3f;
+  const recovers = [] as Position[];
+  if (recCount >= 1) recovers.push(indexToPos(rec1));
+  if (recCount >= 2) recovers.push(indexToPos(rec2));
+  if (kind === 0) {
+    return { kind: 'place', dest: indexToPos(a), recovers };
+  } else {
+    return { kind: 'lift', src: indexToPos(a), dest: indexToPos(b), recovers };
+  }
+}

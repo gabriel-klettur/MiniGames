@@ -1,5 +1,6 @@
 import type { GameState, Player } from '../game/types';
-import { positions, getCell, isFree, levelSize } from '../game/board';
+import { positions, getCell, isFree } from '../game/board';
+import { getSquareWindows, getLineWindows } from './precomputed';
 import { isGameOver } from '../game/rules';
 
 /**
@@ -62,17 +63,15 @@ export function evaluate(state: GameState, me: Player): number {
   // Threats: near-complete squares and lines on levels 0..1
   function countSquareThreats(player: Player): number {
     let cnt = 0;
-    for (let level = 0; level <= 2; level++) { // squares exist on levels 0..2, but stronger on 0..1
-      const size = levelSize(level);
-      for (let r = 0; r + 1 < size; r++) {
-        for (let c = 0; c + 1 < size; c++) {
-          let pMe = 0; let pOp = 0;
-          for (let dr = 0; dr < 2; dr++) for (let dc = 0; dc < 2; dc++) {
-            const cell = getCell(state.board, { level, row: r + dr, col: c + dc });
-            if (cell === player) pMe++; else if (cell) pOp++;
-          }
-          if (pOp === 0 && pMe === 3) cnt++;
+    for (let level = 0 as 0 | 1 | 2 | 3; level <= 2; level = (level + 1) as any) {
+      const windows = getSquareWindows(level);
+      for (const w of windows) {
+        let pMe = 0; let pOp = 0;
+        for (const pos of w) {
+          const cell = getCell(state.board, pos);
+          if (cell === player) pMe++; else if (cell) pOp++;
         }
+        if (pOp === 0 && pMe === 3) cnt++;
       }
     }
     return cnt;
@@ -80,31 +79,16 @@ export function evaluate(state: GameState, me: Player): number {
 
   function countLineThreats(player: Player): number {
     let cnt = 0;
-    // level 0: lines of 4; level 1: lines of 3
-    for (let level = 0; level <= 1; level++) {
-      const size = levelSize(level);
+    for (let level = 0 as 0 | 1 | 2 | 3; level <= 1; level = (level + 1) as any) {
+      const windows = getLineWindows(level);
       const req = level === 0 ? 4 : 3;
-      // rows
-      for (let row = 0; row < size; row++) {
-        for (let start = 0; start + req - 1 < size; start++) {
-          let pMe = 0; let pOp = 0;
-          for (let k = 0; k < req; k++) {
-            const cell = getCell(state.board, { level, row, col: start + k });
-            if (cell === player) pMe++; else if (cell) pOp++;
-          }
-          if (pOp === 0 && pMe === req - 1) cnt++;
+      for (const w of windows) {
+        let pMe = 0; let pOp = 0;
+        for (const pos of w) {
+          const cell = getCell(state.board, pos);
+          if (cell === player) pMe++; else if (cell) pOp++;
         }
-      }
-      // cols
-      for (let col = 0; col < size; col++) {
-        for (let start = 0; start + req - 1 < size; start++) {
-          let pMe = 0; let pOp = 0;
-          for (let k = 0; k < req; k++) {
-            const cell = getCell(state.board, { level, row: start + k, col });
-            if (cell === player) pMe++; else if (cell) pOp++;
-          }
-          if (pOp === 0 && pMe === req - 1) cnt++;
-        }
+        if (pOp === 0 && pMe === req - 1) cnt++;
       }
     }
     return cnt;
