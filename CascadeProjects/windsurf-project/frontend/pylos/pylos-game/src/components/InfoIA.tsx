@@ -5,6 +5,8 @@ import { computeBestMoveAsync } from '../ia';
 import type { AIMove } from '../ia/moves';
 import { dbClear, dbDelete, dbGetAll, dbSave, makeId } from '../utils/infoiaDb';
 import type { InfoIAGameRecord } from '../utils/infoiaDb';
+import { computeKey } from '../ia/zobrist';
+import { makeSignature } from '../ia/signature';
 
 type TimeMode = 'auto' | 'manual';
 
@@ -119,7 +121,7 @@ export default function InfoIA() {
     let state = initialState();
     let moves = 0;
     let totalThinkMs = 0;
-    const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number }[] = [];
+    const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number; keyHi?: number; keyLo?: number; moveSig?: number }[] = [];
 
     const ac = new AbortController();
     abortRef.current = ac;
@@ -134,7 +136,23 @@ export default function InfoIA() {
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;
-        perMove.push({ elapsedMs: res.elapsedMs, depthReached: res.depthReached, nodes: res.nodes, nps: res.nps, score: res.score });
+        // Capture Zobrist key BEFORE applying the chosen move
+        try {
+          const k = computeKey(state);
+          const sig = res.move ? makeSignature(res.move as AIMove) : undefined;
+          perMove.push({
+            elapsedMs: res.elapsedMs,
+            depthReached: res.depthReached,
+            nodes: res.nodes,
+            nps: res.nps,
+            score: res.score,
+            keyHi: (k.hi >>> 0),
+            keyLo: (k.lo >>> 0),
+            moveSig: sig,
+          });
+        } catch {
+          perMove.push({ elapsedMs: res.elapsedMs, depthReached: res.depthReached, nodes: res.nodes, nps: res.nps, score: res.score });
+        }
         if (!res.move) break;
         state = applyMove(state, res.move as AIMove);
         moves++;
@@ -221,6 +239,52 @@ export default function InfoIA() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `data_ia_partidas_${buildExportTimestampName()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [activeTableSourceId, compareSets, records]);
+
+  // Export aggregated opening book from stored records (uses per-move key/moveSig)
+  const onExportBook = useCallback(() => {
+    const current = activeTableSourceId === 'local'
+      ? records
+      : (compareSets.find((s) => s.id === activeTableSourceId)?.records || records);
+    // Map key ("hi:lo") -> Map(moveSig -> count)
+    const freq = new Map<string, Map<number, number>>();
+    const parseKey = (hi?: number, lo?: number): string | null => {
+      if (typeof hi !== 'number' || typeof lo !== 'number') return null;
+      return `${hi >>> 0}:${lo >>> 0}`;
+    };
+    for (const rec of current) {
+      for (const pm of rec.perMove || []) {
+        const keyStr = parseKey(pm.keyHi, pm.keyLo);
+        if (!keyStr) continue;
+        if (typeof pm.moveSig !== 'number') continue;
+        let m = freq.get(keyStr);
+        if (!m) { m = new Map<number, number>(); freq.set(keyStr, m); }
+        m.set(pm.moveSig >>> 0, (m.get(pm.moveSig >>> 0) ?? 0) + 1);
+      }
+    }
+    type BookEntry = { keyHi: number; keyLo: number; bestMove: number };
+    const entries: BookEntry[] = [];
+    for (const [keyStr, m] of freq.entries()) {
+      // choose moveSig with highest count
+      let bestSig = 0;
+      let bestCnt = -1;
+      for (const [sig, cnt] of m.entries()) {
+        if (cnt > bestCnt) { bestCnt = cnt; bestSig = sig >>> 0; }
+      }
+      const [hiStr, loStr] = keyStr.split(':');
+      const keyHi = Number(hiStr) >>> 0;
+      const keyLo = Number(loStr) >>> 0;
+      if (bestCnt > 0) entries.push({ keyHi, keyLo, bestMove: bestSig });
+    }
+    // Build file
+    const book = { version: new Date().toISOString(), entries };
+    const blob = new Blob([JSON.stringify(book, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `book_${buildExportTimestampName()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [activeTableSourceId, compareSets, records]);
@@ -585,6 +649,7 @@ export default function InfoIA() {
               )}
               <button className="btn-ghost" onClick={onExportJSON}>Exportar JSON</button>
               <button className="btn-ghost" onClick={onExportCSV}>Exportar CSV</button>
+              <button className="btn-ghost" onClick={onExportBook} title="Generar libro de aperturas (book.json) a partir de las simulaciones">Exportar Book</button>
               <button className="btn-ghost" onClick={onAddCompareClick} title="Agregar CSV o JSON">Agregar CSV o JSON</button>
               <button className="btn-danger" onClick={onClearAll} disabled={activeTableSourceId !== 'local' || records.length === 0} title={activeTableSourceId !== 'local' ? 'Solo disponible para datos locales' : 'Borrar todos los registros locales'}>Borrar todo</button>
             </div>

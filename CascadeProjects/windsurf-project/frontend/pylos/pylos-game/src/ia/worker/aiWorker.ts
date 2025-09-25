@@ -1,7 +1,8 @@
 /* eslint-disable no-restricted-globals */
 import type { GameState } from '../../game/types';
-import { bestMove } from '../search/search';
+import { bestMove, setSearchConfig } from '../search/search';
 import type { SearchStats } from '../search/search';
+import { probeBook, setBookUrl } from '../book.ts';
 import { TT } from '../tt';
 
 // Messages from main thread
@@ -10,7 +11,7 @@ import { TT } from '../tt';
 
 let aborted = false;
 
-self.onmessage = (e: MessageEvent) => {
+self.onmessage = async (e: MessageEvent) => {
   const data = e.data || {};
   const { type } = data;
   if (type === 'CANCEL') {
@@ -23,10 +24,27 @@ self.onmessage = (e: MessageEvent) => {
   const state: GameState = data.state;
   const depthMax: number = Math.max(1, Math.min(10, Math.floor(data.depth ?? 3)));
   const timeMs: number | undefined = typeof data.timeMs === 'number' ? Math.max(50, data.timeMs) : undefined;
+  // Optional AI configuration
+  const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean; bookUrl?: string };
+  try { setSearchConfig(cfg.search || {}); } catch {}
+  try { if (cfg.bookUrl) setBookUrl(cfg.bookUrl); } catch {}
+  const bookEnabled = cfg.bookEnabled !== false; // default true
   // Clear TT per root search to avoid mixing scores across different 'me' perspectives
   try { TT.clear(); } catch {}
 
   const start = performance.now();
+
+  // Opening book lookup (instant reply if available)
+  if (bookEnabled) {
+    try {
+      const bm = await probeBook(state);
+      if (bm) {
+        // @ts-ignore
+        self.postMessage({ type: 'RESULT', bestMove: bm, score: 0, depthReached: 0, pv: [bm], rootMoves: [{ move: bm, score: 0 }], nodes: 0, elapsedMs: performance.now() - start, nps: 0, ttReads: 0, ttHits: 0 });
+        return;
+      }
+    } catch {}
+  }
   let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }> } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
   let reached = 0;
   let nodes = 0;

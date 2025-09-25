@@ -28,12 +28,22 @@ export interface IAPanelProps {
   // Nuevo: autoplay IA
   aiAutoplayActive?: boolean;
   onToggleAiAutoplay?: () => void;
+  // Configuración avanzada de IA
+  iaConfig: {
+    quiescence: boolean;
+    qDepthMax: number;
+    qNodeCap: number;
+    futilityMargin: number;
+    bookEnabled: boolean;
+    bookUrl: string;
+  };
+  onChangeIaConfig: (cfg: Partial<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>) => void;
 }
 
 export default function IAPanel(props: IAPanelProps) {
   const { state, depth, onChangeDepth, onAIMove, disabled, timeMode, timeSeconds, onChangeTimeMode, onChangeTimeSeconds, busy = false, progress = null,
     evalScore = null, depthReached = null, pv = [], rootMoves = [], nodes = 0, elapsedMs = 0, nps = 0, rootPlayer, moving = false,
-    aiAutoplayActive = false, onToggleAiAutoplay } = props;
+    aiAutoplayActive = false, onToggleAiAutoplay, iaConfig, onChangeIaConfig } = props;
   const current = state.currentPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)';
   const atRootLabel = rootPlayer ? (rootPlayer === 'L' ? 'Claras (L)' : 'Oscuras (D)') : current;
 
@@ -102,6 +112,75 @@ export default function IAPanel(props: IAPanelProps) {
           {!busy && !moving && <span className="kpi kpi--muted">En espera</span>}
         </div>
       </div>
+
+      {/* Avanzado: Configuración del motor */}
+      <details className="ia-panel__advanced" style={{ marginTop: 12 }}>
+        <summary>Avanzado</summary>
+        <div className="advanced-grid" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: 8, alignItems: 'center', marginTop: 8 }}>
+          <label>Libro de aperturas</label>
+          <div>
+            <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} />
+            <label htmlFor="ia-book" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+
+          <label>URL del libro</label>
+          <div>
+            <input
+              id="ia-book-url"
+              type="text"
+              value={iaConfig.bookUrl}
+              onChange={(e) => onChangeIaConfig({ bookUrl: e.target.value })}
+              placeholder="/aperturas_book.json"
+              style={{ width: 260 }}
+            />
+          </div>
+
+          <label>Quiescence</label>
+          <div>
+            <input id="ia-q" type="checkbox" checked={iaConfig.quiescence} onChange={(e) => onChangeIaConfig({ quiescence: e.target.checked })} />
+            <label htmlFor="ia-q" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+
+          <label>Q depth máx</label>
+          <div>
+            <input
+              type="range"
+              min={0}
+              max={4}
+              step={1}
+              value={iaConfig.qDepthMax}
+              onChange={(e) => onChangeIaConfig({ qDepthMax: Number(e.target.value) })}
+            />
+            <span style={{ marginLeft: 8 }}>{iaConfig.qDepthMax}</span>
+          </div>
+
+          <label>Q hijos por nodo</label>
+          <div>
+            <input
+              type="range"
+              min={1}
+              max={128}
+              step={1}
+              value={iaConfig.qNodeCap}
+              onChange={(e) => onChangeIaConfig({ qNodeCap: Number(e.target.value) })}
+            />
+            <span style={{ marginLeft: 8 }}>{iaConfig.qNodeCap}</span>
+          </div>
+
+          <label>Futility margin</label>
+          <div>
+            <input
+              type="range"
+              min={0}
+              max={1000}
+              step={10}
+              value={iaConfig.futilityMargin}
+              onChange={(e) => onChangeIaConfig({ futilityMargin: Number(e.target.value) })}
+            />
+            <span style={{ marginLeft: 8 }}>{iaConfig.futilityMargin}</span>
+          </div>
+        </div>
+      </details>
 
       {/* Controles */}
       <div className="ia-panel__controls">

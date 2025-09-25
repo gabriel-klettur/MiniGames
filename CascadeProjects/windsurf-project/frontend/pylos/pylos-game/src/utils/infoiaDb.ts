@@ -8,6 +8,10 @@ export type InfoIAPerMove = {
   nodes?: number;
   nps?: number;
   score?: number;
+  // New: keys to reconstruct opening book entries and chosen move
+  keyHi?: number;
+  keyLo?: number;
+  moveSig?: number; // MoveSignature
 };
 
 export type InfoIAGameRecord = {

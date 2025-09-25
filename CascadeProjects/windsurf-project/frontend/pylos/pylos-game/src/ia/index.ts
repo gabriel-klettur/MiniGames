@@ -41,6 +41,11 @@ export type ComputeOptions = {
   timeMs?: number; // optional time budget
   signal?: AbortSignal; // optional cancellation
   onProgress?: (info: { depth: number; score: number; nodes?: number }) => void;
+  cfg?: {
+    search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>;
+    bookEnabled?: boolean;
+    bookUrl?: string;
+  };
 };
 
 export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{
@@ -105,7 +110,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
     }
 
     try {
-      worker.postMessage({ type: 'SEARCH', state, depth, timeMs });
+      worker.postMessage({ type: 'SEARCH', state, depth, timeMs, cfg: opts.cfg });
     } catch (err) {
       cleanup();
       reject(err);

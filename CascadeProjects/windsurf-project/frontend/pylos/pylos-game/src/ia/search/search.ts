@@ -13,6 +13,89 @@ function isTactical(m: AIMove): boolean {
   return (m.recovers?.length ?? 0) > 0;
 }
 
+// ------------------------------
+// Quiescence Search (limited)
+// ------------------------------
+let QDEPTH_MAX = 2;          // limit quiescence depth
+let QNODE_CAP_PER_NODE = 24; // cap number of tactical children per q-node
+let FUTILITY_MARGIN = 100;   // static margin for futility pruning in qs
+let QUIESCENCE_ENABLED = true;
+
+export function setSearchConfig(cfg: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>): void {
+  if (typeof cfg.qDepthMax === 'number') QDEPTH_MAX = Math.max(0, Math.min(4, Math.floor(cfg.qDepthMax)));
+  if (typeof cfg.qNodeCap === 'number') QNODE_CAP_PER_NODE = Math.max(1, Math.min(128, Math.floor(cfg.qNodeCap)));
+  if (typeof cfg.futilityMargin === 'number') FUTILITY_MARGIN = Math.max(0, Math.min(1000, Math.floor(cfg.futilityMargin)));
+  if (typeof cfg.quiescence === 'boolean') QUIESCENCE_ENABLED = cfg.quiescence;
+}
+
+function orderTactical(moves: AIMove[]): AIMove[] {
+  // Prefer more recoveries and higher level destinations
+  return moves.slice().sort((a, b) => {
+    const recA = (a.recovers?.length ?? 0);
+    const recB = (b.recovers?.length ?? 0);
+    const levA = (a.kind === 'place' ? a.dest.level : a.dest.level);
+    const levB = (b.kind === 'place' ? b.dest.level : b.dest.level);
+    const sA = recA * 1000 + levA * 10 + (a.kind === 'lift' ? 1 : 0);
+    const sB = recB * 1000 + levB * 10 + (b.kind === 'lift' ? 1 : 0);
+    return sB - sA;
+  });
+}
+
+function quiescence(
+  state: GameState,
+  alpha: number,
+  beta: number,
+  me: Player,
+  stats?: SearchStats,
+  opts?: SearchOptions,
+  qDepth: number = QDEPTH_MAX,
+  ply: number = 0
+): SearchResult {
+  if (stats) stats.nodes++;
+  if (opts?.shouldStop && opts.shouldStop()) return { score: evaluate(state, me), pv: [] };
+  const maximizing = (state.currentPlayer === me);
+
+  // Stand-pat evaluation
+  const standPat = evaluate(state, me);
+  if (maximizing) {
+    if (standPat >= beta) return { score: standPat, pv: [] };
+    if (standPat > alpha) alpha = standPat;
+  } else {
+    if (standPat <= alpha) return { score: standPat, pv: [] };
+    if (standPat < beta) beta = standPat;
+  }
+
+  // Futility pruning: if clearly outside window and no depth left, stop
+  if (qDepth <= 0) return { score: standPat, pv: [] };
+  if (maximizing && standPat + FUTILITY_MARGIN < alpha) return { score: standPat, pv: [] };
+  if (!maximizing && standPat - FUTILITY_MARGIN > beta) return { score: standPat, pv: [] };
+
+  // Generate only tactical moves (= moves with recoveries)
+  const all = generateAllMoves(state);
+  const tactical = all.filter(m => (m.recovers?.length ?? 0) > 0);
+  if (tactical.length === 0) return { score: standPat, pv: [] };
+
+  const ordered = orderTactical(tactical).slice(0, QNODE_CAP_PER_NODE);
+  let bestPV: AIMove[] = [];
+  let bestScore = standPat;
+
+  for (const m of ordered) {
+    const nxt = applyMove(state, m);
+    const child = quiescence(nxt, alpha, beta, me, stats, opts, qDepth - 1, ply + 1);
+    if (maximizing) {
+      if (child.score > bestScore) { bestScore = child.score; bestPV = [m, ...child.pv]; }
+      if (child.score > alpha) alpha = child.score;
+      if (alpha >= beta) return { score: bestScore, pv: bestPV };
+    } else {
+      if (child.score < bestScore) { bestScore = child.score; bestPV = [m, ...child.pv]; }
+      if (child.score < beta) beta = child.score;
+      if (alpha >= beta) return { score: bestScore, pv: bestPV };
+    }
+    if (opts?.shouldStop && opts.shouldStop()) break;
+  }
+  return { score: bestScore, pv: bestPV };
+}
+
 function orderMoves(
   moves: AIMove[],
   hints: {
@@ -78,6 +161,10 @@ function searchNode(
   if (stats) stats.nodes++;
   const maximizing = state.currentPlayer === me;
   if (depth === 0) {
+    // Enter quiescence when reaching the leaf to mitigate horizon effects
+    if (QUIESCENCE_ENABLED && QDEPTH_MAX > 0) {
+      return quiescence(state, alpha, beta, me, stats, opts);
+    }
     return { score: evaluate(state, me), pv: [] };
   }
 

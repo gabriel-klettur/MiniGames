@@ -14,6 +14,14 @@ export interface UseAIParams {
   iaDepth: number;
   iaTimeMode: 'auto' | 'manual';
   iaTimeSeconds: number;
+  iaConfig?: {
+    quiescence: boolean;
+    qDepthMax: number;
+    qNodeCap: number;
+    futilityMargin: number;
+    bookEnabled: boolean;
+    bookUrl?: string;
+  };
 
   // Environment flags and refs
   vsAI: null | { enemy: 'L' | 'D'; depth: number };
@@ -61,6 +69,7 @@ export function useAI(params: UseAIParams): UseAIResult {
     iaDepth,
     iaTimeMode,
     iaTimeSeconds,
+    iaConfig,
     vsAI,
     atPresent,
     gameOver,
@@ -119,6 +128,16 @@ export function useAI(params: UseAIParams): UseAIResult {
         timeMs,
         signal: ac.signal,
         onProgress: (info) => setIaProgress(info),
+        cfg: {
+          search: {
+            quiescence: iaConfig?.quiescence ?? true,
+            qDepthMax: iaConfig?.qDepthMax ?? 2,
+            qNodeCap: iaConfig?.qNodeCap ?? 24,
+            futilityMargin: iaConfig?.futilityMargin ?? 100,
+          },
+          bookEnabled: iaConfig?.bookEnabled ?? true,
+          bookUrl: iaConfig?.bookUrl,
+        },
       });
       // Save metrics and PV for visualization ALWAYS
       setIaEval(res.score);
