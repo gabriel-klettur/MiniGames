@@ -1,7 +1,7 @@
-import type { GameState, Player } from '../game/types';
-import { generateAllMoves, applyMove } from './moves';
-import type { AIMove } from './moves';
-import { evaluate } from './evaluate';
+import type { GameState, Player } from '../../game/types';
+import { generateAllMoves, applyMove } from '../moves';
+import type { AIMove } from '../moves';
+import { evaluate } from '../evaluate';
 
 function orderMoves(moves: AIMove[]): AIMove[] {
   return moves

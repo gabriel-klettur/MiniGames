@@ -1,5 +1,5 @@
 import type { GameState } from '../game/types';
-import { bestMove } from './search';
+import { bestMove } from './search/search';
 import { applyMove } from './moves';
 import type { AIMove } from './moves';
 

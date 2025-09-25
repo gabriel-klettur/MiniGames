@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 import type { GameState } from '../../game/types';
-import { bestMove } from '../search';
-import type { SearchStats } from '../search';
+import { bestMove } from '../search/search';
+import type { SearchStats } from '../search/search';
 
 // Messages from main thread
 // { type: 'SEARCH', state, depth?: number, timeMs?: number }
