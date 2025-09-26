@@ -439,9 +439,6 @@ export default function Board() {
         )}
       </div>
       <div ref={gridRef} style={gridStyle}>{cellsArray}</div>
-      <div className="text-xs text-neutral-400">
-        Consejo: Haz clic sobre una pieza para moverla según las reglas.
-      </div>
     </div>
   );
 }

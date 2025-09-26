@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Board from './components/Board';
 import HeaderPanel from './components/HeaderPanel';
 import InfoPanel from './components/InfoPanel';
@@ -15,6 +15,7 @@ function App() {
   const dispatch = useAppDispatch();
   const { ai, winner, turn } = useAppSelector((s: RootState) => s.game);
   const timerRef = useRef<number | null>(null);
+  const [showDev, setShowDev] = useState<boolean>(false);
 
   // Advanced autoplay for AI side using time-bounded search
   useEffect(() => {
@@ -89,12 +90,22 @@ function App() {
         <main className="w-full overflow-x-hidden">
           <Board />
         </main>
-        {/* DevTools placed directly below the board */}
-        <DevToolsPanel />
+        {/* DevTools placed directly below the board (toggleable) */}
+        {showDev && <DevToolsPanel />}
       </div>
       <footer className="w-full max-w-4xl">
         <FootPanel />
       </footer>
+      {/* Floating Dev toggle button (bottom-right) */}
+      <button
+        onClick={() => setShowDev((v) => !v)}
+        aria-pressed={showDev}
+        aria-label="Alternar panel de desarrollo"
+        title="Dev"
+        className="fixed bottom-4 right-4 px-3 py-2 rounded-full bg-gray-800 hover:bg-gray-700 active:bg-gray-700 border border-white/10 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/20 shadow-lg"
+      >
+        Dev
+      </button>
     </div>
   );
 }
