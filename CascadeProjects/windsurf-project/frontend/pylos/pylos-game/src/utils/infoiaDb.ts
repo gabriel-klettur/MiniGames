@@ -12,6 +12,8 @@ export type InfoIAPerMove = {
   keyHi?: number;
   keyLo?: number;
   moveSig?: number; // MoveSignature
+  // New: workers used by the engine for this move (1 for single-thread, >1 when parallel)
+  workersUsed?: number;
 };
 
 export type InfoIAGameRecord = {
@@ -25,6 +27,8 @@ export type InfoIAGameRecord = {
   moves: number; // number of plies actually played
   avgThinkMs: number; // average elapsedMs per AI computation
   totalThinkMs: number; // sum of elapsedMs
+  // New: maximum number of workers used in any move within this game
+  maxWorkersUsed?: number;
   winner: 'L' | 'D' | null;
   endedReason?: string;
   seed?: number;

@@ -132,6 +132,8 @@ function App() {
     holeBorders,
     setHoleBorders,
   } = useAnimations();
+  // Preserve board while InfoIA mirrors a fast simulation
+  const mirrorPrevStateRef = useRef<GameState | null>(null);
   // redoingRef will come from the history hook
 
   // Logging centralizado por useGameLogger (incluye log inicial)
@@ -573,6 +575,26 @@ function App() {
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
   };
 
+  // === InfoIA mirroring callbacks (fast, no animations) ===
+  const onMirrorStart = () => {
+    try { setFlying(null); } catch {}
+    mirrorPrevStateRef.current = state;
+    autoRunningRef.current = true; // temporarily block user interactions
+  };
+  const onMirrorUpdate = (s: GameState) => {
+    try { setFlying(null); } catch {}
+    setState(s);
+  };
+  const onMirrorEnd = (_s: GameState) => {
+    try { setFlying(null); } catch {}
+    // Restore original board when finished
+    if (mirrorPrevStateRef.current) {
+      setState(mirrorPrevStateRef.current);
+      mirrorPrevStateRef.current = null;
+    }
+    autoRunningRef.current = false;
+  };
+
   const onStartVsAI = (enemy: 'L' | 'D', depth: number) => {
     setGameOver(undefined);
     const init = initialState();
@@ -728,7 +750,11 @@ function App() {
               />
             )}
             infoIAPanel={(
-              <InfoIA />
+              <InfoIA
+                onMirrorStart={onMirrorStart}
+                onMirrorUpdate={onMirrorUpdate}
+                onMirrorEnd={onMirrorEnd}
+              />
             )}
             uxPanel={(
               <UXPanel

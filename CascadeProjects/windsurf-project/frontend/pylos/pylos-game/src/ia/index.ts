@@ -67,6 +67,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   nps: number;
   ttReads?: number;
   ttHits?: number;
+  usedWorkers?: number;
 }>
 {
   // If the caller explicitly requests parallelism, route to the parallel implementation.
@@ -103,6 +104,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           nps: data.nps ?? 0,
           ttReads: data.ttReads,
           ttHits: data.ttHits,
+          usedWorkers: 1,
         });
       }
     };
@@ -184,6 +186,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
   nps: number;
   ttReads?: number;
   ttHits?: number;
+  usedWorkers: number;
 }> {
   const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
   const timeMs = typeof opts.timeMs === 'number' ? Math.max(50, Math.floor(opts.timeMs)) : undefined;
@@ -201,6 +204,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
       nodes: 0,
       elapsedMs: 0,
       nps: 0,
+      usedWorkers: 1,
     };
   }
 
@@ -299,6 +303,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
             nps,
             ttReads: undefined,
             ttHits: undefined,
+            usedWorkers: shards.length,
           });
         }
       }

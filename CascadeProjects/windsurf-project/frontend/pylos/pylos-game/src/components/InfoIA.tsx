@@ -7,6 +7,7 @@ import { dbClear, dbDelete, dbGetAll, dbSave, makeId } from '../utils/infoiaDb';
 import type { InfoIAGameRecord } from '../utils/infoiaDb';
 import { computeKey } from '../ia/zobrist';
 import { makeSignature } from '../ia/signature';
+import type { GameState } from '../game/types';
 
 type TimeMode = 'auto' | 'manual';
 
@@ -41,10 +42,16 @@ function toCsv(rows: Array<Record<string, string | number | null | undefined>>):
     }
     return s;
   };
-  return [headers.join(','), ...rows.map(r => headers.map(h => esc(r[h])).join(','))].join('\n');
+  return [headers.join(','), ...rows.map((r) => headers.map((h) => esc(r[h])).join(','))].join('\n');
 }
 
-export default function InfoIA() {
+export type InfoIAProps = {
+  onMirrorStart?: () => void;
+  onMirrorUpdate?: (s: GameState) => void;
+  onMirrorEnd?: (s: GameState) => void;
+};
+
+export default function InfoIA(props: InfoIAProps) {
   const [records, setRecords] = useState<InfoIAGameRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [running, setRunning] = useState<boolean>(false);
@@ -77,6 +84,8 @@ export default function InfoIA() {
   const [timeSeconds, setTimeSeconds] = useState<number>(8);
   const [pliesLimit, setPliesLimit] = useState<number>(80);
   const [gamesCount, setGamesCount] = useState<number>(5);
+  // Mirror simulation on main board (fast, no animations)
+  const [mirrorBoard, setMirrorBoard] = useState<boolean>(false);
  
   // Tabs UI: 'sim' for Simulaciones y Métricas, 'charts' for Gráficos
   const [activeTab, setActiveTab] = useState<'sim' | 'charts'>('sim');
@@ -148,7 +157,13 @@ export default function InfoIA() {
     let state = initialState();
     let moves = 0;
     let totalThinkMs = 0;
-    const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number; keyHi?: number; keyLo?: number; moveSig?: number }[] = [];
+    let maxWorkersUsed = 1;
+    const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number; keyHi?: number; keyLo?: number; moveSig?: number; workersUsed?: number }[] = [];
+    // If mirroring to board, reset board to initial state at the start
+    if (mirrorBoard) {
+      try { props.onMirrorStart?.(); } catch {}
+      try { props.onMirrorUpdate?.(state); } catch {}
+    }
     // Repetition tracking (based on IAPanel advanced config in localStorage or default 3)
     const readRepeatMax = (): number => {
       try {
@@ -187,6 +202,13 @@ export default function InfoIA() {
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;
+        // Track max workers used across the game (fallback to 1 if missing)
+        try {
+          const uw = (res as any).usedWorkers;
+          if (typeof uw === 'number' && uw > 0) {
+            if (uw > maxWorkersUsed) maxWorkersUsed = uw;
+          }
+        } catch {}
         try {
           const k = computeKey(state);
           const sig = res.move ? makeSignature(res.move as AIMove) : undefined;
@@ -199,16 +221,31 @@ export default function InfoIA() {
             keyHi: (k.hi >>> 0),
             keyLo: (k.lo >>> 0),
             moveSig: sig,
+            workersUsed: (res as any).usedWorkers,
           });
         } catch {
-          perMove.push({ elapsedMs: res.elapsedMs, depthReached: res.depthReached, nodes: res.nodes, nps: res.nps, score: res.score });
+          perMove.push({
+            elapsedMs: res.elapsedMs,
+            depthReached: res.depthReached,
+            nodes: res.nodes,
+            nps: res.nps,
+            score: res.score,
+            workersUsed: (res as any).usedWorkers,
+          });
         }
         if (!res.move) break;
         state = applyMove(state, res.move as AIMove);
+        // Mirror current state on the main board quickly (no animations)
+        if (mirrorBoard) {
+          try { props.onMirrorUpdate?.(state); } catch {}
+        }
         moves++;
         const over = isGameOver(state);
         if (over.over) {
           const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
+          if (mirrorBoard) {
+            try { props.onMirrorEnd?.(state); } catch {}
+          }
           return {
             id,
             createdAt,
@@ -224,6 +261,7 @@ export default function InfoIA() {
             endedReason: over.reason,
             repeatMax,
             repeatHits,
+            maxWorkersUsed,
             perMove,
           };
         }
@@ -235,6 +273,9 @@ export default function InfoIA() {
 
     const over = isGameOver(state);
     const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
+    if (mirrorBoard) {
+      try { props.onMirrorEnd?.(state); } catch {}
+    }
     return {
       id,
       createdAt,
@@ -250,9 +291,10 @@ export default function InfoIA() {
       endedReason: over.reason,
       repeatMax,
       repeatHits,
+      maxWorkersUsed,
       perMove,
     };
-  }, [depth, pliesLimit, timeMode, timeMs, timeSeconds]);
+  }, [depth, pliesLimit, timeMode, timeMs, timeSeconds, mirrorBoard, props]);
 
   const onStart = useCallback(async () => {
     if (running) return;
@@ -357,6 +399,7 @@ export default function InfoIA() {
       moves: r.moves,
       avgThinkMs: Math.round(r.avgThinkMs),
       totalThinkMs: Math.round(r.totalThinkMs),
+      maxWorkersUsed: (typeof r.maxWorkersUsed === 'number' ? r.maxWorkersUsed : '---'),
       winner: r.winner ?? '',
       endedReason: r.endedReason ?? '',
       repeatMax: (typeof r.repeatMax === 'number' ? r.repeatMax : '---'),
@@ -506,6 +549,7 @@ export default function InfoIA() {
       const moves = parseNum(get(cols, 'moves'));
       const avgThinkMs = parseNum(get(cols, 'avgThinkMs'));
       const totalThinkMs = parseNum(get(cols, 'totalThinkMs'));
+      const maxWorkersUsed = parseNumOrUndef(get(cols, 'maxWorkersUsed'));
       const winnerRaw = (get(cols, 'winner') || '').trim();
       const winner = winnerRaw === 'L' || winnerRaw === 'D' ? (winnerRaw as 'L' | 'D') : null;
       const endedReasonText = (get(cols, 'endedReason') || '').trim();
@@ -521,6 +565,7 @@ export default function InfoIA() {
         moves,
         avgThinkMs,
         totalThinkMs,
+        maxWorkersUsed,
         winner,
         endedReason,
         repeatMax: parseNumOrUndef(get(cols, 'repeatMax')),
@@ -706,6 +751,17 @@ export default function InfoIA() {
             <label className="label" htmlFor="infoia-count">Partidas</label>
             <input id="infoia-count" className="field-num" type="number" min={1} max={1000} value={gamesCount} onChange={(e) => setGamesCount(Number(e.target.value))} style={{ width: 90 }} />
  
+            {/* Visualizar simulación en el tablero (sin animaciones) */}
+            <label className="label" htmlFor="infoia-mirror" title="Mostrar la partida simulada en el tablero (sin animaciones)">Visualizar</label>
+            <input
+              id="infoia-mirror"
+              type="checkbox"
+              checked={mirrorBoard}
+              onChange={(e) => setMirrorBoard(e.target.checked)}
+              aria-checked={mirrorBoard}
+              title="Mostrar la partida simulada en el tablero (sin animaciones)"
+            />
+
             <div className="infoia__actions" style={{ display: 'inline-flex', gap: 8, marginLeft: 'auto' }}>
               {!running ? (
                 <button className="primary" onClick={onStart} disabled={loading} title="Iniciar simulaciones">Iniciar</button>
@@ -763,6 +819,7 @@ export default function InfoIA() {
                   <th className="text-right">Mín (s)</th>
                   <th className="text-right">Máx (s)</th>
                   <th className="text-right">Total (s)</th>
+                  <th className="text-right" title="Máximo número de workers usados en la partida">Workers máx.</th>
                   <th className="text-center">Ganador</th>
                   <th>Motivo</th>
                   <th className="text-right" title="Veces que se alcanzó el umbral de repetición en la partida">Reps ≥max</th>
@@ -771,9 +828,9 @@ export default function InfoIA() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td colSpan={13}>Cargando…</td></tr>
+                  <tr><td colSpan={14}>Cargando…</td></tr>
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={13}>Sin registros aún</td></tr>
+                  <tr><td colSpan={14}>Sin registros aún</td></tr>
                 ) : (
                   sorted.map((r) => (
                     <tr key={r.id}>
@@ -806,6 +863,7 @@ export default function InfoIA() {
                         })()
                       }</td>
                       <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
+                      <td className="text-right">{typeof r.maxWorkersUsed === 'number' ? r.maxWorkersUsed : '---'}</td>
                       <td className="text-center">
                         {r.winner ? (
                           <span className={"badge " + (r.winner === 'L' ? 'badge--light' : 'badge--dark')}>{r.winner}</span>
@@ -879,7 +937,7 @@ export default function InfoIA() {
             if (emptyAgg.length > 0) {
               // Helpful console warning for diagnosis when CSV parsed but headers mismatched
               // eslint-disable-next-line no-console
-              console.warn('[InfoIA] Algunos datasets no generaron agregados (revisa columnas esperadas: id, createdAt, depth, timeMode, timeSeconds, pliesLimit, moves, avgThinkMs, totalThinkMs, winner, endedReason):', emptyAgg.map(e => e.name));
+              console.warn('[InfoIA] Algunos datasets no generaron agregados (revisa columnas esperadas: id, createdAt, depth, timeMode, timeSeconds, pliesLimit, moves, avgThinkMs, totalThinkMs, maxWorkersUsed, winner, endedReason):', emptyAgg.map(e => e.name));
             }
             const hasAnyAgg = dsAgg.some((d) => d.aggregates.length > 0);
             if (!hasAnyAgg) {
