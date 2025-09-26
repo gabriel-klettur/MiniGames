@@ -61,7 +61,7 @@ function App() {
   // InfoIA panel (simulaciones y métricas) dentro de DevTools
   const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
   // IA advanced configuration (quiescence/book/precomputed flags)
-  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string; precomputedSupports?: boolean; precomputedCenter?: boolean; pvsEnabled?: boolean; aspirationEnabled?: boolean; ttEnabled?: boolean }>(() => {
+  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string; precomputedSupports?: boolean; precomputedCenter?: boolean; pvsEnabled?: boolean; aspirationEnabled?: boolean; ttEnabled?: boolean; avoidRepeats?: boolean; repeatMax?: number; avoidPenalty?: number }>(() => {
     try {
       const raw = localStorage.getItem('pylos.ia.advanced.v1');
       if (raw) {
@@ -79,11 +79,14 @@ function App() {
             pvsEnabled: typeof p.pvsEnabled === 'boolean' ? p.pvsEnabled : true,
             aspirationEnabled: typeof p.aspirationEnabled === 'boolean' ? p.aspirationEnabled : true,
             ttEnabled: typeof p.ttEnabled === 'boolean' ? p.ttEnabled : true,
+            avoidRepeats: typeof p.avoidRepeats === 'boolean' ? p.avoidRepeats : true,
+            repeatMax: Number.isFinite(p.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : 3,
+            avoidPenalty: Number.isFinite(p.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : 50,
           };
         }
       }
     } catch {}
-    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json', precomputedSupports: true, precomputedCenter: true, pvsEnabled: true, aspirationEnabled: true, ttEnabled: true };
+    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json', precomputedSupports: true, precomputedCenter: true, pvsEnabled: true, aspirationEnabled: true, ttEnabled: true, avoidRepeats: true, repeatMax: 3, avoidPenalty: 50 };
   });
   useEffect(() => {
     try { localStorage.setItem('pylos.ia.advanced.v1', JSON.stringify(iaConfig)); } catch {}
@@ -535,6 +538,7 @@ function App() {
     setFlying,
     setAppearKeys,
     updateAndCheck,
+    historyStates: history,
   });
   // Undo/Redo availability flags (used in board actions panel)
   const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;

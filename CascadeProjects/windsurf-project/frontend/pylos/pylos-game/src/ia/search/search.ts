@@ -139,6 +139,15 @@ export interface SearchOptions {
   alpha?: number;
   beta?: number;
   pvHint?: AIMove[]; // principal variation from previous iteration
+  // Optional: when provided, only consider these move signatures at the root.
+  // This enables root-split parallelization where each worker explores a subset
+  // of root moves. Ignored below the root.
+  onlyMoveSigs?: MoveSignature[];
+  // Optional: penalize root moves that lead to avoided repetition keys.
+  // Provide a list of keys (hi,lo) that are already at or above the repetition limit,
+  // and a penalty (in evaluation units) to subtract from the child score.
+  avoidKeys?: Array<{ hi: number; lo: number }>;
+  avoidPenalty?: number;
 }
 
 function clampFinite(x: number): number {
@@ -298,7 +307,13 @@ export function bestMove(
   opts?: SearchOptions
 ): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
   const me: Player = state.currentPlayer;
-  const movesGen = generateAllMoves(state);
+  // Generate all legal moves at root
+  let movesGen = generateAllMoves(state);
+  // If a root filter is provided, restrict evaluation to those move signatures
+  if (opts?.onlyMoveSigs && opts.onlyMoveSigs.length > 0) {
+    const set = new Set<MoveSignature>(opts.onlyMoveSigs);
+    movesGen = movesGen.filter(m => set.has(makeSignature(m)));
+  }
   if (movesGen.length === 0) return { move: null, score: evaluate(state, me), pv: [], rootMoves: [] };
 
   // Prepare helpers for ordering at root
@@ -325,6 +340,12 @@ export function bestMove(
   let bestPV: AIMove[] = [];
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
 
+  // Build a fast lookup set for avoided keys if provided
+  const avoidSet: Set<string> = new Set(
+    (opts?.avoidKeys ?? []).map((k) => `${(k.hi >>> 0)}:${(k.lo >>> 0)}`)
+  );
+  const avoidPenalty = opts?.avoidPenalty ?? 50;
+
   if (opts?.shouldStop && opts.shouldStop()) {
     const m0 = ordered[0];
     const score0 = evaluate(applyMove(state, m0), me);
@@ -350,9 +371,18 @@ export function bestMove(
         res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
       }
     }
-    rootMoves.push({ move: m, score: res.score });
-    if (res.score > bestScore) {
-      bestScore = res.score;
+    // Apply repetition-avoidance penalty at the root, if enabled
+    let childScore = res.score;
+    if (avoidSet.size > 0) {
+      const k = computeKey(nxt);
+      const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+      if (avoidSet.has(keyStr)) {
+        childScore = childScore - avoidPenalty;
+      }
+    }
+    rootMoves.push({ move: m, score: childScore });
+    if (childScore > bestScore) {
+      bestScore = childScore;
       bestMoveSel = m;
       bestPV = [m, ...res.pv];
     }

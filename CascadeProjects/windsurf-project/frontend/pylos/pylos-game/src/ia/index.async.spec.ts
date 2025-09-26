@@ -41,7 +41,7 @@ class MockWorker {
 describe('ia/index.ts – computeBestMoveAsync', () => {
   it('returns a move and metrics via mocked Worker', async () => {
     const s = initialState();
-    const res = await computeBestMoveAsync(s, { depth: 2, timeMs: 100 });
+    const res = await computeBestMoveAsync(s, { depth: 2, timeMs: 100, workers: 'auto' });
     expect(res.move).toBeTruthy();
     expect(res.nodes).toBeGreaterThanOrEqual(1);
     expect(res.pv.length).toBeGreaterThanOrEqual(1);
@@ -50,7 +50,7 @@ describe('ia/index.ts – computeBestMoveAsync', () => {
   it('supports AbortController by rejecting with AbortError', async () => {
     const s = initialState();
     const ac = new AbortController();
-    const p = computeBestMoveAsync(s, { depth: 2, timeMs: 1000, signal: ac.signal });
+    const p = computeBestMoveAsync(s, { depth: 2, timeMs: 1000, signal: ac.signal, workers: 'auto' });
     ac.abort();
     await expect(p).rejects.toThrowError(/Aborted/);
   });

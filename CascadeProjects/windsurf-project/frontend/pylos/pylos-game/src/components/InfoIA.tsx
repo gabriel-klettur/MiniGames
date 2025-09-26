@@ -66,6 +66,10 @@ export default function InfoIA() {
   const [compareSets, setCompareSets] = useState<CompareDataset[]>([]);
   const compareInputRef = useRef<HTMLInputElement | null>(null);
   const [activeTableSourceId, setActiveTableSourceId] = useState<string>('local');
+  // Responsive chart container (ResizeObserver)
+  const chartBoxRef = useRef<HTMLDivElement | null>(null);
+  const [chartW, setChartW] = useState<number>(0);
+  const [chartH, setChartH] = useState<number>(0);
 
   // Controls
   const [depth, setDepth] = useState<number>(3);
@@ -89,6 +93,29 @@ export default function InfoIA() {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Observe container size and compute responsive chart dimensions
+  useEffect(() => {
+    if (activeTab !== 'charts') return; // only when charts are visible
+    const el = chartBoxRef.current;
+    if (!el) return;
+    const compute = (w: number) => {
+      const width = Math.max(320, Math.floor(w));
+      // Height scales with width but clamped for readability
+      const height = Math.max(260, Math.min(560, Math.round(width * 0.5)));
+      setChartW(width);
+      setChartH(height);
+    };
+    // Initial measure right after tab becomes active
+    compute(el.clientWidth || el.getBoundingClientRect().width || 0);
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const w = entry.contentRect?.width ?? el.clientWidth;
+      compute(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [activeTab]);
 
   const timeMs = useMemo<number | undefined>(() => {
     if (timeMode === 'manual') return Math.max(0, Math.min(30, timeSeconds)) * 1000;
@@ -122,21 +149,44 @@ export default function InfoIA() {
     let moves = 0;
     let totalThinkMs = 0;
     const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number; keyHi?: number; keyLo?: number; moveSig?: number }[] = [];
+    // Repetition tracking (based on IAPanel advanced config in localStorage or default 3)
+    const readRepeatMax = (): number => {
+      try {
+        const raw = localStorage.getItem('pylos.ia.advanced.v1');
+        if (raw) {
+          const p = JSON.parse(raw);
+          const v = Number(p?.repeatMax);
+          if (Number.isFinite(v)) return Math.max(1, Math.min(10, Math.floor(v)));
+        }
+      } catch {}
+      return 3;
+    };
+    const repeatMax = readRepeatMax();
+    const repCounts = new Map<string, number>();
+    let repeatHits = 0;
 
     const ac = new AbortController();
     abortRef.current = ac;
     try {
       while (moves < pliesLimit) {
+        // Count current position repetition before thinking
+        try {
+          const kNow = computeKey(state);
+          const keyStrNow = `${(kNow.hi >>> 0)}:${(kNow.lo >>> 0)}`;
+          const c = (repCounts.get(keyStrNow) ?? 0) + 1;
+          repCounts.set(keyStrNow, c);
+          if (c === repeatMax) repeatHits++;
+        } catch {}
         setMoveIndex(moves + 1);
         startProgress(timeMs);
         const res = await computeBestMoveAsync(state, {
           depth,
           timeMs,
+          workers: 'auto',
           signal: ac.signal,
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;
-        // Capture Zobrist key BEFORE applying the chosen move
         try {
           const k = computeKey(state);
           const sig = res.move ? makeSignature(res.move as AIMove) : undefined;
@@ -172,6 +222,8 @@ export default function InfoIA() {
             totalThinkMs,
             winner: over.winner ?? null,
             endedReason: over.reason,
+            repeatMax,
+            repeatHits,
             perMove,
           };
         }
@@ -196,6 +248,8 @@ export default function InfoIA() {
       totalThinkMs,
       winner: over.winner ?? null,
       endedReason: over.reason,
+      repeatMax,
+      repeatHits,
       perMove,
     };
   }, [depth, pliesLimit, timeMode, timeMs, timeSeconds]);
@@ -305,6 +359,8 @@ export default function InfoIA() {
       totalThinkMs: Math.round(r.totalThinkMs),
       winner: r.winner ?? '',
       endedReason: r.endedReason ?? '',
+      repeatMax: (typeof r.repeatMax === 'number' ? r.repeatMax : '---'),
+      repeatHits: (typeof r.repeatHits === 'number' ? r.repeatHits : '---'),
     }));
     const csv = toCsv(rows as any);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -425,6 +481,13 @@ export default function InfoIA() {
       const n = Number(cleaned);
       return isFinite(n) ? n : 0;
     };
+    const parseNumOrUndef = (s: string): number | undefined => {
+      const raw = (s || '').trim();
+      if (!raw || raw === '---') return undefined;
+      const cleaned = raw.replace(/\s+/g, '').replace(/,/g, '.');
+      const n = Number(cleaned);
+      return isFinite(n) ? n : undefined;
+    };
 
     const out: InfoIAGameRecord[] = [];
     for (let r = 1; r < lines.length; r++) {
@@ -460,6 +523,8 @@ export default function InfoIA() {
         totalThinkMs,
         winner,
         endedReason,
+        repeatMax: parseNumOrUndef(get(cols, 'repeatMax')),
+        repeatHits: parseNumOrUndef(get(cols, 'repeatHits')),
         perMove: [],
       });
     }
@@ -700,14 +765,15 @@ export default function InfoIA() {
                   <th className="text-right">Total (s)</th>
                   <th className="text-center">Ganador</th>
                   <th>Motivo</th>
+                  <th className="text-right" title="Veces que se alcanzó el umbral de repetición en la partida">Reps ≥max</th>
                   <th className="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td colSpan={12}>Cargando…</td></tr>
+                  <tr><td colSpan={13}>Cargando…</td></tr>
                 ) : sorted.length === 0 ? (
-                  <tr><td colSpan={12}>Sin registros aún</td></tr>
+                  <tr><td colSpan={13}>Sin registros aún</td></tr>
                 ) : (
                   sorted.map((r) => (
                     <tr key={r.id}>
@@ -746,6 +812,9 @@ export default function InfoIA() {
                         ) : '—'}
                       </td>
                       <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>{r.endedReason ?? '—'}</td>
+                      <td className="text-right" title={typeof r.repeatMax === 'number' ? `max=${r.repeatMax}` : 'sin dato'}>{
+                        (typeof r.repeatHits === 'number' ? r.repeatHits : '---')
+                      }</td>
                       <td className="text-center">
                         <button className="chip-btn"
                           onClick={() => {
@@ -823,9 +892,16 @@ export default function InfoIA() {
             const depths = Array.from(depthSet).sort((a, b) => a - b);
 
             // Chart dimensions and Y scale considering all datasets
-            const margin = { top: 72, right: 32, bottom: 64, left: 90 };
-            const width = 980;
-            const height = 460;
+            const width = chartW || 980;
+            const height = chartH || 460;
+            // Adaptive margins and typography
+            const isSmall = width < 560;
+            const isMid = !isSmall && width < 860;
+            const margin = isSmall
+              ? { top: 62, right: 20, bottom: 52, left: 66 }
+              : isMid
+              ? { top: 68, right: 26, bottom: 58, left: 80 }
+              : { top: 72, right: 32, bottom: 64, left: 90 };
             const innerW = width - margin.left - margin.right;
             const innerH = height - margin.top - margin.bottom;
             let maxY = 1;
@@ -852,6 +928,10 @@ export default function InfoIA() {
             const xForIndex = (i: number) => margin.left + (depths.length <= 1 ? innerW / 2 : (i * innerW) / (depths.length - 1));
             const yScale = (s: number) => height - margin.bottom - innerH * (s / (niceMaxY || 1));
 
+            // Typography scaling
+            const fsAxis = isSmall ? 10 : isMid ? 11 : 12;
+            const fsLegend = isSmall ? 10 : 12;
+
             // Build path segments for a dataset and metric key
             const pathFor = (aggs: AggRow[], key: keyof AggRow) => {
               const points: Array<{ x: number; y: number }> = [];
@@ -871,7 +951,9 @@ export default function InfoIA() {
             };
 
             return (
-              <svg width={width} height={height} role="img" aria-label="Gráfico comparativo de métricas por dificultad">
+              <div ref={chartBoxRef} className="infoia__chart-container">
+                {width > 0 && height > 0 && (
+                  <svg width={width} height={height} role="img" aria-label="Gráfico comparativo de métricas por dificultad">
                 <defs>
                   {/* Soft shadow for lines/points */}
                   <filter id="ds" x="-50%" y="-50%" width="200%" height="200%">
@@ -887,31 +969,45 @@ export default function InfoIA() {
                   </filter>
                 </defs>
 
-                {/* Legend: one row per dataset with stroke samples */}
-                <g transform={`translate(${margin.left}, ${margin.top - 40})`} aria-hidden="false">
-                  {dsAgg.map((ds, i) => (
-                    <g key={ds.id || ds.name} transform={`translate(${i * 220}, 0)`}>
+                {/* Legend: wrapped across rows for small widths */}
+                {(() => {
+                  const itemW = 200; // logical width per legend sample
+                  const cols = Math.max(1, Math.floor(innerW / itemW));
+                  const rows = Math.max(1, Math.ceil(dsAgg.length / cols));
+                  const legendY = margin.top - 20 - (rows - 1) * 18;
+                  return (
+                    <g transform={`translate(${margin.left}, ${legendY})`} aria-hidden="false">
+                      {dsAgg.map((ds, i) => {
+                        const col = i % cols;
+                        const row = Math.floor(i / cols);
+                        const x = (innerW / cols) * col;
+                        const y = row * 18;
+                        return (
+                          <g key={ds.id || ds.name} transform={`translate(${x}, ${y})`}>
                       {/* Avg (solid) */}
                       <line x1={0} y1={-6} x2={36} y2={-6} stroke={ds.color} strokeWidth={3} />
                       {/* Min (dashed) */}
                       <line x1={0} y1={2} x2={36} y2={2} stroke={ds.color} strokeWidth={2} strokeDasharray="6,4" opacity={0.9} />
                       {/* Max (dotted) */}
                       <line x1={0} y1={10} x2={36} y2={10} stroke={ds.color} strokeWidth={2} strokeDasharray="2,5" opacity={0.9} />
-                      <text x={48} y={2} alignmentBaseline="middle" className="mono" fontSize={12} fill="#e5e7eb">{ds.name}</text>
+                          <text x={48} y={2} alignmentBaseline="middle" className="mono" fontSize={fsLegend} fill="#e5e7eb">{ds.name}</text>
+                          </g>
+                        );
+                      })}
                     </g>
-                  ))}
-                </g>
+                  );
+                })()}
 
                 {/* Horizontal grid and Y axis */}
                 <g aria-hidden="true">
                   {ticksY.map((t, i) => (
                     <g key={i}>
                       <line x1={margin.left} y1={yScale(t)} x2={width - margin.right} y2={yScale(t)} stroke="#334155" strokeDasharray="2,4" />
-                      <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={11} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
+                      <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={fsAxis} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
                     </g>
                   ))}
                   {/* Y axis label */}
-                  <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={12} opacity={0.9} fill="#ffffff">Segundos (s)</text>
+                  <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={fsLegend} opacity={0.9} fill="#ffffff">Segundos (s)</text>
                 </g>
 
                 {/* Vertical guides and X axis */}
@@ -920,11 +1016,11 @@ export default function InfoIA() {
                     <g key={d} transform={`translate(${xForIndex(i)}, 0)`}>
                       <line y1={margin.top} y2={height - margin.bottom} stroke="#1f2937" strokeOpacity={0.25} />
                       <line y1={height - margin.bottom} y2={height - margin.bottom + 6} stroke="#64748b" />
-                      <text y={height - margin.bottom + 18} textAnchor="middle" fontSize={11} fill="#ffffff">Dificultad {d}</text>
+                      <text y={height - margin.bottom + 18} textAnchor="middle" fontSize={fsAxis} fill="#ffffff">Dificultad {d}</text>
                     </g>
                   ))}
                   {/* X axis label */}
-                  <text x={width - margin.right} y={height - 8} textAnchor="end" fontSize={12} opacity={0.9} fill="#ffffff">Dificultad</text>
+                  <text x={width - margin.right} y={height - 8} textAnchor="end" fontSize={fsLegend} opacity={0.9} fill="#ffffff">Dificultad</text>
                 </g>
 
                 {/* Dataset lines */}
@@ -971,7 +1067,9 @@ export default function InfoIA() {
                     })}
                   </g>
                 ))}
-              </svg>
+                  </svg>
+                )}
+              </div>
             );
           })()}
           {(() => {

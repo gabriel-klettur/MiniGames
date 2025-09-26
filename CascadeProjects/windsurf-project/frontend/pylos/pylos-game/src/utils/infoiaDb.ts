@@ -28,6 +28,11 @@ export type InfoIAGameRecord = {
   winner: 'L' | 'D' | null;
   endedReason?: string;
   seed?: number;
+  // New: repetition metrics observed during simulation
+  // repeatMax: threshold used to consider a position "repeated enough"
+  // repeatHits: number of times we reached that threshold across the game
+  repeatMax?: number;
+  repeatHits?: number;
   perMove: InfoIAPerMove[]; // detailed telemetry per ply
 };
 

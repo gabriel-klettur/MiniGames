@@ -1498,6 +1498,14 @@ input[type="range"]:focus-visible { outline: 2px solid rgba(255,255,255,0.55); o
 .infoia__header { display: flex; align-items: center; justify-content: space-between; }
 .infoia__status { display: inline-flex; align-items: center; gap: 8px; }
 .infoia__controls .label { color: var(--muted); }
+/* Responsive chart container: spans full width of panel */
+.infoia__chart-container {
+  width: 100%;
+  overflow: hidden; /* prevent small overflows during measure */
+}
+.infoia__chart-container svg {
+  display: block; /* remove inline gaps */
+}
 
 /* Segmented control (shared) */
 .segmented {
