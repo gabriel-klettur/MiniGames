@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
-import { resetGame, setAIEnabled, setAIDifficulty, setAISide, setAISpeed } from '../../store/gameSlice';
+import { resetGame, setAIEnabled, setAIDifficulty, setAISide } from '../../store/gameSlice';
 
 export interface IAPanelProps {
   open: boolean;
@@ -46,8 +46,6 @@ export default function IAPanel({ open, anchorRect, onClose }: IAPanelProps) {
 
   if (!open) return null;
 
-  const currentSpeed = ai?.speed ?? 'normal';
-
   return (
     <div
       ref={popRef}
@@ -75,25 +73,6 @@ export default function IAPanel({ open, anchorRect, onClose }: IAPanelProps) {
         </button>
       </div>
 
-      {/* Velocidad */}
-      <div className="text-center text-neutral-400 text-xs uppercase tracking-wide">Velocidad</div>
-      <div className="grid grid-cols-4 gap-2 mt-2 mb-2">
-        {([
-          { k: 'auto', label: 'Auto' },
-          { k: 'rapido', label: 'Rápido' },
-          { k: 'normal', label: 'Normal' },
-          { k: 'lento', label: 'Lento' },
-        ] as const).map((s) => (
-          <button
-            key={s.k}
-            onClick={() => dispatch(setAISpeed(s.k))}
-            aria-pressed={currentSpeed === s.k}
-            className={`text-xs rounded-md px-2 py-1 border ${currentSpeed === s.k ? 'bg-blue-700 text-white border-blue-600' : 'bg-neutral-800 text-neutral-200 border-white/10 hover:bg-neutral-700'}`}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
 
       {/* Dificultad */}
       <div className="text-center text-neutral-400 text-xs uppercase tracking-wide">Dificultad</div>
