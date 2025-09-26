@@ -4,6 +4,7 @@ import { posKey } from '../game/board';
 import { applyMove } from '../ia/moves';
 import type { AIMove } from '../ia/moves';
 import { computeBestMoveAsync } from '../ia';
+import { computeKey } from '../ia/zobrist';
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from './usePersistence';
@@ -21,6 +22,14 @@ export interface UseAIParams {
     futilityMargin: number;
     bookEnabled: boolean;
     bookUrl?: string;
+    precomputedSupports?: boolean;
+    precomputedCenter?: boolean;
+    pvsEnabled?: boolean;
+    aspirationEnabled?: boolean;
+    ttEnabled?: boolean;
+    avoidRepeats?: boolean;
+    repeatMax?: number;
+    avoidPenalty?: number;
   };
 
   // Environment flags and refs
@@ -40,6 +49,8 @@ export interface UseAIParams {
   setFlying: React.Dispatch<React.SetStateAction<FlyingPieceState | null>>;
   setAppearKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
   updateAndCheck: (nextState: GameState, pushHistory?: boolean, clearRedo?: boolean, logEntry?: MoveEntry) => void;
+  // Optional: provide past states to compute repetition counts (for IA repetition avoidance)
+  historyStates?: GameState[];
 }
 
 export interface UseAIResult {
@@ -84,6 +95,7 @@ export function useAI(params: UseAIParams): UseAIResult {
     setFlying,
     setAppearKeys,
     updateAndCheck,
+    historyStates,
   } = params;
 
   const iaAutoTimerRef = useRef<number | null>(null);
@@ -123,10 +135,38 @@ export function useAI(params: UseAIParams): UseAIResult {
     try {
       // Resolve time budget
       const timeMs = iaTimeMode === 'auto' ? undefined : Math.max(0, Math.min(30, iaTimeSeconds)) * 1000;
+      // Build repetition-avoidance keys from history if enabled
+      let avoidKeys: Array<{ hi: number; lo: number }> | undefined = undefined;
+      const avoidEnabled = iaConfig?.avoidRepeats ?? true;
+      const repeatMax = Math.max(1, Math.min(10, Math.floor(iaConfig?.repeatMax ?? 3)));
+      if (avoidEnabled && historyStates && historyStates.length > 0) {
+        const counts = new Map<string, { hi: number; lo: number; c: number }>();
+        for (const s of historyStates) {
+          const k = computeKey(s);
+          const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+          const prev = counts.get(keyStr) ?? { hi: (k.hi >>> 0), lo: (k.lo >>> 0), c: 0 };
+          prev.c += 1;
+          counts.set(keyStr, prev);
+        }
+        // Include current position as well
+        const curK = computeKey(state);
+        const curStr = `${(curK.hi >>> 0)}:${(curK.lo >>> 0)}`;
+        const curPrev = counts.get(curStr) ?? { hi: (curK.hi >>> 0), lo: (curK.lo >>> 0), c: 0 };
+        curPrev.c += 1;
+        counts.set(curStr, curPrev);
+        avoidKeys = [];
+        for (const v of counts.values()) {
+          if (v.c >= repeatMax) avoidKeys.push({ hi: v.hi, lo: v.lo });
+        }
+        if (avoidKeys.length === 0) avoidKeys = undefined;
+      }
       const res = await computeBestMoveAsync(state, {
         depth: iaDepth,
         timeMs,
+        workers: 'auto',
         signal: ac.signal,
+        avoidKeys,
+        avoidPenalty: Math.max(0, Math.min(500, Math.floor(iaConfig?.avoidPenalty ?? 50))),
         onProgress: (info) => setIaProgress(info),
         cfg: {
           search: {
@@ -137,6 +177,13 @@ export function useAI(params: UseAIParams): UseAIResult {
           },
           bookEnabled: iaConfig?.bookEnabled ?? true,
           bookUrl: iaConfig?.bookUrl,
+          flags: {
+            precomputedSupports: iaConfig?.precomputedSupports ?? true,
+            precomputedCenter: iaConfig?.precomputedCenter ?? true,
+            pvsEnabled: iaConfig?.pvsEnabled ?? true,
+            aspirationEnabled: iaConfig?.aspirationEnabled ?? true,
+            ttEnabled: iaConfig?.ttEnabled ?? true,
+          },
         },
       });
       // Save metrics and PV for visualization ALWAYS

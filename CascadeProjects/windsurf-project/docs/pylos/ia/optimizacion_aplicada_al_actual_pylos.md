@@ -37,9 +37,25 @@ Fase 1 (alto impacto, bajo riesgo):
 
 Fase 2 (control del horizonte y tiempos percibidos):
 
-- Quiescence Search para jugadas tácticas (formar cuadrado/línea + recuperaciones), con límites estrictos.
-- Libro de aperturas ligero (JSON) y cache en IndexedDB.
-- Tablas precalculadas (bitmasks) para supports/cuadrados/centro.
+- [X] Quiescence Search para jugadas tácticas (formar cuadrado/línea + recuperaciones), con límites estrictos.
+- [X] Libro de aperturas ligero (JSON) y cache en IndexedDB.
+- [X] Tablas precalculadas (bitmasks) para supports/cuadrados/centro.
+
+Notas para QA — opciones conmutables en UI (IAPanel → Avanzado)
+
+- Ubicación: `frontend/pylos/pylos-game/src/components/IAPanel.tsx` → panel "Avanzado".
+- Persistencia: `localStorage` clave `pylos.ia.advanced.v1` (se guardan valores y defaults).
+- Flags de motor (por defecto: activados):
+  - PVS (Principal Variation Search) — `pvsEnabled: true`.
+  - Ventanas de aspiración — `aspirationEnabled: true`.
+  - Transposition Table (TT) — `ttEnabled: true`.
+  - Soportes precalculados — `precomputedSupports: true`.
+  - Centro precalculado — `precomputedCenter: true`.
+- Otras opciones avanzadas visibles:
+  - Quiescence on/off y parámetros (`qDepthMax`, `qNodeCap`, `futilityMargin`).
+  - Libro de aperturas on/off y `bookUrl`.
+- Cableado:
+  - UI → `App.tsx` (estado `iaConfig` con persistencia) → `useAI.ts` (`cfg.flags`) → `ia/worker/aiWorker.ts` (`setIAFlags`) → motor (`search.ts`, `moves.ts`, `evaluate.ts`).
 
 Fase 3 (optimizaciones estructurales y exploratorias):
 

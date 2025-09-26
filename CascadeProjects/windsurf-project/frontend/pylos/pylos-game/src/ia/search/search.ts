@@ -4,6 +4,7 @@ import type { AIMove } from '../moves';
 import { evaluate } from '../evaluate';
 import { computeKey } from '../zobrist';
 import { TT, TTFlag } from '../tt';
+import { getIAFlags } from '../config';
 import { makeSignature, type MoveSignature } from '../signature';
 
 type Killers = Array<[MoveSignature | 0, MoveSignature | 0]>; // two per ply
@@ -138,6 +139,15 @@ export interface SearchOptions {
   alpha?: number;
   beta?: number;
   pvHint?: AIMove[]; // principal variation from previous iteration
+  // Optional: when provided, only consider these move signatures at the root.
+  // This enables root-split parallelization where each worker explores a subset
+  // of root moves. Ignored below the root.
+  onlyMoveSigs?: MoveSignature[];
+  // Optional: penalize root moves that lead to avoided repetition keys.
+  // Provide a list of keys (hi,lo) that are already at or above the repetition limit,
+  // and a penalty (in evaluation units) to subtract from the child score.
+  avoidKeys?: Array<{ hi: number; lo: number }>;
+  avoidPenalty?: number;
 }
 
 function clampFinite(x: number): number {
@@ -169,22 +179,25 @@ function searchNode(
   }
 
   // TT probe
+  const flags = getIAFlags();
   const key = computeKey(state);
-  if (stats) stats.ttReads = (stats.ttReads ?? 0) + 1;
   let hashSig: MoveSignature | undefined = undefined;
-  const probe = TT.probe(key);
-  if (probe) {
-    if (stats) stats.ttHits = (stats.ttHits ?? 0) + 1;
-    hashSig = probe.bestMove || undefined;
-    if (probe.depth >= depth) {
-      const val = probe.value;
-      if (probe.flag === TTFlag.EXACT) return { score: val, pv: [] };
-      if (probe.flag === TTFlag.LOWER) {
-        if (val > alpha) alpha = val;
-      } else if (probe.flag === TTFlag.UPPER) {
-        if (val < beta) beta = val;
+  if (flags.ttEnabled) {
+    if (stats) stats.ttReads = (stats.ttReads ?? 0) + 1;
+    const probe = TT.probe(key);
+    if (probe) {
+      if (stats) stats.ttHits = (stats.ttHits ?? 0) + 1;
+      hashSig = probe.bestMove || undefined;
+      if (probe.depth >= depth) {
+        const val = probe.value;
+        if (probe.flag === TTFlag.EXACT) return { score: val, pv: [] };
+        if (probe.flag === TTFlag.LOWER) {
+          if (val > alpha) alpha = val;
+        } else if (probe.flag === TTFlag.UPPER) {
+          if (val < beta) beta = val;
+        }
+        if (alpha >= beta) return { score: val, pv: [] };
       }
-      if (alpha >= beta) return { score: val, pv: [] };
     }
   }
 
@@ -213,6 +226,7 @@ function searchNode(
     return { score: score0, pv: [m0] };
   }
 
+  const usePVS = flags.pvsEnabled;
   let first = true;
   for (const m of ordered) {
     const nxt = applyMove(state, m);
@@ -221,9 +235,13 @@ function searchNode(
       child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, pvHintAtNode?.slice(1));
       first = false;
     } else {
-      // PVS: null-window search
-      child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, undefined);
-      if (maximizing ? child.score > alpha : child.score < beta) {
+      if (usePVS) {
+        // PVS: null-window search
+        child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, undefined);
+        if (maximizing ? child.score > alpha : child.score < beta) {
+          child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
+        }
+      } else {
         child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
       }
     }
@@ -248,7 +266,7 @@ function searchNode(
           history.set(bestMoveSig, (history.get(bestMoveSig) ?? 0) + depth * depth);
         }
         // Store TT as LOWER bound
-        TT.store(key, depth, clampFinite(bestScore), TTFlag.LOWER, bestMoveSig);
+        if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), TTFlag.LOWER, bestMoveSig);
         return { score: bestScore, pv: bestPV };
       }
     } else {
@@ -266,7 +284,7 @@ function searchNode(
           }
           history.set(bestMoveSig, (history.get(bestMoveSig) ?? 0) + depth * depth);
         }
-        TT.store(key, depth, clampFinite(bestScore), TTFlag.UPPER, bestMoveSig);
+        if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), TTFlag.UPPER, bestMoveSig);
         return { score: bestScore, pv: bestPV };
       }
     }
@@ -278,7 +296,7 @@ function searchNode(
   let flag: TTFlag = TTFlag.EXACT;
   if (bestScore <= alpha) flag = TTFlag.UPPER; // fail-low
   else if (bestScore >= beta) flag = TTFlag.LOWER; // fail-high
-  TT.store(key, depth, clampFinite(bestScore), flag, bestMoveSig);
+  if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), flag, bestMoveSig);
   return { score: bestScore, pv: bestPV };
 }
 
@@ -289,15 +307,24 @@ export function bestMove(
   opts?: SearchOptions
 ): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
   const me: Player = state.currentPlayer;
-  const movesGen = generateAllMoves(state);
+  // Generate all legal moves at root
+  let movesGen = generateAllMoves(state);
+  // If a root filter is provided, restrict evaluation to those move signatures
+  if (opts?.onlyMoveSigs && opts.onlyMoveSigs.length > 0) {
+    const set = new Set<MoveSignature>(opts.onlyMoveSigs);
+    movesGen = movesGen.filter(m => set.has(makeSignature(m)));
+  }
   if (movesGen.length === 0) return { move: null, score: evaluate(state, me), pv: [], rootMoves: [] };
 
   // Prepare helpers for ordering at root
   const pvSig = opts?.pvHint && opts.pvHint.length > 0 ? makeSignature(opts.pvHint[0]) : undefined;
+  const flagsRoot = getIAFlags();
   const key = computeKey(state);
   let hashSig: MoveSignature | undefined = undefined;
-  const probe = TT.probe(key);
-  if (probe) hashSig = probe.bestMove || undefined;
+  if (flagsRoot.ttEnabled) {
+    const probe = TT.probe(key);
+    if (probe) hashSig = probe.bestMove || undefined;
+  }
 
   const killers: Killers = Array.from({ length: 256 }, () => [0, 0]); // support up to 256 plies
   const history: HistoryMap = new Map();
@@ -313,12 +340,19 @@ export function bestMove(
   let bestPV: AIMove[] = [];
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
 
+  // Build a fast lookup set for avoided keys if provided
+  const avoidSet: Set<string> = new Set(
+    (opts?.avoidKeys ?? []).map((k) => `${(k.hi >>> 0)}:${(k.lo >>> 0)}`)
+  );
+  const avoidPenalty = opts?.avoidPenalty ?? 50;
+
   if (opts?.shouldStop && opts.shouldStop()) {
     const m0 = ordered[0];
     const score0 = evaluate(applyMove(state, m0), me);
     return { move: m0, score: score0, pv: [m0], rootMoves: [{ move: m0, score: score0 }] };
   }
 
+  const usePVSRoot = flagsRoot.pvsEnabled;
   let first = true;
   for (const m of ordered) {
     const nxt = applyMove(state, m);
@@ -327,15 +361,28 @@ export function bestMove(
       res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, opts?.pvHint?.slice(1));
       first = false;
     } else {
-      // PVS at root as well
-      res = searchNode(nxt, Math.max(0, depth - 1), alpha, alpha + 1, me, 1, killers, history, stats, opts, undefined);
-      if (res.score > alpha && res.score < beta) {
+      if (usePVSRoot) {
+        // PVS at root as well
+        res = searchNode(nxt, Math.max(0, depth - 1), alpha, alpha + 1, me, 1, killers, history, stats, opts, undefined);
+        if (res.score > alpha && res.score < beta) {
+          res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
+        }
+      } else {
         res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
       }
     }
-    rootMoves.push({ move: m, score: res.score });
-    if (res.score > bestScore) {
-      bestScore = res.score;
+    // Apply repetition-avoidance penalty at the root, if enabled
+    let childScore = res.score;
+    if (avoidSet.size > 0) {
+      const k = computeKey(nxt);
+      const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+      if (avoidSet.has(keyStr)) {
+        childScore = childScore - avoidPenalty;
+      }
+    }
+    rootMoves.push({ move: m, score: childScore });
+    if (childScore > bestScore) {
+      bestScore = childScore;
       bestMoveSel = m;
       bestPV = [m, ...res.pv];
     }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GameState } from '../game/types';
-import FasePanel from './FasePanel';
+import FasePanel from './DevTools/FasePanel';
 import HeaderPanel from './HeaderPanel';
 
 export interface SidebarProps {

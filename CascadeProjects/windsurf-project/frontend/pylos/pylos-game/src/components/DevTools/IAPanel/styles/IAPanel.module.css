@@ -1,0 +1,60 @@
+/* Global-scoped styles to avoid breaking existing className usage. */
+
+:root {
+  --ia-gap: 10px;
+}
+
+:global(.panel.ia-panel) {
+  display: block;
+  padding: 10px 12px;
+}
+
+:global(.ia-panel__header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+:global(.ia-panel__title) {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+}
+
+:global(.ia-panel__status) {
+  display: inline-flex;
+  gap: 8px;
+}
+
+:global(.ia-panel__controls) {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: var(--ia-gap);
+  align-items: center;
+  margin-top: 10px;
+}
+
+:global(.ia-panel__advanced) {
+  margin-top: 8px;
+}
+
+/* advanced-grid layout is defined inline in TSX for now */
+
+:global(.ia-panel__evaluation) {
+  display: grid;
+  grid-auto-flow: row;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+:global(.ia-panel__kpis) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+:global(.ia-panel__moves) {
+  margin-top: 12px;
+}
+

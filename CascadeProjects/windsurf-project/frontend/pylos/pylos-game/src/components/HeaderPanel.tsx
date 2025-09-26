@@ -22,7 +22,7 @@ export interface HeaderPanelProps {
  * HeaderPanel: muestra el nombre del juego y acciones principales (Nuevo, Dev).
  * Se piensa para el Sidebar y busca ser compacto en altura.
  */
-function HeaderPanel({ title = 'Pylos v1.11.25.727', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
+function HeaderPanel({ title = 'Pylos v1.26.9.351', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
   // Estado del popover para Partida Vs IA
   const [vsOpen, setVsOpen] = useState<boolean>(false);
   const [selectedSide, setSelectedSide] = useState<'L' | 'D' | null>(null);

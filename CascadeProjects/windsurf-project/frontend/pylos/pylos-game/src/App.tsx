@@ -1,12 +1,12 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import './App.css';
 import Board from './components/Board';
-import InfoPanel from './components/InfoPanel';
+import InfoPanel from './components/DevTools/InfoPanel';
 import HeaderPanel from './components/HeaderPanel';
-import FasePanel from './components/FasePanel';
-import DevToolsPanel from './components/DevToolsPanel';
-import InfoIA from './components/InfoIA';
-import RulesPanel from './components/RulesPanel';
+import FasePanel from './components/DevTools/FasePanel';
+import DevToolsPanel from './components/DevTools/DevToolsPanel';
+import InfoIA from './components/DevTools/InfoIA/InfoIA';
+import RulesPanel from './components/DevTools/RulesPanel';
 import { useGameLogger } from './hooks/useGameLogger';
 import type { GameState, Position } from './game/types';
 import { initialState, placeFromReserve, selectMoveSource, cancelMoveSelection, movePiece, recoverPiece, finishRecovery, validMoveDestinations, validReserveDestinations, isGameOver, recoverablePositions } from './game/rules';
@@ -15,10 +15,10 @@ import FlyingPiece from './components/FlyingPiece';
 import MoveLog from './components/MoveLog';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
-import IAPanel from './components/IAPanel';
+import IAPanel from './components/DevTools/IAPanel/index';
 import IAUserPanel from './components/IAUserPanel';
 import FootPanel from './components/FootPanel';
-import UXPanel from './components/UXPanel';
+import UXPanel from './components/DevTools/UXPanel';
 import GameOverModal from './components/GameOverModal';
 import { usePersistence } from './hooks/usePersistence';
 import type { MoveEntry } from './hooks/usePersistence';
@@ -60,8 +60,8 @@ function App() {
   const [showRules, setShowRules] = useState<boolean>(false);
   // InfoIA panel (simulaciones y métricas) dentro de DevTools
   const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
-  // IA advanced configuration (quiescence/book)
-  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>(() => {
+  // IA advanced configuration (quiescence/book/precomputed flags)
+  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string; precomputedSupports?: boolean; precomputedCenter?: boolean; pvsEnabled?: boolean; aspirationEnabled?: boolean; ttEnabled?: boolean; avoidRepeats?: boolean; repeatMax?: number; avoidPenalty?: number }>(() => {
     try {
       const raw = localStorage.getItem('pylos.ia.advanced.v1');
       if (raw) {
@@ -74,11 +74,19 @@ function App() {
             futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
             bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
             bookUrl: typeof p.bookUrl === 'string' && p.bookUrl.trim().length > 0 ? p.bookUrl : '/aperturas_book.json',
+            precomputedSupports: typeof p.precomputedSupports === 'boolean' ? p.precomputedSupports : true,
+            precomputedCenter: typeof p.precomputedCenter === 'boolean' ? p.precomputedCenter : true,
+            pvsEnabled: typeof p.pvsEnabled === 'boolean' ? p.pvsEnabled : true,
+            aspirationEnabled: typeof p.aspirationEnabled === 'boolean' ? p.aspirationEnabled : true,
+            ttEnabled: typeof p.ttEnabled === 'boolean' ? p.ttEnabled : true,
+            avoidRepeats: typeof p.avoidRepeats === 'boolean' ? p.avoidRepeats : true,
+            repeatMax: Number.isFinite(p.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : 3,
+            avoidPenalty: Number.isFinite(p.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : 50,
           };
         }
       }
     } catch {}
-    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json' };
+    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json', precomputedSupports: true, precomputedCenter: true, pvsEnabled: true, aspirationEnabled: true, ttEnabled: true, avoidRepeats: true, repeatMax: 3, avoidPenalty: 50 };
   });
   useEffect(() => {
     try { localStorage.setItem('pylos.ia.advanced.v1', JSON.stringify(iaConfig)); } catch {}
@@ -124,6 +132,8 @@ function App() {
     holeBorders,
     setHoleBorders,
   } = useAnimations();
+  // Preserve board while InfoIA mirrors a fast simulation
+  const mirrorPrevStateRef = useRef<GameState | null>(null);
   // redoingRef will come from the history hook
 
   // Logging centralizado por useGameLogger (incluye log inicial)
@@ -530,6 +540,7 @@ function App() {
     setFlying,
     setAppearKeys,
     updateAndCheck,
+    historyStates: history,
   });
   // Undo/Redo availability flags (used in board actions panel)
   const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
@@ -562,6 +573,26 @@ function App() {
   const onFinishRecovery = () => {
     const res = finishRecovery(state);
     if (!res.error) updateAndCheck(res.state, true, true, { player: state.currentPlayer, source: 'PLAYER', text: 'fin recuperación' });
+  };
+
+  // === InfoIA mirroring callbacks (fast, no animations) ===
+  const onMirrorStart = () => {
+    try { setFlying(null); } catch {}
+    mirrorPrevStateRef.current = state;
+    autoRunningRef.current = true; // temporarily block user interactions
+  };
+  const onMirrorUpdate = (s: GameState) => {
+    try { setFlying(null); } catch {}
+    setState(s);
+  };
+  const onMirrorEnd = (_s: GameState) => {
+    try { setFlying(null); } catch {}
+    // Restore original board when finished
+    if (mirrorPrevStateRef.current) {
+      setState(mirrorPrevStateRef.current);
+      mirrorPrevStateRef.current = null;
+    }
+    autoRunningRef.current = false;
   };
 
   const onStartVsAI = (enemy: 'L' | 'D', depth: number) => {
@@ -719,7 +750,11 @@ function App() {
               />
             )}
             infoIAPanel={(
-              <InfoIA />
+              <InfoIA
+                onMirrorStart={onMirrorStart}
+                onMirrorUpdate={onMirrorUpdate}
+                onMirrorEnd={onMirrorEnd}
+              />
             )}
             uxPanel={(
               <UXPanel

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { renderToString } from 'react-dom/server';
 import FasePanel from './FasePanel';
-import { initialState } from '../game/rules';
+import { initialState } from '../../game/rules';
 
 const clone = <T,>(obj: T): T => JSON.parse(JSON.stringify(obj));
 

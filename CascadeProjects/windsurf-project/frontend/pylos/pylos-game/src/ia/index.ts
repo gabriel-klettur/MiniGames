@@ -1,8 +1,9 @@
 import type { GameState } from '../game/types';
 import { bestMove } from './search/search';
 import { TT } from './tt';
-import { applyMove } from './moves';
+import { applyMove, generateAllMoves } from './moves';
 import type { AIMove } from './moves';
+import { makeSignature, type MoveSignature } from './signature';
 
 /**
  * Compute the best move for the current player at a given depth.
@@ -45,7 +46,14 @@ export type ComputeOptions = {
     search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>;
     bookEnabled?: boolean;
     bookUrl?: string;
+    flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }>;
   };
+  // Optional: desired number of workers for parallel search. If 'auto', we pick a sensible
+  // value from hardwareConcurrency, capped to [1..4]. If omitted, default is 'auto'.
+  workers?: number | 'auto';
+  // Optional: repetition-avoidance at the root (penalize moves that lead to these keys)
+  avoidKeys?: Array<{ hi: number; lo: number }>; // keys at/above repeat threshold
+  avoidPenalty?: number; // evaluation units to subtract (default 50)
 };
 
 export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{
@@ -59,8 +67,16 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   nps: number;
   ttReads?: number;
   ttHits?: number;
+  usedWorkers?: number;
 }>
 {
+  // If the caller explicitly requests parallelism, route to the parallel implementation.
+  if (typeof opts.workers !== 'undefined') {
+    try {
+      const w = desiredWorkers(opts.workers);
+      if (w > 1) return await computeBestMoveParallel(state, opts);
+    } catch {}
+  }
   const worker = ensureWorker();
   const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
   const timeMs = typeof opts.timeMs === 'number' ? Math.max(50, Math.floor(opts.timeMs)) : undefined;
@@ -88,6 +104,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           nps: data.nps ?? 0,
           ttReads: data.ttReads,
           ttHits: data.ttHits,
+          usedWorkers: 1,
         });
       }
     };
@@ -110,7 +127,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
     }
 
     try {
-      worker.postMessage({ type: 'SEARCH', state, depth, timeMs, cfg: opts.cfg });
+      worker.postMessage({ type: 'SEARCH', state, depth, timeMs, cfg: opts.cfg, avoidKeys: opts.avoidKeys, avoidPenalty: opts.avoidPenalty });
     } catch (err) {
       cleanup();
       reject(err);
@@ -122,4 +139,198 @@ export async function computeBestNextStateAsync(state: GameState, opts: ComputeO
   const res = await computeBestMoveAsync(state, opts);
   if (!res.move) return state;
   return applyMove(state, res.move);
+}
+
+// -------------------------------------------------
+// Parallel API via Worker Pool (root-split alpha-beta)
+// -------------------------------------------------
+
+let _pool: Worker[] = [];
+
+function createWorker(): Worker {
+  return new Worker(new URL('./worker/aiWorker.ts', import.meta.url), { type: 'module' });
+}
+
+function clamp(n: number, lo: number, hi: number): number { return Math.max(lo, Math.min(hi, n)); }
+
+function desiredWorkers(w: number | 'auto' | undefined): number {
+  if (w && w !== 'auto') return clamp(Math.floor(w), 1, 4);
+  const hc = (typeof navigator !== 'undefined' && typeof navigator.hardwareConcurrency === 'number') ? navigator.hardwareConcurrency : 2;
+  // Use hc - 1 to leave room for UI thread, cap to [1..4]
+  return clamp(Math.max(1, hc - 1), 1, 4);
+}
+
+function ensurePool(size: number): Worker[] {
+  const s = clamp(size, 1, 4);
+  // Grow
+  while (_pool.length < s) _pool.push(createWorker());
+  // Shrink (do not terminate workers aggressively; keep a small pool hot)
+  if (_pool.length > s) _pool = _pool.slice(0, s);
+  return _pool;
+}
+
+function partition<T>(arr: T[], k: number): T[][] {
+  const out: T[][] = Array.from({ length: k }, () => []);
+  for (let i = 0; i < arr.length; i++) out[i % k].push(arr[i]);
+  return out;
+}
+
+export async function computeBestMoveParallel(state: GameState, opts: ComputeOptions = {}): Promise<{
+  move: AIMove | null;
+  score: number;
+  depthReached: number;
+  pv: AIMove[];
+  rootMoves: Array<{ move: AIMove; score: number }>;
+  nodes: number;
+  elapsedMs: number;
+  nps: number;
+  ttReads?: number;
+  ttHits?: number;
+  usedWorkers: number;
+}> {
+  const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
+  const timeMs = typeof opts.timeMs === 'number' ? Math.max(50, Math.floor(opts.timeMs)) : undefined;
+
+  // Generate and shard root moves by signature
+  const rootMoves = generateAllMoves(state);
+  if (rootMoves.length === 0) {
+    const startEval = bestMove(state, 1); // quick evaluate for score
+    return {
+      move: null,
+      score: startEval.score,
+      depthReached: 0,
+      pv: [],
+      rootMoves: [],
+      nodes: 0,
+      elapsedMs: 0,
+      nps: 0,
+      usedWorkers: 1,
+    };
+  }
+
+  const rootSigs: MoveSignature[] = rootMoves.map(m => makeSignature(m));
+  let W = desiredWorkers(opts.workers);
+  W = clamp(Math.min(W, rootMoves.length), 1, 4);
+  const shards = partition(rootSigs, W).filter(sh => sh.length > 0);
+  const workers = ensurePool(shards.length);
+
+  const start = performance.now();
+  let doneCount = 0;
+  let aborted = false;
+  const perNodes = new Array<number>(workers.length).fill(0);
+  let maxDepthSeen = 0;
+
+  type PartialResult = {
+    move: AIMove | null;
+    score: number;
+    depthReached: number;
+    pv: AIMove[];
+    rootMoves: Array<{ move: AIMove; score: number }>;
+    nodes: number;
+    elapsedMs: number;
+    nps: number;
+    ttReads?: number;
+    ttHits?: number;
+  };
+
+  const partials: PartialResult[] = new Array(shards.length);
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      if (opts.signal) opts.signal.removeEventListener('abort', onAbort);
+      for (let i = 0; i < workers.length; i++) workers[i].removeEventListener('message', handlers[i]);
+    };
+
+    const onAbort = () => {
+      aborted = true;
+      try { for (const w of workers) w.postMessage({ type: 'CANCEL' }); } catch {}
+      cleanup();
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+
+    if (opts.signal) {
+      if (opts.signal.aborted) return onAbort();
+      opts.signal.addEventListener('abort', onAbort);
+    }
+
+    const handlers: ((e: MessageEvent) => void)[] = workers.map((_, idx) => (e: MessageEvent) => {
+      const data = e.data || {};
+      if (data.type === 'PROGRESS') {
+        perNodes[idx] = data.nodes ?? perNodes[idx];
+        if (typeof data.depth === 'number' && data.depth > maxDepthSeen) maxDepthSeen = data.depth;
+        if (opts.onProgress) {
+          const totalNodes = perNodes.reduce((a, b) => a + (b || 0), 0);
+          opts.onProgress({ depth: maxDepthSeen, score: data.score ?? 0, nodes: totalNodes });
+        }
+        return;
+      }
+      if (data.type === 'RESULT') {
+        if (aborted) return;
+        partials[idx] = {
+          move: data.bestMove ?? null,
+          score: data.score,
+          depthReached: data.depthReached ?? depth,
+          pv: (data.pv ?? []) as AIMove[],
+          rootMoves: (data.rootMoves ?? []) as Array<{ move: AIMove; score: number }>,
+          nodes: data.nodes ?? 0,
+          elapsedMs: data.elapsedMs ?? 0,
+          nps: data.nps ?? 0,
+          ttReads: data.ttReads,
+          ttHits: data.ttHits,
+        };
+        doneCount++;
+        if (doneCount >= shards.length) {
+          cleanup();
+          // Aggregate
+          let best: PartialResult | null = null;
+          for (const pr of partials) {
+            if (!pr) continue;
+            if (!best || pr.score > best.score) best = pr;
+          }
+          const elapsedMs = performance.now() - start;
+          const nodes = partials.reduce((acc, pr) => acc + ((pr && pr.nodes) || 0), 0);
+          const nps = elapsedMs > 0 ? (nodes * 1000) / elapsedMs : nodes;
+          const mergedRoot: Array<{ move: AIMove; score: number }> = [];
+          for (const pr of partials) if (pr) mergedRoot.push(...pr.rootMoves);
+          resolve({
+            move: best?.move ?? null,
+            score: best?.score ?? 0,
+            depthReached: best?.depthReached ?? 0,
+            pv: best?.pv ?? [],
+            rootMoves: mergedRoot,
+            nodes,
+            elapsedMs,
+            nps,
+            ttReads: undefined,
+            ttHits: undefined,
+            usedWorkers: shards.length,
+          });
+        }
+      }
+    });
+
+    // Attach handlers and launch
+    for (let i = 0; i < workers.length; i++) {
+      const w = workers[i];
+      w.addEventListener('message', handlers[i]);
+      try {
+        w.postMessage({
+          type: 'SEARCH',
+          state,
+          depth,
+          timeMs,
+          cfg: opts.cfg,
+          avoidKeys: opts.avoidKeys,
+          avoidPenalty: opts.avoidPenalty,
+          onlyMoveSigs: shards[i].map((s) => s >>> 0),
+        });
+      } catch (err) {
+        // If any launch fails, abort all and reject
+        try { for (const ww of workers) ww.postMessage({ type: 'CANCEL' }); } catch {}
+        cleanup();
+        reject(err);
+        return;
+      }
+    }
+  });
 }

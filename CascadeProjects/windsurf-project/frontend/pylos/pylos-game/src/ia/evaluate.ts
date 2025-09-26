@@ -1,6 +1,7 @@
 import type { GameState, Player } from '../game/types';
 import { positions, getCell, isFree } from '../game/board';
-import { getSquareWindows, getLineWindows } from './precomputed';
+import { getSquareWindows, getLineWindows, getCenterWeight } from './precomputed';
+import { getIAFlags } from './config';
 import { isGameOver } from '../game/rules';
 
 /**
@@ -47,15 +48,21 @@ export function evaluate(state: GameState, me: Player): number {
   // Height/position + center preference
   let myPos = 0;
   let oppPos = 0;
+  const flags = getIAFlags();
   for (const p of positions()) {
     const cell = getCell(state.board, p);
     if (cell === null) continue;
     const levelWeight = [1, 3, 6, 10][p.level] ?? (p.level + 1);
-    const size = 4 - p.level; // 4,3,2,1
-    const center = (size - 1) / 2;
-    const dist = Math.abs(p.row - center) + Math.abs(p.col - center);
-    const maxDist = center * 2 || 1;
-    const centerBonus = 1 - dist / maxDist; // [0,1]
+    let centerBonus: number;
+    if (flags.precomputedCenter) {
+      centerBonus = getCenterWeight(p.level as 0 | 1 | 2 | 3, p.row, p.col);
+    } else {
+      const size = 4 - p.level; // 4,3,2,1
+      const center = (size - 1) / 2;
+      const dist = Math.abs(p.row - center) + Math.abs(p.col - center);
+      const maxDist = center * 2 || 1;
+      centerBonus = 1 - dist / maxDist;
+    }
     const score = W.height * levelWeight * (0.7 + W.center * 0.3 * centerBonus);
     if (cell === me) myPos += score; else if (cell === opp) oppPos += score;
   }
