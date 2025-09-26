@@ -4,6 +4,7 @@ import type { AIMove } from '../moves';
 import { evaluate } from '../evaluate';
 import { computeKey } from '../zobrist';
 import { TT, TTFlag } from '../tt';
+import { getIAFlags } from '../config';
 import { makeSignature, type MoveSignature } from '../signature';
 
 type Killers = Array<[MoveSignature | 0, MoveSignature | 0]>; // two per ply
@@ -169,22 +170,25 @@ function searchNode(
   }
 
   // TT probe
+  const flags = getIAFlags();
   const key = computeKey(state);
-  if (stats) stats.ttReads = (stats.ttReads ?? 0) + 1;
   let hashSig: MoveSignature | undefined = undefined;
-  const probe = TT.probe(key);
-  if (probe) {
-    if (stats) stats.ttHits = (stats.ttHits ?? 0) + 1;
-    hashSig = probe.bestMove || undefined;
-    if (probe.depth >= depth) {
-      const val = probe.value;
-      if (probe.flag === TTFlag.EXACT) return { score: val, pv: [] };
-      if (probe.flag === TTFlag.LOWER) {
-        if (val > alpha) alpha = val;
-      } else if (probe.flag === TTFlag.UPPER) {
-        if (val < beta) beta = val;
+  if (flags.ttEnabled) {
+    if (stats) stats.ttReads = (stats.ttReads ?? 0) + 1;
+    const probe = TT.probe(key);
+    if (probe) {
+      if (stats) stats.ttHits = (stats.ttHits ?? 0) + 1;
+      hashSig = probe.bestMove || undefined;
+      if (probe.depth >= depth) {
+        const val = probe.value;
+        if (probe.flag === TTFlag.EXACT) return { score: val, pv: [] };
+        if (probe.flag === TTFlag.LOWER) {
+          if (val > alpha) alpha = val;
+        } else if (probe.flag === TTFlag.UPPER) {
+          if (val < beta) beta = val;
+        }
+        if (alpha >= beta) return { score: val, pv: [] };
       }
-      if (alpha >= beta) return { score: val, pv: [] };
     }
   }
 
@@ -213,6 +217,7 @@ function searchNode(
     return { score: score0, pv: [m0] };
   }
 
+  const usePVS = flags.pvsEnabled;
   let first = true;
   for (const m of ordered) {
     const nxt = applyMove(state, m);
@@ -221,9 +226,13 @@ function searchNode(
       child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, pvHintAtNode?.slice(1));
       first = false;
     } else {
-      // PVS: null-window search
-      child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, undefined);
-      if (maximizing ? child.score > alpha : child.score < beta) {
+      if (usePVS) {
+        // PVS: null-window search
+        child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, undefined);
+        if (maximizing ? child.score > alpha : child.score < beta) {
+          child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
+        }
+      } else {
         child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
       }
     }
@@ -248,7 +257,7 @@ function searchNode(
           history.set(bestMoveSig, (history.get(bestMoveSig) ?? 0) + depth * depth);
         }
         // Store TT as LOWER bound
-        TT.store(key, depth, clampFinite(bestScore), TTFlag.LOWER, bestMoveSig);
+        if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), TTFlag.LOWER, bestMoveSig);
         return { score: bestScore, pv: bestPV };
       }
     } else {
@@ -266,7 +275,7 @@ function searchNode(
           }
           history.set(bestMoveSig, (history.get(bestMoveSig) ?? 0) + depth * depth);
         }
-        TT.store(key, depth, clampFinite(bestScore), TTFlag.UPPER, bestMoveSig);
+        if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), TTFlag.UPPER, bestMoveSig);
         return { score: bestScore, pv: bestPV };
       }
     }
@@ -278,7 +287,7 @@ function searchNode(
   let flag: TTFlag = TTFlag.EXACT;
   if (bestScore <= alpha) flag = TTFlag.UPPER; // fail-low
   else if (bestScore >= beta) flag = TTFlag.LOWER; // fail-high
-  TT.store(key, depth, clampFinite(bestScore), flag, bestMoveSig);
+  if (flags.ttEnabled) TT.store(key, depth, clampFinite(bestScore), flag, bestMoveSig);
   return { score: bestScore, pv: bestPV };
 }
 
@@ -294,10 +303,13 @@ export function bestMove(
 
   // Prepare helpers for ordering at root
   const pvSig = opts?.pvHint && opts.pvHint.length > 0 ? makeSignature(opts.pvHint[0]) : undefined;
+  const flagsRoot = getIAFlags();
   const key = computeKey(state);
   let hashSig: MoveSignature | undefined = undefined;
-  const probe = TT.probe(key);
-  if (probe) hashSig = probe.bestMove || undefined;
+  if (flagsRoot.ttEnabled) {
+    const probe = TT.probe(key);
+    if (probe) hashSig = probe.bestMove || undefined;
+  }
 
   const killers: Killers = Array.from({ length: 256 }, () => [0, 0]); // support up to 256 plies
   const history: HistoryMap = new Map();
@@ -319,6 +331,7 @@ export function bestMove(
     return { move: m0, score: score0, pv: [m0], rootMoves: [{ move: m0, score: score0 }] };
   }
 
+  const usePVSRoot = flagsRoot.pvsEnabled;
   let first = true;
   for (const m of ordered) {
     const nxt = applyMove(state, m);
@@ -327,9 +340,13 @@ export function bestMove(
       res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, opts?.pvHint?.slice(1));
       first = false;
     } else {
-      // PVS at root as well
-      res = searchNode(nxt, Math.max(0, depth - 1), alpha, alpha + 1, me, 1, killers, history, stats, opts, undefined);
-      if (res.score > alpha && res.score < beta) {
+      if (usePVSRoot) {
+        // PVS at root as well
+        res = searchNode(nxt, Math.max(0, depth - 1), alpha, alpha + 1, me, 1, killers, history, stats, opts, undefined);
+        if (res.score > alpha && res.score < beta) {
+          res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
+        }
+      } else {
         res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
       }
     }

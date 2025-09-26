@@ -36,8 +36,13 @@ export interface IAPanelProps {
     futilityMargin: number;
     bookEnabled: boolean;
     bookUrl: string;
+    precomputedSupports?: boolean;
+    precomputedCenter?: boolean;
+    pvsEnabled?: boolean;
+    aspirationEnabled?: boolean;
+    ttEnabled?: boolean;
   };
-  onChangeIaConfig: (cfg: Partial<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>) => void;
+  onChangeIaConfig: (cfg: Partial<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string; precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }>) => void;
 }
 
 export default function IAPanel(props: IAPanelProps) {
@@ -117,6 +122,24 @@ export default function IAPanel(props: IAPanelProps) {
       <details className="ia-panel__advanced" style={{ marginTop: 12 }}>
         <summary>Avanzado</summary>
         <div className="advanced-grid" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: 8, alignItems: 'center', marginTop: 8 }}>
+          {/* --- Búsqueda --- */}
+          <div style={{ gridColumn: '1 / -1', fontWeight: 600, opacity: 0.8 }}>Búsqueda</div>
+          <label>PVS (Principal Variation Search)</label>
+          <div>
+            <input id="ia-pvs" type="checkbox" checked={iaConfig.pvsEnabled ?? true} onChange={(e) => onChangeIaConfig({ pvsEnabled: e.target.checked })} />
+            <label htmlFor="ia-pvs" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+          <label>Ventanas de aspiración</label>
+          <div>
+            <input id="ia-asp" type="checkbox" checked={iaConfig.aspirationEnabled ?? true} onChange={(e) => onChangeIaConfig({ aspirationEnabled: e.target.checked })} />
+            <label htmlFor="ia-asp" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+          <label>Transposition Table (TT)</label>
+          <div>
+            <input id="ia-tt" type="checkbox" checked={iaConfig.ttEnabled ?? true} onChange={(e) => onChangeIaConfig({ ttEnabled: e.target.checked })} />
+            <label htmlFor="ia-tt" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+
           <label>Libro de aperturas</label>
           <div>
             <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} />
@@ -178,6 +201,30 @@ export default function IAPanel(props: IAPanelProps) {
               onChange={(e) => onChangeIaConfig({ futilityMargin: Number(e.target.value) })}
             />
             <span style={{ marginLeft: 8 }}>{iaConfig.futilityMargin}</span>
+          </div>
+
+          {/* --- Rendimiento --- */}
+          <div style={{ gridColumn: '1 / -1', fontWeight: 600, opacity: 0.8, marginTop: 6 }}>Rendimiento</div>
+          <label>Soportes precalculados</label>
+          <div>
+            <input
+              id="ia-pre-supp"
+              type="checkbox"
+              checked={iaConfig.precomputedSupports ?? true}
+              onChange={(e) => onChangeIaConfig({ precomputedSupports: e.target.checked })}
+            />
+            <label htmlFor="ia-pre-supp" style={{ marginLeft: 6 }}>Activado</label>
+          </div>
+
+          <label>Centro precalculado</label>
+          <div>
+            <input
+              id="ia-pre-center"
+              type="checkbox"
+              checked={iaConfig.precomputedCenter ?? true}
+              onChange={(e) => onChangeIaConfig({ precomputedCenter: e.target.checked })}
+            />
+            <label htmlFor="ia-pre-center" style={{ marginLeft: 6 }}>Activado</label>
           </div>
         </div>
       </details>

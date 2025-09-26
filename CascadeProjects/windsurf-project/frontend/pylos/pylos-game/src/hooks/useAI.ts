@@ -21,6 +21,11 @@ export interface UseAIParams {
     futilityMargin: number;
     bookEnabled: boolean;
     bookUrl?: string;
+    precomputedSupports?: boolean;
+    precomputedCenter?: boolean;
+    pvsEnabled?: boolean;
+    aspirationEnabled?: boolean;
+    ttEnabled?: boolean;
   };
 
   // Environment flags and refs
@@ -137,6 +142,13 @@ export function useAI(params: UseAIParams): UseAIResult {
           },
           bookEnabled: iaConfig?.bookEnabled ?? true,
           bookUrl: iaConfig?.bookUrl,
+          flags: {
+            precomputedSupports: iaConfig?.precomputedSupports ?? true,
+            precomputedCenter: iaConfig?.precomputedCenter ?? true,
+            pvsEnabled: iaConfig?.pvsEnabled ?? true,
+            aspirationEnabled: iaConfig?.aspirationEnabled ?? true,
+            ttEnabled: iaConfig?.ttEnabled ?? true,
+          },
         },
       });
       // Save metrics and PV for visualization ALWAYS

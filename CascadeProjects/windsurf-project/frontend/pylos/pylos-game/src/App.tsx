@@ -60,8 +60,8 @@ function App() {
   const [showRules, setShowRules] = useState<boolean>(false);
   // InfoIA panel (simulaciones y métricas) dentro de DevTools
   const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
-  // IA advanced configuration (quiescence/book)
-  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string }>(() => {
+  // IA advanced configuration (quiescence/book/precomputed flags)
+  const [iaConfig, setIaConfig] = useState<{ quiescence: boolean; qDepthMax: number; qNodeCap: number; futilityMargin: number; bookEnabled: boolean; bookUrl: string; precomputedSupports?: boolean; precomputedCenter?: boolean; pvsEnabled?: boolean; aspirationEnabled?: boolean; ttEnabled?: boolean }>(() => {
     try {
       const raw = localStorage.getItem('pylos.ia.advanced.v1');
       if (raw) {
@@ -74,11 +74,16 @@ function App() {
             futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
             bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
             bookUrl: typeof p.bookUrl === 'string' && p.bookUrl.trim().length > 0 ? p.bookUrl : '/aperturas_book.json',
+            precomputedSupports: typeof p.precomputedSupports === 'boolean' ? p.precomputedSupports : true,
+            precomputedCenter: typeof p.precomputedCenter === 'boolean' ? p.precomputedCenter : true,
+            pvsEnabled: typeof p.pvsEnabled === 'boolean' ? p.pvsEnabled : true,
+            aspirationEnabled: typeof p.aspirationEnabled === 'boolean' ? p.aspirationEnabled : true,
+            ttEnabled: typeof p.ttEnabled === 'boolean' ? p.ttEnabled : true,
           };
         }
       }
     } catch {}
-    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json' };
+    return { quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json', precomputedSupports: true, precomputedCenter: true, pvsEnabled: true, aspirationEnabled: true, ttEnabled: true };
   });
   useEffect(() => {
     try { localStorage.setItem('pylos.ia.advanced.v1', JSON.stringify(iaConfig)); } catch {}

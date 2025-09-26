@@ -1,11 +1,27 @@
 import type { GameState, Player, Position, Board } from '../game/types';
-import { positions, getCell, isEmpty, isSupported, setCell, levelSize, isFree } from '../game/board';
+import { positions, getCell, isEmpty, setCell, levelSize, isFree, inBounds, isSupported } from '../game/board';
+import { getSupports } from './precomputed';
+import { getIAFlags } from './config';
 
 export type PlaceMove = { kind: 'place'; dest: Position; recovers?: Position[] };
 export type LiftMove = { kind: 'lift'; src: Position; dest: Position; recovers?: Position[] };
 export type AIMove = PlaceMove | LiftMove;
 
 function other(p: Player): Player { return p === 'L' ? 'D' : 'L'; }
+
+// Support check honoring runtime flags
+function isSupportedEffective(board: Board, pos: Position): boolean {
+  const flags = getIAFlags();
+  if (!flags.precomputedSupports) {
+    return isSupported(board, pos);
+  }
+  if (pos.level === 0) return true;
+  const supports = getSupports(pos.level as 0 | 1 | 2 | 3, pos.row, pos.col);
+  for (const s of supports) {
+    if (!inBounds(s) || getCell(board, s) === null) return false;
+  }
+  return true;
+}
 
 // Pattern detection (aligned with rules.ts)
 function hasSquareAt(board: Board, player: Player, level: number, row: number, col: number): boolean {
@@ -70,7 +86,7 @@ function validMoveDestinations(board: Board, source: Position): Position[] {
   // must move upwards only; simulate removing the source before checking support
   const temp = setCell(board, source, null);
   const all = positions();
-  return all.filter((p) => p.level > source.level && isEmpty(board, p) && isSupported(temp, p));
+  return all.filter((p) => p.level > source.level && isEmpty(board, p) && isSupportedEffective(temp, p));
 }
 
 function freePiecesOf(board: Board, player: Player): Position[] {
@@ -83,7 +99,7 @@ export function generateBaseMoves(state: GameState): AIMove[] {
   // Placements
   if (state.reserves[me] > 0) {
     for (const p of positions()) {
-      if (isEmpty(state.board, p) && isSupported(state.board, p)) {
+      if (isEmpty(state.board, p) && isSupportedEffective(state.board, p)) {
         moves.push({ kind: 'place', dest: p });
       }
     }
