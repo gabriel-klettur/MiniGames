@@ -59,6 +59,12 @@ export interface AISettings {
   timeMode: 'auto' | 'manual';
   timeSeconds: number;       // when manual, budget per move
   busy?: boolean;            // ephemeral: IA pensando
+  // --- Instrumentation (ephemeral, not persisted) ---
+  nodesVisited?: number;     // nodes searched in current/last search
+  startedAt?: number;        // timestamp when current search started (ms)
+  lastDurationMs?: number;   // duration of the last completed search
+  depthReached?: number;     // max depth reached in iterative deepening
+  lastScore?: number;        // score of best move at last iter
 }
 
 // Centralized starting player to ensure deterministic game start

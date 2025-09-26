@@ -59,9 +59,16 @@ function evaluate(gs: GameState, root: Player): number {
   return retiredDelta + progressScore(gs, root);
 }
 
+export type SearchEvent =
+  | { type: 'start'; startedAt: number }
+  | { type: 'progress'; nodesVisited: number }
+  | { type: 'iter'; depth: number; score: number; bestMove: string | null }
+  | { type: 'end'; durationMs: number; depthReached: number; score: number; nodesVisited: number };
+
 export interface SearchOptions {
   maxDepth: number; // 1..N
   timeLimitMs: number; // wall clock budget
+  onProgress?: (ev: SearchEvent) => void; // optional hooks for instrumentation
 }
 
 export async function findBestMove(rootState: GameState, opts: SearchOptions): Promise<BestMove> {
@@ -70,34 +77,60 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
   const rootSide: Player = rootState.turn;
 
   let best: BestMove = { moveId: null, score: -Infinity, depthReached: 0 };
+  let nodesVisited = 0;
+  let lastProgressAt = start;
+  opts.onProgress?.({ type: 'start', startedAt: start });
+  // Kick an early progress so the UI shows activity even before thresholds
+  opts.onProgress?.({ type: 'progress', nodesVisited });
 
   // Iterative deepening for better anytime behavior
   for (let depth = 1; depth <= opts.maxDepth; depth++) {
     const remaining = deadline - performance.now();
     if (remaining <= 1) break;
-    const res = negamax(rootState, depth, -Infinity, +Infinity, rootSide, deadline);
+    const res = negamax(rootState, depth, -Infinity, +Infinity, rootSide, deadline, () => {
+      nodesVisited++;
+      // Dual throttle: by node count and by time
+      const now = performance.now();
+      if (nodesVisited % 50 === 0 || now - lastProgressAt >= 150) {
+        lastProgressAt = now;
+        opts.onProgress?.({ type: 'progress', nodesVisited });
+      }
+    });
     if (res.timeout) break;
     best = { moveId: res.moveId, score: res.score, depthReached: depth };
+    opts.onProgress?.({ type: 'iter', depth, score: res.score, bestMove: res.moveId });
     // early stop on forced win/loss
     if (Math.abs(res.score) > 90000) break;
     // Give micro tick back to UI
     await new Promise((r) => setTimeout(r, 0));
   }
 
+  const durationMs = performance.now() - start;
+  opts.onProgress?.({ type: 'end', durationMs, depthReached: best.depthReached, score: best.score, nodesVisited });
   return best;
 }
 
-function negamax(gs: GameState, depth: number, alpha: number, beta: number, root: Player, deadline: number): { score: number; moveId: string | null; timeout: boolean } {
+function negamax(
+  gs: GameState,
+  depth: number,
+  alpha: number,
+  beta: number,
+  root: Player,
+  deadline: number,
+  onNode?: () => void,
+): { score: number; moveId: string | null; timeout: boolean } {
   if (performance.now() >= deadline) {
     return { score: 0, moveId: null, timeout: true };
   }
   if (depth === 0 || gs.winner) {
+    onNode?.(); // count leaf evaluation as a node
     return { score: evaluate(gs, root), moveId: null, timeout: false };
   }
 
   const moves = generateMoves(gs);
   if (moves.length === 0) {
     // No legal moves shouldn't happen in Squadro, but evaluate anyway
+    onNode?.(); // count degenerate evaluation as a node
     return { score: evaluate(gs, root), moveId: null, timeout: false };
   }
 
@@ -106,9 +139,10 @@ function negamax(gs: GameState, depth: number, alpha: number, beta: number, root
   let a = alpha;
 
   for (const moveId of moves) {
+    onNode?.();
     const child = cloneState(gs);
     applyMoveRules(child, moveId);
-    const r = negamax(child, depth - 1, -beta, -a, root, deadline);
+    const r = negamax(child, depth - 1, -beta, -a, root, deadline, onNode);
     if (r.timeout) return { score: 0, moveId: null, timeout: true };
     const score = -r.score;
     if (score > bestScore) {

@@ -11,12 +11,25 @@ const gameSlice = createSlice({
   initialState,
   reducers: {
     resetGame(state: GameState) {
+      const prevAI = state.ai ? { ...state.ai } : undefined;
       const next = createInitialState();
       state.lanesByPlayer = next.lanesByPlayer;
       state.pieces = next.pieces;
       state.turn = next.turn;
       state.winner = next.winner;
       // Preserve UI settings (including orientation and piece sizes) across resets
+      // Preserve AI settings across resets (do NOT disable VS IA when starting una nueva partida)
+      if (prevAI) {
+        state.ai = {
+          ...prevAI,
+          busy: false,
+          nodesVisited: 0,
+          startedAt: undefined,
+          lastDurationMs: undefined,
+          depthReached: 0,
+          lastScore: undefined,
+        } as typeof prevAI;
+      }
     },
     movePiece(state: GameState, action: PayloadAction<string>) {
       // Immer allows us to "mutate" safely. Guard against invalid moves.
@@ -87,8 +100,41 @@ const gameSlice = createSlice({
       if (!state.ai) return;
       state.ai.busy = action.payload;
     },
+    // --- AI instrumentation (ephemeral) ---
+    aiSearchStarted(state: GameState, action: PayloadAction<number | undefined>) {
+      if (!state.ai) return;
+      state.ai.startedAt = typeof action.payload === 'number' ? action.payload : Date.now();
+      state.ai.nodesVisited = 0;
+      state.ai.depthReached = 0;
+      state.ai.lastScore = undefined;
+      state.ai.lastDurationMs = undefined;
+    },
+    aiSearchProgress(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return;
+      state.ai.nodesVisited = action.payload;
+    },
+    aiSearchIter(state: GameState, action: PayloadAction<{ depth: number; score: number }>) {
+      if (!state.ai) return;
+      state.ai.depthReached = action.payload.depth;
+      state.ai.lastScore = action.payload.score;
+    },
+    aiSearchEnded(state: GameState, action: PayloadAction<{ durationMs: number; depthReached: number; score: number; nodesVisited: number }>) {
+      if (!state.ai) return;
+      state.ai.lastDurationMs = action.payload.durationMs;
+      state.ai.depthReached = action.payload.depthReached;
+      state.ai.lastScore = action.payload.score;
+      state.ai.nodesVisited = action.payload.nodesVisited;
+    },
+    aiSearchReset(state: GameState) {
+      if (!state.ai) return;
+      state.ai.nodesVisited = 0;
+      state.ai.depthReached = 0;
+      state.ai.lastScore = undefined;
+      state.ai.lastDurationMs = undefined;
+      state.ai.startedAt = undefined;
+    },
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAITimeMode, setAITimeSeconds, setAIBusy } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
 export default gameSlice.reducer;

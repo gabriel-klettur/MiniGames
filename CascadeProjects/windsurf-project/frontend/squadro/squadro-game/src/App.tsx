@@ -8,7 +8,7 @@ import './App.css';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import type { RootState } from './store';
 import { store } from './store';
-import { movePiece, setAIBusy } from './store/gameSlice';
+import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded } from './store/gameSlice';
 import { findBestMove } from './ai/search';
 
 function App() {
@@ -52,7 +52,16 @@ function App() {
       try {
         const state: RootState = store.getState();
         const gs = state.game;
-        const res = await findBestMove(gs, { maxDepth: computeDepth(ai.difficulty), timeLimitMs: computeTime() });
+        const res = await findBestMove(gs, {
+          maxDepth: computeDepth(ai.difficulty),
+          timeLimitMs: computeTime(),
+          onProgress: (ev) => {
+            if (ev.type === 'start') dispatch(aiSearchStarted(ev.startedAt));
+            else if (ev.type === 'progress') dispatch(aiSearchProgress(ev.nodesVisited));
+            else if (ev.type === 'iter') dispatch(aiSearchIter({ depth: ev.depth, score: ev.score }));
+            else if (ev.type === 'end') dispatch(aiSearchEnded({ durationMs: ev.durationMs, depthReached: ev.depthReached, score: ev.score, nodesVisited: ev.nodesVisited }));
+          },
+        });
         if (cancelled) return;
         const moveId = res.moveId;
         if (moveId) dispatch(movePiece(moveId));
@@ -74,7 +83,7 @@ function App() {
         timerRef.current = null;
       }
     };
-  }, [ai?.enabled, ai?.aiSide, ai?.speed, ai?.timeMode, ai?.timeSeconds, ai?.difficulty, ai?.busy, turn, winner, dispatch]);
+  }, [ai?.enabled, ai?.aiSide, ai?.speed, ai?.timeMode, ai?.timeSeconds, ai?.difficulty, turn, winner, dispatch]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 overflow-x-hidden">

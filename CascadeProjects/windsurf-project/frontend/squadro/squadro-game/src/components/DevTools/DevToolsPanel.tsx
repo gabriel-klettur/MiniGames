@@ -4,11 +4,13 @@ import type { RootState } from '../../store';
 import UIUX from './UIUX';
 import EstadoTableroPanel from './EstadoTableroPanel';
 import Button from '../ui/Button';
+import AIDiagnosticsPanel from './IAPanel';
 
 export default function DevToolsPanel() {
   const { turn, winner } = useAppSelector((s: RootState) => s.game);
   const [showUIUX, setShowUIUX] = useState(false);
   const [showEstado, setShowEstado] = useState(true);
+  const [showIA, setShowIA] = useState(true);
 
   return (
     <div className="w-full overflow-x-auto rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
@@ -28,6 +30,16 @@ export default function DevToolsPanel() {
           <Button
             size="sm"
             variant="primary"
+            onClick={() => setShowIA((v) => !v)}
+            pressed={showIA}
+            aria-label="Mostrar/Ocultar IA"
+            title="Mostrar/Ocultar IA"
+          >
+            IA
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
             onClick={() => setShowUIUX((v) => !v)}
             pressed={showUIUX}
             aria-label="Mostrar/Ocultar UI/UX"
@@ -39,6 +51,7 @@ export default function DevToolsPanel() {
         </div>
       </div>
       {showEstado && <EstadoTableroPanel />}
+      {showIA && <AIDiagnosticsPanel />}
       {showUIUX && <UIUX />}
     </div>
   );
