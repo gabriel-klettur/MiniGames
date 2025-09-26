@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { renderToString } from 'react-dom/server';
-import InfoPanel from './InfoPanel';
+import InfoPanel from './DevTools/InfoPanel';
 import HeaderPanel from './HeaderPanel';
 import FootPanel from './FootPanel';
 import GameOverModal from './GameOverModal';
-import RulesPanel from './RulesPanel';
+import RulesPanel from './DevTools/RulesPanel';
 import MoveLog from './MoveLog';
-import DevToolsPanel from './DevToolsPanel';
-import UXPanel from './UXPanel';
+import DevToolsPanel from './DevTools/DevToolsPanel';
+import UXPanel from './DevTools/UXPanel';
 import IAUserPanel from './IAUserPanel';
-import IAPanel from './IAPanel';
+import IAPanel from './DevTools/IAPanel';
 import { initialState } from '../game/rules';
 
 const noop = () => {};

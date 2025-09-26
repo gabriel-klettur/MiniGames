@@ -1,7 +1,7 @@
-import type { GameState } from '../game/types';
+import type { GameState } from '../../game/types';
 import type { MutableRefObject, RefObject } from 'react';
-import bolaA from '../assets/bola_a.webp';
-import bolaB from '../assets/bola_b.webp';
+import bolaA from '../../assets/bola_a.webp';
+import bolaB from '../../assets/bola_b.webp';
 
 export interface InfoPanelProps {
   state: GameState;

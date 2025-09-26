@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameState } from '../game/types';
-import type { AIMove } from '../ia/moves';
+import type { GameState } from '../../game/types';
+import type { AIMove } from '../../ia/moves';
 
 export interface IAPanelProps {
   state: GameState;
