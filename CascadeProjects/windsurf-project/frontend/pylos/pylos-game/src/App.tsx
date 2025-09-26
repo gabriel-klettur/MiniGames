@@ -15,7 +15,7 @@ import FlyingPiece from './components/FlyingPiece';
 import MoveLog from './components/MoveLog';
 import bolaA from './assets/bola_a.webp';
 import bolaB from './assets/bola_b.webp';
-import IAPanel from './components/DevTools/IAPanel';
+import IAPanel from './components/DevTools/IAPanel/index';
 import IAUserPanel from './components/IAUserPanel';
 import FootPanel from './components/FootPanel';
 import UXPanel from './components/DevTools/UXPanel';

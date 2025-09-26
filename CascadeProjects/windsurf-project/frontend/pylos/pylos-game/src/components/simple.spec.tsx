@@ -9,7 +9,7 @@ import MoveLog from './MoveLog';
 import DevToolsPanel from './DevTools/DevToolsPanel';
 import UXPanel from './DevTools/UXPanel';
 import IAUserPanel from './IAUserPanel';
-import IAPanel from './DevTools/IAPanel';
+import IAPanel from './DevTools/IAPanel/index';
 import { initialState } from '../game/rules';
 
 const noop = () => {};
@@ -144,6 +144,8 @@ describe('components – SSR smoke tests', () => {
         nodes={0}
         elapsedMs={0}
         nps={0}
+        iaConfig={{ quiescence: true, qDepthMax: 2, qNodeCap: 24, futilityMargin: 100, bookEnabled: true, bookUrl: '/aperturas_book.json' }}
+        onChangeIaConfig={noop as any}
       />
     );
     expect(html).toContain('Inteligencia Artificial');
