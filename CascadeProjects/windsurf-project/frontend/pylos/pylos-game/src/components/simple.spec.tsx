@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { renderToString } from 'react-dom/server';
-import InfoPanel from './DevTools/InfoPanel';
+import InfoPanel from './InfoPanel';
 import HeaderPanel from './HeaderPanel';
 import FootPanel from './FootPanel';
 import GameOverModal from './GameOverModal';
-import RulesPanel from './DevTools/RulesPanel';
+import RulesPanel from './DevTools/RulesPanel/RulesPanel';
 import MoveLog from './MoveLog';
 import DevToolsPanel from './DevTools/DevToolsPanel';
-import UXPanel from './DevTools/UXPanel';
+import UXPanel from './DevTools/UXPanel/UXPanel';
 import IAUserPanel from './IAUserPanel';
 import IAPanel from './DevTools/IAPanel/index';
 import { initialState } from '../game/rules';

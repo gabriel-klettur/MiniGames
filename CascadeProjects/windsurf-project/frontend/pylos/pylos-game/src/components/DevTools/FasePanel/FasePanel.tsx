@@ -1,4 +1,4 @@
-import type { GameState } from '../../game/types';
+import type { GameState } from '../../../game/types';
 
 export interface FasePanelProps {
   state: GameState;
