@@ -1,0 +1,77 @@
+import { useEffect, useState } from 'react';
+
+export interface IaAdvancedConfig {
+  quiescence: boolean;
+  qDepthMax: number; // 0..4
+  qNodeCap: number; // 1..128
+  futilityMargin: number; // 0..1000
+  bookEnabled: boolean;
+  bookUrl: string;
+  precomputedSupports?: boolean;
+  precomputedCenter?: boolean;
+  pvsEnabled?: boolean;
+  aspirationEnabled?: boolean;
+  ttEnabled?: boolean;
+  avoidRepeats?: boolean;
+  repeatMax?: number; // 1..10
+  avoidPenalty?: number; // 0..500
+}
+
+const STORAGE_KEY = 'pylos.ia.advanced.v1';
+
+/**
+ * Keeps IA advanced configuration in React state and persists it to localStorage.
+ * Mirrors and encapsulates the logic previously embedded in App.tsx.
+ */
+export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.SetStateAction<IaAdvancedConfig>>] {
+  const [cfg, setCfg] = useState<IaAdvancedConfig>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p && typeof p === 'object') {
+          return {
+            quiescence: typeof p.quiescence === 'boolean' ? p.quiescence : true,
+            qDepthMax: Number.isFinite(p.qDepthMax) ? Math.max(0, Math.min(4, Math.floor(p.qDepthMax))) : 2,
+            qNodeCap: Number.isFinite(p.qNodeCap) ? Math.max(1, Math.min(128, Math.floor(p.qNodeCap))) : 24,
+            futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
+            bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
+            bookUrl: typeof p.bookUrl === 'string' && p.bookUrl.trim().length > 0 ? p.bookUrl : '/aperturas_book.json',
+            precomputedSupports: typeof p.precomputedSupports === 'boolean' ? p.precomputedSupports : true,
+            precomputedCenter: typeof p.precomputedCenter === 'boolean' ? p.precomputedCenter : true,
+            pvsEnabled: typeof p.pvsEnabled === 'boolean' ? p.pvsEnabled : true,
+            aspirationEnabled: typeof p.aspirationEnabled === 'boolean' ? p.aspirationEnabled : true,
+            ttEnabled: typeof p.ttEnabled === 'boolean' ? p.ttEnabled : true,
+            avoidRepeats: typeof p.avoidRepeats === 'boolean' ? p.avoidRepeats : true,
+            repeatMax: Number.isFinite(p.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : 3,
+            avoidPenalty: Number.isFinite(p.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : 50,
+          } as IaAdvancedConfig;
+        }
+      }
+    } catch {}
+    return {
+      quiescence: true,
+      qDepthMax: 2,
+      qNodeCap: 24,
+      futilityMargin: 100,
+      bookEnabled: true,
+      bookUrl: '/aperturas_book.json',
+      precomputedSupports: true,
+      precomputedCenter: true,
+      pvsEnabled: true,
+      aspirationEnabled: true,
+      ttEnabled: true,
+      avoidRepeats: true,
+      repeatMax: 3,
+      avoidPenalty: 50,
+    } as IaAdvancedConfig;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+    } catch {}
+  }, [cfg]);
+
+  return [cfg, setCfg];
+}
