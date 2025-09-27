@@ -148,6 +148,14 @@ export interface SearchOptions {
   // and a penalty (in evaluation units) to subtract from the child score.
   avoidKeys?: Array<{ hi: number; lo: number }>;
   avoidPenalty?: number;
+  // Optional: root diversification to escape repetition cycles.
+  // If set to 'epsilon', with probability epsilon choose among near-best candidates
+  // within tieDelta of the top score (in evaluation units). Selection uses a simple RNG
+  // which may be seeded via randSeed for reproducibility.
+  diversify?: 'off' | 'epsilon';
+  epsilon?: number; // 0..1
+  tieDelta?: number; // e.g., 10..30 eval units
+  randSeed?: number; // optional seed for reproducible sampling
 }
 
 function clampFinite(x: number): number {
@@ -339,6 +347,7 @@ export function bestMove(
   let bestScore = -Infinity;
   let bestPV: AIMove[] = [];
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
+  const candidates: Array<{ move: AIMove; score: number; pv: AIMove[] }> = [];
 
   // Build a fast lookup set for avoided keys if provided
   const avoidSet: Set<string> = new Set(
@@ -381,6 +390,7 @@ export function bestMove(
       }
     }
     rootMoves.push({ move: m, score: childScore });
+    candidates.push({ move: m, score: childScore, pv: res.pv });
     if (childScore > bestScore) {
       bestScore = childScore;
       bestMoveSel = m;
@@ -389,5 +399,37 @@ export function bestMove(
     if (bestScore > alpha) alpha = bestScore;
     if (opts?.shouldStop && opts.shouldStop()) break;
   }
+  // Optional: root diversification (epsilon-greedy) when repetition risk is present.
+  // Activate only if explicitly requested via opts.diversify === 'epsilon'.
+  if (opts && opts.diversify === 'epsilon') {
+    const delta = Math.max(0, Math.floor(opts.tieDelta ?? 20));
+    const epsilon = Math.max(0, Math.min(1, Number(opts.epsilon ?? 0.15)));
+    if (epsilon > 0 && candidates.length > 1) {
+      const maxScore = candidates.reduce((acc, c) => Math.max(acc, c.score), -Infinity);
+      const near = candidates.filter(c => (maxScore - c.score) <= delta);
+      if (near.length >= 2) {
+        // Seeded RNG (LCG) for reproducibility if randSeed provided
+        let seed = (opts.randSeed ?? 0) >>> 0;
+        const rnd = (): number => {
+          if (!seed) return Math.random();
+          seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+          return (seed >>> 8) / 0xFFFFFF;
+        };
+        if (rnd() < epsilon) {
+          // Prefer an alternative candidate different from the current best
+          const sigBest = makeSignature(bestMoveSel!);
+          const alternatives = near.filter(c => makeSignature(c.move) !== sigBest);
+          const pool = alternatives.length > 0 ? alternatives : near;
+          const pick = pool[Math.floor(rnd() * pool.length)] || pool[0];
+          if (pick) {
+            bestMoveSel = pick.move;
+            bestScore = pick.score;
+            bestPV = [pick.move, ...pick.pv];
+          }
+        }
+      }
+    }
+  }
+
   return { move: bestMoveSel, score: bestScore, pv: bestPV, rootMoves };
 }

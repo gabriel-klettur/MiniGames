@@ -32,6 +32,10 @@ self.onmessage = async (e: MessageEvent) => {
     ? data.avoidKeys.map((k: any) => ({ hi: Number(k.hi) >>> 0, lo: Number(k.lo) >>> 0 }))
     : undefined;
   const avoidPenalty: number | undefined = (typeof data.avoidPenalty === 'number') ? Number(data.avoidPenalty) : undefined;
+  const diversify: 'off' | 'epsilon' | undefined = (data.diversify === 'epsilon') ? 'epsilon' : (data.diversify === 'off' ? 'off' : undefined);
+  const epsilon: number | undefined = (typeof data.epsilon === 'number') ? Number(data.epsilon) : undefined;
+  const tieDelta: number | undefined = (typeof data.tieDelta === 'number') ? Number(data.tieDelta) : undefined;
+  const randSeed: number | undefined = (typeof data.randSeed === 'number') ? (Number(data.randSeed) >>> 0) : undefined;
   // Optional AI configuration
   const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean; bookUrl?: string; flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }> };
   try { setSearchConfig(cfg.search || {}); } catch {}
@@ -79,14 +83,14 @@ self.onmessage = async (e: MessageEvent) => {
       beta = lastScore + ASP_DELTA;
     }
     let stats: SearchStats = { nodes: 0, ttReads: 0, ttHits: 0 };
-    let cur = bestMove(state, d, stats, { shouldStop, alpha, beta, pvHint: best.pv, onlyMoveSigs: onlyMoveSigs as any, avoidKeys, avoidPenalty });
+    let cur = bestMove(state, d, stats, { shouldStop, alpha, beta, pvHint: best.pv, onlyMoveSigs: onlyMoveSigs as any, avoidKeys, avoidPenalty, diversify, epsilon, tieDelta, randSeed });
     nodes += stats.nodes;
     ttReads += stats.ttReads || 0;
     ttHits += stats.ttHits || 0;
     // If we failed low/high, research with full window (unless time is up)
     if (!aborted && !shouldStop() && (cur.score <= alpha || cur.score >= beta)) {
       stats = { nodes: 0, ttReads: 0, ttHits: 0 };
-      cur = bestMove(state, d, stats, { shouldStop, alpha: -Infinity, beta: +Infinity, pvHint: cur.pv.length ? cur.pv : best.pv, onlyMoveSigs: onlyMoveSigs as any, avoidKeys, avoidPenalty });
+      cur = bestMove(state, d, stats, { shouldStop, alpha: -Infinity, beta: +Infinity, pvHint: cur.pv.length ? cur.pv : best.pv, onlyMoveSigs: onlyMoveSigs as any, avoidKeys, avoidPenalty, diversify, epsilon, tieDelta, randSeed });
       nodes += stats.nodes;
       ttReads += stats.ttReads || 0;
       ttHits += stats.ttHits || 0;

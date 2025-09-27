@@ -109,6 +109,10 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             const [hiStr, loStr] = k.split(':');
             return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0 };
           });
+        // Decide diversification: activate when we already have positions at/above threshold
+        const repetitionRisk = avoidKeysArr.length > 0;
+        // Seed based on game creation time and current move index for reproducibility
+        const randSeed = (createdAt ^ moves) >>> 0;
         const res = await getBestMove(state, {
           depth,
           timeMs: timeMs.current,
@@ -116,6 +120,10 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           signal: ac.signal,
           avoidKeys: avoidKeysArr,
           avoidPenalty: getAvoidPenalty(),
+          diversify: repetitionRisk ? 'epsilon' : 'off',
+          epsilon: 0.15,
+          tieDelta: 20,
+          randSeed,
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;

@@ -112,6 +112,11 @@ export type ComputeOptions = {
   // Optional: repetition-avoidance at the root (penalize moves that lead to these keys)
   avoidKeys?: Array<{ hi: number; lo: number }>; // keys at/above repeat threshold
   avoidPenalty?: number; // evaluation units to subtract (default 50)
+  // Optional: root diversification to escape repetition cycles.
+  diversify?: 'off' | 'epsilon';
+  epsilon?: number;
+  tieDelta?: number;
+  randSeed?: number;
 };
 
 export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{
@@ -205,7 +210,19 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
     }
 
     try {
-      worker.postMessage({ type: 'SEARCH', state, depth, timeMs, cfg: opts.cfg, avoidKeys: opts.avoidKeys, avoidPenalty: opts.avoidPenalty });
+      worker.postMessage({
+        type: 'SEARCH',
+        state,
+        depth,
+        timeMs,
+        cfg: opts.cfg,
+        avoidKeys: opts.avoidKeys,
+        avoidPenalty: opts.avoidPenalty,
+        diversify: opts.diversify,
+        epsilon: opts.epsilon,
+        tieDelta: opts.tieDelta,
+        randSeed: typeof opts.randSeed === 'number' ? (opts.randSeed >>> 0) : undefined,
+      });
     } catch (err) {
       cleanup();
       reject(err);
@@ -432,6 +449,10 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           avoidKeys: opts.avoidKeys,
           avoidPenalty: opts.avoidPenalty,
           onlyMoveSigs: shards[i].map((s) => s >>> 0),
+          diversify: opts.diversify,
+          epsilon: opts.epsilon,
+          tieDelta: opts.tieDelta,
+          randSeed: typeof opts.randSeed === 'number' ? (opts.randSeed >>> 0) : undefined,
         });
       } catch (err) {
         // If any launch fails, abort all and reject

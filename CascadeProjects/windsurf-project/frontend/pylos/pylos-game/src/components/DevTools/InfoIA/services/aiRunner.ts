@@ -12,6 +12,11 @@ export type BestMoveOptions = {
   // Optional: penalize moves that lead to avoided repetition keys at the root
   avoidKeys?: Array<{ hi: number; lo: number }>;
   avoidPenalty?: number;
+  // Optional: root diversification to escape repetition cycles
+  diversify?: 'off' | 'epsilon';
+  epsilon?: number;
+  tieDelta?: number;
+  randSeed?: number;
 };
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
