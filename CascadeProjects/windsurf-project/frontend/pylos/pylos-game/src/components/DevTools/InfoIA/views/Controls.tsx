@@ -28,6 +28,7 @@ export type ControlsProps = {
   onExportBook: () => void;
   onAddCompare: () => void;
   onClearAll: () => void;
+  onResetDefaults: () => void;
 
   activeTableSourceId: string;
   compareSets: Array<{ id: string; name: string; color: string }>;
@@ -371,6 +372,34 @@ export default function Controls(props: ControlsProps) {
         ) : (
           <button className="btn-stop" onClick={props.onStop} title="Detener simulación en curso">Detener</button>
         )}
+        <button
+          className="btn-accent"
+          onClick={() => {
+            // Clear advanced storage and reset local advanced state to defaults
+            try { localStorage.removeItem(STORAGE_KEY); } catch {}
+            // Defaults aligned with initializers above
+            setStartRandom(false);
+            setSeedInput('');
+            setRepeatMax(3);
+            setAvoidPenalty(50);
+            setNoveltyBonus(5);
+            setRootTopK(3);
+            setRootJitter(true);
+            setRootJitterProb(0.1);
+            setRootLMR(true);
+            setDrawBias(5);
+            setTimeRiskEnabled(true);
+            setNoProgressLimit(40);
+            setAvoidStepFactor(0.5);
+            setPersistAntiLoopsEnabled(true);
+            setHalfLifeDays(7);
+            setPersistCap(300);
+            // Ask parent to reset top-level InfoIA controls and clear its storage
+            props.onResetDefaults();
+          }}
+          title="Restablecer todos los parámetros a valores por defecto"
+          disabled={props.running}
+        >Default</button>
         <button className="btn-ghost" onClick={props.onExportJSON}>Exportar JSON</button>
         <button className="btn-ghost" onClick={props.onExportCSV}>Exportar CSV</button>
         <button className="btn-ghost" onClick={props.onExportBook} title="Generar libro de aperturas (book.json) a partir de las simulaciones">Exportar Book</button>

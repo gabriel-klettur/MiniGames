@@ -214,6 +214,19 @@ export default function InfoIA(props: InfoIAProps) {
             onExportBook={onExportBook}
             onAddCompare={onAddCompareClick}
             onClearAll={onClearAll}
+            onResetDefaults={() => {
+              // Reset to compiled defaults
+              setDepth(3);
+              setTimeMode('auto');
+              setTimeSeconds(8);
+              setPliesLimit(80);
+              setGamesCount(10);
+              setMirrorBoard(true);
+              // Clear saved preferences so defaults apply when reabrir
+              try {
+                localStorage.removeItem('pylos.infoia.controls.v1');
+              } catch {}
+            }}
             activeTableSourceId={activeTableSourceId}
             compareSets={compareSets.map(s => ({ id: s.id, name: s.name, color: s.color }))}
             onSelectTableSource={setActiveTableSourceId}

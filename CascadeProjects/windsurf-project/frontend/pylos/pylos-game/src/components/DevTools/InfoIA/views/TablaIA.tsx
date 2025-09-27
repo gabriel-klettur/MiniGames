@@ -3,6 +3,7 @@ import { fmtDate } from '../utils/date';
 import { useState, useMemo, Fragment } from 'react';
 import bolaA from '../../../../assets/bola_a.webp';
 import bolaB from '../../../../assets/bola_b.webp';
+import MoveTimeChart from './Chart/MoveTimeChart';
 
 export type TablaIAProps = {
   records: InfoIAGameRecord[];
@@ -242,6 +243,12 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
             })}
           </tbody>
         </table>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <div style={{ color: '#e5e7eb', fontSize: 12, marginBottom: 6, opacity: 0.9 }}>
+          Tiempo por jugada (s)
+        </div>
+        <MoveTimeChart perMoves={per} />
       </div>
     </div>
   );
