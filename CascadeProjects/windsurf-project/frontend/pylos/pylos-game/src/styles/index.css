@@ -1,0 +1,37 @@
+/* Aggregated stylesheet for Pylos app
+   Order matters: base globals first, then app-specific styles.
+*/
+/* 1) Design tokens */
+@import "./tokens.css";
+
+/* 2) Base and global utilities */
+@import "./base.css";
+@import "./utilities.css";
+
+/* 3) Layout and common surfaces */
+@import "./layout.css";
+@import "./header.css";
+@import "./panels.css";
+@import "./tabs.css";
+
+/* 4) Popovers and common controls */
+@import "./popovers.css";
+@import "./controls-segmented.css";
+@import "./form-controls.css";
+
+/* 5) Board and gameplay visuals */
+@import "./board.css";
+@import "./board-holes.css";
+@import "./banners-modals.css";
+@import "./board-actions.css";
+@import "./animations.css";
+
+/* 6) Panels and tools */
+@import "./foot-panel.css";
+@import "./devtools.css";
+@import "./bars.css";
+@import "./ia-user.css";
+@import "./ia-panel.css";
+@import "./infoia.css";
+
+/* End of modular stylesheet imports */

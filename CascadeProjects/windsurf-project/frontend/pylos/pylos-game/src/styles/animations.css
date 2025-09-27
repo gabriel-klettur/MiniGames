@@ -1,0 +1,30 @@
+/* Global animations used across the app */
+@keyframes pieceAppear {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+
+@keyframes cellFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.0); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.45); }
+}
+
+/* class to trigger cell flash using the keyframes */
+.cell--flash {
+  animation: cellFlash var(--anim-flash-ms) ease-in-out 2;
+}
+
+/* Spinner for IA 'Pensando…' */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

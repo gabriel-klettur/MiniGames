@@ -1,0 +1,37 @@
+/* Floating DevTools button at the bottom-right */
+.foot-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 0; /* pegado al borde inferior */
+  padding: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  z-index: 1000; /* por debajo del DevToolsPanel (1001) */
+  pointer-events: none; /* evita capturar eventos fuera del botón */
+}
+.foot-panel__btn {
+  pointer-events: auto; /* el botón sí recibe clicks */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-radius: 9999px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.65);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  transition: filter 140ms ease, transform 120ms ease, background-color 160ms ease;
+}
+.foot-panel__btn:hover { filter: brightness(1.07); }
+.foot-panel__btn:active { transform: translateY(0.5px); filter: brightness(0.98); }
+.foot-panel__btn:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.foot-panel__btn.is-active {
+  background: rgba(17, 24, 39, 0.78);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.foot-panel__icon { display: inline-block; color: var(--text); opacity: 0.9; }
+.foot-panel__label { line-height: 1; }

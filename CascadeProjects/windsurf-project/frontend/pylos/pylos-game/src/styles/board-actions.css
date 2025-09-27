@@ -1,0 +1,121 @@
+/* Board actions (Undo/Redo) under the board */
+.panel.board-actions {
+  align-self: center; /* center panel under the board */
+  margin-top: calc(var(--board-actions-gap) - var(--content-gap));   /* cancel content gap so it sits flush under the board */
+  /* Remove panel chrome: no background, no border, no shadow/blur, no padding */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  position: relative; /* create stacking context */
+  z-index: 20;        /* ensure above any board overlays */
+}
+
+/* Center the single Undo button under the board */
+.panel.board-actions .row.actions { justify-content: center; }
+
+/* Professional blue glass button for Undo */
+.panel.board-actions .row.actions .undo-btn {
+  /* Same size/layout as finish-recovery, but in blue */
+  background: #2563eb !important; /* blue-600 */
+  border: 1px solid rgba(147,197,253,0.28) !important; /* blue-300 */
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35) !important; /* blue-600 shadow */
+  border-radius: 14px;
+  min-height: 36px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: filter 150ms ease, transform 120ms ease;
+}
+.panel.board-actions .row.actions .undo-btn:hover { filter: brightness(1.06); }
+.panel.board-actions .row.actions .undo-btn:active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel.board-actions .row.actions .undo-btn:focus-visible { outline: 2px solid rgba(147,197,253,0.85); outline-offset: 2px; }
+.panel.board-actions .row.actions .undo-btn:disabled { opacity: 0.6; cursor: not-allowed; filter: none; transform: none; }
+.panel.board-actions .row.actions .undo-btn .header-btn__icon { width: 16px; height: 16px; color: #ffffff; opacity: 1; }
+
+/* Solid black button for "Terminar recuperación" with white icon/text */
+.panel.board-actions .row.actions .finish-recovery {
+  background: #000000 !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35) !important;
+  border-radius: 14px;
+  min-height: 36px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel.board-actions .row.actions .finish-recovery:hover { filter: brightness(1.06); }
+.panel.board-actions .row.actions .finish-recovery:active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel.board-actions .row.actions .finish-recovery:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.panel.board-actions .row.actions .finish-recovery .header-btn__icon { width: 16px; height: 16px; color: #ffffff; opacity: 1; }
+
+/* iOS/Safari + Glassy style for Undo/Redo buttons under the board */
+.panel.board-actions .row.actions button:not(.undo-btn) {
+  /* Neutralize native appearance that can add white borders on iOS */
+  -webkit-appearance: none;
+  appearance: none;
+  /* Subtle frosted-glass chip (softer than InfoPanel) */
+  background: rgba(17, 24, 39, 0.38);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.6)) saturate(1.02);
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.6)) saturate(1.02);
+  /* Comfortable hit area for touch */
+  height: auto;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Remove tap highlight rectangle on iOS */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS Safari only: remove unexpected white focus ring/halo around these buttons. */
+@supports (-webkit-touch-callout: none) {
+  .panel.board-actions { -webkit-tap-highlight-color: transparent; }
+  .panel.board-actions .row.actions button {
+    /* Avoid halo from backdrop-filter compositing */
+    -webkit-background-clip: padding-box;
+    background-clip: padding-box;
+    outline: none !important;
+  }
+  .panel.board-actions .row.actions button:focus,
+  .panel.board-actions .row.actions button:focus-visible { outline: none !important; }
+}
+
+.panel.board-actions .row.actions button:hover { filter: brightness(1.08); }
+.panel.board-actions .row.actions button:active { transform: translateY(0.5px); filter: brightness(0.98); }
+
+/* Board-actions: green translucent primary (white text) */
+.panel.board-actions .row.actions button.primary {
+  background: var(--accent) !important;           /* original green */
+  color: #ffffff !important;                      /* white text for contrast */
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.panel.board-actions .row.actions button.primary:hover { background: #26d068 !important; }
+.panel.board-actions .row.actions button.primary:active { background: #20b65b !important; transform: translateY(0.5px); }
+
+.panel.board-actions .row.actions button:focus { outline: none; }
+.panel.board-actions .row.actions button:focus-visible { outline: 2px solid rgba(255,255,255,0.45); outline-offset: 2px; }
+
+/* Pressed/toggled state */
+.panel.board-actions .row.actions button[aria-pressed="true"] {
+  background: rgba(17, 24, 39, 0.52);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.30), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.panel.board-actions .row.actions button:disabled { opacity: 0.6; cursor: not-allowed; }

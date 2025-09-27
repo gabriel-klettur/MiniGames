@@ -1,0 +1,52 @@
+/* InfoIA (Simulaciones y Métricas) */
+.infoia-panel { display: grid; gap: 10px; }
+.infoia__header { display: flex; align-items: center; justify-content: space-between; }
+.infoia__status { display: inline-flex; align-items: center; gap: 8px; }
+.infoia__controls .label { color: var(--muted); }
+
+/* Responsive chart container: spans full width of panel */
+.infoia__chart-container { width: 100%; overflow: hidden; }
+.infoia__chart-container svg { display: block; }
+
+/* InfoIA form fields */
+.infoia-panel select,
+.infoia-panel .field-num {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.infoia-panel .field-num { text-align: right; font-variant-numeric: tabular-nums; }
+.infoia-panel select:hover,
+.infoia-panel .field-num:hover { filter: brightness(1.07); }
+.infoia-panel select:focus-visible,
+.infoia-panel .field-num:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+
+/* Inline badges */
+.badge { display: inline-block; padding: 2px 8px; font-size: 12px; border-radius: 9999px; background: rgba(17,24,39,0.55); border: 1px solid var(--panel-border-color); color: var(--text); }
+.badge--light { background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.35); }
+.badge--dark  { background: rgba(59, 130, 246, 0.16); border-color: rgba(59, 130, 246, 0.35); }
+
+/* Chip buttons in table actions */
+.chip-btn { height: 26px; padding: 0 10px; font-size: 12px; border-radius: 9999px; background: rgba(17, 24, 39, 0.55); border: 1px solid var(--panel-border-color); color: var(--text); box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+.btn-ghost { background: rgba(17, 24, 39, 0.45) !important; border: 1px solid var(--panel-border-color) !important; color: var(--text) !important; }
+.btn-danger { background: rgba(239, 68, 68, 0.18) !important; border: 1px solid rgba(239, 68, 68, 0.35) !important; color: #fecaca !important; }
+.btn-stop { background: rgba(245, 158, 11, 0.20) !important; border: 1px solid rgba(245, 158, 11, 0.40) !important; color: #fde68a !important; }
+
+/* Professional table styling */
+.infoia-panel .table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 780px; }
+.infoia-panel .table thead th { position: sticky; top: 0; background: rgba(17, 24, 39, 0.72); backdrop-filter: blur(calc(var(--panel-blur) * 0.75)); -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75)); border-bottom: 1px solid var(--panel-border-color); text-align: left; font-weight: 600; padding: 10px 12px; }
+.infoia-panel .table thead th.text-right { text-align: right; }
+.infoia-panel .table thead th.text-center { text-align: center; }
+.infoia-panel .table tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); vertical-align: middle; }
+.infoia-panel .table tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.02); }
+.infoia-panel .table tbody tr:hover td { background: rgba(255,255,255,0.04); }
+
+/* Extra helpers */
+.infoia-panel .motivo-cell { max-width: min(36ch, 45vw); }

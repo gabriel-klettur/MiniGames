@@ -1,0 +1,85 @@
+/* App layout: main grid and content stacking */
+.app {
+  display: grid;
+  grid-template-columns: 1fr; /* single column layout */
+  gap: var(--app-gap);
+  padding: var(--app-padding);
+  min-height: 100vh;
+  /* Do not distribute extra vertical space across rows; keep them tight to content */
+  align-content: start;
+  background: transparent;
+  color: var(--text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column; /* stack InfoPanel above Board */
+  align-items: center;    /* keep board centered horizontally */
+  justify-content: flex-start;
+  /* more space so the board never touches the panel above */
+  --content-gap: clamp(16px, 2.5vw, 28px);
+  gap: var(--content-gap);
+  width: 100%;
+}
+
+/* Slightly tighter vertical rhythm on wide screens */
+@media (min-width: 1024px) {
+  .app { gap: 8px; } /* compact spacing between sections on desktop */
+  :root { --board-top-gap: 10px; }
+}
+
+/* Tablet and up: board uses half of the content width */
+@media (min-width: 768px) {
+  :root { --board-width-factor: 0.5; }
+}
+
+/* Mobile layout: Sidebar arriba, Tablero abajo — pensado para iPhone 12 (390px) */
+@media (max-width: 480px) {
+  .app {
+    /* una sola columna: el DOM ya tiene <Sidebar /> primero */
+    grid-template-columns: 1fr;
+    /* Ensure every row sizes to its content; don't force the second item to fill viewport */
+    grid-auto-rows: auto;
+    /* Pack rows at the top; leave any extra space below */
+    align-content: start;
+    gap: var(--app-gap);
+    padding: var(--app-padding);
+    /* safe areas para notch / home bar */
+    padding-top: calc(var(--app-padding) + env(safe-area-inset-top));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    min-height: 100dvh;
+  }
+
+  .content {
+    align-items: center;
+    justify-content: flex-start; /* avoid vertical centering that can reduce spacing */
+    --content-gap: clamp(20px, 4vh, 36px);
+    gap: var(--content-gap); /* extra breathing room on small screens */
+  }
+
+  /* Even tighter header height on small screens */
+  .header-bar .row.header { min-height: 20px; }
+
+  .board { gap: 8px; margin-top: 25px; }
+  /* When expanded (stacked), give more breathing room between levels */
+  .board--stacked { gap: clamp(16px, 3.5vh, 28px); }
+  /* Add extra space specifically after the base board with the wood texture */
+  .board--stacked .level--board { margin-bottom: clamp(12px, 2.5vh, 20px); }
+  .level--board { margin-top: 4px; }
+  .level { gap: var(--level-gap); padding: var(--level-padding); }
+
+  /* Ajustamos compacidad en móvil sin fijar tamaños rígidos */
+  :root {
+    --sidebar-width: 0px; /* no hay barra lateral al colapsar */
+    --app-gap: 12px;
+    --app-padding: 8px; /* coincide con padding lateral en móvil */
+    --level-gap: 6px;
+    --level-padding: 6px;
+    /* reducir ligeramente la escala global para más aire en móvil */
+    --scale: 0.45;
+    /* Profesional pero cómodo en móvil */
+    --board-top-gap: 88px;
+    /* Full width on phones */
+    --board-width-factor: 1;
+  }
+}

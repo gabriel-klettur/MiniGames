@@ -1,0 +1,7 @@
+/* DevTools panel refinements and utilities */
+.devtools-panel.is-fullwidth { width: 100%; }
+.devtools-panel { margin-top: 25px; /* push panel further down under the board */ }
+.devtools-actions { justify-content: center; gap: 8px; flex-wrap: wrap; }
+.devtools-btn { display: inline-flex; align-items: center; gap: 8px; }
+.devtools-btn__icon { display: inline-block; color: var(--text); opacity: 0.9; pointer-events: none; }
+.devtools-section { margin-top: 40px; }

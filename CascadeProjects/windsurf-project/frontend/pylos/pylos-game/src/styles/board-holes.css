@@ -1,0 +1,183 @@
+/* Unified "hole/slot" rendering system for board cells (base and overlays). */
+/* Globally ensure base-level ring is hidden unless explicitly toggled */
+.board:not(.hole-borders) .level--board > .cell {
+  --hole-ring-color: rgba(255, 255, 255, 0.00) !important;
+}
+
+/* Strong override: ensure base-level slots render without ring when hole-borders is off */
+.board:not(.hole-borders) .level--board > .cell::before,
+.board:not(.hole-borders) .level--board > .cell.cell--highlight::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  ) !important;
+}
+
+/* Base level cells become pure containers; avoid border+alpha (iOS varies) */
+.level--board > .cell {
+  position: relative;
+  border: none;
+  background: transparent;
+}
+
+/* Draw the slot for all base cells; variables control intensity per state */
+.level--board > .cell::before {
+  content: "";
+  position: absolute;
+  inset: 2px;                /* adjust if you have inner outline */
+  border-radius: 50%;
+  pointer-events: none;      /* do not block clicks */
+  /* Default: soft inner depression only (no ring) */
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  );
+  /* subtle bevel: inner light at top and shadow at bottom for nicer look */
+  box-shadow:
+    0 2px 0 var(--hole-shadow-ins) inset,
+    0 -1px 1px rgba(255,255,255,0.06) inset,
+    0 1.5px 2.5px rgba(0,0,0,0.28) inset;
+}
+
+/* Per-level shading toggles */
+/* L0 (base) — hide inner slot shading entirely */
+.board.no-shade-l0 .level--board > .cell::before {
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* L1..L3 overlays (and stacked levels): remove background/border/shadow on cells */
+.board.no-shade-l1 .level--overlay[data-level="1"] .cell,
+.board.no-shade-l1 .level[data-level="1"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.board.no-shade-l2 .level--overlay[data-level="2"] .cell,
+.board.no-shade-l2 .level[data-level="2"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.board.no-shade-l3 .level--overlay[data-level="3"] .cell,
+.board.no-shade-l3 .level[data-level="3"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Shade only available holes mode */
+.board.shade-only-holes .level--overlay .cell,
+.board.shade-only-holes .level[data-level="1"] .cell,
+.board.shade-only-holes .level[data-level="2"] .cell,
+.board.shade-only-holes .level[data-level="3"] .cell {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Re-enable shading for supported empty cells with the same white ring + inner glow style as base */
+.board.shade-only-holes .level--overlay .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty,
+.board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty {
+  /* make the inner a bit more visible on overlays */
+  --hole-inner-color: rgba(255, 255, 255, 0.22);
+  /* Do NOT set ring color by default; keep it transparent */
+}
+
+/* Enable white ring on available holes only when explicitly toggled */
+.board.hole-borders.shade-only-holes .level--overlay .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty,
+.board.hole-borders.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty {
+  --hole-ring-color: rgba(255, 255, 255, 0.85);
+}
+
+.board.shade-only-holes .level--overlay .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="1"] .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="2"] .cell.cell--supported:empty::before,
+.board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    /* inner brighter fill */
+    var(--hole-inner-color) 60%,
+    var(--hole-inner-color) calc(60% + 1px),
+    /* ring core */
+    var(--hole-ring-color)   calc(60% + 1px),
+    var(--hole-ring-color)   calc(60% + 1px + var(--hole-ring-w)),
+    /* outer falloff for smoother look */
+    rgba(255,255,255,0.10)   calc(60% + 1px + var(--hole-ring-w) + 0.5px),
+    rgba(0,0,0,0)            calc(60% + 2px + var(--hole-ring-w) + 1px)
+  );
+  box-shadow:
+    0 2px 0 var(--hole-shadow-ins) inset,
+    0 -1px 1px rgba(255,255,255,0.06) inset,
+    0 1.5px 2.5px rgba(0,0,0,0.28) inset;
+}
+
+/* Supported empties look slightly deeper, still without ring */
+.level--board > .cell.cell--supported { --hole-inner-color: rgba(255, 255, 255, 0.12); }
+
+/* Non-interactive cells: soften even more */
+.level--board > .cell.cell--disabled {
+  /* Keep inner subtle but do not force a ring by default */
+  --hole-ring-color: rgba(255, 255, 255, 0.00);
+  --hole-inner-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Optionally show a faint ring on disabled cells when toggled */
+.board.hole-borders .level--board > .cell.cell--disabled {
+  --hole-ring-color: rgba(255, 255, 255, 0.16);
+}
+
+/* When a piece is present, do not show the ring (requires :has support) */
+.level--board > .cell:has(.piece)::before { display: none; }
+/* Broad fallback: when the button has children (piece span), hide ring */
+.level--board > .cell:not(:empty)::before { display: none; }
+
+/* Pieces above the pseudo-element */
+.cell .piece { z-index: 1; }
+
+/* Highlight via inner brightness; avoid opaque overlays */
+.level--board > .cell.cell--highlight {
+  background: transparent;
+  box-shadow: none;
+  --hole-inner-color: rgba(255, 255, 255, 0.30);
+  /* Do not set ring color by default; keep ring hidden unless toggled */
+}
+
+/* Only enable white ring on base-level highlighted holes when toggled */
+.board.hole-borders .level--board > .cell.cell--highlight { --hole-ring-color: rgba(255, 255, 255, 0.85); }
+
+/* Override the gradient on highlight to include the ring when toggled */
+.level--board > .cell.cell--highlight::before {
+  /* Default: brighter inner only, no ring */
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 0%,
+    var(--hole-inner-color) 58%,
+    rgba(0,0,0,0)           62%
+  );
+}
+.board.hole-borders .level--board > .cell.cell--highlight::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--hole-inner-color) 60%,
+    var(--hole-inner-color) calc(60% + 1px),
+    var(--hole-ring-color)   calc(60% + 1px),
+    var(--hole-ring-color)   calc(60% + 1px + var(--hole-ring-w)),
+    rgba(255,255,255,0.10)   calc(60% + 1px + var(--hole-ring-w) + 0.5px),
+    rgba(0,0,0,0)            calc(60% + 2px + var(--hole-ring-w) + 1px)
+  );
+}

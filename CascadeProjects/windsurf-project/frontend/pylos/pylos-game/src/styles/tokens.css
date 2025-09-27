@@ -1,0 +1,88 @@
+/* CSS Design Tokens: global variables used across the app.
+   Extracted from App.css :root and hole system variables.
+*/
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #22c55e;
+  --danger: #ef4444;
+  --light: #f3f4f6;
+  --dark: #111827;
+  /* panel system vars for frosted surfaces */
+  --panel-alpha: 0.78;                 /* transparency of panel surfaces */
+  --panel-radius: 16px;                /* unified corner radius */
+  --panel-border-color: rgba(255, 255, 255, 0.10);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --panel-blur: 8px;                   /* backdrop blur strength */
+  /* animation duration variables (modifiable from UI/UX panel) */
+  --anim-appear-ms: 280ms;
+  --anim-flash-ms: 900ms;
+  /* Board sizing */
+  --scale: 0.5;          /* global scale for board/balls (1.0 = original, 0.5 = half size) */
+  --sidebar-width: 0px;   /* no sidebar in header-first layout */
+  --app-gap: 16px;          /* must match .app gap */
+  --app-padding: 16px;      /* must match .app padding */
+  /* Professional spacing between InfoPanel and board */
+  --board-top-gap: 0px;    /* net space between InfoPanel and board */
+  /* Fine alignment offsets for background art (positive = move art right/down) */
+  --board-offset-x: 0px;
+  --board-offset-y: -60px; /* lift board art to reduce perceived gap */
+  /* Spacing below the board for Undo/Redo */
+  --board-actions-gap: -40px;
+  /* Board width factor relative to content width (1 = 100%, 0.5 = 50%) */
+  --board-width-factor: 1;
+  /* Board art width multiplier (matches .level--board ratios) */
+  --board-w-mult-root: 1.799; /* 1024 / 569 ≈ 1.799 */
+  /* use base spacing values, then derive scaled ones */
+  --overlay-nudge-x: 0px;                 /* horizontal shift for overlays (positive moves right) */
+  --overlay-nudge-3-y: calc(12px * var(--scale)); /* vertical lift for 3x3 overlay (positive lifts up via transform -) */
+  --overlay-nudge-2-y: calc(12px * var(--scale)); /* vertical lift for 2x2 overlay */
+  --overlay-nudge-1-y: calc(12px * var(--scale)); /* vertical lift for 1x1 overlay */
+  /* Manual fine-tune for the WHOLE grid (base + overlays) relative to board art */
+  --grid-offset-extra-x: 0px; /* extra delta beyond board art */
+  --grid-offset-extra-y: 0px; /* extra delta beyond board art */
+  --grid-offset-x: calc(var(--board-offset-x) + var(--grid-offset-extra-x));
+  --grid-offset-y: calc(var(--board-offset-y) + var(--grid-offset-extra-y));
+  --level-gap-base: 8px;         /* base gap between cells */
+  --level-padding-base: 8px;     /* base padding inside level */
+  --level-gap: calc(var(--level-gap-base) * var(--scale));
+  --level-padding: calc(var(--level-padding-base) * var(--scale));
+  --max-cols: 4;            /* widest level (4x4) */
+  /* Fluid cell size calculation (see original comments) */
+  --cell-size-base: clamp(
+    36px,
+    calc(
+      (
+        ((100vw - (2 * var(--app-padding))) * var(--board-width-factor))
+        / (var(--board-w-mult-root) * var(--scale))
+        - ((var(--max-cols) - 1) * var(--level-gap-base))
+      ) / var(--max-cols)
+    ),
+    480px
+  );
+  --cell-size: calc(var(--cell-size-base) * var(--scale));
+  /* Piece slightly smaller than the cell to leave visual breathing room */
+  --piece-size: calc(var(--cell-size) - 20px);
+  /* Scale factor for piece visuals inside board cells (1.0 = normal) */
+  --piece-scale: 1.55; /*
+  /* Scaled geometry */
+  --cell-radius-base: 12px;
+  --cell-radius: calc(var(--cell-radius-base) * var(--scale));
+  /* Outline scaling */
+  --outline-w-base: 2px;
+  --outline-w: calc(var(--outline-w-base) * var(--scale));
+  --outline-offset-highlight-base: -4px;
+  --outline-offset-highlight: calc(var(--outline-offset-highlight-base) * var(--scale));
+  --outline-offset-selected-base: -2px;
+  --outline-offset-selected: calc(var(--outline-offset-selected-base) * var(--scale));
+  /* Half-step offset used to position upper levels over the centers of 2x2 supports */
+  --step: calc(0.5 * (var(--cell-size) + var(--level-gap)));
+
+  /* Hole (slot) unified rendering tokens */
+  --hole-ring-w: 3px;                               /* ring thickness */
+  --hole-ring-color: rgba(255, 255, 255, 0.00);     /* invisible ring by default */
+  --hole-inner-color: rgba(255, 255, 255, 0.10);    /* soft inner fill */
+  --hole-shadow-ins: rgba(0, 0, 0, 0.15);           /* subtle inner depth */
+}

@@ -1,0 +1,37 @@
+/* IAPanel professional layout */
+.ia-panel { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 720px) {
+  .ia-panel { grid-template-columns: 1.1fr 1fr; }
+  .ia-panel__evaluation { grid-column: span 2; }
+  .ia-panel__kpis { grid-column: span 2; }
+  .ia-panel__moves { grid-column: span 2; }
+}
+.ia-panel__header { display: flex; align-items: center; justify-content: space-between; }
+.ia-panel__title { margin: 0; font-size: 16px; }
+.ia-panel__status { display: inline-flex; gap: 8px; align-items: center; }
+
+/* KPI chips */
+.kpi { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12px; border-radius: 9999px; background: rgba(17,24,39,0.55); border: 1px solid var(--panel-border-color); }
+.kpi--accent { background: rgba(34,197,94,0.18); border-color: rgba(34,197,94,0.45); }
+.kpi--muted { opacity: 0.8; }
+
+.ia-panel__controls { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; }
+.ia-panel__controls .label { color: var(--muted); }
+.ia-panel__range { display: inline-flex; align-items: center; gap: 8px; }
+.ia-panel__actions { margin-top: 4px; }
+
+/* Time progress bar inside IA panel */
+.ia-panel__timebar { grid-column: 1 / -1; display: grid; gap: 4px; }
+.ia-panel__timebar .timebar { position: relative; height: 8px; background: rgba(17, 24, 39, 0.55); border: 1px solid var(--panel-border-color); border-radius: 9999px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
+.ia-panel__timebar .timebar__fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: linear-gradient(90deg, #22c55e, #f59e0b); }
+.ia-panel__timebar .timebar[data-auto="true"] .timebar__fill { width: 30%; left: -30%; background: linear-gradient(90deg, rgba(34,197,94,0.8), rgba(245,158,11,0.8)); animation: timebarIndeterminate 1.25s ease-in-out infinite; }
+@keyframes timebarIndeterminate { from { left: -30%; } to { left: 100%; } }
+.ia-panel__timebar .timebar[data-over="true"] .timebar__fill { background: #ef4444; /* red-500 */ }
+.ia-panel__timebar .timebar[data-busy="false"] .timebar__fill { transition: width 200ms ease; }
+.ia-panel__timebar .timebar__meta { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+.ia-panel__evaluation .eval { display: inline-flex; align-items: center; gap: 8px; }
+.ia-panel__evaluation .eval-value { min-width: 70px; text-align: right; }
+.ia-panel__kpis { display: flex; flex-wrap: wrap; gap: 8px; }
+.ia-panel__moves .section-title { font-weight: 600; margin-bottom: 4px; }
+.moves-list { margin: 6px 0 0 18px; padding: 0; }

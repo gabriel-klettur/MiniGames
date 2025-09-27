@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react';
-import './App.css';
 import Board from './components/Board';
 import InfoPanel from './components/InfoPanel';
 import HeaderPanel from './components/HeaderPanel';

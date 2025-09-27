@@ -1,0 +1,96 @@
+/* Generic panel and header styles (no sidebar) */
+.panel {
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 12px;
+  /* Avoid stretching to fill 1fr grid rows on mobile */
+  align-self: start;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+
+/* Generic actions row inside panels */
+.panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* Consistent vertical rhythm inside panels */
+.panel .row + .row { margin-top: 6px; }
+/* Small variant for compact side panels */
+.panel.small { padding: 10px; border-radius: calc(var(--panel-radius) - 2px); }
+
+/* Dev panel buttons: apply glass/pill styling (non-primary) */
+.panel .row.actions button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 9999px;
+  transition: background-color 150ms ease, filter 150ms ease, transform 120ms ease;
+}
+.panel .row.actions button:not(.primary) {
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.panel .row.actions button[aria-pressed="true"]:not(.primary) {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.panel .row.actions button:not(.primary):hover { filter: brightness(1.07); }
+.panel .row.actions button:not(.primary):active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel .row.actions button:not(.primary):focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.panel .row.actions button:disabled { opacity: 0.65; cursor: not-allowed; filter: none; transform: none; }
+
+/* InfoPanel styling */
+.info-panel {
+  width: 100%;
+  max-width: 600px; /* cap at 600px on wider screens */
+  margin: 0 auto;   /* center horizontally */
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 12px;
+  text-align: center; /* center text always */
+  position: relative; /* create stacking context */
+  z-index: 1;         /* ensure panel sits above decorative board art */
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+.info-panel .row { margin: 6px 0; font-size: 14px; }
+.info-panel .row.info { color: var(--muted); }
+.info-panel .row.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: center; justify-items: center; }
+.info-panel .row.grid-3 .piece { width: 20px; height: 20px; border-width: 1px; }
+.info-panel .row.grid-3 > div { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.info-panel .row.grid-3 .piece { vertical-align: middle; }
+.info-panel .row.grid-3 .piece--current { width: 28px; height: 28px; }
+.info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
+.info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+/* Slight pop for icons over glass panel */
+.info-panel .piece { filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35)); }
+.info-panel .robot-icon {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  vertical-align: middle;
+  opacity: 0.75;
+  color: var(--text);
+}
+.info-panel .robot-icon.is-passive { opacity: 0.65; }
+.info-panel .robot-icon.is-active {
+  opacity: 1;
+  color: var(--accent);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+}
+.info-panel .robot-icon.is-thinking {
+  animation: aiBlink 1.2s ease-in-out infinite;
+}
+@keyframes aiBlink {
+  0%, 100% { opacity: 0.9; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35)); }
+  50% { opacity: 0.45; filter: drop-shadow(0 0px 1px rgba(0,0,0,0.25)); }
+}
+.info-panel button.primary { background: var(--accent); color: #0b1220; border: none; padding: 8px 12px; border-radius: 8px; }

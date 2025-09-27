@@ -1,0 +1,38 @@
+/* Modal (game over) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 999; /* above board and panels */
+}
+.modal {
+  background: var(--panel);
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px 20px;
+  width: min(92vw, 420px);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.modal__title { margin: 0 0 8px; font-size: 18px; }
+.modal__message { margin: 0 0 12px; color: var(--light); font-size: 14px; }
+.modal__actions { display: flex; justify-content: center; gap: 8px; }
+
+/* Winner modal: softer backdrop and frosted panel */
+.winner-backdrop { background: rgba(0, 0, 0, 0.38); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.winner-modal {
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 18px 22px;
+  width: min(92vw, 360px);
+  color: var(--text);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur));
+  -webkit-backdrop-filter: blur(var(--panel-blur));
+}
+.winner-modal .modal__message { margin: 0 0 14px; color: var(--text); font-size: 16px; font-weight: 600; }
+.winner-modal .modal__actions .primary { min-width: 86px; }
