@@ -1,6 +1,8 @@
 import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
 import { fmtDate } from '../utils/date';
 import { useState, useMemo, Fragment } from 'react';
+import bolaA from '../../../../assets/bola_a.webp';
+import bolaB from '../../../../assets/bola_b.webp';
 
 export type TablaIAProps = {
   records: InfoIAGameRecord[];
@@ -215,7 +217,16 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                 : undefined;
               return (
                 <tr key={i} style={rowStyle as any} title={rowTitle}>
-                  <td>{i + 1}</td>
+                  <td>
+                    {m.player ? (
+                      <img
+                        src={m.player === 'L' ? bolaB : bolaA}
+                        alt={m.player === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+                        style={{ width: 14, height: 14, marginRight: 6, verticalAlign: 'middle' }}
+                      />
+                    ) : null}
+                    {i + 1}
+                  </td>
                   <td className="text-right">{count}</td>
                   <td className="text-right">{fmtNum((m.elapsedMs ?? 0) / 1000)}</td>
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>

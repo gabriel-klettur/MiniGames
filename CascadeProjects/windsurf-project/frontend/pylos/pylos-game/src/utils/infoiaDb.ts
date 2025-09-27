@@ -14,6 +14,8 @@ export type InfoIAPerMove = {
   moveSig?: number; // MoveSignature
   // New: workers used by the engine for this move (1 for single-thread, >1 when parallel)
   workersUsed?: number;
+  // New: player that made this move ('L' o 'D') para mostrar ficha en la UI
+  player?: 'L' | 'D';
 };
 
 export type InfoIAGameRecord = {

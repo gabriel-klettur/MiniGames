@@ -4,7 +4,7 @@ import type { AIMove } from '../../../../ia/moves';
 import { computeKey } from '../../../../ia/zobrist';
 import { makeSignature } from '../../../../ia/signature';
 import type { GameState } from '../../../../game/types';
-import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
+import type { InfoIAGameRecord, InfoIAPerMove } from '../../../../utils/infoiaDb';
 import { makeId } from '../../../../utils/infoiaDb';
 import { getBestMove, apply as applyAIRunner, checkGameOver } from '../services/aiRunner';
 import { useProgress } from './useProgress';
@@ -53,7 +53,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     let moves = 0;
     let totalThinkMs = 0;
     let maxWorkersUsed = 1;
-    const perMove: { elapsedMs: number; depthReached?: number; nodes?: number; nps?: number; score?: number; keyHi?: number; keyLo?: number; moveSig?: number; workersUsed?: number }[] = [];
+    const perMove: InfoIAPerMove[] = [];
 
     if (mirrorBoard) {
       try { onMirrorStart?.(); } catch {}
@@ -138,6 +138,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             keyLo: (k.lo >>> 0),
             moveSig: sig,
             workersUsed: (res as any).usedWorkers,
+            player: state.currentPlayer,
           });
         } catch {
           perMove.push({
@@ -147,6 +148,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             nps: res.nps,
             score: res.score,
             workersUsed: (res as any).usedWorkers,
+            player: state.currentPlayer,
           });
         }
         if (!res.move) break;
