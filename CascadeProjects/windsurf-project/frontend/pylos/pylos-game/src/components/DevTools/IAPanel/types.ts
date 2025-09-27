@@ -39,6 +39,14 @@ export interface AIAdvancedConfig {
   // Start behavior (first move)
   startRandomFirstMove?: boolean; // default false (preserve current)
   startSeed?: number | null; // optional reproducible seed
+
+  // Anti-stall (root-level tuning)
+  noveltyBonus?: number; // small bonus for unseen states at root
+  rootTopK?: number; // Top-K pool for epsilon sampling (2..8)
+  rootJitter?: boolean; // enable seedable jitter on root ordering under repetition risk
+  rootJitterProb?: number; // 0..1 neighbor swap probability
+  rootLMR?: boolean; // enable LMR-like depth adjustment at root
+  drawBias?: number; // cycle-as-draw bias in eval units (0..50)
 }
 
 export interface ProgressInfo {

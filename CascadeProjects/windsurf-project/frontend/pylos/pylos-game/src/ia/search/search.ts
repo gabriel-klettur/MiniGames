@@ -65,6 +65,7 @@ function quiescence(
     if (standPat <= alpha) return { score: standPat, pv: [] };
     if (standPat < beta) beta = standPat;
   }
+  // (novelty bonus applies at root only)
 
   // Futility pruning: if clearly outside window and no depth left, stop
   if (qDepth <= 0) return { score: standPat, pv: [] };
@@ -148,6 +149,13 @@ export interface SearchOptions {
   // and a penalty (in evaluation units) to subtract from the child score.
   avoidKeys?: Array<{ hi: number; lo: number }>;
   avoidPenalty?: number;
+  // Optional: penalize with per-key weights (preferred over avoidKeys/avoidPenalty if provided)
+  // Each entry provides the zobrist key and a weight to subtract from the child score.
+  avoidList?: Array<{ hi: number; lo: number; weight: number }>;
+  // Optional: novelty bonus: add a small bonus to root child scores that lead to states not seen in the current game.
+  // Provide the list of seen keys (noveltyKeys), and a noveltyBonus value to add when the child state key is NOT in the set.
+  noveltyKeys?: Array<{ hi: number; lo: number }>;
+  noveltyBonus?: number;
   // Optional: root diversification to escape repetition cycles.
   // If set to 'epsilon', with probability epsilon choose among near-best candidates
   // within tieDelta of the top score (in evaluation units). Selection uses a simple RNG
@@ -156,6 +164,15 @@ export interface SearchOptions {
   epsilon?: number; // 0..1
   tieDelta?: number; // e.g., 10..30 eval units
   randSeed?: number; // optional seed for reproducible sampling
+  // Optional: limit epsilon sampling to the Top-K root candidates by score (default 3)
+  rootTopK?: number;
+  // Optional: add a tiny random jitter (seedable) to root ordering when repetition risk exists
+  rootJitter?: boolean;
+  rootJitterProb?: number; // probability of swapping neighboring moves (default 0.1)
+  // Optional: enable/disable LMR-like depth adjustment at root under repetition risk (default true)
+  rootLMR?: boolean;
+  // Optional: draw bias for cycle detection in PV (default 5 eval units)
+  drawBias?: number;
 }
 
 function clampFinite(x: number): number {
@@ -174,10 +191,21 @@ function searchNode(
   history: HistoryMap,
   stats?: SearchStats,
   opts?: SearchOptions,
+  repPath?: Set<string>,
   pvHintAtNode?: AIMove[]
 ): SearchResult {
   if (stats) stats.nodes++;
   const maximizing = state.currentPlayer === me;
+  // Early cycle detection: if current position repeats within this PV path, return a biased draw
+  try {
+    const k = computeKey(state);
+    const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+    if (repPath && repPath.has(keyStr)) {
+      const bias = Math.floor(Math.max(0, Number(opts?.drawBias ?? 5)));
+      const repScore = maximizing ? -bias : +bias;
+      return { score: repScore, pv: [] };
+    }
+  } catch {}
   if (depth === 0) {
     // Enter quiescence when reaching the leaf to mitigate horizon effects
     if (QUIESCENCE_ENABLED && QDEPTH_MAX > 0) {
@@ -236,21 +264,33 @@ function searchNode(
 
   const usePVS = flags.pvsEnabled;
   let first = true;
+  // Precompute current state's key string for repPath propagation
+  let curKeyStrForRep: string | null = null;
+  try {
+    const kForRep = computeKey(state);
+    curKeyStrForRep = `${(kForRep.hi >>> 0)}:${(kForRep.lo >>> 0)}`;
+  } catch {}
   for (const m of ordered) {
     const nxt = applyMove(state, m);
     let child: SearchResult;
+    // Build next repetition path including current state's key
+    let nextRepPathLocal: Set<string> | undefined = repPath;
+    if (curKeyStrForRep) {
+      nextRepPathLocal = new Set<string>(repPath ? Array.from(repPath) : []);
+      nextRepPathLocal.add(curKeyStrForRep);
+    }
     if (first) {
-      child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, pvHintAtNode?.slice(1));
+      child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, nextRepPathLocal, pvHintAtNode?.slice(1));
       first = false;
     } else {
       if (usePVS) {
         // PVS: null-window search
-        child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, undefined);
+        child = searchNode(nxt, depth - 1, alpha, alpha + 1, me, ply + 1, killers, history, stats, opts, nextRepPathLocal, undefined);
         if (maximizing ? child.score > alpha : child.score < beta) {
-          child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
+          child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, nextRepPathLocal, undefined);
         }
       } else {
-        child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, undefined);
+        child = searchNode(nxt, depth - 1, alpha, beta, me, ply + 1, killers, history, stats, opts, nextRepPathLocal, undefined);
       }
     }
 
@@ -341,7 +381,7 @@ export function bestMove(
   let alpha = alphaInit;
   let beta = betaInit;
 
-  const ordered = orderMoves(movesGen, { pvSig, hashSig, killers: killers[0], history });
+  const orderedBase = orderMoves(movesGen, { pvSig, hashSig, killers: killers[0], history });
 
   let bestMoveSel: AIMove | null = null;
   let bestScore = -Infinity;
@@ -349,11 +389,57 @@ export function bestMove(
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
   const candidates: Array<{ move: AIMove; score: number; pv: AIMove[] }> = [];
 
-  // Build a fast lookup set for avoided keys if provided
-  const avoidSet: Set<string> = new Set(
-    (opts?.avoidKeys ?? []).map((k) => `${(k.hi >>> 0)}:${(k.lo >>> 0)}`)
-  );
-  const avoidPenalty = opts?.avoidPenalty ?? 50;
+  // Build a fast lookup for avoided keys; prefer weighted list if provided
+  let avoidMap: Map<string, number> | null = null;
+  const hasAvoidList = Array.isArray(opts?.avoidList) && (opts!.avoidList as any[]).length > 0;
+  if (hasAvoidList) {
+    avoidMap = new Map<string, number>();
+    for (const entry of (opts!.avoidList as Array<{ hi: number; lo: number; weight: number }>)) {
+      const keyStr = `${(entry.hi >>> 0)}:${(entry.lo >>> 0)}`;
+      const w = Number(entry.weight) || 0;
+      // If duplicate keys appear, keep the max weight
+      avoidMap.set(keyStr, Math.max(w, avoidMap.get(keyStr) ?? 0));
+    }
+  } else {
+    const avoidSet: Set<string> = new Set(
+      (opts?.avoidKeys ?? []).map((k) => `${(k.hi >>> 0)}:${(k.lo >>> 0)}`)
+    );
+    if (avoidSet.size > 0) {
+      avoidMap = new Map<string, number>();
+      const penalty = Math.max(0, Math.floor(opts?.avoidPenalty ?? 50));
+      for (const s of avoidSet) avoidMap.set(s, penalty);
+    }
+  }
+
+  // Novelty bonus lookup (root scope): if provided, add a small bonus when child leads to unseen key
+  const noveltySet: Set<string> | null = (opts?.noveltyKeys && (opts.noveltyKeys as any[]).length > 0)
+    ? new Set<string>((opts!.noveltyKeys as Array<{ hi: number; lo: number }>).map(k => `${(k.hi >>> 0)}:${(k.lo >>> 0)}`))
+    : null;
+  const noveltyBonus = Math.floor(Math.max(0, Number(opts?.noveltyBonus ?? 0)));
+
+  // Build jittered ordering under repetition risk (avoidMap set)
+  let ordered: AIMove[] = orderedBase;
+  const wantJitter = (opts?.rootJitter !== false);
+  if (wantJitter && avoidMap && avoidMap.size > 0) {
+    // Apply a light, seedable neighbor-swap jitter to preserve overall ordering quality
+    let seed = (opts?.randSeed ?? 0) >>> 0;
+    const rnd = (): number => {
+      if (!seed) return Math.random();
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return (seed >>> 8) / 0xFFFFFF;
+    };
+    const p = Math.max(0, Math.min(1, Number(opts?.rootJitterProb ?? 0.1)));
+    const arr = orderedBase.slice();
+    for (let i = 1; i < arr.length; i++) {
+      if (rnd() < p) {
+        // swap with previous to introduce minimal jitter
+        const tmp = arr[i - 1];
+        arr[i - 1] = arr[i];
+        arr[i] = tmp;
+      }
+    }
+    ordered = arr;
+  }
 
   if (opts?.shouldStop && opts.shouldStop()) {
     const m0 = ordered[0];
@@ -363,31 +449,55 @@ export function bestMove(
 
   const usePVSRoot = flagsRoot.pvsEnabled;
   let first = true;
+  // Prepare repPath for cycle detection: include root state's key
+  const rootRepPath: Set<string> = new Set<string>();
+  try {
+    const rootKeyStr = `${(key.hi >>> 0)}:${(key.lo >>> 0)}`;
+    rootRepPath.add(rootKeyStr);
+  } catch {}
   for (const m of ordered) {
     const nxt = applyMove(state, m);
+    // Extend repetition path with current state's key for child
+    const nextRepPath: Set<string> | undefined = rootRepPath;
+    // LMR-style depth adjustment at root under repetition risk:
+    // if the child state is in avoidMap (repetitive), search slightly shallower; otherwise keep baseline.
+    let dChild = Math.max(0, depth - 1);
+    const wantLMR = (opts?.rootLMR !== false);
+    if (wantLMR && avoidMap && avoidMap.size > 0) {
+      const k = computeKey(nxt);
+      const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+      if (avoidMap.has(keyStr)) {
+        dChild = Math.max(0, depth - 2); // reduce more for repetitive states
+      }
+    }
     let res: SearchResult;
     if (first) {
-      res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, opts?.pvHint?.slice(1));
+      res = searchNode(nxt, dChild, alpha, beta, me, 1, killers, history, stats, opts, nextRepPath, opts?.pvHint?.slice(1));
       first = false;
     } else {
       if (usePVSRoot) {
         // PVS at root as well
-        res = searchNode(nxt, Math.max(0, depth - 1), alpha, alpha + 1, me, 1, killers, history, stats, opts, undefined);
+        res = searchNode(nxt, dChild, alpha, alpha + 1, me, 1, killers, history, stats, opts, nextRepPath, undefined);
         if (res.score > alpha && res.score < beta) {
-          res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
+          res = searchNode(nxt, dChild, alpha, beta, me, 1, killers, history, stats, opts, nextRepPath, undefined);
         }
       } else {
-        res = searchNode(nxt, Math.max(0, depth - 1), alpha, beta, me, 1, killers, history, stats, opts, undefined);
+        res = searchNode(nxt, dChild, alpha, beta, me, 1, killers, history, stats, opts, nextRepPath, undefined);
       }
     }
     // Apply repetition-avoidance penalty at the root, if enabled
     let childScore = res.score;
-    if (avoidSet.size > 0) {
+    if (avoidMap && avoidMap.size > 0) {
       const k = computeKey(nxt);
       const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
-      if (avoidSet.has(keyStr)) {
-        childScore = childScore - avoidPenalty;
-      }
+      const w = avoidMap.get(keyStr);
+      if (typeof w === 'number' && w > 0) childScore = childScore - w;
+    }
+    // Apply novelty bonus if this child leads to a state not in the seen set
+    if (noveltySet && noveltyBonus > 0) {
+      const k = computeKey(nxt);
+      const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+      if (!noveltySet.has(keyStr)) childScore = childScore + noveltyBonus;
     }
     rootMoves.push({ move: m, score: childScore });
     candidates.push({ move: m, score: childScore, pv: res.pv });
@@ -399,15 +509,14 @@ export function bestMove(
     if (bestScore > alpha) alpha = bestScore;
     if (opts?.shouldStop && opts.shouldStop()) break;
   }
-  // Optional: root diversification (epsilon-greedy) when repetition risk is present.
-  // Activate only if explicitly requested via opts.diversify === 'epsilon'.
+  // Optional: root diversification (epsilon-greedy) over Top-K by score
   if (opts && opts.diversify === 'epsilon') {
-    const delta = Math.max(0, Math.floor(opts.tieDelta ?? 20));
     const epsilon = Math.max(0, Math.min(1, Number(opts.epsilon ?? 0.15)));
     if (epsilon > 0 && candidates.length > 1) {
-      const maxScore = candidates.reduce((acc, c) => Math.max(acc, c.score), -Infinity);
-      const near = candidates.filter(c => (maxScore - c.score) <= delta);
-      if (near.length >= 2) {
+      const K = Math.max(2, Math.min(8, Math.floor(opts.rootTopK ?? 3)));
+      const sorted = candidates.slice().sort((a, b) => b.score - a.score);
+      const top = sorted.slice(0, Math.min(K, sorted.length));
+      if (top.length >= 2) {
         // Seeded RNG (LCG) for reproducibility if randSeed provided
         let seed = (opts.randSeed ?? 0) >>> 0;
         const rnd = (): number => {
@@ -416,10 +525,10 @@ export function bestMove(
           return (seed >>> 8) / 0xFFFFFF;
         };
         if (rnd() < epsilon) {
-          // Prefer an alternative candidate different from the current best
+          // Prefer an alternative candidate different from the current best within Top-K
           const sigBest = makeSignature(bestMoveSel!);
-          const alternatives = near.filter(c => makeSignature(c.move) !== sigBest);
-          const pool = alternatives.length > 0 ? alternatives : near;
+          const alternatives = top.filter(c => makeSignature(c.move) !== sigBest);
+          const pool = alternatives.length > 0 ? alternatives : top;
           const pick = pool[Math.floor(rnd() * pool.length)] || pool[0];
           if (pick) {
             bestMoveSel = pick.move;

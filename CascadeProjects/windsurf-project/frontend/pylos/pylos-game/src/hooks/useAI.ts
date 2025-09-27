@@ -15,26 +15,42 @@ export interface UseAIParams {
   iaTimeMode: 'auto' | 'manual';
   iaTimeSeconds: number;
   iaConfig?: {
+    // Search/eval knobs
     quiescence: boolean;
-    qDepthMax: number;
-    qNodeCap: number;
-    futilityMargin: number;
+    qDepthMax: number; // 0..4
+    qNodeCap: number; // 1..128
+    futilityMargin: number; // 0..1000
+
+    // Book
     bookEnabled: boolean;
     bookMode?: 'auto' | 'manual';
     bookPhase?: 'aperturas' | 'medio' | 'cierres';
     bookBasePath?: string;
     bookUrl?: string;
+
+    // Performance/flags
     precomputedSupports?: boolean;
     precomputedCenter?: boolean;
     pvsEnabled?: boolean;
     aspirationEnabled?: boolean;
     ttEnabled?: boolean;
+
+    // Repetition/avoid
     avoidRepeats?: boolean;
     repeatMax?: number;
     avoidPenalty?: number;
+
     // Start behavior
     startRandomFirstMove?: boolean;
     startSeed?: number | null;
+
+    // Anti-stall (root-level tuning)
+    noveltyBonus?: number;
+    rootTopK?: number;
+    rootJitter?: boolean;
+    rootJitterProb?: number;
+    rootLMR?: boolean;
+    drawBias?: number;
   };
 
   // Environment flags and refs
@@ -186,6 +202,13 @@ export function useAI(params: UseAIParams): UseAIResult {
         signal: ac.signal,
         avoidKeys,
         avoidPenalty: Math.max(0, Math.min(500, Math.floor(iaConfig?.avoidPenalty ?? 50))),
+        // Anti-stall tuning from IAPanel advanced config (optional)
+        noveltyBonus: (typeof iaConfig?.noveltyBonus === 'number') ? Math.max(0, Math.floor(iaConfig!.noveltyBonus as number)) : undefined,
+        rootTopK: (typeof iaConfig?.rootTopK === 'number') ? Math.max(2, Math.min(8, Math.floor(iaConfig!.rootTopK as number))) : undefined,
+        rootJitter: (typeof iaConfig?.rootJitter === 'boolean') ? !!iaConfig!.rootJitter : undefined,
+        rootJitterProb: (typeof iaConfig?.rootJitterProb === 'number') ? Math.max(0, Math.min(1, Number(iaConfig!.rootJitterProb))) : undefined,
+        rootLMR: (typeof iaConfig?.rootLMR === 'boolean') ? !!iaConfig!.rootLMR : undefined,
+        drawBias: (typeof iaConfig?.drawBias === 'number') ? Math.max(0, Math.floor(iaConfig!.drawBias as number)) : undefined,
         onProgress: (info) => setIaProgress(info),
         cfg: {
           search: {

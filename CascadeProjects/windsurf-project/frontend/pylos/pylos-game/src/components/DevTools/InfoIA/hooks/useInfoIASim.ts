@@ -12,6 +12,78 @@ import { useAvoidPenalty } from './useAvoidPenalty';
 import { useRepetitionLimit } from './useRepetitionLimit';
 import type { TimeMode } from '../types';
 
+// Persistence for anti-loops (point 9)
+const AVOID_PERSIST_KEY = 'pylos.infoia.antiLoop.v1';
+const ADVANCED_STORAGE_KEY = 'pylos.ia.advanced.v1';
+type PersistEntry = { hi: number; lo: number; weight: number; ts: number };
+
+function readPersistedAvoid(): PersistEntry[] {
+  try {
+    const raw = localStorage.getItem(AVOID_PERSIST_KEY);
+    if (!raw) return [];
+    const arr: any[] = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map((e: any) => ({ hi: Number(e?.hi) >>> 0, lo: Number(e?.lo) >>> 0, weight: Math.max(0, Number(e?.weight) || 0), ts: Number(e?.ts) || 0 }))
+      .filter((e: any) => Number.isFinite(e.hi) && Number.isFinite(e.lo) && Number.isFinite(e.weight));
+  } catch { return []; }
+}
+
+function readAntiStallCfg(): {
+  noveltyBonus?: number;
+  rootTopK?: number;
+  rootJitter?: boolean;
+  rootJitterProb?: number;
+  rootLMR?: boolean;
+  drawBias?: number;
+  timeRiskEnabled?: boolean;
+  noProgressLimit?: number;
+  avoidStepFactor?: number;
+  persistAntiLoopsEnabled?: boolean;
+  halfLifeDays?: number;
+  persistCap?: number;
+} {
+  try {
+    const raw = localStorage.getItem(ADVANCED_STORAGE_KEY);
+    if (!raw) return {};
+    const p = JSON.parse(raw);
+    const noveltyBonus = Number.isFinite(p?.noveltyBonus) ? Math.max(0, Math.floor(p.noveltyBonus)) : undefined;
+    const rootTopK = Number.isFinite(p?.rootTopK) ? Math.max(2, Math.min(8, Math.floor(p.rootTopK))) : undefined;
+    const rootJitter = typeof p?.rootJitter === 'boolean' ? !!p.rootJitter : undefined;
+    const rootJitterProb = Number.isFinite(p?.rootJitterProb) ? Math.max(0, Math.min(1, Number(p.rootJitterProb))) : undefined;
+    const rootLMR = typeof p?.rootLMR === 'boolean' ? !!p.rootLMR : undefined;
+    const drawBias = Number.isFinite(p?.drawBias) ? Math.max(0, Math.floor(p.drawBias)) : undefined;
+    const timeRiskEnabled = typeof p?.timeRiskEnabled === 'boolean' ? !!p.timeRiskEnabled : undefined;
+    const noProgressLimit = Number.isFinite(p?.noProgressLimit) ? Math.max(10, Math.min(400, Math.floor(p.noProgressLimit))) : undefined;
+    const avoidStepFactor = Number.isFinite(p?.avoidStepFactor) ? Math.max(0, Math.min(2, Number(p.avoidStepFactor))) : undefined;
+    const persistAntiLoopsEnabled = typeof p?.persistAntiLoopsEnabled === 'boolean' ? !!p.persistAntiLoopsEnabled : undefined;
+    const halfLifeDays = Number.isFinite(p?.halfLifeDays) ? Math.max(1, Math.min(90, Math.floor(p.halfLifeDays))) : undefined;
+    const persistCap = Number.isFinite(p?.persistCap) ? Math.max(50, Math.min(2000, Math.floor(p.persistCap))) : undefined;
+    return { noveltyBonus, rootTopK, rootJitter, rootJitterProb, rootLMR, drawBias, timeRiskEnabled, noProgressLimit, avoidStepFactor, persistAntiLoopsEnabled, halfLifeDays, persistCap };
+  } catch { return {}; }
+}
+
+function writePersistedAvoid(entries: PersistEntry[], cap: number): void {
+  try {
+    const pruned = entries
+      .filter(e => e.weight > 0)
+      .sort((a,b) => b.weight - a.weight)
+      .slice(0, Math.max(50, Math.floor(cap))); // cap to avoid unbounded growth
+    localStorage.setItem(AVOID_PERSIST_KEY, JSON.stringify(pruned));
+  } catch {}
+}
+
+function decayEntries(entries: PersistEntry[], halfLifeDays: number): PersistEntry[] {
+  const now = Date.now();
+  const HALF_LIFE_DAYS = Math.max(1, Math.floor(halfLifeDays || 7)); // half weight each N days
+  const msPerDay = 24*60*60*1000;
+  return entries.map(e => {
+    const ageDays = Math.max(0, (now - (Number(e.ts)||now)) / msPerDay);
+    const factor = Math.pow(0.5, ageDays / HALF_LIFE_DAYS);
+    return { ...e, weight: Math.floor(e.weight * factor) };
+  }).filter(e => e.weight > 0);
+}
+
 export type UseInfoIASimParams = {
   depth: number;
   timeMode: TimeMode;
@@ -54,6 +126,9 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     let totalThinkMs = 0;
     let maxWorkersUsed = 1;
     const perMove: InfoIAPerMove[] = [];
+    // No-progress rule: end simulation if no tactical progress in N plies
+    const noProgressLimit = 40; // configurable if needed
+    let noProgressPlies = 0;
 
     if (mirrorBoard) {
       try { onMirrorStart?.(); } catch {}
@@ -63,6 +138,16 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     const repeatMax = getRepeatMax();
     const repCounts = new Map<string, number>();
     let repeatHits = 0;
+    // Load persisted anti-loop entries (decayed) and make a quick lookup map
+    // Read Anti-stall config from shared storage (IAPanel/InfoIA)
+    const antiGlobal = readAntiStallCfg();
+    const persistedDecayed = decayEntries(readPersistedAvoid(), antiGlobal.halfLifeDays ?? 7);
+    const persistedMap = new Map<string, number>();
+    for (const e of persistedDecayed) {
+      const key = `${(e.hi>>>0)}:${(e.lo>>>0)}`;
+      const w = Math.max(0, Math.floor(e.weight));
+      if (w > 0) persistedMap.set(key, Math.max(w, persistedMap.get(key) ?? 0));
+    }
 
     const ac = new AbortController();
     abortRef.current = ac;
@@ -76,7 +161,6 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           if (c === repeatMax) repeatHits++;
           // Early stop on repetition limit reached: declare draw by repetition
           if (c >= repeatMax) {
-            const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
             if (mirrorBoard) {
               try { onMirrorEnd?.(state); } catch {}
             }
@@ -89,7 +173,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
               timeSeconds: timeMode === 'manual' ? timeSeconds : undefined,
               pliesLimit,
               moves,
-              avgThinkMs,
+              avgThinkMs: (moves > 0 ? totalThinkMs / moves : 0),
               totalThinkMs,
               winner: null,
               endedReason: 'repetition-limit',
@@ -101,28 +185,78 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           }
         } catch {}
         setMoveIndex(moves + 1);
-        startProgress(timeMs.current);
-        // Build avoidKeys set with positions at/above repetition threshold seen so far
+        // Build avoidKeys and weighted avoidList with positions at/above repetition threshold seen so far
         const avoidKeysArr = Array.from(repCounts.entries())
           .filter(([_, v]) => v >= repeatMax)
           .map(([k]) => {
             const [hiStr, loStr] = k.split(':');
             return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0 };
           });
+        const basePenalty = getAvoidPenalty();
+        const stepFactor = Math.max(0, Number((antiGlobal.avoidStepFactor ?? 0.5)));
+        const step = Math.max(0, Math.floor(basePenalty * stepFactor));
+        const dynamicAvoidList = Array.from(repCounts.entries())
+          .filter(([_, v]) => v >= repeatMax)
+          .map(([k, v]) => {
+            const [hiStr, loStr] = k.split(':');
+            const extra = Math.max(0, v - repeatMax);
+            const weight = Math.max(0, Math.floor(basePenalty + step * extra));
+            return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0, weight };
+          });
+        // Persisted avoid list (low-weight) merged in
+        const persistedAvoidList = Array.from(persistedMap.entries()).map(([k, w]) => {
+          const [hiStr, loStr] = k.split(':');
+          // Keep persisted weight small (e.g., 10) to avoid over-biasing
+          const weight = Math.max(1, Math.min(20, Math.floor(w)));
+          return { hi: Number(hiStr)>>>0, lo: Number(loStr)>>>0, weight };
+        });
+        const avoidList = [...dynamicAvoidList, ...persistedAvoidList];
+        // Novelty bonus support: pass all seen keys so far; search will bonus moves leading to unseen keys
+        const noveltyKeysArr = Array.from(repCounts.keys()).map((k) => {
+          const [hiStr, loStr] = k.split(':');
+          return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0 };
+        });
         // Decide diversification: activate when we already have positions at/above threshold
         const repetitionRisk = avoidKeysArr.length > 0;
+        // Risk-sensitive time management: boost time budget when at repetition risk
+        let timeBudgetEffective = timeMs.current;
+        if ((antiGlobal.timeRiskEnabled ?? true) && typeof timeBudgetEffective === 'number') {
+          let boost = 1;
+          if (repetitionRisk) boost = 1.5;
+          if (repeatHits >= 2) boost = 2.0; // stronger boost when repeated hits accumulate
+          const maxCapMs = 30_000; // keep upper limit consistent with manual cap
+          timeBudgetEffective = Math.min(Math.floor(timeBudgetEffective * boost), maxCapMs);
+        }
+        startProgress(timeBudgetEffective);
         // Seed based on game creation time and current move index for reproducibility
         const randSeed = (createdAt ^ moves) >>> 0;
+        // Adaptive diversification parameters based on repetition pressure
+        // epsilon = clamp(0.1 + 0.05 * repeatHits, 0, 0.4)
+        // tieDelta = 30 if repeatHits >= 2 else 20
+        const epsilonAdaptive = Math.max(0, Math.min(0.4, 0.1 + 0.05 * repeatHits));
+        const tieDeltaAdaptive = (repeatHits >= 2) ? 30 : 20;
+        // Read Anti-stall config from shared storage (IAPanel/InfoIA)
+        const anti = antiGlobal;
+        const noveltyBonusVal = (typeof anti.noveltyBonus === 'number') ? anti.noveltyBonus! : 5;
+        const rootTopKVal = (typeof anti.rootTopK === 'number') ? anti.rootTopK! : 3;
         const res = await getBestMove(state, {
           depth,
-          timeMs: timeMs.current,
+          timeMs: timeBudgetEffective,
           workers: 'auto',
           signal: ac.signal,
           avoidKeys: avoidKeysArr,
-          avoidPenalty: getAvoidPenalty(),
+          avoidPenalty: basePenalty,
+          avoidList,
+          noveltyKeys: noveltyKeysArr,
+          noveltyBonus: noveltyBonusVal,
+          rootTopK: rootTopKVal,
+          rootJitter: anti.rootJitter,
+          rootJitterProb: anti.rootJitterProb,
+          rootLMR: anti.rootLMR,
+          drawBias: anti.drawBias,
           diversify: repetitionRisk ? 'epsilon' : 'off',
-          epsilon: 0.15,
-          tieDelta: 20,
+          epsilon: epsilonAdaptive,
+          tieDelta: tieDeltaAdaptive,
           randSeed,
         });
         stopProgress();
@@ -160,14 +294,64 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           });
         }
         if (!res.move) break;
+        // Detect progress: if the move has recoveries, consider it progress and reset counter
+        try {
+          const mv = res.move as AIMove;
+          const recs = (mv as any)?.recovers;
+          const hadProgress = Array.isArray(recs) && recs.length > 0;
+          noProgressPlies = hadProgress ? 0 : (noProgressPlies + 1);
+        } catch {}
         state = applyAIRunner(state, res.move as AIMove);
         if (mirrorBoard) {
           try { onMirrorUpdate?.(state); } catch {}
         }
         moves++;
+        // Check no-progress termination
+        if (noProgressPlies >= (antiGlobal.noProgressLimit ?? noProgressLimit)) {
+          if (mirrorBoard) {
+            try { onMirrorEnd?.(state); } catch {}
+          }
+          // Persist anti-loop on no-progress
+          try {
+            const existing = readPersistedAvoid();
+            const now = Date.now();
+            const byKey = new Map<string, PersistEntry>();
+            for (const e of existing) byKey.set(`${(e.hi>>>0)}:${(e.lo>>>0)}`, e);
+            const award = 20; // base weight for repetition-limit keys
+            for (const [k, v] of repCounts.entries()) {
+              if (v >= repeatMax) {
+                const [hiStr, loStr] = k.split(':');
+                const hi = Number(hiStr)>>>0; const lo = Number(loStr)>>>0;
+                const prev = byKey.get(k);
+                const nextW = Math.min(100, Math.floor((prev?.weight ?? 0) + award));
+                byKey.set(k, { hi, lo, weight: nextW, ts: now });
+              }
+            }
+            if (antiGlobal.persistAntiLoopsEnabled ?? true) {
+              writePersistedAvoid(Array.from(byKey.values()), antiGlobal.persistCap ?? 300);
+            }
+          } catch {}
+          return {
+            id,
+            createdAt,
+            version: 'pylos-infoia-v1',
+            depth,
+            timeMode,
+            timeSeconds: timeMode === 'manual' ? timeSeconds : undefined,
+            pliesLimit,
+            moves,
+            avgThinkMs: (moves > 0 ? totalThinkMs / moves : 0),
+            totalThinkMs,
+            winner: null,
+            endedReason: 'no-progress',
+            repeatMax,
+            repeatHits,
+            maxWorkersUsed,
+            perMove,
+          };
+        }
         const over = checkGameOver(state);
         if (over.over) {
-          const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
           if (mirrorBoard) {
             try { onMirrorEnd?.(state); } catch {}
           }
@@ -180,7 +364,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             timeSeconds: timeMode === 'manual' ? timeSeconds : undefined,
             pliesLimit,
             moves,
-            avgThinkMs,
+            avgThinkMs: (moves > 0 ? totalThinkMs / moves : 0),
             totalThinkMs,
             winner: over.winner ?? null,
             endedReason: over.reason,
@@ -197,7 +381,6 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     }
 
     const over = checkGameOver(state);
-    const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
     if (mirrorBoard) {
       try { onMirrorEnd?.(state); } catch {}
     }
@@ -210,7 +393,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
       timeSeconds: timeMode === 'manual' ? timeSeconds : undefined,
       pliesLimit,
       moves,
-      avgThinkMs,
+      avgThinkMs: (moves > 0 ? totalThinkMs / moves : 0),
       totalThinkMs,
       winner: over.winner ?? null,
       endedReason: over.reason,

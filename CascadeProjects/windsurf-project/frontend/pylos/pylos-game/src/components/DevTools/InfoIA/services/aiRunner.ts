@@ -12,11 +12,23 @@ export type BestMoveOptions = {
   // Optional: penalize moves that lead to avoided repetition keys at the root
   avoidKeys?: Array<{ hi: number; lo: number }>;
   avoidPenalty?: number;
+  // Optional: penalize with per-key weights (preferred if provided)
+  avoidList?: Array<{ hi: number; lo: number; weight: number }>;
+  // Optional: novelty bonus: add small bonus if child leads to unseen key
+  noveltyKeys?: Array<{ hi: number; lo: number }>;
+  noveltyBonus?: number;
   // Optional: root diversification to escape repetition cycles
   diversify?: 'off' | 'epsilon';
   epsilon?: number;
   tieDelta?: number;
   randSeed?: number;
+  // Optional: limit epsilon sampling to Top-K root candidates
+  rootTopK?: number;
+  // Optional: seedable jitter and LMR controls at root, and draw bias for cycles
+  rootJitter?: boolean;
+  rootJitterProb?: number;
+  rootLMR?: boolean;
+  drawBias?: number;
 };
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';

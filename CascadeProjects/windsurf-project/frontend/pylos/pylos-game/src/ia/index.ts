@@ -112,11 +112,23 @@ export type ComputeOptions = {
   // Optional: repetition-avoidance at the root (penalize moves that lead to these keys)
   avoidKeys?: Array<{ hi: number; lo: number }>; // keys at/above repeat threshold
   avoidPenalty?: number; // evaluation units to subtract (default 50)
+  // Optional: weighted repetition-avoidance list (preferred if provided)
+  avoidList?: Array<{ hi: number; lo: number; weight: number }>;
+  // Optional: novelty bonus inputs
+  noveltyKeys?: Array<{ hi: number; lo: number }>;
+  noveltyBonus?: number;
   // Optional: root diversification to escape repetition cycles.
   diversify?: 'off' | 'epsilon';
   epsilon?: number;
   tieDelta?: number;
   randSeed?: number;
+  // Optional: limit epsilon sampling to Top-K root candidates
+  rootTopK?: number;
+  // Optional: seedable jitter and LMR controls at root, and draw bias for cycles
+  rootJitter?: boolean;
+  rootJitterProb?: number;
+  rootLMR?: boolean;
+  drawBias?: number;
 };
 
 export async function computeBestMoveAsync(state: GameState, opts: ComputeOptions = {}): Promise<{
@@ -218,6 +230,14 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
         cfg: opts.cfg,
         avoidKeys: opts.avoidKeys,
         avoidPenalty: opts.avoidPenalty,
+        avoidList: opts.avoidList,
+        noveltyKeys: opts.noveltyKeys,
+        noveltyBonus: opts.noveltyBonus,
+        rootTopK: typeof opts.rootTopK === 'number' ? Math.floor(opts.rootTopK) : undefined,
+        rootJitter: typeof opts.rootJitter === 'boolean' ? opts.rootJitter : undefined,
+        rootJitterProb: typeof opts.rootJitterProb === 'number' ? Number(opts.rootJitterProb) : undefined,
+        rootLMR: typeof opts.rootLMR === 'boolean' ? opts.rootLMR : undefined,
+        drawBias: typeof opts.drawBias === 'number' ? Math.floor(opts.drawBias) : undefined,
         diversify: opts.diversify,
         epsilon: opts.epsilon,
         tieDelta: opts.tieDelta,
@@ -448,6 +468,9 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           cfg: opts.cfg,
           avoidKeys: opts.avoidKeys,
           avoidPenalty: opts.avoidPenalty,
+          avoidList: opts.avoidList,
+          noveltyKeys: opts.noveltyKeys,
+          noveltyBonus: opts.noveltyBonus,
           onlyMoveSigs: shards[i].map((s) => s >>> 0),
           diversify: opts.diversify,
           epsilon: opts.epsilon,

@@ -37,7 +37,24 @@ export type ControlsProps = {
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
 
-function readAdvancedCfg(): { startRandomFirstMove?: boolean; startSeed?: number | null; repeatMax?: number; avoidPenalty?: number } {
+function readAdvancedCfg(): {
+  startRandomFirstMove?: boolean;
+  startSeed?: number | null;
+  repeatMax?: number;
+  avoidPenalty?: number;
+  noveltyBonus?: number;
+  rootTopK?: number;
+  rootJitter?: boolean;
+  rootJitterProb?: number;
+  rootLMR?: boolean;
+  drawBias?: number;
+  timeRiskEnabled?: boolean;
+  noProgressLimit?: number;
+  avoidStepFactor?: number;
+  persistAntiLoopsEnabled?: boolean;
+  halfLifeDays?: number;
+  persistCap?: number;
+} {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -46,13 +63,25 @@ function readAdvancedCfg(): { startRandomFirstMove?: boolean; startSeed?: number
     const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : null;
     const repeatMax = Number.isFinite(p?.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : undefined;
     const avoidPenalty = Number.isFinite(p?.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : undefined;
-    return { startRandomFirstMove, startSeed, repeatMax, avoidPenalty };
+    const noveltyBonus = Number.isFinite(p?.noveltyBonus) ? Math.max(0, Math.floor(p.noveltyBonus)) : undefined;
+    const rootTopK = Number.isFinite(p?.rootTopK) ? Math.max(2, Math.min(8, Math.floor(p.rootTopK))) : undefined;
+    const rootJitter = typeof p?.rootJitter === 'boolean' ? !!p.rootJitter : undefined;
+    const rootJitterProb = Number.isFinite(p?.rootJitterProb) ? Math.max(0, Math.min(1, Number(p.rootJitterProb))) : undefined;
+    const rootLMR = typeof p?.rootLMR === 'boolean' ? !!p.rootLMR : undefined;
+    const drawBias = Number.isFinite(p?.drawBias) ? Math.max(0, Math.floor(p.drawBias)) : undefined;
+    const timeRiskEnabled = typeof p?.timeRiskEnabled === 'boolean' ? !!p.timeRiskEnabled : undefined;
+    const noProgressLimit = Number.isFinite(p?.noProgressLimit) ? Math.max(10, Math.min(400, Math.floor(p.noProgressLimit))) : undefined;
+    const avoidStepFactor = Number.isFinite(p?.avoidStepFactor) ? Math.max(0, Math.min(2, Number(p.avoidStepFactor))) : undefined;
+    const persistAntiLoopsEnabled = typeof p?.persistAntiLoopsEnabled === 'boolean' ? !!p.persistAntiLoopsEnabled : undefined;
+    const halfLifeDays = Number.isFinite(p?.halfLifeDays) ? Math.max(1, Math.min(90, Math.floor(p.halfLifeDays))) : undefined;
+    const persistCap = Number.isFinite(p?.persistCap) ? Math.max(50, Math.min(2000, Math.floor(p.persistCap))) : undefined;
+    return { startRandomFirstMove, startSeed, repeatMax, avoidPenalty, noveltyBonus, rootTopK, rootJitter, rootJitterProb, rootLMR, drawBias, timeRiskEnabled, noProgressLimit, avoidStepFactor, persistAntiLoopsEnabled, halfLifeDays, persistCap };
   } catch {
     return {};
   }
 }
 
-function writeAdvancedCfg(patch: Partial<{ startRandomFirstMove: boolean; startSeed: number | null; repeatMax: number; avoidPenalty: number }>): void {
+function writeAdvancedCfg(patch: Partial<{ startRandomFirstMove: boolean; startSeed: number | null; repeatMax: number; avoidPenalty: number; noveltyBonus: number; rootTopK: number; rootJitter: boolean; rootJitterProb: number; rootLMR: boolean; drawBias: number; timeRiskEnabled: boolean; noProgressLimit: number; avoidStepFactor: number; persistAntiLoopsEnabled: boolean; halfLifeDays: number; persistCap: number }>): void {
   try {
     const prev = (() => {
       try {
@@ -77,6 +106,18 @@ export default function Controls(props: ControlsProps) {
   );
   const [repeatMax, setRepeatMax] = useState<number>(init.repeatMax ?? 3);
   const [avoidPenalty, setAvoidPenalty] = useState<number>(init.avoidPenalty ?? 50);
+  const [noveltyBonus, setNoveltyBonus] = useState<number>(init.noveltyBonus ?? 5);
+  const [rootTopK, setRootTopK] = useState<number>(init.rootTopK ?? 3);
+  const [rootJitter, setRootJitter] = useState<boolean>(init.rootJitter ?? true);
+  const [rootJitterProb, setRootJitterProb] = useState<number>(init.rootJitterProb ?? 0.1);
+  const [rootLMR, setRootLMR] = useState<boolean>(init.rootLMR ?? true);
+  const [drawBias, setDrawBias] = useState<number>(init.drawBias ?? 5);
+  const [timeRiskEnabled, setTimeRiskEnabled] = useState<boolean>(init.timeRiskEnabled ?? true);
+  const [noProgressLimit, setNoProgressLimit] = useState<number>(init.noProgressLimit ?? 40);
+  const [avoidStepFactor, setAvoidStepFactor] = useState<number>(init.avoidStepFactor ?? 0.5);
+  const [persistAntiLoopsEnabled, setPersistAntiLoopsEnabled] = useState<boolean>(init.persistAntiLoopsEnabled ?? true);
+  const [halfLifeDays, setHalfLifeDays] = useState<number>(init.halfLifeDays ?? 7);
+  const [persistCap, setPersistCap] = useState<number>(init.persistCap ?? 300);
 
   // Persist on change
   useEffect(() => {
@@ -102,6 +143,62 @@ export default function Controls(props: ControlsProps) {
     writeAdvancedCfg({ avoidPenalty: v });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [avoidPenalty]);
+  useEffect(() => {
+    const v = Math.max(0, Math.floor(noveltyBonus));
+    setNoveltyBonus(v);
+    writeAdvancedCfg({ noveltyBonus: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noveltyBonus]);
+  useEffect(() => {
+    const v = Math.max(2, Math.min(8, Math.floor(rootTopK)));
+    setRootTopK(v);
+    writeAdvancedCfg({ rootTopK: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootTopK]);
+  useEffect(() => {
+    writeAdvancedCfg({ rootJitter });
+  }, [rootJitter]);
+  useEffect(() => {
+    const p = Math.max(0, Math.min(1, Number(rootJitterProb)));
+    setRootJitterProb(p);
+    writeAdvancedCfg({ rootJitterProb: p });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootJitterProb]);
+  useEffect(() => {
+    writeAdvancedCfg({ rootLMR });
+  }, [rootLMR]);
+  useEffect(() => {
+    const b = Math.max(0, Math.floor(drawBias));
+    setDrawBias(b);
+    writeAdvancedCfg({ drawBias: b });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawBias]);
+  useEffect(() => { writeAdvancedCfg({ timeRiskEnabled }); }, [timeRiskEnabled]);
+  useEffect(() => {
+    const v = Math.max(10, Math.min(400, Math.floor(noProgressLimit)));
+    setNoProgressLimit(v);
+    writeAdvancedCfg({ noProgressLimit: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noProgressLimit]);
+  useEffect(() => {
+    const f = Math.max(0, Math.min(2, Number(avoidStepFactor)));
+    setAvoidStepFactor(f);
+    writeAdvancedCfg({ avoidStepFactor: f });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avoidStepFactor]);
+  useEffect(() => { writeAdvancedCfg({ persistAntiLoopsEnabled }); }, [persistAntiLoopsEnabled]);
+  useEffect(() => {
+    const d = Math.max(1, Math.min(90, Math.floor(halfLifeDays)));
+    setHalfLifeDays(d);
+    writeAdvancedCfg({ halfLifeDays: d });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [halfLifeDays]);
+  useEffect(() => {
+    const c = Math.max(50, Math.min(2000, Math.floor(persistCap)));
+    setPersistCap(c);
+    writeAdvancedCfg({ persistCap: c });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persistCap]);
 
   return (
     <div className="row infoia__controls" style={rowStyle}>
@@ -230,6 +327,43 @@ export default function Controls(props: ControlsProps) {
         style={{ width: 110 }}
         title="Penalización [0–500] en unidades de evaluación. Valores mayores desincentivan ciclos."
       />
+
+      {/* Anti-estancamiento: bonus de novedad, Top-K, jitter, LMR y sesgo de tablas */}
+      <label className="label" htmlFor="infoia-novbonus" title="Pequeño bonus a estados no vistos para diversificar">Bonus novedad</label>
+      <input id="infoia-novbonus" className="field-num" type="number" min={0} max={50} value={noveltyBonus} onChange={(e) => setNoveltyBonus(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-topk" title="Líneas raíz candidatas para muestreo epsilon-greedy">Top-K</label>
+      <input id="infoia-topk" className="field-num" type="number" min={2} max={8} value={rootTopK} onChange={(e) => setRootTopK(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-jitter" title="Añadir jitter seedable al orden de raíz cuando hay repetición">Jitter raíz</label>
+      <input id="infoia-jitter" type="checkbox" checked={rootJitter} onChange={(e) => setRootJitter(e.target.checked)} aria-checked={rootJitter} />
+
+      <label className="label" htmlFor="infoia-jprob" title="Probabilidad de intercambio vecino-vecino en el orden de raíz">Prob. jitter</label>
+      <input id="infoia-jprob" className="field-num" type="number" min={0} max={1} step={0.01} value={rootJitterProb} onChange={(e) => setRootJitterProb(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-lmr" title="Reducir más la profundidad en movimientos repetitivos en la raíz">LMR raíz</label>
+      <input id="infoia-lmr" type="checkbox" checked={rootLMR} onChange={(e) => setRootLMR(e.target.checked)} aria-checked={rootLMR} />
+
+      <label className="label" htmlFor="infoia-drawbias" title="Penalización ligera a ciclos (tablas peor que 0) para no preferirlos">Sesgo tablas</label>
+      <input id="infoia-drawbias" className="field-num" type="number" min={0} max={50} value={drawBias} onChange={(e) => setDrawBias(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-timerisk" title="Aumentar presupuesto de tiempo bajo riesgo de repetición">Tiempo sensible al riesgo</label>
+      <input id="infoia-timerisk" type="checkbox" checked={timeRiskEnabled} onChange={(e) => setTimeRiskEnabled(e.target.checked)} aria-checked={timeRiskEnabled} />
+
+      <label className="label" htmlFor="infoia-noprog" title="Cortar simulación si no hay progreso en N plies">Sin progreso (plies)</label>
+      <input id="infoia-noprog" className="field-num" type="number" min={10} max={400} value={noProgressLimit} onChange={(e) => setNoProgressLimit(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-avoidstep" title="Factor de incremento de penalización ponderada (0..2)">Factor penalización</label>
+      <input id="infoia-avoidstep" className="field-num" type="number" min={0} max={2} step={0.1} value={avoidStepFactor} onChange={(e) => setAvoidStepFactor(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-persist" title="Persistir claves de anti-bucle entre sesiones">Persistir anti-bucles</label>
+      <input id="infoia-persist" type="checkbox" checked={persistAntiLoopsEnabled} onChange={(e) => setPersistAntiLoopsEnabled(e.target.checked)} aria-checked={persistAntiLoopsEnabled} />
+
+      <label className="label" htmlFor="infoia-halflife" title="Semivida en días para decaimiento de pesos persistidos">Semivida (días)</label>
+      <input id="infoia-halflife" className="field-num" type="number" min={1} max={90} value={halfLifeDays} onChange={(e) => setHalfLifeDays(Number(e.target.value))} style={{ width: 90 }} />
+
+      <label className="label" htmlFor="infoia-cap" title="Límite de entradas persistidas">Cap persistencia</label>
+      <input id="infoia-cap" className="field-num" type="number" min={50} max={2000} value={persistCap} onChange={(e) => setPersistCap(Number(e.target.value))} style={{ width: 100 }} />
 
       <div className="infoia__actions" style={actionsStyle}>
         {!props.running ? (
