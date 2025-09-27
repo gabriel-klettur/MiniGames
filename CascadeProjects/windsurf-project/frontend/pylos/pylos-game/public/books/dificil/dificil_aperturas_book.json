@@ -1,0 +1,485 @@
+{
+  "version": "dificil | aperturas | 2025-09-27T23:23:44.060Z",
+  "entries": [
+    {
+      "keyHi": 2590329691,
+      "keyLo": 1340927241,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 3611969319,
+      "keyLo": 2002219685,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 306053002,
+      "keyLo": 158679225,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 3098197602,
+      "keyLo": 512964516,
+      "bestMove": 8
+    },
+    {
+      "keyHi": 466260432,
+      "keyLo": 1791136893,
+      "bestMove": 18
+    },
+    {
+      "keyHi": 2866033373,
+      "keyLo": 2690356111,
+      "bestMove": 24
+    },
+    {
+      "keyHi": 1996222637,
+      "keyLo": 134237135,
+      "bestMove": 14
+    },
+    {
+      "keyHi": 3572023318,
+      "keyLo": 1283599958,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 3666146204,
+      "keyLo": 3342461266,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 4204573081,
+      "keyLo": 3833584219,
+      "bestMove": 0
+    },
+    {
+      "keyHi": 91262413,
+      "keyLo": 2429114076,
+      "bestMove": 4
+    },
+    {
+      "keyHi": 2046080321,
+      "keyLo": 434387802,
+      "bestMove": 6
+    },
+    {
+      "keyHi": 10296193,
+      "keyLo": 3278151874,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 633094156,
+      "keyLo": 120309959,
+      "bestMove": 18
+    },
+    {
+      "keyHi": 1715508679,
+      "keyLo": 4141169806,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 3436696623,
+      "keyLo": 3778235283,
+      "bestMove": 12
+    },
+    {
+      "keyHi": 3043448608,
+      "keyLo": 2999509140,
+      "bestMove": 14
+    },
+    {
+      "keyHi": 2116221526,
+      "keyLo": 290058999,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 3511206904,
+      "keyLo": 4075278166,
+      "bestMove": 6
+    },
+    {
+      "keyHi": 3146587763,
+      "keyLo": 218741831,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 3838748095,
+      "keyLo": 578185654,
+      "bestMove": 0
+    },
+    {
+      "keyHi": 3282765724,
+      "keyLo": 3580269669,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 2024861337,
+      "keyLo": 3560504701,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 1012555879,
+      "keyLo": 1738880409,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 3214495331,
+      "keyLo": 1105020988,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 2595755502,
+      "keyLo": 2240946233,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 1607445827,
+      "keyLo": 4222620197,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 1929137319,
+      "keyLo": 2337699622,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 3870635768,
+      "keyLo": 1342982968,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 2991941220,
+      "keyLo": 3498068093,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 1742296449,
+      "keyLo": 4251431360,
+      "bestMove": 12
+    },
+    {
+      "keyHi": 1698748374,
+      "keyLo": 2514201918,
+      "bestMove": 48
+    },
+    {
+      "keyHi": 392322862,
+      "keyLo": 3512015000,
+      "bestMove": 0
+    },
+    {
+      "keyHi": 805829901,
+      "keyLo": 642114891,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 903894363,
+      "keyLo": 3406492011,
+      "bestMove": 8
+    },
+    {
+      "keyHi": 1643942903,
+      "keyLo": 2665990307,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 2555345694,
+      "keyLo": 2409108957,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 3404488270,
+      "keyLo": 2025251081,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 1294842753,
+      "keyLo": 2898638618,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 1612601957,
+      "keyLo": 3693335065,
+      "bestMove": 12
+    },
+    {
+      "keyHi": 430889322,
+      "keyLo": 2413328670,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 4156499648,
+      "keyLo": 1655063878,
+      "bestMove": 8
+    },
+    {
+      "keyHi": 1144375438,
+      "keyLo": 1150169545,
+      "bestMove": 14
+    },
+    {
+      "keyHi": 3861313589,
+      "keyLo": 808016,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 2748591448,
+      "keyLo": 4105991890,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 427055735,
+      "keyLo": 3359644287,
+      "bestMove": 24
+    },
+    {
+      "keyHi": 2882290407,
+      "keyLo": 1285706394,
+      "bestMove": 335892
+    },
+    {
+      "keyHi": 2875971902,
+      "keyLo": 1383324517,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 518221156,
+      "keyLo": 126994678,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 1279281204,
+      "keyLo": 4039064610,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 2734584468,
+      "keyLo": 3826309335,
+      "bestMove": 18
+    },
+    {
+      "keyHi": 2777858589,
+      "keyLo": 1523975680,
+      "bestMove": 24
+    },
+    {
+      "keyHi": 1767358865,
+      "keyLo": 2700347670,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 1035440397,
+      "keyLo": 544737875,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 3896222440,
+      "keyLo": 228586478,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 439143749,
+      "keyLo": 3995416626,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 1608390696,
+      "keyLo": 445979312,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 3012650291,
+      "keyLo": 1694145533,
+      "bestMove": 12
+    },
+    {
+      "keyHi": 3025992992,
+      "keyLo": 1237415689,
+      "bestMove": 40
+    },
+    {
+      "keyHi": 91504959,
+      "keyLo": 973836547,
+      "bestMove": 44
+    },
+    {
+      "keyHi": 649280077,
+      "keyLo": 1669949669,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 59924928,
+      "keyLo": 2814771424,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 3979107168,
+      "keyLo": 3010061333,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 1203444360,
+      "keyLo": 2760872712,
+      "bestMove": 8
+    },
+    {
+      "keyHi": 3839571258,
+      "keyLo": 3504222417,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 2140850010,
+      "keyLo": 3563556087,
+      "bestMove": 12
+    },
+    {
+      "keyHi": 381715881,
+      "keyLo": 3588616358,
+      "bestMove": 4
+    },
+    {
+      "keyHi": 320405130,
+      "keyLo": 2295996795,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 1458187239,
+      "keyLo": 2087322617,
+      "bestMove": 2203
+    },
+    {
+      "keyHi": 3606093351,
+      "keyLo": 3892707936,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 3189670128,
+      "keyLo": 631750797,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 3396957387,
+      "keyLo": 4082972838,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 4115058079,
+      "keyLo": 2943795984,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 2816862415,
+      "keyLo": 1482176452,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 2793937786,
+      "keyLo": 69385468,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 2344352414,
+      "keyLo": 1959057919,
+      "bestMove": 16
+    },
+    {
+      "keyHi": 535986369,
+      "keyLo": 2946426337,
+      "bestMove": 6
+    },
+    {
+      "keyHi": 476168327,
+      "keyLo": 3077824778,
+      "bestMove": 24
+    },
+    {
+      "keyHi": 3226338039,
+      "keyLo": 522729802,
+      "bestMove": 4
+    },
+    {
+      "keyHi": 3314973140,
+      "keyLo": 1108863127,
+      "bestMove": 2
+    },
+    {
+      "keyHi": 2154081465,
+      "keyLo": 3064449557,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 2206279263,
+      "keyLo": 1396485871,
+      "bestMove": 14
+    },
+    {
+      "keyHi": 921175375,
+      "keyLo": 3814373338,
+      "bestMove": 22
+    },
+    {
+      "keyHi": 3371377799,
+      "keyLo": 1026900003,
+      "bestMove": 8
+    },
+    {
+      "keyHi": 1831722154,
+      "keyLo": 478317923,
+      "bestMove": 26
+    },
+    {
+      "keyHi": 1208780583,
+      "keyLo": 3637372262,
+      "bestMove": 30
+    },
+    {
+      "keyHi": 3518174221,
+      "keyLo": 3360414529,
+      "bestMove": 18
+    },
+    {
+      "keyHi": 3604980868,
+      "keyLo": 1988953494,
+      "bestMove": 20
+    },
+    {
+      "keyHi": 3226247503,
+      "keyLo": 3320610952,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 3702125347,
+      "keyLo": 2790600368,
+      "bestMove": 14
+    },
+    {
+      "keyHi": 123144915,
+      "keyLo": 982165280,
+      "bestMove": 28
+    },
+    {
+      "keyHi": 3939257426,
+      "keyLo": 379914116,
+      "bestMove": 6
+    },
+    {
+      "keyHi": 2106199030,
+      "keyLo": 3209355353,
+      "bestMove": 2955
+    },
+    {
+      "keyHi": 3406199845,
+      "keyLo": 526949273,
+      "bestMove": 10
+    },
+    {
+      "keyHi": 3470906483,
+      "keyLo": 4062678969,
+      "bestMove": 4
+    },
+    {
+      "keyHi": 1388649962,
+      "keyLo": 1439500011,
+      "bestMove": 8
+    }
+  ]
+}

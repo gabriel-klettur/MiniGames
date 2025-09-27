@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
 import { buildExportTimestampName } from '../utils/date';
 import { toCsv } from '../utils/csv';
-import { buildOpeningBook } from '../services/book';
+import { buildOpeningBook, type BuildBookOptions } from '../services/book';
+import { publishAllBooksToFS } from '../services/publishBooks';
 
 export function useExports(params: {
   records: InfoIAGameRecord[];
@@ -39,6 +40,19 @@ export function useExports(params: {
     URL.revokeObjectURL(url);
   }, [getCurrent]);
 
+  const onExportBookWith = useCallback((opts: Required<Pick<BuildBookOptions, 'phase'>> & Required<Pick<BuildBookOptions, 'difficulty'>> & Pick<BuildBookOptions, 'minSupportPct'>) => {
+    const current = getCurrent();
+    const book = buildOpeningBook(current, { phase: opts.phase, difficulty: opts.difficulty, minSupportPct: opts.minSupportPct });
+    const blob = new Blob([JSON.stringify(book, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // Name to match runtime expectation under /public/books/{difficulty}/{difficulty}_{phase}_book.json
+    a.download = `${opts.difficulty}_${opts.phase}_book.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [getCurrent]);
+
   const onExportCSV = useCallback(() => {
     const current = getCurrent();
     const rows = current.map((r) => ({
@@ -67,5 +81,10 @@ export function useExports(params: {
     URL.revokeObjectURL(url);
   }, [getCurrent]);
 
-  return { onExportJSON, onExportBook, onExportCSV };
+  const onPublishAllBooks = useCallback(async (opts?: { minSupportPct?: number }) => {
+    const current = getCurrent();
+    await publishAllBooksToFS({ records: current, minSupportPct: opts?.minSupportPct });
+  }, [getCurrent]);
+
+  return { onExportJSON, onExportBook, onExportBookWith, onExportCSV, onPublishAllBooks };
 }

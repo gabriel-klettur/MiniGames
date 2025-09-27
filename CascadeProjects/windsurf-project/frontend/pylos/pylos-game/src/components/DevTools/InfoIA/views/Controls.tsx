@@ -26,6 +26,9 @@ export type ControlsProps = {
   onExportJSON: () => void;
   onExportCSV: () => void;
   onExportBook: () => void;
+  // onExportBookWith?: (opts: { difficulty: 'facil' | 'medio' | 'dificil'; phase: 'aperturas' | 'medio' | 'cierres'; minSupportPct?: number }) => void;
+  onPublishBooks?: (minSupportPct: number) => void;
+  onClearBooks?: () => void;
   onAddCompare: () => void;
   onClearAll: () => void;
   onResetDefaults: () => void;
@@ -403,6 +406,23 @@ export default function Controls(props: ControlsProps) {
         <button className="btn-ghost" onClick={props.onExportJSON}>Exportar JSON</button>
         <button className="btn-ghost" onClick={props.onExportCSV}>Exportar CSV</button>
         <button className="btn-ghost" onClick={props.onExportBook} title="Generar libro de aperturas (book.json) a partir de las simulaciones">Exportar Book</button>
+        {import.meta.env.DEV && (
+          <>
+            <label className="label" htmlFor="infoia-publish-support" title="Soporte mínimo para incluir jugadas en el book (0–100%)">Soporte (%)</label>
+            <input id="infoia-publish-support" className="field-num" type="number" min={0} max={100} defaultValue={55} style={{ width: 80 }} />
+            <button
+              className="btn-accent"
+              onClick={() => {
+                const el = document.getElementById('infoia-publish-support') as HTMLInputElement | null;
+                const val = el ? Number(el.value) : 55;
+                const pct = Number.isFinite(val) ? Math.max(0, Math.min(100, Math.floor(val))) : 55;
+                props.onPublishBooks?.(pct);
+              }}
+              title="Publicar todos los books en public/books (dev)"
+            >Publicar Books</button>
+            <button className="btn-warning" onClick={props.onClearBooks} title="Vaciar la carpeta public/books (dev)">Vaciar Books</button>
+          </>
+        )}
         <button className="btn-ghost" onClick={props.onAddCompare} title="Agregar CSV o JSON">Agregar CSV o JSON</button>
         <button className="btn-danger" onClick={props.onClearAll} disabled={!props.canClearLocal} title={props.activeTableSourceId !== 'local' ? 'Solo disponible para datos locales' : 'Borrar todos los registros locales'}>Borrar todo</button>
       </div>

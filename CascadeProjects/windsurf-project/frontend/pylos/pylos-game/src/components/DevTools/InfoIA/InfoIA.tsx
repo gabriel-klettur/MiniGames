@@ -12,6 +12,7 @@ import { getAllRecords, saveRecord, deleteRecord, clearAllRecords } from './serv
 // parse helpers moved to hooks/useCompareDatasets
 import { useCompareDatasets } from './hooks/useCompareDatasets';
 import { useExports } from './hooks/useExports';
+import { publishAllBooksToDevServer, clearBooksOnDevServer } from './services/publishBooks';
 import { useInfoIASim } from './hooks/useInfoIASim';
 import type { TimeMode } from './types';
 
@@ -26,6 +27,19 @@ export type InfoIAProps = {
 export default function InfoIA(props: InfoIAProps) {
   const [records, setRecords] = useState<InfoIAGameRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [toast, setToast] = useState<null | { message: string; kind: 'success' | 'error' | 'info' }>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const showToast = (message: string, kind: 'success' | 'error' | 'info' = 'info') => {
+    if (toastTimerRef.current != null) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setToast({ message, kind });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 5400);
+  };
   
   // Comparison datasets for Charts/Tabla
   const { compareSets, activeTableSourceId, setActiveTableSourceId, addFilesFromFileList, removeSet, clearSets } = useCompareDatasets();
@@ -129,6 +143,76 @@ export default function InfoIA(props: InfoIAProps) {
 
   // Parse helpers moved to utils/parse
 
+  // Handlers para publicar/vaciar books bajo demanda (solo dev)
+  const onPublishBooks = useCallback(async (minSupportPct: number) => {
+    if (!import.meta.env.DEV) return;
+    const activeDs = activeTableSourceId === 'local' ? null : (compareSets.find((s) => s.id === activeTableSourceId) || null);
+    const current = activeDs ? activeDs.records : records;
+    if (!current || current.length === 0) {
+      // eslint-disable-next-line no-console
+      console.warn('[InfoIA] No hay datos para publicar books.');
+      showToast('No hay datos para publicar', 'info');
+      return;
+    }
+    try {
+      const res = await publishAllBooksToDevServer({ records: current, minSupportPct });
+      if (!res.ok) {
+        // eslint-disable-next-line no-console
+        console.warn('[InfoIA] Publicación de libros falló:', res.error);
+        showToast('Error al publicar books', 'error');
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[InfoIA] Libros publicados en /public/books (dev):', res.wrote);
+        const srcLabel = activeTableSourceId === 'local'
+          ? 'Local'
+          : (compareSets.find((s) => s.id === activeTableSourceId)?.name || activeTableSourceId);
+        const filesInfo = Array.isArray(res.filesInfo) ? res.filesInfo : [];
+        const totalFiles = filesInfo.length;
+        const totalEntries = filesInfo.reduce((acc, f) => acc + (f.entries || 0), 0);
+        const totalBytes = filesInfo.reduce((acc, f) => acc + (f.bytes || 0), 0);
+        // Show top 10 files (by relativePath) with entries
+        const lines: string[] = [];
+        lines.push(`Books publicados (soporte ${minSupportPct}%) — Dataset: ${srcLabel}`);
+        lines.push(`Archivos: ${totalFiles}, Entradas totales: ${totalEntries}, Bytes: ${totalBytes}`);
+        const top = filesInfo
+          .slice()
+          .sort((a, b) => a.relativePath.localeCompare(b.relativePath))
+          .slice(0, 10);
+        for (const f of top) {
+          lines.push(`- ${f.relativePath}: ${f.entries} entradas, ${f.bytes} bytes`);
+        }
+        if (filesInfo.length > top.length) {
+          lines.push(`… y ${filesInfo.length - top.length} más`);
+        }
+        showToast(lines.join('\n'), 'success');
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[InfoIA] Error publicando libros:', err);
+      showToast('Error al publicar books', 'error');
+    }
+  }, [records, compareSets, activeTableSourceId]);
+
+  const onClearBooks = useCallback(async () => {
+    if (!import.meta.env.DEV) return;
+    try {
+      const res = await clearBooksOnDevServer();
+      if (!res.ok) {
+        // eslint-disable-next-line no-console
+        console.warn('[InfoIA] Vaciar books falló:', res.error);
+        showToast('Error al vaciar books', 'error');
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[InfoIA] Carpeta public/books vaciada.');
+        showToast('Books vaciados', 'success');
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[InfoIA] Error al vaciar books:', err);
+      showToast('Error al vaciar books', 'error');
+    }
+  }, []);
+
   const onAddCompareClick = () => compareInputRef.current?.click();
   const onCompareFiles = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -148,7 +232,29 @@ export default function InfoIA(props: InfoIAProps) {
   // chartDims removed: new comparative chart computes layout per render
 
   return (
-    <section className="panel infoia-panel" aria-label="InfoIA (simulaciones de IA)">
+    <section className="panel infoia-panel" aria-label="InfoIA (simulaciones de IA)" style={{ position: 'relative' }}>
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            padding: '8px 12px',
+            borderRadius: 6,
+            background: toast.kind === 'success' ? '#16a34a' : toast.kind === 'error' ? '#dc2626' : '#2563eb',
+            color: 'white',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            whiteSpace: 'pre-line',
+            maxWidth: 440,
+            fontSize: 13,
+            zIndex: 10,
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
       <div className="infoia__header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>InfoIA</h3>
         <div className="infoia__tabs segmented" role="tablist" aria-label="Secciones de InfoIA">
@@ -212,6 +318,8 @@ export default function InfoIA(props: InfoIAProps) {
             onExportJSON={onExportJSON}
             onExportCSV={onExportCSV}
             onExportBook={onExportBook}
+            onPublishBooks={onPublishBooks}
+            onClearBooks={onClearBooks}
             onAddCompare={onAddCompareClick}
             onClearAll={onClearAll}
             onResetDefaults={() => {

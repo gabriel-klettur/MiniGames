@@ -1,0 +1,55 @@
+{
+  "version": "dificil | cierres | 2025-09-27T23:23:44.061Z",
+  "entries": [
+    {
+      "keyHi": 1620711338,
+      "keyLo": 3828751424,
+      "bestMove": 3623
+    },
+    {
+      "keyHi": 372592956,
+      "keyLo": 594013632,
+      "bestMove": 630822
+    },
+    {
+      "keyHi": 378718949,
+      "keyLo": 1035363391,
+      "bestMove": 38
+    },
+    {
+      "keyHi": 2199715482,
+      "keyLo": 243803680,
+      "bestMove": 50
+    },
+    {
+      "keyHi": 3180784532,
+      "keyLo": 4158565979,
+      "bestMove": 38
+    },
+    {
+      "keyHi": 4057130658,
+      "keyLo": 2255060348,
+      "bestMove": 0
+    },
+    {
+      "keyHi": 3271440009,
+      "keyLo": 175902243,
+      "bestMove": 54
+    },
+    {
+      "keyHi": 2495817279,
+      "keyLo": 2065887456,
+      "bestMove": 32
+    },
+    {
+      "keyHi": 1188894036,
+      "keyLo": 3778708466,
+      "bestMove": 50
+    },
+    {
+      "keyHi": 1967909250,
+      "keyLo": 2361365282,
+      "bestMove": 58
+    }
+  ]
+}
