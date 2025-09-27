@@ -73,7 +73,23 @@
   /* Piece slightly smaller than the cell to leave visual breathing room */
   --piece-size: calc(var(--cell-size) - 20px);
   /* Scale factor for piece visuals inside board cells (1.0 = normal) */
-  --piece-scale: 1.55; /*
+  
+  /* Default ball scale: 0.5 = half-size balls unless overridden (e.g., InfoIA open) */
+
+  /*-------------------------------------------------------------*/
+  /*------------------------ MAIN CONFIG ------------------------*/
+  /*-------------------------------------------------------------*/
+  --piece-scale: 1.55;  
+  --flying-piece-scale: 0.7;
+  --ball-scale: 0.70;
+  --hole-scale: 0.9;
+  --ball-matrix-scale: 1.04;
+  --hole-matrix-scale: 1.04;
+  /*-------------------------------------------------------------*/
+  /*------------------------ END CONFIG -------------------------*/
+  /*-------------------------------------------------------------*/
+
+  
   /* Scaled geometry */
   --cell-radius-base: 12px;
   --cell-radius: calc(var(--cell-radius-base) * var(--scale));

@@ -102,7 +102,7 @@ export default function FlyingPiece({ from, to, imgSrc, durationMs = 420, onDone
             objectFit: 'cover',
             borderRadius: '50%',
             // Match exact size of board piece using the same CSS variable scaling
-            transform: 'scale(var(--piece-scale)) translateZ(0)',
+            transform: 'scale(calc(var(--piece-scale) * var(--flying-piece-scale, 1))) translateZ(0)',
             transformOrigin: 'center center',
             willChange: 'transform',
           }}

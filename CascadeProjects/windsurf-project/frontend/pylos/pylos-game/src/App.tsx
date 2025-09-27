@@ -306,7 +306,7 @@ function App() {
             // Tamaño general del tablero
             ['--board-scale' as any]: '1.25',
             
-            ['--ball-scale' as any]: '0.40',      // 0.85..1.05 para afinar el “fill”                        
+            ['--ball-scale' as any]: '0.5',      // Restaurar tamaño completo de bolas cuando InfoIA está abierto                        
             ['--hole-scale' as any]: '0.5',      // 0.85..1.05 para afinar            
 
             ['--ball-matrix-scale' as any]: '0.75',  // 0.5 = la matriz ocupa la mitad
@@ -350,17 +350,7 @@ function App() {
          * components without overrides so base styles apply.
          */}
         {(showTools && showInfoIA) ? (
-          <div
-            style={{
-              ['--board-width-factor' as any]: '0.5',
-              ['--cell-size-min' as any]: '16px',
-              ['--cell-size-mult' as any]: '0.5',
-              ['--info-piece-size' as any]: '12px',
-              ['--info-piece-size-current' as any]: '18px',
-              ['--piece-scale' as any]: '1.45',
-              ['--hole-ring-w' as any]: '2px',
-            }}
-          >
+          <div>
             <InfoPanel
               state={state}
               aiEnemy={vsAI?.enemy ?? null}
