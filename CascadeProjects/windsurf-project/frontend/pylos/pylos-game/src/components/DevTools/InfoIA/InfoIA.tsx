@@ -34,12 +34,36 @@ export default function InfoIA(props: InfoIAProps) {
 
   // Controls
   const [depth, setDepth] = useState<number>(3);
-  const [timeMode, setTimeMode] = useState<TimeMode>('manual');
+  const [timeMode, setTimeMode] = useState<TimeMode>('auto');
   const [timeSeconds, setTimeSeconds] = useState<number>(8);
   const [pliesLimit, setPliesLimit] = useState<number>(80);
-  const [gamesCount, setGamesCount] = useState<number>(5);
+  const [gamesCount, setGamesCount] = useState<number>(10);
   // Mirror simulation on main board (fast, no animations)
-  const [mirrorBoard, setMirrorBoard] = useState<boolean>(false);
+  const [mirrorBoard, setMirrorBoard] = useState<boolean>(true);
+
+  // Persist controls locally so defaults apply only when no saved prefs exist
+  const STORAGE_KEY = 'pylos.infoia.controls.v1';
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return; // keep defaults
+      const p = JSON.parse(raw);
+      if (Number.isFinite(p?.depth)) setDepth(Math.max(1, Math.min(10, Math.floor(p.depth))));
+      if (p?.timeMode === 'auto' || p?.timeMode === 'manual') setTimeMode(p.timeMode);
+      if (Number.isFinite(p?.timeSeconds)) setTimeSeconds(Math.max(0, Math.min(30, Number(p.timeSeconds))));
+      if (Number.isFinite(p?.pliesLimit)) setPliesLimit(Math.max(1, Math.min(400, Math.floor(p.pliesLimit))));
+      if (Number.isFinite(p?.gamesCount)) setGamesCount(Math.max(1, Math.min(1000, Math.floor(p.gamesCount))));
+      if (typeof p?.mirrorBoard === 'boolean') setMirrorBoard(p.mirrorBoard);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      const payload = { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch {}
+  }, [depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard]);
  
   // Tabs UI: 'sim' for Simulaciones y Métricas, 'charts' for Gráficos
   const [activeTab, setActiveTab] = useState<'sim' | 'charts'>('sim');
