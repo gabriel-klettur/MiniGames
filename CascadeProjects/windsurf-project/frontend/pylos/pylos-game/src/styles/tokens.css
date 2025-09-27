@@ -28,7 +28,9 @@
   --board-top-gap: 0px;    /* net space between InfoPanel and board */
   /* Fine alignment offsets for background art (positive = move art right/down) */
   --board-offset-x: 0px;
-  --board-offset-y: -60px; /* lift board art to reduce perceived gap */
+  /* Board art Y offset scales with board width; base at factor 1.0 */
+  --board-offset-y-base: -60px; /* base lift to reduce perceived gap */
+  --board-offset-y: calc(var(--board-offset-y-base) * var(--board-width-factor));
   /* Spacing below the board for Undo/Redo */
   --board-actions-gap: -40px;
   /* Board width factor relative to content width (1 = 100%, 0.5 = 50%) */
@@ -37,9 +39,13 @@
   --board-w-mult-root: 1.799; /* 1024 / 569 ≈ 1.799 */
   /* use base spacing values, then derive scaled ones */
   --overlay-nudge-x: 0px;                 /* horizontal shift for overlays (positive moves right) */
-  --overlay-nudge-3-y: calc(12px * var(--scale)); /* vertical lift for 3x3 overlay (positive lifts up via transform -) */
-  --overlay-nudge-2-y: calc(12px * var(--scale)); /* vertical lift for 2x2 overlay */
-  --overlay-nudge-1-y: calc(12px * var(--scale)); /* vertical lift for 1x1 overlay */
+  /* Overlay vertical nudges scale with both visual scale and board width factor */
+  --overlay-nudge-3-y-base: 12px;
+  --overlay-nudge-2-y-base: 12px;
+  --overlay-nudge-1-y-base: 12px;
+  --overlay-nudge-3-y: calc(var(--overlay-nudge-3-y-base) * var(--scale) * var(--board-width-factor));
+  --overlay-nudge-2-y: calc(var(--overlay-nudge-2-y-base) * var(--scale) * var(--board-width-factor));
+  --overlay-nudge-1-y: calc(var(--overlay-nudge-1-y-base) * var(--scale) * var(--board-width-factor));
   /* Manual fine-tune for the WHOLE grid (base + overlays) relative to board art */
   --grid-offset-extra-x: 0px; /* extra delta beyond board art */
   --grid-offset-extra-y: 0px; /* extra delta beyond board art */
@@ -52,7 +58,7 @@
   --max-cols: 4;            /* widest level (4x4) */
   /* Fluid cell size calculation (see original comments) */
   --cell-size-base: clamp(
-    36px,
+    var(--cell-size-min, 36px),
     calc(
       (
         ((100vw - (2 * var(--app-padding))) * var(--board-width-factor))
@@ -62,7 +68,8 @@
     ),
     480px
   );
-  --cell-size: calc(var(--cell-size-base) * var(--scale));
+  /* Allow extra local scaling via multiplier (default 1) */
+  --cell-size: calc(var(--cell-size-base) * var(--scale) * var(--cell-size-mult, 1));
   /* Piece slightly smaller than the cell to leave visual breathing room */
   --piece-size: calc(var(--cell-size) - 20px);
   /* Scale factor for piece visuals inside board cells (1.0 = normal) */
@@ -79,6 +86,8 @@
   --outline-offset-selected: calc(var(--outline-offset-selected-base) * var(--scale));
   /* Half-step offset used to position upper levels over the centers of 2x2 supports */
   --step: calc(0.5 * (var(--cell-size) + var(--level-gap)));
+  /* Full center-to-center distance between adjacent cells */
+  --center-step: calc(var(--cell-size) + var(--level-gap));
 
   /* Hole (slot) unified rendering tokens */
   --hole-ring-w: 3px;                               /* ring thickness */

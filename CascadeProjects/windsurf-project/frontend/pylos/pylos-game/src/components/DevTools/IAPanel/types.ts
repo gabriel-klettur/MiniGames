@@ -17,6 +17,13 @@ export interface AIAdvancedConfig {
 
   // Book
   bookEnabled: boolean;
+  // Mode to resolve the book URL
+  bookMode?: 'auto' | 'manual';
+  // When in auto mode, which phase to target within the chosen difficulty
+  bookPhase?: 'aperturas' | 'medio' | 'cierres';
+  // Optional base path for auto mode (defaults to '/books')
+  bookBasePath?: string;
+  // Manual URL override (used when bookMode === 'manual')
   bookUrl: string;
 
   // Quiescence

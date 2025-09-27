@@ -6,6 +6,12 @@ export interface IaAdvancedConfig {
   qNodeCap: number; // 1..128
   futilityMargin: number; // 0..1000
   bookEnabled: boolean;
+  // Mode to resolve the book URL
+  bookMode?: 'auto' | 'manual';
+  // When in auto mode, which phase to target within the chosen difficulty
+  bookPhase?: 'aperturas' | 'medio' | 'cierres';
+  // Optional base path for auto mode (defaults to '/books')
+  bookBasePath?: string;
   bookUrl: string;
   precomputedSupports?: boolean;
   precomputedCenter?: boolean;
@@ -36,6 +42,9 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
             qNodeCap: Number.isFinite(p.qNodeCap) ? Math.max(1, Math.min(128, Math.floor(p.qNodeCap))) : 24,
             futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
             bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : true,
+            bookMode: (p.bookMode === 'manual' || p.bookMode === 'auto') ? p.bookMode : 'auto',
+            bookPhase: (p.bookPhase === 'aperturas' || p.bookPhase === 'medio' || p.bookPhase === 'cierres') ? p.bookPhase : 'aperturas',
+            bookBasePath: (typeof p.bookBasePath === 'string' && p.bookBasePath.trim().length > 0) ? p.bookBasePath : '/books',
             bookUrl: typeof p.bookUrl === 'string' && p.bookUrl.trim().length > 0 ? p.bookUrl : '/aperturas_book.json',
             precomputedSupports: typeof p.precomputedSupports === 'boolean' ? p.precomputedSupports : true,
             precomputedCenter: typeof p.precomputedCenter === 'boolean' ? p.precomputedCenter : true,
@@ -55,6 +64,9 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
       qNodeCap: 24,
       futilityMargin: 100,
       bookEnabled: true,
+      bookMode: 'auto',
+      bookPhase: 'aperturas',
+      bookBasePath: '/books',
       bookUrl: '/aperturas_book.json',
       precomputedSupports: true,
       precomputedCenter: true,

@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import type { CSSProperties } from 'react';
 import type { GameState, Position } from '../game/types';
 import { LEVELS, getCell, isFree, isSupported, levelSize } from '../game/board';
 import { validMoveDestinations } from '../game/rules';
@@ -24,9 +25,11 @@ export interface BoardProps {
   shadeOnlyHoles?: boolean;
   // Mostrar borde blanco en huecos disponibles (controlado por DevTools UX)
   showHoleBorders?: boolean;
+  // Optional style to inject CSS custom properties (scaling, etc.) on the board root
+  style?: CSSProperties;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false, style }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -37,6 +40,11 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const supported = !cell && isSupported(state.board, pos);
     const isAppearing = appearKeys?.has(key) ?? false;
     const isFlashing = flashKeys?.has(key) ?? false;
+    // Compute per-cell offsets from the grid center in units of cell centers
+    const sizeForLevel = levelSize(pos.level);
+    const centerIndex = (sizeForLevel - 1) / 2;
+    const dxUnits = pos.col - centerIndex; // +right, -left
+    const dyUnits = pos.row - centerIndex; // +down, -up
     // A cell is clickable only if it's a highlighted destination, or it's a free own piece WITH MOVES (to select/move)
     const hasMoves = !!cell && state.currentPlayer === cell && free && validMoveDestinations(state.board, pos).length > 0;
     const canClickOwnFreePiece = hasMoves && state.phase === 'play';
@@ -64,7 +72,11 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
           isFlashing ? 'cell--flash' : '',
           !interactive ? 'cell--disabled' : '',
         ].join(' ')}
-        style={{ pointerEvents: (interactive || baseEmptyOverride) ? 'auto' : 'none' }}
+        style={{
+          pointerEvents: (interactive || baseEmptyOverride) ? 'auto' : 'none',
+          ['--cell-dx' as any]: String(dxUnits),
+          ['--cell-dy' as any]: String(dyUnits),
+        }}
         // Only attach handlers when interactive or when base empty override applies
         onClick={(interactive || baseEmptyOverride) ? (() => { if (debugHitTest) { console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell }); } onCellClick(pos); }) : undefined}
         onDragOver={isHighlighted ? ((e) => { e.preventDefault(); }) : undefined}
@@ -142,7 +154,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
       noShade[3] ? 'no-shade-l3' : '',
       shadeOnlyHoles ? 'shade-only-holes' : '',
       showHoleBorders ? 'hole-borders' : ''
-    ].join(' ').trim()}>
+    ].join(' ').trim()} style={style}>
       <div
         className={["level", "level--board"].join(' ')}
         data-level={0}

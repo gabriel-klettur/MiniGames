@@ -22,13 +22,17 @@
   background: transparent;
 }
 
+/* Allow independent scaling of the hole graphic while preserving centering */
+.cell::before { transform: translate(var(--hole-tx, 0), var(--hole-ty, 0)) scale(var(--hole-scale, var(--hole-matrix-scale, 1))); transform-origin: center center; }
+
 /* Draw the slot for all base cells; variables control intensity per state */
 .level--board > .cell::before {
   content: "";
   position: absolute;
-  inset: 2px;                /* adjust if you have inner outline */
+  inset: var(--hole-inset, 2px);                /* adjust if you have inner outline */
   border-radius: 50%;
   pointer-events: none;      /* do not block clicks */
+  z-index: 1;                /* sit above sibling cell backgrounds */
   /* Default: soft inner depression only (no ring) */
   background: radial-gradient(
     circle at 50% 50%,
@@ -105,7 +109,7 @@
 .board.shade-only-holes .level[data-level="3"] .cell.cell--supported:empty::before {
   content: "";
   position: absolute;
-  inset: 2px;
+  inset: var(--hole-inset, 2px);
   border-radius: 50%;
   pointer-events: none;
   background: radial-gradient(
@@ -163,6 +167,7 @@
 /* Override the gradient on highlight to include the ring when toggled */
 .level--board > .cell.cell--highlight::before {
   /* Default: brighter inner only, no ring */
+  inset: var(--hole-inset, 2px);
   background: radial-gradient(
     circle at 50% 50%,
     var(--hole-inner-color) 0%,

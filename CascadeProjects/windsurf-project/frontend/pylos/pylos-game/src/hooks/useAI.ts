@@ -21,6 +21,9 @@ export interface UseAIParams {
     qNodeCap: number;
     futilityMargin: number;
     bookEnabled: boolean;
+    bookMode?: 'auto' | 'manual';
+    bookPhase?: 'aperturas' | 'medio' | 'cierres';
+    bookBasePath?: string;
     bookUrl?: string;
     precomputedSupports?: boolean;
     precomputedCenter?: boolean;
@@ -160,6 +163,20 @@ export function useAI(params: UseAIParams): UseAIResult {
         }
         if (avoidKeys.length === 0) avoidKeys = undefined;
       }
+      // Resolve effective book URL
+      const resolveDifficulty = (d: number): 'facil' | 'medio' | 'dificil' => {
+        if (d <= 3) return 'facil';
+        if (d <= 7) return 'medio';
+        return 'dificil';
+      };
+      const mode = iaConfig?.bookMode ?? 'auto';
+      const phase = iaConfig?.bookPhase ?? 'aperturas';
+      const basePathRaw = iaConfig?.bookBasePath ?? '/books';
+      const basePath = basePathRaw.endsWith('/') ? basePathRaw.slice(0, -1) : basePathRaw;
+      const difficulty = resolveDifficulty(iaDepth);
+      const autoUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
+      const effectiveBookUrl = mode === 'manual' ? (iaConfig?.bookUrl || '/aperturas_book.json') : autoUrl;
+
       const res = await computeBestMoveAsync(state, {
         depth: iaDepth,
         timeMs,
@@ -176,7 +193,7 @@ export function useAI(params: UseAIParams): UseAIResult {
             futilityMargin: iaConfig?.futilityMargin ?? 100,
           },
           bookEnabled: iaConfig?.bookEnabled ?? true,
-          bookUrl: iaConfig?.bookUrl,
+          bookUrl: effectiveBookUrl,
           flags: {
             precomputedSupports: iaConfig?.precomputedSupports ?? true,
             precomputedCenter: iaConfig?.precomputedCenter ?? true,

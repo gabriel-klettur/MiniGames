@@ -1,6 +1,6 @@
 /* Board container and levels, excluding hole shading system (see board-holes.css) */
 .board { display: block; margin-top: calc(var(--board-top-gap) - var(--content-gap)); width: 100%; position: relative; }
-.board--pyramid { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; width: min(100%, calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor))); margin-left: auto; margin-right: auto; }
+.board--pyramid { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; width: min(100%, calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor) * var(--board-compact-mult, 1))); margin-left: auto; margin-right: auto; }
 /* Stacked view needs flex column to separate levels vertically */
 .board--stacked { display: flex; flex-direction: column; gap: 14px; width: 100%; align-items: center; }
 
@@ -12,7 +12,7 @@
   top: 50%;
   width: 100%;
   height: 100%;
-  transform: translate(calc(-50% + var(--board-offset-x)), calc(-50% + var(--board-offset-y)));
+  transform: translate(calc(-50% + var(--board-offset-x)), calc(-50% + var(--board-offset-y))) scale(var(--board-art-scale, var(--board-scale, 1)));
   background-image: url('../assets/board.webp');
   background-size: contain; /* show whole board without cropping */
   background-repeat: no-repeat;
@@ -95,14 +95,22 @@
   background: #111827;
   border: 1px solid #1f2937;
   border-radius: 50%;            /* make button visually circular */
-  clip-path: circle(50% at 50% 50%); /* circular hit area (affects pointer events) */
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;           /* remove default button padding so piece can fill fully */
-  overflow: hidden;     /* clip piece/image to the rounded cell border */
+  overflow: visible;    /* allow translated inner circles to extend without being cut */
   position: relative;   /* allow inner piece to be absolutely positioned */
+  z-index: 0;           /* base layer; inner visuals can be layered above */
+  /* Per-cell translation vectors derived from distance to level center (px) */
+  /* Effective shrink toward center: explicit center-shrink overrides, else 1 - matrix-scale */
+  --ball-center-shrink-eff: var(--ball-center-shrink, calc(1 - var(--ball-matrix-scale, 1)));
+  --hole-center-shrink-eff: var(--hole-center-shrink, calc(1 - var(--hole-matrix-scale, 1)));
+  --ball-tx: calc(var(--center-step) * var(--cell-dx, 0) * var(--ball-center-shrink-eff) * -1);
+  --ball-ty: calc(var(--center-step) * var(--cell-dy, 0) * var(--ball-center-shrink-eff) * -1);
+  --hole-tx: calc(var(--center-step) * var(--cell-dx, 0) * var(--hole-center-shrink-eff) * -1);
+  --hole-ty: calc(var(--center-step) * var(--cell-dy, 0) * var(--hole-center-shrink-eff) * -1);
 }
 
 /* Non-interactive cells should not block clicks for cells underneath */
@@ -122,16 +130,23 @@
 /* Board cells: pieces fill their cells and can bleed under borders */
 .cell .piece {
   position: absolute;   /* bleed under the cell border */
-  top: -1px;            /* match .cell border width */
-  right: -1px;
-  bottom: -1px;
-  left: -1px;
+  z-index: 2;           /* render above neighboring cell backgrounds */
+  /* Control visual spacing between balls by adjusting their bleed */
+  top: var(--ball-inset, -1px);            /* default matches border width */
+  right: var(--ball-inset, -1px);
+  bottom: var(--ball-inset, -1px);
+  left: var(--ball-inset, -1px);
   display: block;
   border: none;
   box-shadow: none;
 }
 /* On the base level, do not bleed beyond the cell; fit exactly inside the hole */
-.level--board > .cell .piece { top: 0; right: 0; bottom: 0; left: 0; }
+.level--board > .cell .piece {
+  top: var(--ball-inset-base, 0);
+  right: var(--ball-inset-base, 0);
+  bottom: var(--ball-inset-base, 0);
+  left: var(--ball-inset-base, 0);
+}
 
 /* Image inside the piece: fill the circle, keep ratio, and ignore pointer events */
 .piece__img {
@@ -144,8 +159,8 @@
   user-select: none;
 }
 
-/* Only scale in the actual board cells, not in the InfoPanel indicator */
-.cell .piece__img { transform: scale(var(--piece-scale)); transform-origin: center center; }
+/* Only in-board pieces: translate centers toward board center, then scale sprite */
+.cell .piece__img { transform: translate(var(--ball-tx, 0), var(--ball-ty, 0)) scale(calc(var(--piece-scale) * var(--ball-scale, var(--ball-matrix-scale, 1)))); transform-origin: center center; }
 /* Make backgrounds transparent so only the asset is visible */
 .piece--light { background: transparent; }
 .piece--dark { background: transparent; }

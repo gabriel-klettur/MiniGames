@@ -298,7 +298,24 @@ function App() {
   const reservesForDisplay = useReservesDisplay(state, flying, pendingState);
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      style={
+        (showTools && showInfoIA)
+          ? ({
+            // Tamaño general del tablero
+            ['--board-scale' as any]: '1.25',
+            
+            ['--ball-scale' as any]: '0.40',      // 0.85..1.05 para afinar el “fill”                        
+            ['--hole-scale' as any]: '0.5',      // 0.85..1.05 para afinar            
+
+            ['--ball-matrix-scale' as any]: '0.75',  // 0.5 = la matriz ocupa la mitad
+            ['--hole-matrix-scale' as any]: '0.75',
+
+            } as React.CSSProperties)
+          : undefined
+      }
+    >
       <HeaderPanel
         onNewGame={onNewGame}
         showTools={showTools}
@@ -326,30 +343,77 @@ function App() {
         <RulesPanel />
       )}
       <div className="content">
-        <InfoPanel
-          state={state}
-          aiEnemy={vsAI?.enemy ?? null}
-          aiLastMove={lastIaMove}
-          aiThinking={iaBusy}
-          reservesOverride={reservesForDisplay}
-          currentPieceRef={currentPieceRef}
-          reserveLightRef={reserveLightRef}
-          reserveDarkRef={reserveDarkRef}
-        />
-        <Board
-          state={state}
-          onCellClick={onCellClick}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          highlights={highlights}
-          selected={state.selectedSource}
-          posKey={posKey}
-          appearKeys={appearKeys}
-          flashKeys={flashKeys}
-          noShade={noShadeEffective}
-          shadeOnlyHoles={shadeOnlyHoles}
-          showHoleBorders={holeBorders}
-        />
+        {/** InfoPanel is now rendered inside the conditional wrapper below to allow size overrides */}
+        {/**
+         * While the InfoIA panel is visible, reduce the board size to half and
+         * also shrink InfoPanel piece icons. When InfoIA is hidden, render both
+         * components without overrides so base styles apply.
+         */}
+        {(showTools && showInfoIA) ? (
+          <div
+            style={{
+              ['--board-width-factor' as any]: '0.5',
+              ['--cell-size-min' as any]: '16px',
+              ['--cell-size-mult' as any]: '0.5',
+              ['--info-piece-size' as any]: '12px',
+              ['--info-piece-size-current' as any]: '18px',
+              ['--piece-scale' as any]: '1.45',
+              ['--hole-ring-w' as any]: '2px',
+            }}
+          >
+            <InfoPanel
+              state={state}
+              aiEnemy={vsAI?.enemy ?? null}
+              aiLastMove={lastIaMove}
+              aiThinking={iaBusy}
+              reservesOverride={reservesForDisplay}
+              currentPieceRef={currentPieceRef}
+              reserveLightRef={reserveLightRef}
+              reserveDarkRef={reserveDarkRef}
+            />
+            <Board
+              state={state}
+              onCellClick={onCellClick}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              highlights={highlights}
+              selected={state.selectedSource}
+              posKey={posKey}
+              appearKeys={appearKeys}
+              flashKeys={flashKeys}
+              noShade={noShadeEffective}
+              shadeOnlyHoles={shadeOnlyHoles}
+              showHoleBorders={holeBorders}
+            />
+          </div>
+        ) : (
+          <>
+            <InfoPanel
+              state={state}
+              aiEnemy={vsAI?.enemy ?? null}
+              aiLastMove={lastIaMove}
+              aiThinking={iaBusy}
+              reservesOverride={reservesForDisplay}
+              currentPieceRef={currentPieceRef}
+              reserveLightRef={reserveLightRef}
+              reserveDarkRef={reserveDarkRef}
+            />
+            <Board
+              state={state}
+              onCellClick={onCellClick}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              highlights={highlights}
+              selected={state.selectedSource}
+              posKey={posKey}
+              appearKeys={appearKeys}
+              flashKeys={flashKeys}
+              noShade={noShadeEffective}
+              shadeOnlyHoles={shadeOnlyHoles}
+              showHoleBorders={holeBorders}
+            />
+          </>
+        )}
         <UndoRedo
           canUndo={canUndo}
           onUndo={onUndo}

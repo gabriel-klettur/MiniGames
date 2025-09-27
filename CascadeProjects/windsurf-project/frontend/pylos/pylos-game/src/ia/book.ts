@@ -1,7 +1,14 @@
 // Default URL for the opening book (can be changed at runtime)
 let BOOK_URL = '/aperturas_book.json';
 export function setBookUrl(url: string): void {
-  if (typeof url === 'string' && url.trim().length > 0) BOOK_URL = url.trim();
+  if (typeof url === 'string' && url.trim().length > 0) {
+    const next = url.trim();
+    if (next !== BOOK_URL) {
+      BOOK_URL = next;
+      // Invalidate memory cache when URL changes
+      memCache = null;
+    }
+  }
 }
 import type { GameState } from '../game/types';
 import type { AIMove } from './moves';
@@ -12,7 +19,7 @@ import { decodeSignature, type MoveSignature } from './signature';
 export type BookEntry = { keyHi: number; keyLo: number; bestMove: MoveSignature };
 export type BookFile = { version: number | string; entries: BookEntry[] };
 
-type BookCache = { version: string; map: Map<string, MoveSignature> };
+type BookCache = { url: string; version: string; map: Map<string, MoveSignature> };
 let memCache: BookCache | null = null;
 
 // Minimal IndexedDB wrapper for book cache (separate DB to avoid coupling)
@@ -20,7 +27,7 @@ const DB_NAME = 'pylos-book-db';
 const DB_VERSION = 1;
 const STORE = 'book';
 
-type DbRecord = { id: 'book'; version: string; entries: BookEntry[] };
+type DbRecord = { id: string; version: string; entries: BookEntry[] };
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -36,13 +43,15 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-async function dbLoad(): Promise<DbRecord | null> {
+function keyForUrl(url: string): string { return `book::${url}`; }
+
+async function dbLoad(url: string): Promise<DbRecord | null> {
   try {
     const db = await openDB();
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readonly');
       const store = tx.objectStore(STORE);
-      const req = store.get('book');
+      const req = store.get(keyForUrl(url));
       req.onsuccess = () => resolve((req.result || null) as DbRecord | null);
       req.onerror = () => reject(req.error);
     });
@@ -95,11 +104,11 @@ function buildMap(entries: BookEntry[]): Map<string, MoveSignature> {
 }
 
 async function ensureBook(): Promise<BookCache | null> {
-  if (memCache) return memCache;
-  // Try IndexedDB
-  const rec = await dbLoad();
+  if (memCache && memCache.url === BOOK_URL) return memCache;
+  // Try IndexedDB scoped by URL
+  const rec = await dbLoad(BOOK_URL);
   if (rec && rec.entries && rec.entries.length >= 0) {
-    memCache = { version: rec.version, map: buildMap(rec.entries) };
+    memCache = { url: BOOK_URL, version: rec.version, map: buildMap(rec.entries) };
     return memCache;
   }
   // Fallback to fetch
@@ -107,9 +116,9 @@ async function ensureBook(): Promise<BookCache | null> {
   if (!file) return null;
   const version = toVersionString(file.version);
   const map = buildMap(file.entries || []);
-  memCache = { version, map };
-  // Save to IDB (fire and forget)
-  dbSave({ id: 'book', version, entries: file.entries || [] }).catch(() => {});
+  memCache = { url: BOOK_URL, version, map };
+  // Save to IDB (fire and forget) with URL key
+  dbSave({ id: keyForUrl(BOOK_URL), version, entries: file.entries || [] }).catch(() => {});
   return memCache;
 }
 

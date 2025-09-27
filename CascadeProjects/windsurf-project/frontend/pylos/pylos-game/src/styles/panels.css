@@ -63,10 +63,10 @@
 .info-panel .row { margin: 6px 0; font-size: 14px; }
 .info-panel .row.info { color: var(--muted); }
 .info-panel .row.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: center; justify-items: center; }
-.info-panel .row.grid-3 .piece { width: 20px; height: 20px; border-width: 1px; }
+.info-panel .row.grid-3 .piece { width: var(--info-piece-size, 20px); height: var(--info-piece-size, 20px); border-width: 1px; }
 .info-panel .row.grid-3 > div { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .info-panel .row.grid-3 .piece { vertical-align: middle; }
-.info-panel .row.grid-3 .piece--current { width: 28px; height: 28px; }
+.info-panel .row.grid-3 .piece--current { width: var(--info-piece-size-current, 28px); height: var(--info-piece-size-current, 28px); }
 .info-panel .row.grid-3 .reserve-count { line-height: 1; font-variant-numeric: tabular-nums; min-width: 14px; text-align: left; }
 .info-panel .row.actions { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 /* Slight pop for icons over glass panel */
