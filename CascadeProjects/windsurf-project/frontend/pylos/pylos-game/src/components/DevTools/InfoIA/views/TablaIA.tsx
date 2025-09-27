@@ -35,20 +35,20 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
       <table className="table">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th className="text-center">Dificultad</th>
-            <th className="text-center">Tiempo</th>
-            <th className="text-right">Jugadas</th>
-            <th className="text-right">Promedio (s)</th>
-            <th className="text-right">Mín (s)</th>
-            <th className="text-right">Máx (s)</th>
-            <th className="text-right">Total (s)</th>
+            <th title="Identificador único de la simulación; útil para exportar y depurar">ID</th>
+            <th title="Fecha y hora en que se creó el registro de la partida">Fecha</th>
+            <th className="text-center" title="Dificultad: profundidad de búsqueda empleada para ambos jugadores">Dificultad</th>
+            <th className="text-center" title="Modo de tiempo: Auto = sin límite (∞); Manual = segundos por jugada">Tiempo</th>
+            <th className="text-right" title="Número total de medias jugadas (plies) realizadas en la partida">Jugadas</th>
+            <th className="text-right" title="Tiempo promedio de pensamiento por jugada (segundos)">Promedio (s)</th>
+            <th className="text-right" title="Tiempo mínimo observado en una jugada (segundos)">Mín (s)</th>
+            <th className="text-right" title="Tiempo máximo observado en una jugada (segundos)">Máx (s)</th>
+            <th className="text-right" title="Suma total de tiempos de pensamiento de la IA (segundos)">Total (s)</th>
             <th className="text-right" title="Máximo número de workers usados en la partida">Workers máx.</th>
-            <th className="text-center">Ganador</th>
-            <th>Motivo</th>
+            <th className="text-center" title="Ganador de la partida: L = Claras, D = Oscuras, — = sin ganador">Ganador</th>
+            <th title="Motivo de finalización informado por las reglas (si aplica)">Motivo</th>
             <th className="text-right" title="Veces que se alcanzó el umbral de repetición en la partida">Reps ≥max</th>
-            <th className="text-center">Acciones</th>
+            <th className="text-center" title="Acciones rápidas: descargar JSON del registro o eliminarlo">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -93,7 +93,13 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                   <span className={'badge ' + (r.winner === 'L' ? 'badge--light' : 'badge--dark')}>{r.winner}</span>
                 ) : '—'}
               </td>
-              <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>{r.endedReason ?? '—'}</td>
+              <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>
+                {r.endedReason
+                  ? (r.endedReason === 'repetition-limit'
+                      ? <span className="badge badge--danger" title="Se alcanzó el límite de repetición configurado">repetition-limit</span>
+                      : r.endedReason)
+                  : '—'}
+              </td>
               <td className="text-right" title={typeof r.repeatMax === 'number' ? `max=${r.repeatMax}` : 'sin dato'}>{
                 (typeof r.repeatHits === 'number' ? r.repeatHits : '---')
               }</td>
@@ -139,6 +145,20 @@ function fmtNum(n?: number, digits = 3): string {
 
 function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   const per = r.perMove || [];
+  // Build repetition counts per position key (keyHi:keyLo) as we iterate moves
+  const repCounts: number[] = [];
+  const seen = new Map<string, number>(); // counts so far
+  const threshold = (typeof r.repeatMax === 'number' && r.repeatMax > 0) ? r.repeatMax : 3;
+  for (let i = 0; i < per.length; i++) {
+    const hi = Number.isFinite(per[i].keyHi as number) ? (per[i].keyHi as number) >>> 0 : undefined;
+    const lo = Number.isFinite(per[i].keyLo as number) ? (per[i].keyLo as number) >>> 0 : undefined;
+    const k = (typeof hi === 'number' && typeof lo === 'number') ? `${hi}:${lo}` : `no-key:${i}`;
+    const c = (seen.get(k) ?? 0) + 1;
+    seen.set(k, c);
+    repCounts.push(c);
+  }
+  const totalRepeated = repCounts.filter((c) => c >= 2).length;
+  const thresholdHits = repCounts.filter((c) => c === threshold).length;
   return (
     <div style={{ padding: 12 }}>
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -158,28 +178,46 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
         {r.endedReason && (
           <span className="badge" title="Motivo de finalización">Motivo: {r.endedReason}</span>
         )}
+        {totalRepeated > 0 && (
+          <span className="badge" title="Jugadas que repiten una posición ya vista (c>=2)">Repetidas: {totalRepeated}</span>
+        )}
+        {thresholdHits > 0 && (
+          <span className="badge badge--accent" title={`Jugadas que alcanzan el umbral de repetición (c==${threshold})`}>Umbral rep.: {thresholdHits}</span>
+        )}
       </div>
       <div style={{ overflowX: 'auto' }}>
         <table className="table table--compact">
           <thead>
             <tr>
-              <th>#</th>
-              <th className="text-right">t (s)</th>
-              <th className="text-right">prof alcanzada</th>
-              <th className="text-right">nodes</th>
-              <th className="text-right">NPS</th>
-              <th className="text-right">score</th>
-              <th className="text-right">workers</th>
-              <th className="mono">keyHi</th>
-              <th className="mono">keyLo</th>
-              <th className="mono">moveSig</th>
+              <th title="Índice de jugada (1 = primera jugada de la partida)">#</th>
+              <th className="text-right" title="Conteo de veces que se ha visto esta posición (antes de mover) hasta ahora">rep</th>
+              <th className="text-right" title="Tiempo de pensamiento de la IA para esta jugada (segundos)">t (s)</th>
+              <th className="text-right" title="Profundidad máxima de búsqueda alcanzada durante la jugada">prof alcanzada</th>
+              <th className="text-right" title="Número de nodos evaluados para esta jugada">nodes</th>
+              <th className="text-right" title="Nodos por segundo; rendimiento del motor durante la jugada">NPS</th>
+              <th className="text-right" title="Valor de evaluación de la jugada desde la perspectiva del jugador actual">score</th>
+              <th className="text-right" title="Workers utilizados por el motor en esta jugada">workers</th>
+              <th className="mono" title="Parte alta de la clave Zobrist de la posición previa a mover">keyHi</th>
+              <th className="mono" title="Parte baja de la clave Zobrist de la posición previa a mover">keyLo</th>
+              <th className="mono" title="Firma numérica del movimiento aplicado (para depuración y reproducción)">moveSig</th>
             </tr>
           </thead>
           <tbody>
-            {per.map((m, i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                <td className="text-right">{fmtNum((m.elapsedMs ?? 0) / 1000)}</td>
+            {per.map((m, i) => {
+              const count = repCounts[i];
+              const isRepeat = count >= 2;
+              const hitThreshold = count === threshold;
+              const rowStyle = isRepeat
+                ? { background: 'rgba(234,179,8,0.12)', borderLeft: hitThreshold ? '3px solid #ef4444' : '3px solid rgba(234,179,8,0.6)' }
+                : undefined;
+              const rowTitle = isRepeat
+                ? (hitThreshold ? `Repetición: c=${count} (alcanza umbral=${threshold})` : `Repetición: c=${count}`)
+                : undefined;
+              return (
+                <tr key={i} style={rowStyle as any} title={rowTitle}>
+                  <td>{i + 1}</td>
+                  <td className="text-right">{count}</td>
+                  <td className="text-right">{fmtNum((m.elapsedMs ?? 0) / 1000)}</td>
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nodes as number) ? m.nodes : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nps as number) ? m.nps : '—'}</td>
@@ -188,8 +226,9 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                 <td className="mono">{Number.isFinite(m.keyHi as number) ? (m.keyHi as number) >>> 0 : '—'}</td>
                 <td className="mono">{Number.isFinite(m.keyLo as number) ? (m.keyLo as number) >>> 0 : '—'}</td>
                 <td className="mono">{Number.isFinite(m.moveSig as number) ? (m.moveSig as number) >>> 0 : '—'}</td>
-              </tr>
-            ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

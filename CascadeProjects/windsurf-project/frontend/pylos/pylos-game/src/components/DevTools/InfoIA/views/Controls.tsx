@@ -37,20 +37,22 @@ export type ControlsProps = {
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
 
-function readAdvancedCfg(): { startRandomFirstMove?: boolean; startSeed?: number | null } {
+function readAdvancedCfg(): { startRandomFirstMove?: boolean; startSeed?: number | null; repeatMax?: number; avoidPenalty?: number } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const p = JSON.parse(raw);
     const startRandomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
     const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : null;
-    return { startRandomFirstMove, startSeed };
+    const repeatMax = Number.isFinite(p?.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : undefined;
+    const avoidPenalty = Number.isFinite(p?.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : undefined;
+    return { startRandomFirstMove, startSeed, repeatMax, avoidPenalty };
   } catch {
     return {};
   }
 }
 
-function writeAdvancedCfg(patch: Partial<{ startRandomFirstMove: boolean; startSeed: number | null }>): void {
+function writeAdvancedCfg(patch: Partial<{ startRandomFirstMove: boolean; startSeed: number | null; repeatMax: number; avoidPenalty: number }>): void {
   try {
     const prev = (() => {
       try {
@@ -73,6 +75,8 @@ export default function Controls(props: ControlsProps) {
   const [seedInput, setSeedInput] = useState<string>(
     (init.startSeed === null || typeof init.startSeed === 'undefined') ? '' : String(init.startSeed)
   );
+  const [repeatMax, setRepeatMax] = useState<number>(init.repeatMax ?? 3);
+  const [avoidPenalty, setAvoidPenalty] = useState<number>(init.avoidPenalty ?? 50);
 
   // Persist on change
   useEffect(() => {
@@ -86,6 +90,18 @@ export default function Controls(props: ControlsProps) {
       if (Number.isFinite(n)) writeAdvancedCfg({ startSeed: Math.floor(n) });
     }
   }, [seedInput]);
+  useEffect(() => {
+    const v = Math.max(1, Math.min(10, Math.floor(repeatMax)));
+    setRepeatMax(v);
+    writeAdvancedCfg({ repeatMax: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repeatMax]);
+  useEffect(() => {
+    const v = Math.max(0, Math.min(500, Math.floor(avoidPenalty)));
+    setAvoidPenalty(v);
+    writeAdvancedCfg({ avoidPenalty: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avoidPenalty]);
 
   return (
     <div className="row infoia__controls" style={rowStyle}>
@@ -185,6 +201,34 @@ export default function Controls(props: ControlsProps) {
         onChange={(e) => props.onMirrorChange(e.target.checked)}
         aria-checked={props.mirrorBoard}
         title="Mostrar la partida simulada en el tablero (sin animaciones)"
+      />
+
+      {/* Límite de repetición de posiciones (para cortar bucles) */}
+      <label className="label" htmlFor="infoia-repeatmax" title="Umbral para detener una simulación cuando se repite una posición tantas veces">Repetición máx.</label>
+      <input
+        id="infoia-repeatmax"
+        className="field-num"
+        type="number"
+        min={1}
+        max={10}
+        value={repeatMax}
+        onChange={(e) => setRepeatMax(Number(e.target.value))}
+        style={{ width: 90 }}
+        title="Umbral de repetición (1–10). Al alcanzarse, la simulación finaliza con motivo 'repetition-limit'."
+      />
+
+      {/* Penalización para evitar repetir posiciones en la raíz de la búsqueda */}
+      <label className="label" htmlFor="infoia-avoidpen" title="Penalización aplicada a movimientos raíz que llevan a posiciones repetidas">Evitar bucles (penalización)</label>
+      <input
+        id="infoia-avoidpen"
+        className="field-num"
+        type="number"
+        min={0}
+        max={500}
+        value={avoidPenalty}
+        onChange={(e) => setAvoidPenalty(Number(e.target.value))}
+        style={{ width: 110 }}
+        title="Penalización [0–500] en unidades de evaluación. Valores mayores desincentivan ciclos."
       />
 
       <div className="infoia__actions" style={actionsStyle}>

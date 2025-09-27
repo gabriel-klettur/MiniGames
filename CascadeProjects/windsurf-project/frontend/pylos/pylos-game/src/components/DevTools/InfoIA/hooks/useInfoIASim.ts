@@ -8,6 +8,7 @@ import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
 import { makeId } from '../../../../utils/infoiaDb';
 import { getBestMove, apply as applyAIRunner, checkGameOver } from '../services/aiRunner';
 import { useProgress } from './useProgress';
+import { useAvoidPenalty } from './useAvoidPenalty';
 import { useRepetitionLimit } from './useRepetitionLimit';
 import type { TimeMode } from '../types';
 
@@ -34,6 +35,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
   const timeMs = useRef<number | undefined>(undefined);
   timeMs.current = timeMode === 'manual' ? Math.max(0, Math.min(30, timeSeconds)) * 1000 : undefined;
   const { getRepeatMax } = useRepetitionLimit();
+  const { getAvoidPenalty } = useAvoidPenalty();
 
   useEffect(() => {
     return () => {
@@ -72,14 +74,48 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           const c = (repCounts.get(keyStrNow) ?? 0) + 1;
           repCounts.set(keyStrNow, c);
           if (c === repeatMax) repeatHits++;
+          // Early stop on repetition limit reached: declare draw by repetition
+          if (c >= repeatMax) {
+            const avgThinkMs = moves > 0 ? totalThinkMs / moves : 0;
+            if (mirrorBoard) {
+              try { onMirrorEnd?.(state); } catch {}
+            }
+            return {
+              id,
+              createdAt,
+              version: 'pylos-infoia-v1',
+              depth,
+              timeMode,
+              timeSeconds: timeMode === 'manual' ? timeSeconds : undefined,
+              pliesLimit,
+              moves,
+              avgThinkMs,
+              totalThinkMs,
+              winner: null,
+              endedReason: 'repetition-limit',
+              repeatMax,
+              repeatHits,
+              maxWorkersUsed,
+              perMove,
+            };
+          }
         } catch {}
         setMoveIndex(moves + 1);
         startProgress(timeMs.current);
+        // Build avoidKeys set with positions at/above repetition threshold seen so far
+        const avoidKeysArr = Array.from(repCounts.entries())
+          .filter(([_, v]) => v >= repeatMax)
+          .map(([k]) => {
+            const [hiStr, loStr] = k.split(':');
+            return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0 };
+          });
         const res = await getBestMove(state, {
           depth,
           timeMs: timeMs.current,
           workers: 'auto',
           signal: ac.signal,
+          avoidKeys: avoidKeysArr,
+          avoidPenalty: getAvoidPenalty(),
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;

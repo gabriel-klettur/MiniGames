@@ -9,6 +9,9 @@ export type BestMoveOptions = {
   timeMs?: number;
   workers?: 'auto' | number;
   signal?: AbortSignal;
+  // Optional: penalize moves that lead to avoided repetition keys at the root
+  avoidKeys?: Array<{ hi: number; lo: number }>;
+  avoidPenalty?: number;
 };
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
