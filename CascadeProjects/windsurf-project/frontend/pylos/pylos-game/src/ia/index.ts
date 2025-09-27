@@ -4,11 +4,36 @@ import { TT } from './tt';
 import { applyMove, generateAllMoves } from './moves';
 import type { AIMove } from './moves';
 import { makeSignature, type MoveSignature } from './signature';
+import { positions, getCell } from '../game/board';
 
 /**
  * Compute the best move for the current player at a given depth.
  * Depth should be in [1..5] per product spec.
  */
+function pickFirstMoveByMode(rootMoves: AIMove[], startCfg: NonNullable<ComputeOptions['cfg']>['start'] | undefined): AIMove | null {
+  if (!rootMoves || rootMoves.length === 0) return null;
+  const mode = startCfg?.mode;
+  // Resolve seed
+  const hasSeed = typeof startCfg?.seed === 'number';
+  const ri = (n: number) => hasSeed ? seededRandomInt(startCfg!.seed as number, n) : randomInt(n);
+  // Back-compat: if no mode but randomFirstMove=true, behave as 'random'
+  const effectiveMode: 'book' | 'random' | 'center-topk' = mode ?? ((startCfg?.randomFirstMove ? 'random' : 'book'));
+  if (effectiveMode === 'book') return null; // let book/search handle
+  if (effectiveMode === 'random') {
+    return rootMoves[ri(rootMoves.length)];
+  }
+  // center-topk: score placements by distance to center, pick among top-K randomly
+  const k = Math.max(1, Math.min(16, Math.floor(startCfg?.centerTopK ?? 4)));
+  type Scored = { m: AIMove; score: number };
+  const center = 1.5; // level 0 grid is 4x4; center at (1.5,1.5)
+  const scored: Scored[] = rootMoves.map((m) => {
+    const d = m.kind === 'place' ? Math.abs(m.dest.row - center) + Math.abs(m.dest.col - center) : 10_000;
+    return { m, score: d };
+  });
+  scored.sort((a, b) => a.score - b.score);
+  const top = scored.slice(0, Math.min(k, scored.length));
+  return top.length > 0 ? top[ri(top.length)].m : rootMoves[ri(rootMoves.length)];
+}
 export function computeBestMove(state: GameState, depth: number): { move: AIMove | null; score: number } {
   const d = Math.max(1, Math.min(10, Math.floor(depth)));
   try { TT.clear(); } catch {}
@@ -37,6 +62,28 @@ function ensureWorker(): Worker {
   return _worker;
 }
 
+// -----------------------------
+// Helpers
+// -----------------------------
+
+function isBoardEmpty(state: GameState): boolean {
+  for (const p of positions()) {
+    if (getCell(state.board, p) !== null) return false;
+  }
+  return true;
+}
+
+function randomInt(maxExclusive: number): number {
+  return Math.floor(Math.random() * Math.max(0, maxExclusive));
+}
+
+function seededRandomInt(seed: number, maxExclusive: number): number {
+  // Simple LCG for a single-step deterministic index
+  let s = (seed >>> 0) || 1;
+  s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+  return (s % Math.max(1, maxExclusive)) >>> 0;
+}
+
 export type ComputeOptions = {
   depth?: number; // 1..5
   timeMs?: number; // optional time budget
@@ -47,6 +94,17 @@ export type ComputeOptions = {
     bookEnabled?: boolean;
     bookUrl?: string;
     flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }>;
+    // Start behavior (first move)
+    start?: Partial<{
+      // Back-compat boolean (if true and no mode provided -> behaves like mode 'random')
+      randomFirstMove: boolean;
+      // New: explicit mode selector
+      mode: 'book' | 'random' | 'center-topk';
+      // Seed for reproducibility
+      seed: number;
+      // For 'center-topk': number of top central placements to sample from
+      centerTopK: number;
+    }>;
   };
   // Optional: desired number of workers for parallel search. If 'auto', we pick a sensible
   // value from hardwareConcurrency, capped to [1..4]. If omitted, default is 'auto'.
@@ -70,6 +128,26 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   usedWorkers?: number;
 }>
 {
+  // Special-case: configurable first move if board is empty (AI starts the match)
+  if (isBoardEmpty(state)) {
+    const rootMoves = generateAllMoves(state);
+    const mv = pickFirstMoveByMode(rootMoves, opts.cfg?.start);
+    if (mv) {
+      return {
+        move: mv,
+        score: 0,
+        depthReached: 0,
+        pv: [mv],
+        rootMoves: [{ move: mv, score: 0 }],
+        nodes: 0,
+        elapsedMs: 0,
+        nps: 0,
+        ttReads: 0,
+        ttHits: 0,
+        usedWorkers: 1,
+      };
+    }
+  }
   // If the caller explicitly requests parallelism, route to the parallel implementation.
   if (typeof opts.workers !== 'undefined') {
     try {
@@ -193,6 +271,37 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
 
   // Generate and shard root moves by signature
   const rootMoves = generateAllMoves(state);
+  // Special-case: configurable first move if board is empty (AI starts the match)
+  if (isBoardEmpty(state)) {
+    if (rootMoves.length === 0) {
+      const startEval = bestMove(state, 1); // quick evaluate for score
+      return {
+        move: null,
+        score: startEval.score,
+        depthReached: 0,
+        pv: [],
+        rootMoves: [],
+        nodes: 0,
+        elapsedMs: 0,
+        nps: 0,
+        usedWorkers: 1,
+      };
+    }
+    const mv = pickFirstMoveByMode(rootMoves, opts.cfg?.start);
+    if (mv) {
+    return {
+      move: mv,
+      score: 0,
+      depthReached: 0,
+      pv: [mv],
+      rootMoves: rootMoves.map((m) => ({ move: m, score: 0 })),
+      nodes: 0,
+      elapsedMs: 0,
+      nps: 0,
+      usedWorkers: 1,
+    };
+    }
+  }
   if (rootMoves.length === 0) {
     const startEval = bestMove(state, 1); // quick evaluate for score
     return {
@@ -208,7 +317,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     };
   }
 
-  const rootSigs: MoveSignature[] = rootMoves.map(m => makeSignature(m));
+  const rootSigs: MoveSignature[] = rootMoves.map((m) => makeSignature(m));
   let W = desiredWorkers(opts.workers);
   W = clamp(Math.min(W, rootMoves.length), 1, 4);
   const shards = partition(rootSigs, W).filter(sh => sh.length > 0);

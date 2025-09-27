@@ -3,4 +3,5 @@ export { default as RepetitionSettings } from './RepetitionSettings';
 export { default as BookSettings } from './BookSettings';
 export { default as QuiescenceSettings } from './QuiescenceSettings';
 export { default as PerformanceSettings } from './PerformanceSettings';
+export { default as StartSettings } from './StartSettings';
 

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 
 export type ControlsProps = {
@@ -34,9 +35,57 @@ export type ControlsProps = {
   canClearLocal: boolean;
 };
 
+const STORAGE_KEY = 'pylos.ia.advanced.v1';
+
+function readAdvancedCfg(): { startRandomFirstMove?: boolean; startSeed?: number | null } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const p = JSON.parse(raw);
+    const startRandomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
+    const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : null;
+    return { startRandomFirstMove, startSeed };
+  } catch {
+    return {};
+  }
+}
+
+function writeAdvancedCfg(patch: Partial<{ startRandomFirstMove: boolean; startSeed: number | null }>): void {
+  try {
+    const prev = (() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
+    })();
+    const next = { ...prev, ...patch };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {}
+}
+
 export default function Controls(props: ControlsProps) {
   const rowStyle: CSSProperties = { gap: 12, alignItems: 'center', flexWrap: 'wrap' };
   const actionsStyle: CSSProperties = { display: 'inline-flex', gap: 8, marginLeft: 'auto' };
+
+  // Start settings (shared storage with IAPanel advanced config)
+  const init = useMemo(() => readAdvancedCfg(), []);
+  const [startRandom, setStartRandom] = useState<boolean>(init.startRandomFirstMove ?? false);
+  const [seedInput, setSeedInput] = useState<string>(
+    (init.startSeed === null || typeof init.startSeed === 'undefined') ? '' : String(init.startSeed)
+  );
+
+  // Persist on change
+  useEffect(() => {
+    writeAdvancedCfg({ startRandomFirstMove: startRandom });
+  }, [startRandom]);
+  useEffect(() => {
+    if (seedInput === '') {
+      writeAdvancedCfg({ startSeed: null });
+    } else {
+      const n = Number(seedInput);
+      if (Number.isFinite(n)) writeAdvancedCfg({ startSeed: Math.floor(n) });
+    }
+  }, [seedInput]);
 
   return (
     <div className="row infoia__controls" style={rowStyle}>
@@ -100,6 +149,32 @@ export default function Controls(props: ControlsProps) {
 
       <label className="label" htmlFor="infoia-count">Partidas</label>
       <input id="infoia-count" className="field-num" type="number" min={1} max={1000} value={props.gamesCount} onChange={(e) => props.onGamesCountChange(Number(e.target.value))} style={{ width: 90 }} />
+
+      {/* Inicio: movimiento inicial aleatorio y semilla (persisten en la misma config que IAPanel) */}
+      <label className="label" htmlFor="infoia-start-rand" title="Realizar el primer movimiento al azar si el tablero está vacío">Inicio</label>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+        <input
+          id="infoia-start-rand"
+          type="checkbox"
+          checked={startRandom}
+          onChange={(e) => setStartRandom(e.target.checked)}
+          aria-checked={startRandom}
+          title="Movimiento inicial aleatorio"
+        />
+        <label htmlFor="infoia-start-rand">Movimiento inicial aleatorio</label>
+        <label className="label" htmlFor="infoia-start-seed" style={{ marginLeft: 8 }}>Semilla</label>
+        <input
+          id="infoia-start-seed"
+          className="field-num"
+          type="number"
+          placeholder="p. ej., 1234"
+          value={seedInput}
+          onChange={(e) => setSeedInput(e.target.value)}
+          style={{ width: 120 }}
+          disabled={!startRandom}
+          title="Semilla para reproducibilidad (opcional)"
+        />
+      </div>
 
       {/* Visualizar simulación en el tablero (sin animaciones) */}
       <label className="label" htmlFor="infoia-mirror" title="Mostrar la partida simulada en el tablero (sin animaciones)">Visualizar</label>

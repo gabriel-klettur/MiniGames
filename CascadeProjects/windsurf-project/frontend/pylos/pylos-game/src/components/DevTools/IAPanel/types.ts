@@ -35,6 +35,10 @@ export interface AIAdvancedConfig {
   // Performance toggles
   precomputedSupports?: boolean;
   precomputedCenter?: boolean;
+
+  // Start behavior (first move)
+  startRandomFirstMove?: boolean; // default false (preserve current)
+  startSeed?: number | null; // optional reproducible seed
 }
 
 export interface ProgressInfo {

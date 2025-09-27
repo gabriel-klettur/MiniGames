@@ -12,7 +12,7 @@ import EvaluationBar from './components/EvaluationBar';
 import PVLine from './components/PVLine';
 import KPIs from './components/KPIs';
 import RootMovesList from './components/RootMovesList';
-import { SearchSettings, RepetitionSettings, BookSettings, QuiescenceSettings, PerformanceSettings } from './components/Advanced';
+import { SearchSettings, RepetitionSettings, BookSettings, QuiescenceSettings, PerformanceSettings, StartSettings } from './components/Advanced';
 import './styles/IAPanel.module.css';
 import './styles/components.module.css';
 
@@ -58,6 +58,7 @@ export default function IAPanel(props: IAPanelProps) {
           <BookSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
           <QuiescenceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
           <PerformanceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+          <StartSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
         </div>
       </details>
 

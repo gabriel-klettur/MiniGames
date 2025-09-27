@@ -9,7 +9,6 @@ import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from './usePersistence';
 import type { FlyingPieceState } from './useAnimations';
-
 export interface UseAIParams {
   state: GameState;
   iaDepth: number;
@@ -33,6 +32,9 @@ export interface UseAIParams {
     avoidRepeats?: boolean;
     repeatMax?: number;
     avoidPenalty?: number;
+    // Start behavior
+    startRandomFirstMove?: boolean;
+    startSeed?: number | null;
   };
 
   // Environment flags and refs
@@ -200,6 +202,10 @@ export function useAI(params: UseAIParams): UseAIResult {
             pvsEnabled: iaConfig?.pvsEnabled ?? true,
             aspirationEnabled: iaConfig?.aspirationEnabled ?? true,
             ttEnabled: iaConfig?.ttEnabled ?? true,
+          },
+          start: {
+            randomFirstMove: iaConfig?.startRandomFirstMove ?? false,
+            seed: (typeof iaConfig?.startSeed === 'number') ? Math.floor(iaConfig!.startSeed as number) : undefined,
           },
         },
       });

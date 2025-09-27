@@ -11,8 +11,30 @@ export type BestMoveOptions = {
   signal?: AbortSignal;
 };
 
+const STORAGE_KEY = 'pylos.ia.advanced.v1';
+
+function readStartCfg(): { randomFirstMove?: boolean; seed?: number } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const p = JSON.parse(raw);
+    const randomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
+    const seed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : undefined;
+    return { randomFirstMove, seed };
+  } catch {
+    return {};
+  }
+}
+
 export async function getBestMove(state: GameState, opts: BestMoveOptions) {
-  return computeBestMoveAsync(state, opts as any);
+  const start = readStartCfg();
+  const merged: any = {
+    ...opts,
+    cfg: {
+      start,
+    },
+  };
+  return computeBestMoveAsync(state, merged);
 }
 
 export function apply(state: GameState, move: AIMove) {

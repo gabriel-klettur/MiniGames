@@ -21,6 +21,11 @@ export interface IaAdvancedConfig {
   avoidRepeats?: boolean;
   repeatMax?: number; // 1..10
   avoidPenalty?: number; // 0..500
+  // Start behavior
+  startRandomFirstMove?: boolean;
+  startSeed?: number | null;
+  startMode?: 'book' | 'random' | 'center-topk';
+  startCenterTopK?: number;
 }
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
@@ -54,6 +59,10 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
             avoidRepeats: typeof p.avoidRepeats === 'boolean' ? p.avoidRepeats : true,
             repeatMax: Number.isFinite(p.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : 3,
             avoidPenalty: Number.isFinite(p.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : 50,
+            startRandomFirstMove: typeof p.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : false,
+            startSeed: (Number.isFinite(p.startSeed) ? Math.floor(p.startSeed) : null),
+            startMode: (p.startMode === 'book' || p.startMode === 'random' || p.startMode === 'center-topk') ? p.startMode : undefined,
+            startCenterTopK: Number.isFinite(p.startCenterTopK) ? Math.max(1, Math.min(16, Math.floor(p.startCenterTopK))) : undefined,
           } as IaAdvancedConfig;
         }
       }
@@ -76,6 +85,10 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
       avoidRepeats: true,
       repeatMax: 3,
       avoidPenalty: 50,
+      startRandomFirstMove: false,
+      startSeed: null,
+      startMode: 'book',
+      startCenterTopK: 4,
     } as IaAdvancedConfig;
   });
 

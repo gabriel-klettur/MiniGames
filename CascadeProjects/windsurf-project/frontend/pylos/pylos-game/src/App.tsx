@@ -304,13 +304,13 @@ function App() {
         (showTools && showInfoIA)
           ? ({
             // Tamaño general del tablero
-            ['--board-scale' as any]: '1.25',
+            ['--board-scale' as any]: '0.75',
             
-            ['--ball-scale' as any]: '0.5',      // Restaurar tamaño completo de bolas cuando InfoIA está abierto                        
-            ['--hole-scale' as any]: '0.5',      // 0.85..1.05 para afinar            
+            ['--ball-scale' as any]: '0.25',      // Restaurar tamaño completo de bolas cuando InfoIA está abierto                        
+            ['--hole-scale' as any]: '0.35',      // 0.85..1.05 para afinar            
 
-            ['--ball-matrix-scale' as any]: '0.75',  // 0.5 = la matriz ocupa la mitad
-            ['--hole-matrix-scale' as any]: '0.75',
+            ['--ball-matrix-scale' as any]: '0.45',  // 0.5 = la matriz ocupa la mitad
+            ['--hole-matrix-scale' as any]: '0.45',
 
             } as React.CSSProperties)
           : undefined
