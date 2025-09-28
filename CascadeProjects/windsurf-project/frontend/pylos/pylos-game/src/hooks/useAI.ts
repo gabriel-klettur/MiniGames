@@ -217,7 +217,7 @@ export function useAI(params: UseAIParams): UseAIResult {
             qNodeCap: iaConfig?.qNodeCap ?? 24,
             futilityMargin: iaConfig?.futilityMargin ?? 100,
           },
-          bookEnabled: iaConfig?.bookEnabled ?? true,
+          bookEnabled: iaConfig?.bookEnabled ?? false,
           bookUrl: effectiveBookUrl,
           flags: {
             precomputedSupports: iaConfig?.precomputedSupports ?? true,

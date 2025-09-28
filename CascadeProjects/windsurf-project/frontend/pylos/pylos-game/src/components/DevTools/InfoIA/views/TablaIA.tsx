@@ -55,13 +55,15 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
           </tr>
         </thead>
         <tbody>
-          {sorted.map((r) => (
+          {sorted.map((r) => {
+            const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+            return (
             <Fragment key={r.id}>
             <tr
                 className={expandedId === r.id ? 'row--expanded' : ''}
                 onClick={() => toggleExpanded(r.id)}
                 title="Click para ver detalles de la partida">
-              <td title={r.id} className="mono ellipsis">{r.id}</td>
+              <td title={r.id} className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
               <td>{fmtDate(r.createdAt)}</td>
               <td className="text-center">{r.depth}</td>
               <td className="text-center">
@@ -134,7 +136,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
               </tr>
             )}
             </Fragment>
-          ))}
+          );})}
         </tbody>
       </table>
     </div>
@@ -148,6 +150,7 @@ function fmtNum(n?: number, digits = 3): string {
 
 function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   const per = r.perMove || [];
+  const usedBook = (per || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
   // Build repetition counts per position key (keyHi:keyLo) as we iterate moves
   const repCounts: number[] = [];
   const seen = new Map<string, number>(); // counts so far
@@ -165,7 +168,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   return (
     <div style={{ padding: 12 }}>
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
-        <span className="badge">ID: <span className="mono">{r.id}</span></span>
+        <span className="badge">ID: <span className="mono">{r.id}</span>{usedBook ? ' (Book)' : ''}</span>
         <span className="badge">Fecha: {fmtDate(r.createdAt)}</span>
         <span className="badge">Dificultad: {r.depth}</span>
         <span className="badge">Tiempo: {r.timeMode === 'auto' ? 'Auto (∞)' : `${fmtNum(r.timeSeconds, 1)} s`}</span>

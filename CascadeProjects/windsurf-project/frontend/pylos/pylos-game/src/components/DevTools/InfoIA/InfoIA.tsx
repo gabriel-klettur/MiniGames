@@ -56,7 +56,7 @@ export default function InfoIA(props: InfoIAProps) {
   // Mirror simulation on main board (fast, no animations)
   const [mirrorBoard, setMirrorBoard] = useState<boolean>(true);
   // Use opening books during simulations
-  const [useBook, setUseBook] = useState<boolean>(true);
+  const [useBook, setUseBook] = useState<boolean>(false);
 
   // Persist controls locally so defaults apply only when no saved prefs exist
   const STORAGE_KEY = 'pylos.infoia.controls.v1';
@@ -357,6 +357,7 @@ export default function InfoIA(props: InfoIAProps) {
               setPliesLimit(80);
               setGamesCount(10);
               setMirrorBoard(true);
+              setUseBook(false);
               // Clear saved preferences so defaults apply when reabrir
               try {
                 localStorage.removeItem('pylos.infoia.controls.v1');
