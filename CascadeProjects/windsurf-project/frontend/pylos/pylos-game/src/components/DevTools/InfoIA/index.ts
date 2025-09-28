@@ -2,7 +2,7 @@ export { default as InfoIA } from './InfoIA';
 export { default as InfoIAContainer } from './InfoIA';
 
 // Views
-export { default as Controls } from './views/Controls';
+export { default as Controls } from './views/Controls/Controls';
 export { default as TimeBar } from './views/TimeBar';
 export { default as CompareBar } from './views/CompareBar';
 export { default as TablaIA } from './views/TablaIA';

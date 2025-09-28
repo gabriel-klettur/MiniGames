@@ -4,6 +4,34 @@
 .infoia__status { display: inline-flex; align-items: center; gap: 8px; }
 .infoia__controls .label { color: var(--muted); }
 
+/* Controls layout: professional spacing without inline styles */
+.infoia__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Dataset tabs: allow horizontal scroll when many compare sets */
+.infoia__dataset-tabs {
+  max-width: min(52vw, 560px);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.infoia__dataset-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Actions bar aligned to the right with consistent spacing */
+.infoia__actions {
+  display: inline-flex;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
 /* Responsive chart container: spans full width of panel */
 .infoia__chart-container { width: 100%; overflow: hidden; }
 .infoia__chart-container svg { display: block; }

@@ -7,7 +7,7 @@ import TablaIA from './views/TablaIA';
 import ChartContainer from './views/Chart/ChartContainer';
 import TimeBar from './views/TimeBar';
 import CompareBar from './views/CompareBar';
-import Controls from './views/Controls';
+import Controls from './views/Controls/Controls';
 import Books from './views/Books';
 import { getAllRecords, saveRecord, deleteRecord, clearAllRecords } from './services/storage';
 // parse helpers moved to hooks/useCompareDatasets
