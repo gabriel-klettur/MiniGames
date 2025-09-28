@@ -174,17 +174,54 @@ export default function Controls(props: ControlsProps) {
   return (
     <>
       <div className="infoia__group">
-      <button
-        type="button"
-        className="infoia__group-header"
-        onClick={toggleCollapsed}
-        aria-expanded={!collapsed}
-        aria-controls="infoia-controls-grid"
-        id="infoia-controls-header"
-      >
-        <span>Configuracion Simulacion y Metricas</span>
-        <span className="chev" aria-hidden="true">▾</span>
-      </button>
+      <div className="infoia__group-header">
+        {/* ActionsBar alineada a la izquierda del header */}
+        <ActionsBar
+          running={props.running}
+          loading={props.loading}
+          onStart={props.onStart}
+          onStop={props.onStop}
+          onDefault={() => {
+            clearAdvancedCfg();
+            setStartRandom(DEFAULTS.startRandomFirstMove);
+            setSeedInput('');
+            setRepeatMax(DEFAULTS.repeatMax);
+            setAvoidPenalty(DEFAULTS.avoidPenalty);
+            setNoveltyBonus(DEFAULTS.noveltyBonus);
+            setRootTopK(DEFAULTS.rootTopK);
+            setRootJitter(DEFAULTS.rootJitter);
+            setRootJitterProb(DEFAULTS.rootJitterProb);
+            setRootLMR(DEFAULTS.rootLMR);
+            setDrawBias(DEFAULTS.drawBias);
+            setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
+            setNoProgressLimit(DEFAULTS.noProgressLimit);
+            setAvoidStepFactor(DEFAULTS.avoidStepFactor);
+            setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
+            setHalfLifeDays(DEFAULTS.halfLifeDays);
+            setPersistCap(DEFAULTS.persistCap);
+            props.onResetDefaults();
+          }}
+          onExportJSON={props.onExportJSON}
+          onExportCSV={props.onExportCSV}
+          onAddCompare={props.onAddCompare}
+          onClearAll={props.onClearAll}
+          canClearLocal={props.canClearLocal}
+          activeTableSourceId={props.activeTableSourceId}
+        />
+
+        {/* Botón de toggle alineado a la derecha con el título */}
+        <button
+          type="button"
+          className="infoia__group-toggle"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-controls="infoia-controls-grid"
+          id="infoia-controls-header"
+        >
+          <span>Configuracion Simulacion y Metricas</span>
+          <span className="chev" aria-hidden="true">▾</span>
+        </button>
+      </div>
 
       {!collapsed && (
       <div
@@ -302,41 +339,7 @@ export default function Controls(props: ControlsProps) {
       )}
       </div>
 
-      {/* Acciones debajo del panel de controles */}
-      <div className="infoia__card infoia__card--actions">
-        <ActionsBar
-          running={props.running}
-          loading={props.loading}
-          onStart={props.onStart}
-          onStop={props.onStop}
-          onDefault={() => {
-            clearAdvancedCfg();
-            setStartRandom(DEFAULTS.startRandomFirstMove);
-            setSeedInput('');
-            setRepeatMax(DEFAULTS.repeatMax);
-            setAvoidPenalty(DEFAULTS.avoidPenalty);
-            setNoveltyBonus(DEFAULTS.noveltyBonus);
-            setRootTopK(DEFAULTS.rootTopK);
-            setRootJitter(DEFAULTS.rootJitter);
-            setRootJitterProb(DEFAULTS.rootJitterProb);
-            setRootLMR(DEFAULTS.rootLMR);
-            setDrawBias(DEFAULTS.drawBias);
-            setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
-            setNoProgressLimit(DEFAULTS.noProgressLimit);
-            setAvoidStepFactor(DEFAULTS.avoidStepFactor);
-            setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
-            setHalfLifeDays(DEFAULTS.halfLifeDays);
-            setPersistCap(DEFAULTS.persistCap);
-            props.onResetDefaults();
-          }}
-          onExportJSON={props.onExportJSON}
-          onExportCSV={props.onExportCSV}
-          onAddCompare={props.onAddCompare}
-          onClearAll={props.onClearAll}
-          canClearLocal={props.canClearLocal}
-          activeTableSourceId={props.activeTableSourceId}
-        />
-      </div>
+      {/* Acciones trasladadas al header */}
     </>
   );
 }

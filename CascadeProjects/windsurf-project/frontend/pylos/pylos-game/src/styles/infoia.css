@@ -61,17 +61,28 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  cursor: pointer;
   user-select: none;
   font-weight: 700;
   font-size: 14px;
   color: var(--text);
   background: rgba(17, 24, 39, 0.48);
   border-bottom: 1px solid var(--panel-border-color);
+  flex-wrap: wrap;
 }
-.infoia__group-header:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
-.infoia__group-header .chev { transition: transform 160ms ease; }
-.infoia__group-header[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+.infoia__group-header .infoia__actions { margin-left: 0; }
+.infoia__group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  cursor: pointer;
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+.infoia__group-toggle:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.infoia__group-toggle .chev { transition: transform 160ms ease; }
+.infoia__group-toggle[aria-expanded="false"] .chev { transform: rotate(-90deg); }
 .infoia__group > .infoia__controls { padding: 10px; }
 
 /* Actions row spans the full width */

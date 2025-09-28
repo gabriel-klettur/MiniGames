@@ -111,7 +111,6 @@ export default function InfoIAView(props: InfoIAViewProps) {
     onResetDefaults,
     records,
     groupByDepth,
-    onToggleGroupByDepth,
     onDelete,
     activeTableSourceId,
     compareHeads,
@@ -251,17 +250,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
             <TimeBar moveIndex={moveIndex} moveElapsedMs={moveElapsedMs} moveTargetMs={moveTargetMs} />
           )}
 
-          {/* Toolbar for table actions */}
-          <div className="infoia__table-toolbar" style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 0' }}>
-            <button
-              className="chip-btn"
-              aria-pressed={groupByDepth}
-              onClick={onToggleGroupByDepth}
-              title="Agrupar o desagrupar la tabla por dificultad"
-            >
-              {groupByDepth ? 'Desagrupar Tabla' : 'Agrupar Tabla'}
-            </button>
-          </div>
+          {/* Toolbar removed: table is always grouped by default now */}
 
           {(() => {
             const activeDs = activeTableSourceId === 'local' ? null : compareDatasets.find((s) => s.id === activeTableSourceId) || null;
