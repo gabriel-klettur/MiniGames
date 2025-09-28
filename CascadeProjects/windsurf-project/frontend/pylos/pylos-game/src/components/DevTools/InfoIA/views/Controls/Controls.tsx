@@ -153,123 +153,190 @@ export default function Controls(props: ControlsProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistCap]);
 
+  // Collapsible group state (persisted locally)
+  const GROUP_STORE_KEY = 'pylos.infoia.controls.group.collapsed';
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GROUP_STORE_KEY);
+      if (raw != null) setCollapsed(raw === '1' || raw === 'true');
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(GROUP_STORE_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
+
   return (
-    <div className="row infoia__controls">
+    <>
+      <div className="infoia__group">
+      <button
+        type="button"
+        className="infoia__group-header"
+        onClick={toggleCollapsed}
+        aria-expanded={!collapsed}
+        aria-controls="infoia-controls-grid"
+        id="infoia-controls-header"
+      >
+        <span>Configuracion Simulacion y Metricas</span>
+        <span className="chev" aria-hidden="true">▾</span>
+      </button>
+
+      {!collapsed && (
+      <div
+        className="row infoia__controls"
+        id="infoia-controls-grid"
+        role="region"
+        aria-labelledby="infoia-controls-header"
+      >
       {/* Dificultad / Tiempo */}
-      <DifficultyTime
-        depth={props.depth}
-        onDepthChange={props.onDepthChange}
-        timeMode={props.timeMode}
-        onTimeModeChange={props.onTimeModeChange}
-        timeSeconds={props.timeSeconds}
-        onTimeSecondsChange={props.onTimeSecondsChange}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Dificultad y tiempo</div>
+        <DifficultyTime
+          depth={props.depth}
+          onDepthChange={props.onDepthChange}
+          timeMode={props.timeMode}
+          onTimeModeChange={props.onTimeModeChange}
+          timeSeconds={props.timeSeconds}
+          onTimeSecondsChange={props.onTimeSecondsChange}
+        />
+      </div>
 
       {/* Selector de tabla: Local o archivos agregados */}
-      <label className="label">Tabla</label>
-      <DatasetTabs
-        activeId={props.activeTableSourceId}
-        sets={props.compareSets}
-        onSelect={props.onSelectTableSource}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Tabla (dataset)</div>
+        <DatasetTabs
+          activeId={props.activeTableSourceId}
+          sets={props.compareSets}
+          onSelect={props.onSelectTableSource}
+        />
+      </div>
 
       {/* Límites de simulación */}
-      <SimulationLimits
-        pliesLimit={props.pliesLimit}
-        onPliesLimitChange={props.onPliesLimitChange}
-        gamesCount={props.gamesCount}
-        onGamesCountChange={props.onGamesCountChange}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Límites de simulación</div>
+        <SimulationLimits
+          pliesLimit={props.pliesLimit}
+          onPliesLimitChange={props.onPliesLimitChange}
+          gamesCount={props.gamesCount}
+          onGamesCountChange={props.onGamesCountChange}
+        />
+      </div>
 
       {/* Inicio aleatorio y semilla */}
-      <StartSettings
-        startRandom={startRandom}
-        onStartRandomChange={setStartRandom}
-        seedInput={seedInput}
-        onSeedInputChange={setSeedInput}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Inicio y semilla</div>
+        <StartSettings
+          startRandom={startRandom}
+          onStartRandomChange={setStartRandom}
+          seedInput={seedInput}
+          onSeedInputChange={setSeedInput}
+        />
+      </div>
 
       {/* Visualización y uso de books */}
-      <MirrorAndBook
-        mirrorBoard={props.mirrorBoard}
-        onMirrorChange={props.onMirrorChange}
-        useBook={props.useBook}
-        onUseBookChange={props.onUseBookChange}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Visualización y books</div>
+        <MirrorAndBook
+          mirrorBoard={props.mirrorBoard}
+          onMirrorChange={props.onMirrorChange}
+          useBook={props.useBook}
+          onUseBookChange={props.onUseBookChange}
+        />
+      </div>
 
       {/* Repetición y penalización raíz */}
-      <RepetitionSettings
-        repeatMax={repeatMax}
-        onRepeatMaxChange={setRepeatMax}
-        avoidPenalty={avoidPenalty}
-        onAvoidPenaltyChange={setAvoidPenalty}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Repetición y penalización</div>
+        <RepetitionSettings
+          repeatMax={repeatMax}
+          onRepeatMaxChange={setRepeatMax}
+          avoidPenalty={avoidPenalty}
+          onAvoidPenaltyChange={setAvoidPenalty}
+        />
+      </div>
 
       {/* Anti-estancamiento */}
-      <AntiStallSettings
-        noveltyBonus={noveltyBonus}
-        onNoveltyBonusChange={setNoveltyBonus}
-        rootTopK={rootTopK}
-        onRootTopKChange={setRootTopK}
-        rootJitter={rootJitter}
-        onRootJitterChange={setRootJitter}
-        rootJitterProb={rootJitterProb}
-        onRootJitterProbChange={setRootJitterProb}
-        rootLMR={rootLMR}
-        onRootLMRChange={setRootLMR}
-        drawBias={drawBias}
-        onDrawBiasChange={setDrawBias}
-        timeRiskEnabled={timeRiskEnabled}
-        onTimeRiskEnabledChange={setTimeRiskEnabled}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Anti-estancamiento</div>
+        <AntiStallSettings
+          noveltyBonus={noveltyBonus}
+          onNoveltyBonusChange={setNoveltyBonus}
+          rootTopK={rootTopK}
+          onRootTopKChange={setRootTopK}
+          rootJitter={rootJitter}
+          onRootJitterChange={setRootJitter}
+          rootJitterProb={rootJitterProb}
+          onRootJitterProbChange={setRootJitterProb}
+          rootLMR={rootLMR}
+          onRootLMRChange={setRootLMR}
+          drawBias={drawBias}
+          onDrawBiasChange={setDrawBias}
+          timeRiskEnabled={timeRiskEnabled}
+          onTimeRiskEnabledChange={setTimeRiskEnabled}
+        />
+      </div>
 
       {/* Persistencia anti-bucles y límites */}
-      <PersistenceSettings
-        noProgressLimit={noProgressLimit}
-        onNoProgressLimitChange={setNoProgressLimit}
-        avoidStepFactor={avoidStepFactor}
-        onAvoidStepFactorChange={setAvoidStepFactor}
-        persistAntiLoopsEnabled={persistAntiLoopsEnabled}
-        onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
-        halfLifeDays={halfLifeDays}
-        onHalfLifeDaysChange={setHalfLifeDays}
-        persistCap={persistCap}
-        onPersistCapChange={setPersistCap}
-      />
+      <div className="infoia__card">
+        <div className="infoia__card-title">Persistencia y límites</div>
+        <PersistenceSettings
+          noProgressLimit={noProgressLimit}
+          onNoProgressLimitChange={setNoProgressLimit}
+          avoidStepFactor={avoidStepFactor}
+          onAvoidStepFactorChange={setAvoidStepFactor}
+          persistAntiLoopsEnabled={persistAntiLoopsEnabled}
+          onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
+          halfLifeDays={halfLifeDays}
+          onHalfLifeDaysChange={setHalfLifeDays}
+          persistCap={persistCap}
+          onPersistCapChange={setPersistCap}
+        />
+      </div>
 
-      {/* Acciones */}
-      <ActionsBar
-        running={props.running}
-        loading={props.loading}
-        onStart={props.onStart}
-        onStop={props.onStop}
-        onDefault={() => {
-          clearAdvancedCfg();
-          setStartRandom(DEFAULTS.startRandomFirstMove);
-          setSeedInput('');
-          setRepeatMax(DEFAULTS.repeatMax);
-          setAvoidPenalty(DEFAULTS.avoidPenalty);
-          setNoveltyBonus(DEFAULTS.noveltyBonus);
-          setRootTopK(DEFAULTS.rootTopK);
-          setRootJitter(DEFAULTS.rootJitter);
-          setRootJitterProb(DEFAULTS.rootJitterProb);
-          setRootLMR(DEFAULTS.rootLMR);
-          setDrawBias(DEFAULTS.drawBias);
-          setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
-          setNoProgressLimit(DEFAULTS.noProgressLimit);
-          setAvoidStepFactor(DEFAULTS.avoidStepFactor);
-          setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
-          setHalfLifeDays(DEFAULTS.halfLifeDays);
-          setPersistCap(DEFAULTS.persistCap);
-          props.onResetDefaults();
-        }}
-        onExportJSON={props.onExportJSON}
-        onExportCSV={props.onExportCSV}
-        onAddCompare={props.onAddCompare}
-        onClearAll={props.onClearAll}
-        canClearLocal={props.canClearLocal}
-        activeTableSourceId={props.activeTableSourceId}
-      />
-    </div>
+      </div>
+      )}
+      </div>
+
+      {/* Acciones debajo del panel de controles */}
+      <div className="infoia__card infoia__card--actions">
+        <ActionsBar
+          running={props.running}
+          loading={props.loading}
+          onStart={props.onStart}
+          onStop={props.onStop}
+          onDefault={() => {
+            clearAdvancedCfg();
+            setStartRandom(DEFAULTS.startRandomFirstMove);
+            setSeedInput('');
+            setRepeatMax(DEFAULTS.repeatMax);
+            setAvoidPenalty(DEFAULTS.avoidPenalty);
+            setNoveltyBonus(DEFAULTS.noveltyBonus);
+            setRootTopK(DEFAULTS.rootTopK);
+            setRootJitter(DEFAULTS.rootJitter);
+            setRootJitterProb(DEFAULTS.rootJitterProb);
+            setRootLMR(DEFAULTS.rootLMR);
+            setDrawBias(DEFAULTS.drawBias);
+            setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
+            setNoProgressLimit(DEFAULTS.noProgressLimit);
+            setAvoidStepFactor(DEFAULTS.avoidStepFactor);
+            setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
+            setHalfLifeDays(DEFAULTS.halfLifeDays);
+            setPersistCap(DEFAULTS.persistCap);
+            props.onResetDefaults();
+          }}
+          onExportJSON={props.onExportJSON}
+          onExportCSV={props.onExportCSV}
+          onAddCompare={props.onAddCompare}
+          onClearAll={props.onClearAll}
+          canClearLocal={props.canClearLocal}
+          activeTableSourceId={props.activeTableSourceId}
+        />
+      </div>
+    </>
   );
 }
