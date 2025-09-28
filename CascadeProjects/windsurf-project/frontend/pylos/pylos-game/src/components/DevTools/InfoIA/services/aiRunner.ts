@@ -29,6 +29,12 @@ export type BestMoveOptions = {
   rootJitterProb?: number;
   rootLMR?: boolean;
   drawBias?: number;
+  // Optional minimal engine cfg (InfoIA can pass book flags)
+  cfg?: {
+    bookEnabled?: boolean;
+    bookUrl?: string;
+    start?: { randomFirstMove?: boolean; seed?: number };
+  };
 };
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
@@ -51,7 +57,8 @@ export async function getBestMove(state: GameState, opts: BestMoveOptions) {
   const merged: any = {
     ...opts,
     cfg: {
-      start,
+      ...(opts as any)?.cfg,
+      start: { ...((opts as any)?.cfg?.start || {}), ...start },
     },
   };
   return computeBestMoveAsync(state, merged);

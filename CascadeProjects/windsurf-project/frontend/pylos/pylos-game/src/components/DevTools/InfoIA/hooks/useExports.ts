@@ -29,15 +29,25 @@ export function useExports(params: {
   }, [getCurrent]);
 
   const onExportBook = useCallback(() => {
+    // Export the 9 standard books: 3 difficulties × 3 phases,
+    // using filenames expected at runtime under /public/books/{difficulty}/{difficulty}_{phase}_book.json
     const current = getCurrent();
-    const book = buildOpeningBook(current);
-    const blob = new Blob([JSON.stringify(book, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `book_${buildExportTimestampName()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Use a single timestamp across the 9 files for easier grouping
+    const ts = buildExportTimestampName();
+    const difficulties: Array<Required<Pick<BuildBookOptions, 'difficulty'>>['difficulty']> = ['facil', 'medio', 'dificil'];
+    const phases: Array<Required<Pick<BuildBookOptions, 'phase'>>['phase']> = ['aperturas', 'medio', 'cierres'];
+    for (const difficulty of difficulties) {
+      for (const phase of phases) {
+        const book = buildOpeningBook(current, { difficulty, phase });
+        const blob = new Blob([JSON.stringify(book, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${difficulty}_${phase}_book_${ts}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
   }, [getCurrent]);
 
   const onExportBookWith = useCallback((opts: Required<Pick<BuildBookOptions, 'phase'>> & Required<Pick<BuildBookOptions, 'difficulty'>> & Pick<BuildBookOptions, 'minSupportPct'>) => {
@@ -47,8 +57,8 @@ export function useExports(params: {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // Name to match runtime expectation under /public/books/{difficulty}/{difficulty}_{phase}_book.json
-    a.download = `${opts.difficulty}_${opts.phase}_book.json`;
+    // Name to match runtime expectation under /public/books/{difficulty}/{difficulty}_{phase}_book.json, plus timestamp for downloads
+    a.download = `${opts.difficulty}_${opts.phase}_book_${buildExportTimestampName()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [getCurrent]);

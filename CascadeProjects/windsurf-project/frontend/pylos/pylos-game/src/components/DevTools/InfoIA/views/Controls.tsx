@@ -18,6 +18,10 @@ export type ControlsProps = {
   mirrorBoard: boolean;
   onMirrorChange: (v: boolean) => void;
 
+  // Book toggle used by simulations (InfoIA)
+  useBook: boolean;
+  onUseBookChange: (v: boolean) => void;
+
   running: boolean;
   loading: boolean;
   onStart: () => void;
@@ -302,6 +306,17 @@ export default function Controls(props: ControlsProps) {
         onChange={(e) => props.onMirrorChange(e.target.checked)}
         aria-checked={props.mirrorBoard}
         title="Mostrar la partida simulada en el tablero (sin animaciones)"
+      />
+
+      {/* Usar libro de aperturas en simulaciones */}
+      <label className="label" htmlFor="infoia-usebook" title="Usar libro de aperturas (si existe) durante la simulación">Utilizar books</label>
+      <input
+        id="infoia-usebook"
+        type="checkbox"
+        checked={props.useBook}
+        onChange={(e) => props.onUseBookChange(e.target.checked)}
+        aria-checked={props.useBook}
+        title="Activar/desactivar uso de book en InfoIA"
       />
 
       {/* Límite de repetición de posiciones (para cortar bucles) */}

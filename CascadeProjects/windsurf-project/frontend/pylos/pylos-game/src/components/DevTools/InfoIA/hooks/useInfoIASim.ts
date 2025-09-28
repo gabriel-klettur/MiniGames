@@ -91,13 +91,14 @@ export type UseInfoIASimParams = {
   pliesLimit: number;
   gamesCount: number;
   mirrorBoard: boolean;
+  useBook: boolean;
   onMirrorStart?: () => void;
   onMirrorUpdate?: (s: GameState) => void;
   onMirrorEnd?: (s: GameState) => void;
 };
 
 export function useInfoIASim(params: UseInfoIASimParams) {
-  const { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, onMirrorStart, onMirrorUpdate, onMirrorEnd } = params;
+  const { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, useBook, onMirrorStart, onMirrorUpdate, onMirrorEnd } = params;
 
   const [running, setRunning] = useState<boolean>(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -239,6 +240,17 @@ export function useInfoIASim(params: UseInfoIASimParams) {
         const anti = antiGlobal;
         const noveltyBonusVal = (typeof anti.noveltyBonus === 'number') ? anti.noveltyBonus! : 5;
         const rootTopKVal = (typeof anti.rootTopK === 'number') ? anti.rootTopK! : 3;
+        // Resolve book URL based on current depth when enabled
+        const resolveDifficulty = (d: number): 'facil' | 'medio' | 'dificil' => {
+          if (d <= 3) return 'facil';
+          if (d <= 7) return 'medio';
+          return 'dificil';
+        };
+        const difficulty = resolveDifficulty(depth);
+        const phase: 'aperturas' | 'medio' | 'cierres' = 'aperturas';
+        const basePath = '/books';
+        const bookUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
+
         const res = await getBestMove(state, {
           depth,
           timeMs: timeBudgetEffective,
@@ -258,6 +270,11 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           epsilon: epsilonAdaptive,
           tieDelta: tieDeltaAdaptive,
           randSeed,
+          // Pass minimal cfg so the AI can use opening book when enabled
+          cfg: {
+            bookEnabled: !!useBook,
+            bookUrl,
+          },
         });
         stopProgress();
         totalThinkMs += res.elapsedMs || 0;

@@ -72,6 +72,16 @@ export default function IAPanel(props: IAPanelProps) {
           onChangeTimeMode={onChangeTimeMode}
           onChangeTimeSeconds={onChangeTimeSeconds}
         />
+        {/* Quick toggle for using opening books */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <input
+            id="ia-usebook"
+            type="checkbox"
+            checked={!!iaConfig.bookEnabled}
+            onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })}
+          />
+          <label htmlFor="ia-usebook" title="Usar libro de aperturas si está disponible">Utilizar books</label>
+        </div>
         {/* Barra de tiempo para visualizar el progreso respecto al límite */}
         <TimeBar ratio={ratio} busy={!!busy} isOver={isOver} shownElapsedMs={shownElapsedMs} limitMs={limitMs} />
         <Actions

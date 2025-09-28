@@ -8,6 +8,7 @@ import ChartContainer from './views/Chart/ChartContainer';
 import TimeBar from './views/TimeBar';
 import CompareBar from './views/CompareBar';
 import Controls from './views/Controls';
+import Books from './views/Books';
 import { getAllRecords, saveRecord, deleteRecord, clearAllRecords } from './services/storage';
 // parse helpers moved to hooks/useCompareDatasets
 import { useCompareDatasets } from './hooks/useCompareDatasets';
@@ -54,6 +55,8 @@ export default function InfoIA(props: InfoIAProps) {
   const [gamesCount, setGamesCount] = useState<number>(10);
   // Mirror simulation on main board (fast, no animations)
   const [mirrorBoard, setMirrorBoard] = useState<boolean>(true);
+  // Use opening books during simulations
+  const [useBook, setUseBook] = useState<boolean>(true);
 
   // Persist controls locally so defaults apply only when no saved prefs exist
   const STORAGE_KEY = 'pylos.infoia.controls.v1';
@@ -68,19 +71,20 @@ export default function InfoIA(props: InfoIAProps) {
       if (Number.isFinite(p?.pliesLimit)) setPliesLimit(Math.max(1, Math.min(400, Math.floor(p.pliesLimit))));
       if (Number.isFinite(p?.gamesCount)) setGamesCount(Math.max(1, Math.min(1000, Math.floor(p.gamesCount))));
       if (typeof p?.mirrorBoard === 'boolean') setMirrorBoard(p.mirrorBoard);
+      if (typeof p?.useBook === 'boolean') setUseBook(p.useBook);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     try {
-      const payload = { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard };
+      const payload = { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, useBook };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {}
-  }, [depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard]);
+  }, [depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, useBook]);
  
-  // Tabs UI: 'sim' for Simulaciones y Métricas, 'charts' for Gráficos
-  const [activeTab, setActiveTab] = useState<'sim' | 'charts'>('sim');
+  // Tabs UI: 'sim' para Simulaciones y Métricas, 'charts' para Gráficos, 'books' para gestión/visualización de books
+  const [activeTab, setActiveTab] = useState<'sim' | 'charts' | 'books'>('sim');
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -103,6 +107,7 @@ export default function InfoIA(props: InfoIAProps) {
     pliesLimit,
     gamesCount,
     mirrorBoard,
+    useBook,
     onMirrorStart: props.onMirrorStart,
     onMirrorUpdate: props.onMirrorUpdate,
     onMirrorEnd: props.onMirrorEnd,
@@ -255,6 +260,7 @@ export default function InfoIA(props: InfoIAProps) {
           {toast.message}
         </div>
       )}
+
       <div className="infoia__header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>InfoIA</h3>
         <div className="infoia__tabs segmented" role="tablist" aria-label="Secciones de InfoIA">
@@ -276,6 +282,15 @@ export default function InfoIA(props: InfoIAProps) {
           >
             Gráficos
           </button>
+          <button
+            className={activeTab === 'books' ? 'active' : ''}
+            role="tab"
+            aria-selected={activeTab === 'books'}
+            onClick={() => setActiveTab('books')}
+            title="Ver y gestionar Books"
+          >
+            Books
+          </button>
         </div>
         <div className="infoia__status" aria-live="polite">
           {running && (
@@ -296,6 +311,16 @@ export default function InfoIA(props: InfoIAProps) {
         style={{ display: 'none' }}
       />
 
+      {activeTab === 'books' && (
+        <div className="infoia__books" style={{ paddingTop: 8 }}>
+          <Books
+            onExportBook={onExportBook}
+            onPublishBooks={onPublishBooks}
+            onClearBooks={onClearBooks}
+          />
+        </div>
+      )}
+
       {activeTab === 'sim' && (
         <>
           <Controls
@@ -311,6 +336,8 @@ export default function InfoIA(props: InfoIAProps) {
             onGamesCountChange={setGamesCount}
             mirrorBoard={mirrorBoard}
             onMirrorChange={setMirrorBoard}
+            useBook={useBook}
+            onUseBookChange={setUseBook}
             running={running}
             loading={loading}
             onStart={onStart}
