@@ -46,7 +46,8 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
             qDepthMax: Number.isFinite(p.qDepthMax) ? Math.max(0, Math.min(4, Math.floor(p.qDepthMax))) : 2,
             qNodeCap: Number.isFinite(p.qNodeCap) ? Math.max(1, Math.min(128, Math.floor(p.qNodeCap))) : 24,
             futilityMargin: Number.isFinite(p.futilityMargin) ? Math.max(0, Math.min(1000, Math.floor(p.futilityMargin))) : 100,
-            bookEnabled: typeof p.bookEnabled === 'boolean' ? p.bookEnabled : false,
+            // Por petición: mantener 'bookEnabled' deshabilitado por defecto sin reactivar por preferencias antiguas
+            bookEnabled: false,
             bookMode: (p.bookMode === 'manual' || p.bookMode === 'auto') ? p.bookMode : 'auto',
             bookPhase: (p.bookPhase === 'aperturas' || p.bookPhase === 'medio' || p.bookPhase === 'cierres') ? p.bookPhase : 'aperturas',
             bookBasePath: (typeof p.bookBasePath === 'string' && p.bookBasePath.trim().length > 0) ? p.bookBasePath : '/books',
@@ -59,7 +60,7 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
             avoidRepeats: typeof p.avoidRepeats === 'boolean' ? p.avoidRepeats : true,
             repeatMax: Number.isFinite(p.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : 3,
             avoidPenalty: Number.isFinite(p.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : 50,
-            startRandomFirstMove: typeof p.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : false,
+            startRandomFirstMove: typeof p.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : true,
             startSeed: (Number.isFinite(p.startSeed) ? Math.floor(p.startSeed) : null),
             startMode: (p.startMode === 'book' || p.startMode === 'random' || p.startMode === 'center-topk') ? p.startMode : undefined,
             startCenterTopK: Number.isFinite(p.startCenterTopK) ? Math.max(1, Math.min(16, Math.floor(p.startCenterTopK))) : undefined,
@@ -85,7 +86,7 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
       avoidRepeats: true,
       repeatMax: 3,
       avoidPenalty: 50,
-      startRandomFirstMove: false,
+      startRandomFirstMove: true,
       startSeed: null,
       startMode: 'book',
       startCenterTopK: 4,
@@ -100,3 +101,4 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
 
   return [cfg, setCfg];
 }
+

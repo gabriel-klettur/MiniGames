@@ -42,13 +42,13 @@ const STORAGE_KEY = 'pylos.ia.advanced.v1';
 function readStartCfg(): { randomFirstMove?: boolean; seed?: number } {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
+    if (!raw) return { randomFirstMove: true };
     const p = JSON.parse(raw);
-    const randomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
+    const randomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : true;
     const seed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : undefined;
     return { randomFirstMove, seed };
   } catch {
-    return {};
+    return { randomFirstMove: true };
   }
 }
 

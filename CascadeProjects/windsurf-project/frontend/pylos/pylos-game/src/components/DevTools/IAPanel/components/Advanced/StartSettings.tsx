@@ -6,7 +6,7 @@ export interface StartSettingsProps {
 }
 
 export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSettingsProps) {
-  const random = iaConfig.startRandomFirstMove ?? false;
+  const random = iaConfig.startRandomFirstMove ?? true;
   const seedVal = iaConfig.startSeed ?? '';
   return (
     <>
@@ -46,3 +46,4 @@ export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSetti
     </>
   );
 }
+

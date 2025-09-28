@@ -9,11 +9,13 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
   const mode = iaConfig.bookMode ?? 'auto';
   const phase = iaConfig.bookPhase ?? 'aperturas';
   const basePath = iaConfig.bookBasePath ?? '/books';
+  // UI deshabilitada por petición: el uso de books debe aparecer desactivado
+  const uiDisabled = true;
   return (
     <>
       <label>Libro de aperturas</label>
       <div>
-        <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} />
+        <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} disabled={uiDisabled} />
         <label htmlFor="ia-book" style={{ marginLeft: 6 }}>Activado</label>
       </div>
 
@@ -23,6 +25,7 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
           id="ia-book-mode"
           value={mode}
           onChange={(e) => onChangeIaConfig({ bookMode: e.target.value as any })}
+          disabled={uiDisabled}
         >
           <option value="auto">Automático (según profundidad)</option>
           <option value="manual">Manual (URL)</option>
@@ -37,6 +40,7 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
               id="ia-book-phase"
               value={phase}
               onChange={(e) => onChangeIaConfig({ bookPhase: e.target.value as any })}
+              disabled={uiDisabled}
             >
               <option value="aperturas">Aperturas</option>
               <option value="medio">Medio juego</option>
@@ -52,6 +56,7 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
               onChange={(e) => onChangeIaConfig({ bookBasePath: e.target.value })}
               placeholder="/books"
               style={{ width: 260 }}
+              disabled={uiDisabled}
             />
           </div>
         </>
@@ -68,6 +73,7 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
               onChange={(e) => onChangeIaConfig({ bookUrl: e.target.value })}
               placeholder="/aperturas_book.json"
               style={{ width: 260 }}
+              disabled={uiDisabled}
             />
           </div>
         </>

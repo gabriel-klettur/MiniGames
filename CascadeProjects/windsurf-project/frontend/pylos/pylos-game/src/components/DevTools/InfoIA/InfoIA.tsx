@@ -71,7 +71,8 @@ export default function InfoIA(props: InfoIAProps) {
       if (Number.isFinite(p?.pliesLimit)) setPliesLimit(Math.max(1, Math.min(400, Math.floor(p.pliesLimit))));
       if (Number.isFinite(p?.gamesCount)) setGamesCount(Math.max(1, Math.min(1000, Math.floor(p.gamesCount))));
       if (typeof p?.mirrorBoard === 'boolean') setMirrorBoard(p.mirrorBoard);
-      if (typeof p?.useBook === 'boolean') setUseBook(p.useBook);
+      // Por petición: 'Utilizar books' deshabilitado por defecto y no se reactiva con preferencias anteriores
+      // No leemos 'useBook' desde localStorage; permanece en su valor por defecto (false)
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -344,9 +345,6 @@ export default function InfoIA(props: InfoIAProps) {
             onStop={onStop}
             onExportJSON={onExportJSON}
             onExportCSV={onExportCSV}
-            onExportBook={onExportBook}
-            onPublishBooks={onPublishBooks}
-            onClearBooks={onClearBooks}
             onAddCompare={onAddCompareClick}
             onClearAll={onClearAll}
             onResetDefaults={() => {

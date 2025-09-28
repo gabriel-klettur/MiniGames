@@ -26,8 +26,10 @@ export function MirrorAndBook(props: {
         checked={useBook}
         onChange={(e) => onUseBookChange(e.target.checked)}
         aria-checked={useBook}
-        title="Activar/desactivar uso de book en InfoIA"
+        title="Activar/desactivar uso de book en InfoIA (deshabilitado por defecto)"
+        disabled
       />
     </>
   );
 }
+

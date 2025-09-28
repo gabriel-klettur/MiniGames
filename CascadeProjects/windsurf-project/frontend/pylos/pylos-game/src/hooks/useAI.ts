@@ -227,7 +227,7 @@ export function useAI(params: UseAIParams): UseAIResult {
             ttEnabled: iaConfig?.ttEnabled ?? true,
           },
           start: {
-            randomFirstMove: iaConfig?.startRandomFirstMove ?? false,
+            randomFirstMove: iaConfig?.startRandomFirstMove ?? true,
             seed: (typeof iaConfig?.startSeed === 'number') ? Math.floor(iaConfig!.startSeed as number) : undefined,
           },
         },

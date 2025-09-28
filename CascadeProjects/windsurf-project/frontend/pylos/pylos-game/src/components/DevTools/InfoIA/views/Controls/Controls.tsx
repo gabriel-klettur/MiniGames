@@ -38,10 +38,6 @@ export type ControlsProps = {
 
   onExportJSON: () => void;
   onExportCSV: () => void;
-  onExportBook: () => void;
-  // onExportBookWith?: (opts: { difficulty: 'facil' | 'medio' | 'dificil'; phase: 'aperturas' | 'medio' | 'cierres'; minSupportPct?: number }) => void;
-  onPublishBooks?: (minSupportPct: number) => void;
-  onClearBooks?: () => void;
   onAddCompare: () => void;
   onClearAll: () => void;
   onResetDefaults: () => void;
@@ -57,7 +53,7 @@ export default function Controls(props: ControlsProps) {
 
   // Start settings (shared storage with IAPanel advanced config)
   const init = useMemo(() => readAdvancedCfg(), []);
-  const [startRandom, setStartRandom] = useState<boolean>(init.startRandomFirstMove ?? false);
+  const [startRandom, setStartRandom] = useState<boolean>(init.startRandomFirstMove ?? DEFAULTS.startRandomFirstMove);
   const [seedInput, setSeedInput] = useState<string>(
     (init.startSeed === null || typeof init.startSeed === 'undefined') ? '' : String(init.startSeed)
   );
@@ -269,9 +265,6 @@ export default function Controls(props: ControlsProps) {
         }}
         onExportJSON={props.onExportJSON}
         onExportCSV={props.onExportCSV}
-        onExportBook={props.onExportBook}
-        onPublishBooks={props.onPublishBooks}
-        onClearBooks={props.onClearBooks}
         onAddCompare={props.onAddCompare}
         onClearAll={props.onClearAll}
         canClearLocal={props.canClearLocal}

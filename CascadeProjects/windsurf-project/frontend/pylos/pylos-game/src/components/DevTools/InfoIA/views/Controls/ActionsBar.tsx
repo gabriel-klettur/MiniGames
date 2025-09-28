@@ -6,9 +6,6 @@ export function ActionsBar(props: {
   onDefault: () => void;
   onExportJSON: () => void;
   onExportCSV: () => void;
-  onExportBook: () => void;
-  onPublishBooks?: (minSupportPct: number) => void;
-  onClearBooks?: () => void;
   onAddCompare: () => void;
   onClearAll: () => void;
   canClearLocal: boolean;
@@ -16,8 +13,7 @@ export function ActionsBar(props: {
 }) {
   const {
     running, loading, onStart, onStop, onDefault,
-    onExportJSON, onExportCSV, onExportBook,
-    onPublishBooks, onClearBooks,
+    onExportJSON, onExportCSV,
     onAddCompare, onClearAll, canClearLocal, activeTableSourceId,
   } = props;
 
@@ -36,26 +32,9 @@ export function ActionsBar(props: {
       >Default</button>
       <button className="btn-ghost" onClick={onExportJSON}>Exportar JSON</button>
       <button className="btn-ghost" onClick={onExportCSV}>Exportar CSV</button>
-      <button className="btn-ghost" onClick={onExportBook} title="Generar libro de aperturas (book.json) a partir de las simulaciones">Exportar Book</button>
-      {import.meta.env.DEV && (
-        <>
-          <label className="label" htmlFor="infoia-publish-support" title="Soporte mínimo para incluir jugadas en el book (0–100%)">Soporte (%)</label>
-          <input id="infoia-publish-support" className="field-num" type="number" min={0} max={100} defaultValue={55} style={{ width: 80 }} />
-          <button
-            className="btn-accent"
-            onClick={() => {
-              const el = document.getElementById('infoia-publish-support') as HTMLInputElement | null;
-              const val = el ? Number(el.value) : 55;
-              const pct = Number.isFinite(val) ? Math.max(0, Math.min(100, Math.floor(val))) : 55;
-              onPublishBooks?.(pct);
-            }}
-            title="Publicar todos los books en public/books (dev)"
-          >Publicar Books</button>
-          <button className="btn-warning" onClick={onClearBooks} title="Vaciar la carpeta public/books (dev)">Vaciar Books</button>
-        </>
-      )}
       <button className="btn-ghost" onClick={onAddCompare} title="Agregar CSV o JSON">Agregar CSV o JSON</button>
       <button className="btn-danger" onClick={onClearAll} disabled={!canClearLocal} title={activeTableSourceId !== 'local' ? 'Solo disponible para datos locales' : 'Borrar todos los registros locales'}>Borrar todo</button>
     </div>
   );
 }
+

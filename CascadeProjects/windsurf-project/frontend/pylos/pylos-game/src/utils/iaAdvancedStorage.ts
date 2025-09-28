@@ -24,7 +24,7 @@ export const DEFAULTS: Required<Pick<AdvancedCfg,
   'rootJitterProb' | 'rootLMR' | 'drawBias' | 'timeRiskEnabled' | 'noProgressLimit' |
   'avoidStepFactor' | 'persistAntiLoopsEnabled' | 'halfLifeDays' | 'persistCap'
 >> & { startRandomFirstMove: boolean; startSeed: null } = {
-  startRandomFirstMove: false,
+  startRandomFirstMove: true,
   startSeed: null,
   repeatMax: 3,
   avoidPenalty: 50,
