@@ -33,3 +33,69 @@ export function computeAggregates(list: InfoIAGameRecord[]): AggRow[] {
   out.sort((a, b) => a.depth - b.depth);
   return out;
 }
+
+export type DifficultyGroup = {
+  depth: number;
+  records: InfoIAGameRecord[];
+  stats: {
+    count: number;
+    winsL: number;
+    winsD: number;
+    winRateL: number; // 0..1
+    winRateR: number; // 0..1 (complement or winsD/count)
+    avgMoves: number;
+    avgSec: number; // mean of per-record avgThinkMs
+    minSec: number; // min across all moves in group
+    maxSec: number; // max across all moves in group
+    totalSec: number; // sum of totalThinkMs across group
+  };
+};
+
+export function computeDifficultyGroups(list: InfoIAGameRecord[]): DifficultyGroup[] {
+  const map = new Map<number, InfoIAGameRecord[]>();
+  for (const r of list) {
+    const d = r.depth;
+    const arr = map.get(d) ?? [];
+    arr.push(r);
+    map.set(d, arr);
+  }
+  const groups: DifficultyGroup[] = [];
+  for (const [depth, recs] of map.entries()) {
+    const count = recs.length;
+    let winsL = 0;
+    let winsD = 0;
+    let sumMoves = 0;
+    let sumAvgSec = 0;
+    let minSec = Number.POSITIVE_INFINITY;
+    let maxSec = 0;
+    let totalSec = 0;
+    for (const r of recs) {
+      if (r.winner === 'L') winsL++;
+      else if (r.winner === 'D') winsD++;
+      sumMoves += (r.moves ?? 0);
+      sumAvgSec += (r.avgThinkMs ?? 0) / 1000;
+      totalSec += (r.totalThinkMs ?? 0) / 1000;
+      for (const pm of r.perMove || []) {
+        const v = (pm.elapsedMs ?? 0) / 1000;
+        if (v < minSec) minSec = v;
+        if (v > maxSec) maxSec = v;
+      }
+    }
+    if (!isFinite(minSec)) minSec = 0;
+    const stats = {
+      count,
+      winsL,
+      winsD,
+      winRateL: count > 0 ? winsL / count : 0,
+      winRateR: count > 0 ? winsD / count : 0,
+      avgMoves: count > 0 ? sumMoves / count : 0,
+      avgSec: count > 0 ? sumAvgSec / count : 0,
+      minSec,
+      maxSec,
+      totalSec,
+    };
+    groups.push({ depth, records: recs.slice().sort((a, b) => b.createdAt - a.createdAt), stats });
+  }
+  groups.sort((a, b) => b.depth - a.depth);
+  return groups;
+}

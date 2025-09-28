@@ -1,6 +1,7 @@
 import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
 import { fmtDate } from '../utils/date';
 import { useState, useMemo, Fragment } from 'react';
+import { computeDifficultyGroups } from '../utils/aggregates';
 import bolaA from '../../../../assets/bola_a.webp';
 import bolaB from '../../../../assets/bola_b.webp';
 import MoveTimeChart from './Chart/MoveTimeChart';
@@ -10,13 +11,20 @@ export type TablaIAProps = {
   loading?: boolean;
   allowDelete?: boolean;
   onDelete?: (id: string) => void;
+  groupByDepth?: boolean;
 };
 
-export default function TablaIA({ records, loading = false, allowDelete = true, onDelete }: TablaIAProps) {
+export default function TablaIA({ records, loading = false, allowDelete = true, onDelete, groupByDepth = false }: TablaIAProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const toggleExpanded = (id: string) => setExpandedId(prev => (prev === id ? null : id));
+  const [expandedGroup, setExpandedGroup] = useState<number | null>(null); // depth
+  const toggleGroup = (depth: number) => setExpandedGroup(prev => (prev === depth ? null : depth));
   // Hooks must run before any early return
-  const sorted = useMemo(() => [...records].sort((a, b) => b.createdAt - a.createdAt), [records]);
+  const sorted = useMemo(() => {
+    // Flat mode sort by depth desc, then createdAt desc
+    return [...records].sort((a, b) => (b.depth - a.depth) || (b.createdAt - a.createdAt));
+  }, [records]);
+  const groups = useMemo(() => computeDifficultyGroups(records), [records]);
   if (loading) {
     return (
       <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
@@ -33,110 +41,228 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
     );
   }
 
+  if (!groupByDepth) {
+    return (
+      <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th title="Identificador único de la simulación; útil para exportar y depurar">ID</th>
+              <th title="Fecha y hora en que se creó el registro de la partida">Fecha</th>
+              <th className="text-center" title="Dificultad: profundidad de búsqueda empleada para ambos jugadores">Dificultad</th>
+              <th className="text-center" title="Modo de tiempo: Auto = sin límite (∞); Manual = segundos por jugada">Tiempo</th>
+              <th className="text-right" title="Número total de medias jugadas (plies) realizadas en la partida">Jugadas</th>
+              <th className="text-right" title="Tiempo promedio de pensamiento por jugada (segundos)">Promedio (s)</th>
+              <th className="text-right" title="Tiempo mínimo observado en una jugada (segundos)">Mín (s)</th>
+              <th className="text-right" title="Tiempo máximo observado en una jugada (segundos)">Máx (s)</th>
+              <th className="text-right" title="Suma total de tiempos de pensamiento de la IA (segundos)">Total (s)</th>
+              <th className="text-right" title="Máximo número de workers usados en la partida">Workers máx.</th>
+              <th className="text-center" title="Ganador de la partida: L = Claras, D = Oscuras, — = sin ganador">Ganador</th>
+              <th title="Motivo de finalización informado por las reglas (si aplica)">Motivo</th>
+              <th className="text-right" title="Veces que se alcanzó el umbral de repetición en la partida">Reps ≥max</th>
+              <th className="text-center" title="Acciones rápidas: descargar JSON del registro o eliminarlo">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r) => {
+              const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+              return (
+              <Fragment key={r.id}>
+              <tr
+                  className={expandedId === r.id ? 'row--expanded' : ''}
+                  onClick={() => toggleExpanded(r.id)}
+                  title="Click para ver detalles de la partida">
+                <td title={r.id} className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
+                <td>{fmtDate(r.createdAt)}</td>
+                <td className="text-center">{r.depth}</td>
+                <td className="text-center">
+                  <span className="badge">
+                    {r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}
+                  </span>
+                </td>
+                <td className="text-right">{r.moves}</td>
+                <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
+                <td className="text-right">{
+                  (() => {
+                    const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
+                    if (times.length === 0) return (0).toFixed(3);
+                    let min = times[0];
+                    for (let i = 1; i < times.length; i++) if (times[i] < min) min = times[i];
+                    return (min / 1000).toFixed(3);
+                  })()
+                }</td>
+                <td className="text-right">{
+                  (() => {
+                    const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
+                    if (times.length === 0) return (0).toFixed(3);
+                    let max = times[0];
+                    for (let i = 1; i < times.length; i++) if (times[i] > max) max = times[i];
+                    return (max / 1000).toFixed(3);
+                  })()
+                }</td>
+                <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
+                <td className="text-right">{typeof r.maxWorkersUsed === 'number' ? r.maxWorkersUsed : '---'}</td>
+                <td className="text-center">
+                  {r.winner ? (
+                    <img
+                      src={r.winner === 'L' ? bolaB : bolaA}
+                      alt={r.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+                      style={{ width: 14, height: 14 }}
+                    />
+                  ) : '—'}
+                </td>
+                <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>
+                  {r.endedReason
+                    ? (r.endedReason === 'repetition-limit'
+                        ? <span className="badge badge--danger" title="Se alcanzó el límite de repetición configurado">repetition-limit</span>
+                        : r.endedReason)
+                    : '—'}
+                </td>
+                <td className="text-right" title={typeof r.repeatMax === 'number' ? `max=${r.repeatMax}` : 'sin dato'}>{
+                  (typeof r.repeatHits === 'number' ? r.repeatHits : '---')
+                }</td>
+                <td className="text-center">
+                  <button
+                    className="chip-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `pylos-infoia-${r.id}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Descargar JSON"
+                  >Descargar</button>
+                  {allowDelete && (
+                    <button className="chip-btn btn-danger" onClick={(e) => { e.stopPropagation(); onDelete?.(r.id); }} title="Eliminar">Eliminar</button>
+                  )}
+                </td>
+              </tr>
+              {expandedId === r.id && (
+                <tr className="expand">
+                  <td colSpan={14} style={{ background: 'rgba(2,6,23,0.4)' }}>
+                    <GameDetails record={r} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
+            );})}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // Grouped by difficulty
   return (
     <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
       <table className="table">
         <thead>
           <tr>
-            <th title="Identificador único de la simulación; útil para exportar y depurar">ID</th>
-            <th title="Fecha y hora en que se creó el registro de la partida">Fecha</th>
-            <th className="text-center" title="Dificultad: profundidad de búsqueda empleada para ambos jugadores">Dificultad</th>
-            <th className="text-center" title="Modo de tiempo: Auto = sin límite (∞); Manual = segundos por jugada">Tiempo</th>
-            <th className="text-right" title="Número total de medias jugadas (plies) realizadas en la partida">Jugadas</th>
-            <th className="text-right" title="Tiempo promedio de pensamiento por jugada (segundos)">Promedio (s)</th>
-            <th className="text-right" title="Tiempo mínimo observado en una jugada (segundos)">Mín (s)</th>
-            <th className="text-right" title="Tiempo máximo observado en una jugada (segundos)">Máx (s)</th>
-            <th className="text-right" title="Suma total de tiempos de pensamiento de la IA (segundos)">Total (s)</th>
-            <th className="text-right" title="Máximo número de workers usados en la partida">Workers máx.</th>
-            <th className="text-center" title="Ganador de la partida: L = Claras, D = Oscuras, — = sin ganador">Ganador</th>
-            <th title="Motivo de finalización informado por las reglas (si aplica)">Motivo</th>
-            <th className="text-right" title="Veces que se alcanzó el umbral de repetición en la partida">Reps ≥max</th>
-            <th className="text-center" title="Acciones rápidas: descargar JSON del registro o eliminarlo">Acciones</th>
+            <th className="text-center" title="Dificultad (profundidad)">Dificultad</th>
+            <th className="text-right" title="Número de partidas en el grupo">Partidas</th>
+            <th className="text-right" title="Victorias y WR — Claras">WR (%) <img src={bolaB} alt="Claras" style={{ width: 14, height: 14, verticalAlign: 'middle' }} /></th>
+            <th className="text-right" title="Victorias y WR — Oscuras">WR (%) <img src={bolaA} alt="Oscuras" style={{ width: 14, height: 14, verticalAlign: 'middle' }} /></th>
+            <th className="text-right" title="Tiempo promedio por jugada (s)">Prom (s)</th>
+            <th className="text-right" title="Tiempo mínimo por jugada (s)">Mín (s)</th>
+            <th className="text-right" title="Tiempo máximo por jugada (s)">Máx (s)</th>
+            <th className="text-right" title="Tiempo total (s)">Total (s)</th>
+            <th className="text-center" title="Expandir/contraer">Ver</th>
           </tr>
         </thead>
         <tbody>
-          {sorted.map((r) => {
-            const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
-            return (
-            <Fragment key={r.id}>
-            <tr
-                className={expandedId === r.id ? 'row--expanded' : ''}
-                onClick={() => toggleExpanded(r.id)}
-                title="Click para ver detalles de la partida">
-              <td title={r.id} className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
-              <td>{fmtDate(r.createdAt)}</td>
-              <td className="text-center">{r.depth}</td>
-              <td className="text-center">
-                <span className="badge">
-                  {r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}
-                </span>
-              </td>
-              <td className="text-right">{r.moves}</td>
-              <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
-              <td className="text-right">{
-                (() => {
-                  const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
-                  if (times.length === 0) return (0).toFixed(3);
-                  let min = times[0];
-                  for (let i = 1; i < times.length; i++) if (times[i] < min) min = times[i];
-                  return (min / 1000).toFixed(3);
-                })()
-              }</td>
-              <td className="text-right">{
-                (() => {
-                  const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
-                  if (times.length === 0) return (0).toFixed(3);
-                  let max = times[0];
-                  for (let i = 1; i < times.length; i++) if (times[i] > max) max = times[i];
-                  return (max / 1000).toFixed(3);
-                })()
-              }</td>
-              <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
-              <td className="text-right">{typeof r.maxWorkersUsed === 'number' ? r.maxWorkersUsed : '---'}</td>
-              <td className="text-center">
-                {r.winner ? (
-                  <span className={'badge ' + (r.winner === 'L' ? 'badge--light' : 'badge--dark')}>{r.winner}</span>
-                ) : '—'}
-              </td>
-              <td className="ellipsis motivo-cell" title={r.endedReason ?? '-' }>
-                {r.endedReason
-                  ? (r.endedReason === 'repetition-limit'
-                      ? <span className="badge badge--danger" title="Se alcanzó el límite de repetición configurado">repetition-limit</span>
-                      : r.endedReason)
-                  : '—'}
-              </td>
-              <td className="text-right" title={typeof r.repeatMax === 'number' ? `max=${r.repeatMax}` : 'sin dato'}>{
-                (typeof r.repeatHits === 'number' ? r.repeatHits : '---')
-              }</td>
-              <td className="text-center">
-                <button
-                  className="chip-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `pylos-infoia-${r.id}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  title="Descargar JSON"
-                >Descargar</button>
-                {allowDelete && (
-                  <button className="chip-btn btn-danger" onClick={(e) => { e.stopPropagation(); onDelete?.(r.id); }} title="Eliminar">Eliminar</button>
-                )}
-              </td>
-            </tr>
-            {expandedId === r.id && (
-              <tr className="expand">
-                <td colSpan={14} style={{ background: 'rgba(2,6,23,0.4)' }}>
-                  <GameDetails record={r} />
+          {groups.map(g => (
+            <Fragment key={`g-${g.depth}`}>
+              <tr
+                className={expandedGroup === g.depth ? 'row--expanded' : ''}
+                onClick={() => toggleGroup(g.depth)}
+                title="Click para ver partidas del grupo"
+              >
+                <td className="text-center">{g.depth}</td>
+                <td className="text-right">{g.stats.count}</td>
+                <td className="text-right">{g.stats.winsL} ({(g.stats.winRateL * 100).toFixed(1)}%)</td>
+                <td className="text-right">{g.stats.winsD} ({(g.stats.winRateR * 100).toFixed(1)}%)</td>
+                <td className="text-right">{g.stats.avgSec.toFixed(3)}</td>
+                <td className="text-right">{g.stats.minSec.toFixed(3)}</td>
+                <td className="text-right">{g.stats.maxSec.toFixed(3)}</td>
+                <td className="text-right">{g.stats.totalSec.toFixed(3)}</td>
+                <td className="text-center">
+                  <button className="chip-btn" onClick={(e) => { e.stopPropagation(); toggleGroup(g.depth); }}>
+                    {expandedGroup === g.depth ? 'Ocultar' : 'Ver' }
+                  </button>
                 </td>
               </tr>
-            )}
+              {expandedGroup === g.depth && (
+                <tr className="expand">
+                  <td colSpan={9} style={{ background: 'rgba(2,6,23,0.4)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="table table--compact">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th className="text-center">Dificultad</th>
+                            <th className="text-center">Tiempo</th>
+                            <th className="text-right">Jugadas</th>
+                            <th className="text-right">Prom (s)</th>
+                            <th className="text-right">Mín (s)</th>
+                            <th className="text-right">Máx (s)</th>
+                            <th className="text-right">Total (s)</th>
+                            <th className="text-center">Ganador</th>
+                            <th className="text-center">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {g.records.map(r => {
+                            const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+                            const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
+                            const min = times.length ? Math.min(...times) : 0;
+                            const max = times.length ? Math.max(...times) : 0;
+                            return (
+                              <tr key={r.id} title="Detalle de partida">
+                                <td className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
+                                <td>{fmtDate(r.createdAt)}</td>
+                                <td className="text-center">{r.depth}</td>
+                                <td className="text-center"><span className="badge">{r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}</span></td>
+                                <td className="text-right">{r.moves}</td>
+                                <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
+                                <td className="text-right">{(min / 1000).toFixed(3)}</td>
+                                <td className="text-right">{(max / 1000).toFixed(3)}</td>
+                                <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
+                                <td className="text-center">{r.winner ? (<img src={r.winner === 'L' ? bolaB : bolaA} alt={r.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} style={{ width: 14, height: 14 }} />) : '—'}</td>
+                                <td className="text-center">
+                                  <button
+                                    className="chip-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+                                      const url = URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = `pylos-infoia-${r.id}.json`;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                    }}
+                                    title="Descargar JSON"
+                                  >Descargar</button>
+                                  {allowDelete && (
+                                    <button className="chip-btn btn-danger" onClick={(e) => { e.stopPropagation(); onDelete?.(r.id); }} title="Eliminar">Eliminar</button>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </Fragment>
-          );})}
+          ))}
         </tbody>
       </table>
     </div>

@@ -57,6 +57,8 @@ export default function InfoIA(props: InfoIAProps) {
   const [mirrorBoard, setMirrorBoard] = useState<boolean>(true);
   // Use opening books during simulations
   const [useBook, setUseBook] = useState<boolean>(false);
+  // Group table by difficulty
+  const [groupByDepth, setGroupByDepth] = useState<boolean>(false);
 
   // Persist controls locally so defaults apply only when no saved prefs exist
   const STORAGE_KEY = 'pylos.infoia.controls.v1';
@@ -371,7 +373,19 @@ export default function InfoIA(props: InfoIAProps) {
           {running && (
             <TimeBar moveIndex={moveIndex} moveElapsedMs={moveElapsedMs} moveTargetMs={moveTargetMs} />
           )}
- 
+
+          {/* Toolbar for table actions */}
+          <div className="infoia__table-toolbar" style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 0' }}>
+            <button
+              className="chip-btn"
+              aria-pressed={groupByDepth}
+              onClick={() => setGroupByDepth((v) => !v)}
+              title="Agrupar o desagrupar la tabla por dificultad"
+            >
+              {groupByDepth ? 'Desagrupar Tabla' : 'Agrupar Tabla'}
+            </button>
+          </div>
+
           {(() => {
             const activeDs = activeTableSourceId === 'local' ? null : compareSets.find((s) => s.id === activeTableSourceId) || null;
             const tableRecs = activeDs ? activeDs.records : records;
@@ -382,12 +396,12 @@ export default function InfoIA(props: InfoIAProps) {
                 loading={isLoading}
                 allowDelete={activeDs == null}
                 onDelete={onDelete}
+                groupByDepth={groupByDepth}
               />
             );
           })()}
         </>
       )}
-
       {activeTab === 'charts' && (
         <div className="infoia__charts" style={{ paddingTop: 8 }}>
           {/* Controls for comparison datasets */}
