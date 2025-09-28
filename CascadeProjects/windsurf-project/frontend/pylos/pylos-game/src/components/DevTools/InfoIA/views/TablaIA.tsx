@@ -1,5 +1,5 @@
 import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
-import { fmtDate } from '../utils/date';
+import { fmtDate, fmtSecOrMinSec } from '../utils/date';
 import { useState, useMemo, Fragment } from 'react';
 import { computeDifficultyGroups } from '../utils/aggregates';
 import bolaA from '../../../../assets/bola_a.webp';
@@ -77,18 +77,18 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                 <td className="text-center">{r.depth}</td>
                 <td className="text-center">
                   <span className="badge">
-                    {r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}
+                    {r.timeMode === 'auto' ? 'Auto (∞)' : fmtSecOrMinSec(r.timeSeconds ?? 0, 3, true)}
                   </span>
                 </td>
                 <td className="text-right">{r.moves}</td>
-                <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(r.avgThinkMs / 1000, 3)}</td>
                 <td className="text-right">{
                   (() => {
                     const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
                     if (times.length === 0) return (0).toFixed(3);
                     let min = times[0];
                     for (let i = 1; i < times.length; i++) if (times[i] < min) min = times[i];
-                    return (min / 1000).toFixed(3);
+                    return fmtSecOrMinSec(min / 1000, 3);
                   })()
                 }</td>
                 <td className="text-right">{
@@ -97,10 +97,10 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                     if (times.length === 0) return (0).toFixed(3);
                     let max = times[0];
                     for (let i = 1; i < times.length; i++) if (times[i] > max) max = times[i];
-                    return (max / 1000).toFixed(3);
+                    return fmtSecOrMinSec(max / 1000, 3);
                   })()
                 }</td>
-                <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(r.totalThinkMs / 1000, 3)}</td>
                 <td className="text-right">{typeof r.maxWorkersUsed === 'number' ? r.maxWorkersUsed : '---'}</td>
                 <td className="text-center">
                   {r.winner ? (
@@ -185,10 +185,10 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                 <td className="text-right">{g.stats.count}</td>
                 <td className="text-right">{g.stats.winsL} ({(g.stats.winRateL * 100).toFixed(1)}%)</td>
                 <td className="text-right">{g.stats.winsD} ({(g.stats.winRateR * 100).toFixed(1)}%)</td>
-                <td className="text-right">{g.stats.avgSec.toFixed(3)}</td>
-                <td className="text-right">{g.stats.minSec.toFixed(3)}</td>
-                <td className="text-right">{g.stats.maxSec.toFixed(3)}</td>
-                <td className="text-right">{g.stats.totalSec.toFixed(3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(g.stats.avgSec, 3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(g.stats.minSec, 3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(g.stats.maxSec, 3)}</td>
+                <td className="text-right">{fmtSecOrMinSec(g.stats.totalSec, 3)}</td>
                 <td className="text-center">
                   <button className="chip-btn" onClick={(e) => { e.stopPropagation(); toggleGroup(g.depth); }}>
                     {expandedGroup === g.depth ? 'Ocultar' : 'Ver' }
@@ -222,37 +222,50 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                             const min = times.length ? Math.min(...times) : 0;
                             const max = times.length ? Math.max(...times) : 0;
                             return (
-                              <tr key={r.id} title="Detalle de partida">
-                                <td className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
-                                <td>{fmtDate(r.createdAt)}</td>
-                                <td className="text-center">{r.depth}</td>
-                                <td className="text-center"><span className="badge">{r.timeMode === 'auto' ? 'Auto (∞)' : `${((r.timeSeconds ?? 0)).toFixed(3)} s`}</span></td>
-                                <td className="text-right">{r.moves}</td>
-                                <td className="text-right">{(r.avgThinkMs / 1000).toFixed(3)}</td>
-                                <td className="text-right">{(min / 1000).toFixed(3)}</td>
-                                <td className="text-right">{(max / 1000).toFixed(3)}</td>
-                                <td className="text-right">{(r.totalThinkMs / 1000).toFixed(3)}</td>
-                                <td className="text-center">{r.winner ? (<img src={r.winner === 'L' ? bolaB : bolaA} alt={r.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} style={{ width: 14, height: 14 }} />) : '—'}</td>
-                                <td className="text-center">
-                                  <button
-                                    className="chip-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
-                                      const url = URL.createObjectURL(blob);
-                                      const a = document.createElement('a');
-                                      a.href = url;
-                                      a.download = `pylos-infoia-${r.id}.json`;
-                                      a.click();
-                                      URL.revokeObjectURL(url);
-                                    }}
-                                    title="Descargar JSON"
-                                  >Descargar</button>
-                                  {allowDelete && (
-                                    <button className="chip-btn btn-danger" onClick={(e) => { e.stopPropagation(); onDelete?.(r.id); }} title="Eliminar">Eliminar</button>
-                                  )}
-                                </td>
-                              </tr>
+                              <Fragment key={r.id}>
+                                <tr
+                                  className={expandedId === r.id ? 'row--expanded' : ''}
+                                  onClick={() => toggleExpanded(r.id)}
+                                  title="Click para ver detalles de la partida"
+                                >
+                                  <td className="mono ellipsis">{r.id}{usedBook ? ' (Book)' : ''}</td>
+                                  <td>{fmtDate(r.createdAt)}</td>
+                                  <td className="text-center">{r.depth}</td>
+                                  <td className="text-center"><span className="badge">{r.timeMode === 'auto' ? 'Auto (∞)' : fmtSecOrMinSec(r.timeSeconds ?? 0, 3, true)}</span></td>
+                                  <td className="text-right">{r.moves}</td>
+                                  <td className="text-right">{fmtSecOrMinSec(r.avgThinkMs / 1000, 3)}</td>
+                                  <td className="text-right">{fmtSecOrMinSec(min / 1000, 3)}</td>
+                                  <td className="text-right">{fmtSecOrMinSec(max / 1000, 3)}</td>
+                                  <td className="text-right">{fmtSecOrMinSec(r.totalThinkMs / 1000, 3)}</td>
+                                  <td className="text-center">{r.winner ? (<img src={r.winner === 'L' ? bolaB : bolaA} alt={r.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} style={{ width: 14, height: 14 }} />) : '—'}</td>
+                                  <td className="text-center">
+                                    <button
+                                      className="chip-btn"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const blob = new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `pylos-infoia-${r.id}.json`;
+                                        a.click();
+                                        URL.revokeObjectURL(url);
+                                      }}
+                                      title="Descargar JSON"
+                                    >Descargar</button>
+                                    {allowDelete && (
+                                      <button className="chip-btn btn-danger" onClick={(e) => { e.stopPropagation(); onDelete?.(r.id); }} title="Eliminar">Eliminar</button>
+                                    )}
+                                  </td>
+                                </tr>
+                                {expandedId === r.id && (
+                                  <tr className="expand">
+                                    <td colSpan={11} style={{ background: 'rgba(2,6,23,0.4)' }}>
+                                      <GameDetails record={r} />
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
                             );
                           })}
                         </tbody>
@@ -269,10 +282,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
   );
 }
 
-function fmtNum(n?: number, digits = 3): string {
-  if (!Number.isFinite(n as number)) return '—';
-  return (n as number).toFixed(digits);
-}
+// fmtNum removed in favor of fmtSecOrMinSec for consistent time formatting
 
 function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   const per = r.perMove || [];
@@ -297,10 +307,10 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
         <span className="badge">ID: <span className="mono">{r.id}</span>{usedBook ? ' (Book)' : ''}</span>
         <span className="badge">Fecha: {fmtDate(r.createdAt)}</span>
         <span className="badge">Dificultad: {r.depth}</span>
-        <span className="badge">Tiempo: {r.timeMode === 'auto' ? 'Auto (∞)' : `${fmtNum(r.timeSeconds, 1)} s`}</span>
+        <span className="badge">Tiempo: {r.timeMode === 'auto' ? 'Auto (∞)' : fmtSecOrMinSec(r.timeSeconds, 1, true)}</span>
         <span className="badge">Jugadas: {r.moves}</span>
-        <span className="badge">Promedio: {fmtNum(r.avgThinkMs / 1000)} s</span>
-        <span className="badge">Total: {fmtNum(r.totalThinkMs / 1000)} s</span>
+        <span className="badge">Promedio: {fmtSecOrMinSec(r.avgThinkMs / 1000, 3)}{''}</span>
+        <span className="badge">Total: {fmtSecOrMinSec(r.totalThinkMs / 1000, 3)}{''}</span>
         {typeof r.maxWorkersUsed === 'number' && (
           <span className="badge" title="Máximo workers usados en una jugada">Workers máx.: {r.maxWorkersUsed}</span>
         )}
@@ -358,7 +368,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                     {i + 1}
                   </td>
                   <td className="text-right">{count}</td>
-                  <td className="text-right">{fmtNum((m.elapsedMs ?? 0) / 1000)}</td>
+                  <td className="text-right">{fmtSecOrMinSec((m.elapsedMs ?? 0) / 1000, 3)}</td>
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nodes as number) ? m.nodes : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nps as number) ? m.nps : '—'}</td>

@@ -22,3 +22,21 @@ export function buildExportTimestampName(date: Date = new Date()): string {
   const second = pad2(date.getSeconds());
   return `${day}_${month}_${year}__${hour}_${minute}_${second}`;
 }
+
+/**
+ * Format duration in seconds. If value >= 60 seconds, returns clock format "M:SS".
+ * Otherwise returns a fixed decimal seconds string. Optionally appends a ' s' suffix
+ * for the sub-minute case to ease inline labeling when headers don't include units.
+ */
+export function fmtSecOrMinSec(sec?: number, digits = 3, includeSuffix = false): string {
+  if (!Number.isFinite(sec as number)) return '—';
+  const s = Number(sec);
+  if (s >= 60) {
+    const total = Math.floor(s);
+    const m = Math.floor(total / 60);
+    const rs = total % 60;
+    return `${m}:${pad2(rs)}`;
+  }
+  const val = s.toFixed(digits);
+  return includeSuffix ? `${val} s` : val;
+}
