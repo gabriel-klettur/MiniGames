@@ -1,5 +1,5 @@
 export { default as InfoIA } from './InfoIA';
-export { default as InfoIAContainer } from './InfoIA';
+export { default as InfoIAContainer } from './InfoIAContainer';
 
 // Views
 export { default as Controls } from './views/Controls/Controls';
