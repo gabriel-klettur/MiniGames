@@ -27,6 +27,11 @@ export default function AIDiagnosticsPanel() {
 
   const running = !!ai?.busy;
 
+  // Derived diagnostics
+  const targetDepth = ai?.difficulty;
+  // En VS IA, el límite de tiempo del motor es ilimitado (Infinity)
+  const timeLimitLabel = 'Ilimitado';
+
   return (
     <div className="mt-3 w-full rounded-lg border border-neutral-800 bg-neutral-900/70 p-3">
       <h3 className="text-xs font-semibold text-neutral-300 mb-2">IA • Diagnóstico</h3>
@@ -44,6 +49,8 @@ export default function AIDiagnosticsPanel() {
           <Stat label="Velocidad" value={ai?.speed ?? '-'} />
           <Stat label="Modo tiempo" value={ai?.timeMode ?? '-'} />
           {ai?.timeMode === 'manual' && <Stat label="Segundos" value={ai?.timeSeconds ?? '-'} />}
+          <Stat label="Profundidad objetivo" value={typeof targetDepth === 'number' ? targetDepth : '-'} />
+          <Stat label="Límite de tiempo" value={timeLimitLabel} />
         </div>
         <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2">
           <Stat label="Nodos" value={ai?.nodesVisited ?? 0} />
