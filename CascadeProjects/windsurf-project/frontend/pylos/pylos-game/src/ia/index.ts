@@ -143,6 +143,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   ttReads?: number;
   ttHits?: number;
   usedWorkers?: number;
+  source?: 'book' | 'start' | 'search';
 }>
 {
   // Special-case: configurable first move if board is empty (AI starts the match)
@@ -162,6 +163,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
         ttReads: 0,
         ttHits: 0,
         usedWorkers: 1,
+        source: 'start',
       };
     }
   }
@@ -200,6 +202,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           ttReads: data.ttReads,
           ttHits: data.ttHits,
           usedWorkers: 1,
+          source: data.source as ('book' | 'start' | 'search' | undefined),
         });
       }
     };
@@ -302,13 +305,13 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
   ttReads?: number;
   ttHits?: number;
   usedWorkers: number;
+  source?: 'book' | 'start' | 'search';
 }> {
   const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
   const timeMs = typeof opts.timeMs === 'number' ? Math.max(50, Math.floor(opts.timeMs)) : undefined;
 
   // Generate and shard root moves by signature
   const rootMoves = generateAllMoves(state);
-  // Special-case: configurable first move if board is empty (AI starts the match)
   if (isBoardEmpty(state)) {
     if (rootMoves.length === 0) {
       const startEval = bestMove(state, 1); // quick evaluate for score
@@ -336,6 +339,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
       elapsedMs: 0,
       nps: 0,
       usedWorkers: 1,
+      source: 'start',
     };
     }
   }
@@ -377,6 +381,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     nps: number;
     ttReads?: number;
     ttHits?: number;
+    source?: 'book' | 'search';
   };
 
   const partials: PartialResult[] = new Array(shards.length);
@@ -423,6 +428,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           nps: data.nps ?? 0,
           ttReads: data.ttReads,
           ttHits: data.ttHits,
+          source: data.source as ('book' | 'search' | undefined),
         };
         doneCount++;
         if (doneCount >= shards.length) {
@@ -450,6 +456,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
             ttReads: undefined,
             ttHits: undefined,
             usedWorkers: shards.length,
+            source: best?.source,
           });
         }
       }

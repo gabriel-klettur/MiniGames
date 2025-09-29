@@ -153,123 +153,195 @@ export default function Controls(props: ControlsProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistCap]);
 
+  // Collapsible group state (persisted locally)
+  const GROUP_STORE_KEY = 'pylos.infoia.controls.group.collapsed';
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(GROUP_STORE_KEY);
+      if (raw != null) setCollapsed(raw === '1' || raw === 'true');
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(GROUP_STORE_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
+
   return (
-    <div className="row infoia__controls">
-      {/* Dificultad / Tiempo */}
-      <DifficultyTime
-        depth={props.depth}
-        onDepthChange={props.onDepthChange}
-        timeMode={props.timeMode}
-        onTimeModeChange={props.onTimeModeChange}
-        timeSeconds={props.timeSeconds}
-        onTimeSecondsChange={props.onTimeSecondsChange}
-      />
+    <>
+      <div className="infoia__group">
+        <div className="infoia__group-header">
+          {/* ActionsBar alineada a la izquierda del header */}
+          <ActionsBar
+            running={props.running}
+            loading={props.loading}
+            onStart={props.onStart}
+            onStop={props.onStop}
+            onDefault={() => {
+              clearAdvancedCfg();
+              setStartRandom(DEFAULTS.startRandomFirstMove);
+              setSeedInput('');
+              setRepeatMax(DEFAULTS.repeatMax);
+              setAvoidPenalty(DEFAULTS.avoidPenalty);
+              setNoveltyBonus(DEFAULTS.noveltyBonus);
+              setRootTopK(DEFAULTS.rootTopK);
+              setRootJitter(DEFAULTS.rootJitter);
+              setRootJitterProb(DEFAULTS.rootJitterProb);
+              setRootLMR(DEFAULTS.rootLMR);
+              setDrawBias(DEFAULTS.drawBias);
+              setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
+              setNoProgressLimit(DEFAULTS.noProgressLimit);
+              setAvoidStepFactor(DEFAULTS.avoidStepFactor);
+              setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
+              setHalfLifeDays(DEFAULTS.halfLifeDays);
+              setPersistCap(DEFAULTS.persistCap);
+              props.onResetDefaults();
+            }}
+            onExportJSON={props.onExportJSON}
+            onExportCSV={props.onExportCSV}
+            onAddCompare={props.onAddCompare}
+            onClearAll={props.onClearAll}
+            canClearLocal={props.canClearLocal}
+            activeTableSourceId={props.activeTableSourceId}
+          />
 
-      {/* Selector de tabla: Local o archivos agregados */}
-      <label className="label">Tabla</label>
-      <DatasetTabs
-        activeId={props.activeTableSourceId}
-        sets={props.compareSets}
-        onSelect={props.onSelectTableSource}
-      />
+          {/* Botón de toggle alineado a la derecha con el título */}
+          <button
+            type="button"
+            className="infoia__group-toggle"
+            onClick={toggleCollapsed}
+            aria-expanded={!collapsed}
+            aria-controls="infoia-controls-grid"
+            id="infoia-controls-header"
+          >
+            <span>Configuracion Simulacion y Metricas</span>
+            <span className="chev" aria-hidden="true">▾</span>
+          </button>
+        </div>
 
-      {/* Límites de simulación */}
-      <SimulationLimits
-        pliesLimit={props.pliesLimit}
-        onPliesLimitChange={props.onPliesLimitChange}
-        gamesCount={props.gamesCount}
-        onGamesCountChange={props.onGamesCountChange}
-      />
+      {!collapsed && (
+        <div
+          className="row infoia__controls infoia__controls--single-row"
+          id="infoia-controls-grid"
+          role="region"
+          aria-labelledby="infoia-controls-header"
+        >
+          {/* Columna 1: Dificultad y tiempo + Visualización y books (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Dificultad y tiempo</div>
+              <DifficultyTime
+                depth={props.depth}
+                onDepthChange={props.onDepthChange}
+                timeMode={props.timeMode}
+                onTimeModeChange={props.onTimeModeChange}
+                timeSeconds={props.timeSeconds}
+                onTimeSecondsChange={props.onTimeSecondsChange}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Visualización y books</div>
+              <MirrorAndBook
+                mirrorBoard={props.mirrorBoard}
+                onMirrorChange={props.onMirrorChange}
+                useBook={props.useBook}
+                onUseBookChange={props.onUseBookChange}
+              />
+            </div>
+          </div>
 
-      {/* Inicio aleatorio y semilla */}
-      <StartSettings
-        startRandom={startRandom}
-        onStartRandomChange={setStartRandom}
-        seedInput={seedInput}
-        onSeedInputChange={setSeedInput}
-      />
+          {/* Columna 2: Tabla + Límites de simulación (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Tabla (dataset)</div>
+              <DatasetTabs
+                activeId={props.activeTableSourceId}
+                sets={props.compareSets}
+                onSelect={props.onSelectTableSource}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Límites de simulación</div>
+              <SimulationLimits
+                pliesLimit={props.pliesLimit}
+                onPliesLimitChange={props.onPliesLimitChange}
+                gamesCount={props.gamesCount}
+                onGamesCountChange={props.onGamesCountChange}
+              />
+            </div>
+          </div>
+          {/* Columna 3: Inicio y semilla + Repetición y penalización (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Inicio y semilla</div>
+              <StartSettings
+                startRandom={startRandom}
+                onStartRandomChange={setStartRandom}
+                seedInput={seedInput}
+                onSeedInputChange={setSeedInput}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Repetición y penalización</div>
+              <RepetitionSettings
+                repeatMax={repeatMax}
+                onRepeatMaxChange={setRepeatMax}
+                avoidPenalty={avoidPenalty}
+                onAvoidPenaltyChange={setAvoidPenalty}
+              />
+            </div>
+          </div>
 
-      {/* Visualización y uso de books */}
-      <MirrorAndBook
-        mirrorBoard={props.mirrorBoard}
-        onMirrorChange={props.onMirrorChange}
-        useBook={props.useBook}
-        onUseBookChange={props.onUseBookChange}
-      />
+          {/* Persistencia anti-bucles y límites */}
+          <div className="infoia__card">
+            <div className="infoia__card-title">Persistencia y límites</div>
+            <PersistenceSettings
+              noProgressLimit={noProgressLimit}
+              onNoProgressLimitChange={setNoProgressLimit}
+              avoidStepFactor={avoidStepFactor}
+              onAvoidStepFactorChange={setAvoidStepFactor}
+              persistAntiLoopsEnabled={persistAntiLoopsEnabled}
+              onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
+              halfLifeDays={halfLifeDays}
+              onHalfLifeDaysChange={setHalfLifeDays}
+              persistCap={persistCap}
+              onPersistCapChange={setPersistCap}
+            />
+          </div>
 
-      {/* Repetición y penalización raíz */}
-      <RepetitionSettings
-        repeatMax={repeatMax}
-        onRepeatMaxChange={setRepeatMax}
-        avoidPenalty={avoidPenalty}
-        onAvoidPenaltyChange={setAvoidPenalty}
-      />
+          {/* Límites de simulación ahora se renderiza bajo 'Tabla (dataset)' */}
 
-      {/* Anti-estancamiento */}
-      <AntiStallSettings
-        noveltyBonus={noveltyBonus}
-        onNoveltyBonusChange={setNoveltyBonus}
-        rootTopK={rootTopK}
-        onRootTopKChange={setRootTopK}
-        rootJitter={rootJitter}
-        onRootJitterChange={setRootJitter}
-        rootJitterProb={rootJitterProb}
-        onRootJitterProbChange={setRootJitterProb}
-        rootLMR={rootLMR}
-        onRootLMRChange={setRootLMR}
-        drawBias={drawBias}
-        onDrawBiasChange={setDrawBias}
-        timeRiskEnabled={timeRiskEnabled}
-        onTimeRiskEnabledChange={setTimeRiskEnabled}
-      />
+          {/* Repetición y penalización movida a stack en 2ª fila col 2 */}
 
-      {/* Persistencia anti-bucles y límites */}
-      <PersistenceSettings
-        noProgressLimit={noProgressLimit}
-        onNoProgressLimitChange={setNoProgressLimit}
-        avoidStepFactor={avoidStepFactor}
-        onAvoidStepFactorChange={setAvoidStepFactor}
-        persistAntiLoopsEnabled={persistAntiLoopsEnabled}
-        onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
-        halfLifeDays={halfLifeDays}
-        onHalfLifeDaysChange={setHalfLifeDays}
-        persistCap={persistCap}
-        onPersistCapChange={setPersistCap}
-      />
+          {/* Anti-estancamiento */}
+          <div className="infoia__card">
+            <div className="infoia__card-title">Anti-estancamiento</div>
+            <AntiStallSettings
+              noveltyBonus={noveltyBonus}
+              onNoveltyBonusChange={setNoveltyBonus}
+              rootTopK={rootTopK}
+              onRootTopKChange={setRootTopK}
+              rootJitter={rootJitter}
+              onRootJitterChange={setRootJitter}
+              rootJitterProb={rootJitterProb}
+              onRootJitterProbChange={setRootJitterProb}
+              rootLMR={rootLMR}
+              onRootLMRChange={setRootLMR}
+              drawBias={drawBias}
+              onDrawBiasChange={setDrawBias}
+              timeRiskEnabled={timeRiskEnabled}
+              onTimeRiskEnabledChange={setTimeRiskEnabled}
+            />
+          </div>
+        </div>
+      )}
+      </div>
 
-      {/* Acciones */}
-      <ActionsBar
-        running={props.running}
-        loading={props.loading}
-        onStart={props.onStart}
-        onStop={props.onStop}
-        onDefault={() => {
-          clearAdvancedCfg();
-          setStartRandom(DEFAULTS.startRandomFirstMove);
-          setSeedInput('');
-          setRepeatMax(DEFAULTS.repeatMax);
-          setAvoidPenalty(DEFAULTS.avoidPenalty);
-          setNoveltyBonus(DEFAULTS.noveltyBonus);
-          setRootTopK(DEFAULTS.rootTopK);
-          setRootJitter(DEFAULTS.rootJitter);
-          setRootJitterProb(DEFAULTS.rootJitterProb);
-          setRootLMR(DEFAULTS.rootLMR);
-          setDrawBias(DEFAULTS.drawBias);
-          setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
-          setNoProgressLimit(DEFAULTS.noProgressLimit);
-          setAvoidStepFactor(DEFAULTS.avoidStepFactor);
-          setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
-          setHalfLifeDays(DEFAULTS.halfLifeDays);
-          setPersistCap(DEFAULTS.persistCap);
-          props.onResetDefaults();
-        }}
-        onExportJSON={props.onExportJSON}
-        onExportCSV={props.onExportCSV}
-        onAddCompare={props.onAddCompare}
-        onClearAll={props.onClearAll}
-        canClearLocal={props.canClearLocal}
-        activeTableSourceId={props.activeTableSourceId}
-      />
-    </div>
+      {/* Acciones trasladadas al header */}
+    </>
   );
 }

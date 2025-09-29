@@ -66,7 +66,7 @@ self.onmessage = async (e: MessageEvent) => {
       const bm = await probeBook(state);
       if (bm) {
         // @ts-ignore
-        self.postMessage({ type: 'RESULT', bestMove: bm, score: 0, depthReached: 0, pv: [bm], rootMoves: [{ move: bm, score: 0 }], nodes: 0, elapsedMs: performance.now() - start, nps: 0, ttReads: 0, ttHits: 0 });
+        self.postMessage({ type: 'RESULT', bestMove: bm, score: 0, depthReached: 0, pv: [bm], rootMoves: [{ move: bm, score: 0 }], nodes: 0, elapsedMs: performance.now() - start, nps: 0, ttReads: 0, ttHits: 0, source: 'book' });
         return;
       }
     } catch {}
@@ -125,5 +125,5 @@ self.onmessage = async (e: MessageEvent) => {
   const elapsedMs = performance.now() - start;
   const nps = elapsedMs > 0 ? (nodes * 1000) / elapsedMs : nodes;
   // @ts-ignore
-  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached, pv: best.pv ?? [], rootMoves: best.rootMoves ?? [], nodes, elapsedMs, nps, ttReads, ttHits });
+  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached, pv: best.pv ?? [], rootMoves: best.rootMoves ?? [], nodes, elapsedMs, nps, ttReads, ttHits, source: 'search' });
 };

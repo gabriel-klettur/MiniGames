@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import type { GameState } from '../../../game/types';
 import type { InfoIAGameRecord } from '../../../utils/infoiaDb';
 import InfoIAView from './InfoIAView';
@@ -46,7 +46,7 @@ export default function InfoIAContainer(props: InfoIAProps) {
   const [gamesCount, setGamesCount] = useState<number>(10);
   const [mirrorBoard, setMirrorBoard] = useState<boolean>(true);
   const [useBook, setUseBook] = useState<boolean>(false);
-  const [groupByDepth, setGroupByDepth] = useState<boolean>(false);
+  const [groupByDepth, setGroupByDepth] = useState<boolean>(true);
 
   // Persist controls locally so defaults apply only when no saved prefs exist
   const STORAGE_KEY = 'pylos.infoia.controls.v1';

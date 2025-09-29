@@ -175,9 +175,3 @@ El orden en que exploras jugadas **reduce drásticamente nodos**:
 * [X] Motor en Worker, UI en React.
 
 ---
-
-📌 Con estas optimizaciones, tu IA pasará de un minimax básico a un **motor competitivo, rápido y eficiente**, capaz de calcular jugadas fuertes en tiempos muy reducidos.
-
----
-
-¿Quieres que te prepare este documento también en **formato `.md` descargable** (archivo Markdown real) para que lo tengas listo en tu repo?
