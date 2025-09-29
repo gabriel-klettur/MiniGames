@@ -30,21 +30,9 @@ function App() {
     if (turn !== ai.aiSide) return;
     if (ai.busy) return;
 
-    const computeDepth = (d: number) => {
-      if (d >= 10) return 6;
-      if (d >= 8) return 5;
-      if (d >= 6) return 4;
-      if (d >= 4) return 3;
-      return 2;
-    };
     const computeTime = () => {
-      if (ai.timeMode === 'manual') return Math.max(50, Math.min(30000, Math.round(ai.timeSeconds * 1000)));
-      // auto mode: map speed to a sensible budget
-      if (ai.speed === 'rapido') return 200;
-      if (ai.speed === 'normal') return 700;
-      if (ai.speed === 'lento') return 1400;
-      // 'auto' speed default
-      return 800;
+      // VS IA: usar tiempo ilimitado para alcanzar la profundidad objetivo
+      return Infinity;
     };
 
     const go = async () => {
@@ -53,7 +41,7 @@ function App() {
         const state: RootState = store.getState();
         const gs = state.game;
         const res = await findBestMove(gs, {
-          maxDepth: computeDepth(ai.difficulty),
+          maxDepth: ai.difficulty,
           timeLimitMs: computeTime(),
           onProgress: (ev) => {
             if (ev.type === 'start') dispatch(aiSearchStarted(ev.startedAt));
