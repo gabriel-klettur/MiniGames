@@ -16,6 +16,11 @@ export type InfoIAPerMove = {
   workersUsed?: number;
   // New: player that made this move ('L' o 'D') para mostrar ficha en la UI
   player?: 'L' | 'D';
+  // New: origin of the move as reported by the engine
+  // 'book'  => returned from opening book instantly
+  // 'start' => chosen by start policy on empty board (random/center-topk)
+  // 'search' => computed by the search engine
+  source?: 'book' | 'start' | 'search';
 };
 
 export type InfoIAGameRecord = {

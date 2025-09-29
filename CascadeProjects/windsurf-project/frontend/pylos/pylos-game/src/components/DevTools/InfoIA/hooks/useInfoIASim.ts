@@ -298,6 +298,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             moveSig: sig,
             workersUsed: (res as any).usedWorkers,
             player: state.currentPlayer,
+            source: (res as any).source as ('book' | 'start' | 'search' | undefined),
           });
         } catch {
           perMove.push({
@@ -308,6 +309,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             score: res.score,
             workersUsed: (res as any).usedWorkers,
             player: state.currentPlayer,
+            source: (res as any).source as ('book' | 'start' | 'search' | undefined),
           });
         }
         if (!res.move) break;

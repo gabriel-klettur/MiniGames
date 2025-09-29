@@ -174,168 +174,170 @@ export default function Controls(props: ControlsProps) {
   return (
     <>
       <div className="infoia__group">
-      <div className="infoia__group-header">
-        {/* ActionsBar alineada a la izquierda del header */}
-        <ActionsBar
-          running={props.running}
-          loading={props.loading}
-          onStart={props.onStart}
-          onStop={props.onStop}
-          onDefault={() => {
-            clearAdvancedCfg();
-            setStartRandom(DEFAULTS.startRandomFirstMove);
-            setSeedInput('');
-            setRepeatMax(DEFAULTS.repeatMax);
-            setAvoidPenalty(DEFAULTS.avoidPenalty);
-            setNoveltyBonus(DEFAULTS.noveltyBonus);
-            setRootTopK(DEFAULTS.rootTopK);
-            setRootJitter(DEFAULTS.rootJitter);
-            setRootJitterProb(DEFAULTS.rootJitterProb);
-            setRootLMR(DEFAULTS.rootLMR);
-            setDrawBias(DEFAULTS.drawBias);
-            setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
-            setNoProgressLimit(DEFAULTS.noProgressLimit);
-            setAvoidStepFactor(DEFAULTS.avoidStepFactor);
-            setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
-            setHalfLifeDays(DEFAULTS.halfLifeDays);
-            setPersistCap(DEFAULTS.persistCap);
-            props.onResetDefaults();
-          }}
-          onExportJSON={props.onExportJSON}
-          onExportCSV={props.onExportCSV}
-          onAddCompare={props.onAddCompare}
-          onClearAll={props.onClearAll}
-          canClearLocal={props.canClearLocal}
-          activeTableSourceId={props.activeTableSourceId}
-        />
+        <div className="infoia__group-header">
+          {/* ActionsBar alineada a la izquierda del header */}
+          <ActionsBar
+            running={props.running}
+            loading={props.loading}
+            onStart={props.onStart}
+            onStop={props.onStop}
+            onDefault={() => {
+              clearAdvancedCfg();
+              setStartRandom(DEFAULTS.startRandomFirstMove);
+              setSeedInput('');
+              setRepeatMax(DEFAULTS.repeatMax);
+              setAvoidPenalty(DEFAULTS.avoidPenalty);
+              setNoveltyBonus(DEFAULTS.noveltyBonus);
+              setRootTopK(DEFAULTS.rootTopK);
+              setRootJitter(DEFAULTS.rootJitter);
+              setRootJitterProb(DEFAULTS.rootJitterProb);
+              setRootLMR(DEFAULTS.rootLMR);
+              setDrawBias(DEFAULTS.drawBias);
+              setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
+              setNoProgressLimit(DEFAULTS.noProgressLimit);
+              setAvoidStepFactor(DEFAULTS.avoidStepFactor);
+              setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
+              setHalfLifeDays(DEFAULTS.halfLifeDays);
+              setPersistCap(DEFAULTS.persistCap);
+              props.onResetDefaults();
+            }}
+            onExportJSON={props.onExportJSON}
+            onExportCSV={props.onExportCSV}
+            onAddCompare={props.onAddCompare}
+            onClearAll={props.onClearAll}
+            canClearLocal={props.canClearLocal}
+            activeTableSourceId={props.activeTableSourceId}
+          />
 
-        {/* Botón de toggle alineado a la derecha con el título */}
-        <button
-          type="button"
-          className="infoia__group-toggle"
-          onClick={toggleCollapsed}
-          aria-expanded={!collapsed}
-          aria-controls="infoia-controls-grid"
-          id="infoia-controls-header"
-        >
-          <span>Configuracion Simulacion y Metricas</span>
-          <span className="chev" aria-hidden="true">▾</span>
-        </button>
-      </div>
+          {/* Botón de toggle alineado a la derecha con el título */}
+          <button
+            type="button"
+            className="infoia__group-toggle"
+            onClick={toggleCollapsed}
+            aria-expanded={!collapsed}
+            aria-controls="infoia-controls-grid"
+            id="infoia-controls-header"
+          >
+            <span>Configuracion Simulacion y Metricas</span>
+            <span className="chev" aria-hidden="true">▾</span>
+          </button>
+        </div>
 
       {!collapsed && (
-      <div
-        className="row infoia__controls"
-        id="infoia-controls-grid"
-        role="region"
-        aria-labelledby="infoia-controls-header"
-      >
-      {/* Dificultad / Tiempo */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Dificultad y tiempo</div>
-        <DifficultyTime
-          depth={props.depth}
-          onDepthChange={props.onDepthChange}
-          timeMode={props.timeMode}
-          onTimeModeChange={props.onTimeModeChange}
-          timeSeconds={props.timeSeconds}
-          onTimeSecondsChange={props.onTimeSecondsChange}
-        />
-      </div>
+        <div
+          className="row infoia__controls infoia__controls--single-row"
+          id="infoia-controls-grid"
+          role="region"
+          aria-labelledby="infoia-controls-header"
+        >
+          {/* Columna 1: Dificultad y tiempo + Visualización y books (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Dificultad y tiempo</div>
+              <DifficultyTime
+                depth={props.depth}
+                onDepthChange={props.onDepthChange}
+                timeMode={props.timeMode}
+                onTimeModeChange={props.onTimeModeChange}
+                timeSeconds={props.timeSeconds}
+                onTimeSecondsChange={props.onTimeSecondsChange}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Visualización y books</div>
+              <MirrorAndBook
+                mirrorBoard={props.mirrorBoard}
+                onMirrorChange={props.onMirrorChange}
+                useBook={props.useBook}
+                onUseBookChange={props.onUseBookChange}
+              />
+            </div>
+          </div>
 
-      {/* Selector de tabla: Local o archivos agregados */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Tabla (dataset)</div>
-        <DatasetTabs
-          activeId={props.activeTableSourceId}
-          sets={props.compareSets}
-          onSelect={props.onSelectTableSource}
-        />
-      </div>
+          {/* Columna 2: Tabla + Límites de simulación (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Tabla (dataset)</div>
+              <DatasetTabs
+                activeId={props.activeTableSourceId}
+                sets={props.compareSets}
+                onSelect={props.onSelectTableSource}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Límites de simulación</div>
+              <SimulationLimits
+                pliesLimit={props.pliesLimit}
+                onPliesLimitChange={props.onPliesLimitChange}
+                gamesCount={props.gamesCount}
+                onGamesCountChange={props.onGamesCountChange}
+              />
+            </div>
+          </div>
+          {/* Columna 3: Inicio y semilla + Repetición y penalización (misma columna) */}
+          <div className="infoia__card-stack">
+            <div className="infoia__card">
+              <div className="infoia__card-title">Inicio y semilla</div>
+              <StartSettings
+                startRandom={startRandom}
+                onStartRandomChange={setStartRandom}
+                seedInput={seedInput}
+                onSeedInputChange={setSeedInput}
+              />
+            </div>
+            <div className="infoia__card">
+              <div className="infoia__card-title">Repetición y penalización</div>
+              <RepetitionSettings
+                repeatMax={repeatMax}
+                onRepeatMaxChange={setRepeatMax}
+                avoidPenalty={avoidPenalty}
+                onAvoidPenaltyChange={setAvoidPenalty}
+              />
+            </div>
+          </div>
 
-      {/* Límites de simulación */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Límites de simulación</div>
-        <SimulationLimits
-          pliesLimit={props.pliesLimit}
-          onPliesLimitChange={props.onPliesLimitChange}
-          gamesCount={props.gamesCount}
-          onGamesCountChange={props.onGamesCountChange}
-        />
-      </div>
+          {/* Persistencia anti-bucles y límites */}
+          <div className="infoia__card">
+            <div className="infoia__card-title">Persistencia y límites</div>
+            <PersistenceSettings
+              noProgressLimit={noProgressLimit}
+              onNoProgressLimitChange={setNoProgressLimit}
+              avoidStepFactor={avoidStepFactor}
+              onAvoidStepFactorChange={setAvoidStepFactor}
+              persistAntiLoopsEnabled={persistAntiLoopsEnabled}
+              onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
+              halfLifeDays={halfLifeDays}
+              onHalfLifeDaysChange={setHalfLifeDays}
+              persistCap={persistCap}
+              onPersistCapChange={setPersistCap}
+            />
+          </div>
 
-      {/* Inicio aleatorio y semilla */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Inicio y semilla</div>
-        <StartSettings
-          startRandom={startRandom}
-          onStartRandomChange={setStartRandom}
-          seedInput={seedInput}
-          onSeedInputChange={setSeedInput}
-        />
-      </div>
+          {/* Límites de simulación ahora se renderiza bajo 'Tabla (dataset)' */}
 
-      {/* Visualización y uso de books */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Visualización y books</div>
-        <MirrorAndBook
-          mirrorBoard={props.mirrorBoard}
-          onMirrorChange={props.onMirrorChange}
-          useBook={props.useBook}
-          onUseBookChange={props.onUseBookChange}
-        />
-      </div>
+          {/* Repetición y penalización movida a stack en 2ª fila col 2 */}
 
-      {/* Repetición y penalización raíz */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Repetición y penalización</div>
-        <RepetitionSettings
-          repeatMax={repeatMax}
-          onRepeatMaxChange={setRepeatMax}
-          avoidPenalty={avoidPenalty}
-          onAvoidPenaltyChange={setAvoidPenalty}
-        />
-      </div>
-
-      {/* Anti-estancamiento */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Anti-estancamiento</div>
-        <AntiStallSettings
-          noveltyBonus={noveltyBonus}
-          onNoveltyBonusChange={setNoveltyBonus}
-          rootTopK={rootTopK}
-          onRootTopKChange={setRootTopK}
-          rootJitter={rootJitter}
-          onRootJitterChange={setRootJitter}
-          rootJitterProb={rootJitterProb}
-          onRootJitterProbChange={setRootJitterProb}
-          rootLMR={rootLMR}
-          onRootLMRChange={setRootLMR}
-          drawBias={drawBias}
-          onDrawBiasChange={setDrawBias}
-          timeRiskEnabled={timeRiskEnabled}
-          onTimeRiskEnabledChange={setTimeRiskEnabled}
-        />
-      </div>
-
-      {/* Persistencia anti-bucles y límites */}
-      <div className="infoia__card">
-        <div className="infoia__card-title">Persistencia y límites</div>
-        <PersistenceSettings
-          noProgressLimit={noProgressLimit}
-          onNoProgressLimitChange={setNoProgressLimit}
-          avoidStepFactor={avoidStepFactor}
-          onAvoidStepFactorChange={setAvoidStepFactor}
-          persistAntiLoopsEnabled={persistAntiLoopsEnabled}
-          onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
-          halfLifeDays={halfLifeDays}
-          onHalfLifeDaysChange={setHalfLifeDays}
-          persistCap={persistCap}
-          onPersistCapChange={setPersistCap}
-        />
-      </div>
-
-      </div>
+          {/* Anti-estancamiento */}
+          <div className="infoia__card">
+            <div className="infoia__card-title">Anti-estancamiento</div>
+            <AntiStallSettings
+              noveltyBonus={noveltyBonus}
+              onNoveltyBonusChange={setNoveltyBonus}
+              rootTopK={rootTopK}
+              onRootTopKChange={setRootTopK}
+              rootJitter={rootJitter}
+              onRootJitterChange={setRootJitter}
+              rootJitterProb={rootJitterProb}
+              onRootJitterProbChange={setRootJitterProb}
+              rootLMR={rootLMR}
+              onRootLMRChange={setRootLMR}
+              drawBias={drawBias}
+              onDrawBiasChange={setDrawBias}
+              timeRiskEnabled={timeRiskEnabled}
+              onTimeRiskEnabledChange={setTimeRiskEnabled}
+            />
+          </div>
+        </div>
       )}
       </div>
 

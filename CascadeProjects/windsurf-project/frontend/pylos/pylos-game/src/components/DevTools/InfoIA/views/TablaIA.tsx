@@ -65,7 +65,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
           </thead>
           <tbody>
             {sorted.map((r) => {
-              const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+              const usedBook = (r.perMove || []).some((pm: any) => pm?.source === 'book');
               return (
               <Fragment key={r.id}>
               <tr
@@ -170,7 +170,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
             <th className="text-right" title="Tiempo mínimo por jugada (s)">Mín (s)</th>
             <th className="text-right" title="Tiempo máximo por jugada (s)">Máx (s)</th>
             <th className="text-right" title="Tiempo total (s)">Total (s)</th>
-            <th className="text-center" title="Expandir/contraer">Ver</th>
+            <th className="text-center" title="Acciones del grupo (expandir/contraer, descargar, eliminar)">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -190,9 +190,46 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                 <td className="text-right">{fmtSecOrMinSec(g.stats.maxSec, 3)}</td>
                 <td className="text-right">{fmtSecOrMinSec(g.stats.totalSec, 3)}</td>
                 <td className="text-center">
-                  <button className="chip-btn" onClick={(e) => { e.stopPropagation(); toggleGroup(g.depth); }}>
+                  <button
+                    className="chip-btn"
+                    onClick={(e) => { e.stopPropagation(); toggleGroup(g.depth); }}
+                    title={expandedGroup === g.depth ? 'Ocultar partidas del grupo' : 'Ver partidas del grupo'}
+                  >
                     {expandedGroup === g.depth ? 'Ocultar' : 'Ver' }
                   </button>
+                  <button
+                    className="chip-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const payload = {
+                        depth: g.depth,
+                        stats: g.stats,
+                        count: g.records.length,
+                        records: g.records,
+                      };
+                      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `pylos-infoia-group-d${g.depth}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    title="Descargar JSON del grupo"
+                  >Descargar</button>
+                  {allowDelete && (
+                    <button
+                      className="chip-btn btn-danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!onDelete) return;
+                        const ok = window.confirm(`¿Eliminar ${g.records.length} partidas del grupo d=${g.depth}? Esta acción no se puede deshacer.`);
+                        if (!ok) return;
+                        for (const rec of g.records) onDelete(rec.id);
+                      }}
+                      title="Eliminar todas las partidas del grupo"
+                    >Eliminar</button>
+                  )}
                 </td>
               </tr>
               {expandedGroup === g.depth && (
@@ -217,7 +254,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                         </thead>
                         <tbody>
                           {g.records.map(r => {
-                            const usedBook = (r.perMove || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+                            const usedBook = (r.perMove || []).some((pm: any) => pm?.source === 'book');
                             const times = (r.perMove || []).map((pm: any) => pm.elapsedMs || 0);
                             const min = times.length ? Math.min(...times) : 0;
                             const max = times.length ? Math.max(...times) : 0;
@@ -286,7 +323,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
 
 function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   const per = r.perMove || [];
-  const usedBook = (per || []).some((pm: any) => (pm?.depthReached ?? -1) === 0 && (pm?.nodes ?? 0) === 0);
+  const usedBook = (per || []).some((pm: any) => pm?.source === 'book');
   // Build repetition counts per position key (keyHi:keyLo) as we iterate moves
   const repCounts: number[] = [];
   const seen = new Map<string, number>(); // counts so far
@@ -327,6 +364,12 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
           <span className="badge badge--accent" title={`Jugadas que alcanzan el umbral de repetición (c==${threshold})`}>Umbral rep.: {thresholdHits}</span>
         )}
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '6px 0 8px 0', fontSize: 12, opacity: 0.9 }}>
+        <span>Origen:</span>
+        <span className="badge" style={{ background: '#16a34a', color: '#fff' }}>book</span>
+        <span className="badge" style={{ background: '#7c3aed', color: '#fff' }}>start</span>
+        <span className="badge" style={{ background: '#2563eb', color: '#fff' }}>search</span>
+      </div>
       <div style={{ overflowX: 'auto' }}>
         <table className="table table--compact">
           <thead>
@@ -338,6 +381,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
               <th className="text-right" title="Número de nodos evaluados para esta jugada">nodes</th>
               <th className="text-right" title="Nodos por segundo; rendimiento del motor durante la jugada">NPS</th>
               <th className="text-right" title="Valor de evaluación de la jugada desde la perspectiva del jugador actual">score</th>
+              <th className="text-center" title="Origen de la jugada (book/start/search)">Origen</th>
               <th className="text-right" title="Workers utilizados por el motor en esta jugada">workers</th>
               <th className="mono" title="Parte alta de la clave Zobrist de la posición previa a mover">keyHi</th>
               <th className="mono" title="Parte baja de la clave Zobrist de la posición previa a mover">keyLo</th>
@@ -373,6 +417,18 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                 <td className="text-right">{Number.isFinite(m.nodes as number) ? m.nodes : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nps as number) ? m.nps : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.score as number) ? m.score : '—'}</td>
+                <td className="text-center">{
+                  (() => {
+                    const s = (m as any)?.source as ("book" | "start" | "search" | undefined);
+                    if (!s) return '—';
+                    const style = s === 'book'
+                      ? { background: '#16a34a', color: '#fff' }
+                      : s === 'start'
+                        ? { background: '#7c3aed', color: '#fff' }
+                        : { background: '#2563eb', color: '#fff' };
+                    return <span className="badge" style={style as any}>{s}</span>;
+                  })()
+                }</td>
                 <td className="text-right">{Number.isFinite(m.workersUsed as number) ? m.workersUsed : '—'}</td>
                 <td className="mono">{Number.isFinite(m.keyHi as number) ? (m.keyHi as number) >>> 0 : '—'}</td>
                 <td className="mono">{Number.isFinite(m.keyLo as number) ? (m.keyLo as number) >>> 0 : '—'}</td>

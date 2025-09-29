@@ -11,6 +11,23 @@
   align-items: start;
   gap: 12px;
 }
+/* Single-row variant: do not wrap; scroll horizontally when needed */
+.infoia__controls--single-row {
+  display: grid !important;
+  /* Una columna por item; todas comparten el ancho disponible en una sola fila */
+  grid-template-columns: none !important;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Permitir que las tarjetas se encojan y su contenido no fuerce overflow */
+.infoia__controls--single-row .infoia__card { min-width: 0; grid-template-columns: max-content minmax(0, 1fr); }
+.infoia__controls--single-row .infoia__card * { min-width: 0; }
+.infoia__controls--single-row .infoia__dataset-tabs { max-width: 100%; }
 @media (max-width: 1400px) {
   .infoia__controls { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
 }
@@ -84,6 +101,13 @@
 .infoia__group-toggle .chev { transition: transform 160ms ease; }
 .infoia__group-toggle[aria-expanded="false"] .chev { transform: rotate(-90deg); }
 .infoia__group > .infoia__controls { padding: 10px; }
+
+/* Stack multiple cards vertically within a single grid column */
+.infoia__card-stack { display: grid; grid-auto-rows: min-content; gap: 12px; }
+.infoia__card-stack.col-2 { grid-column: 2; }
+@media (max-width: 640px) {
+  .infoia__card-stack.col-2 { grid-column: auto; }
+}
 
 /* Actions row spans the full width */
 .infoia__card--actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
