@@ -35,7 +35,9 @@ export function computeAggregates(list: InfoIAGameRecord[]): AggRow[] {
 }
 
 export type DifficultyGroup = {
-  depth: number;
+  key: string; // `${depthL}|${depthD}`
+  depthL: number;
+  depthD: number;
   records: InfoIAGameRecord[];
   stats: {
     count: number;
@@ -52,15 +54,20 @@ export type DifficultyGroup = {
 };
 
 export function computeDifficultyGroups(list: InfoIAGameRecord[]): DifficultyGroup[] {
-  const map = new Map<number, InfoIAGameRecord[]>();
+  const map = new Map<string, InfoIAGameRecord[]>();
   for (const r of list) {
-    const d = r.depth;
-    const arr = map.get(d) ?? [];
+    const l = Number.isFinite(r.depthL as number) ? (r.depthL as number) : r.depth;
+    const d = Number.isFinite(r.depthD as number) ? (r.depthD as number) : r.depth;
+    const key = `${l}|${d}`;
+    const arr = map.get(key) ?? [];
     arr.push(r);
-    map.set(d, arr);
+    map.set(key, arr);
   }
   const groups: DifficultyGroup[] = [];
-  for (const [depth, recs] of map.entries()) {
+  for (const [key, recs] of map.entries()) {
+    const [lStr, dStr] = key.split('|');
+    const depthL = Number(lStr) || 0;
+    const depthD = Number(dStr) || 0;
     const count = recs.length;
     let winsL = 0;
     let winsD = 0;
@@ -94,8 +101,8 @@ export function computeDifficultyGroups(list: InfoIAGameRecord[]): DifficultyGro
       maxSec,
       totalSec,
     };
-    groups.push({ depth, records: recs.slice().sort((a, b) => b.createdAt - a.createdAt), stats });
+    groups.push({ key, depthL, depthD, records: recs.slice().sort((a, b) => b.createdAt - a.createdAt), stats });
   }
-  groups.sort((a, b) => b.depth - a.depth);
+  groups.sort((a, b) => (b.depthL - a.depthL) || (b.depthD - a.depthD));
   return groups;
 }

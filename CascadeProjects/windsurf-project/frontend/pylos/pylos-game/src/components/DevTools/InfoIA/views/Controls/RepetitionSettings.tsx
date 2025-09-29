@@ -8,7 +8,17 @@ export function RepetitionSettings(props: {
   return (
     <>
       {/* Límite de repetición de posiciones (para cortar bucles) */}
-      <label className="label" htmlFor="infoia-repeatmax" title="Umbral para detener una simulación cuando se repite una posición tantas veces">Repetición máx.</label>
+      <label
+        className="label"
+        htmlFor="infoia-repeatmax"
+        title={
+          'Número de veces que puede repetirse la misma posición antes de terminar la simulación.\n' +
+          'Útil para evitar partidas infinitas.\n' +
+          'Ejemplo: si pones 3, al detectar la misma posición por 3ª vez se detiene (motivo: repetition-limit).'
+        }
+      >
+        Repetición máx.
+      </label>
       <input
         id="infoia-repeatmax"
         className="field-num"
@@ -18,11 +28,24 @@ export function RepetitionSettings(props: {
         value={repeatMax}
         onChange={(e) => onRepeatMaxChange(Number(e.target.value))}
         style={{ width: 90 }}
-        title="Umbral de repetición (1–10). Al alcanzarse, la simulación finaliza con motivo 'repetition-limit'."
+        title={
+          'Umbral de repetición (1–10).\n' +
+          'Valores más bajos cortan antes (más rápido), valores altos toleran más bucles.'
+        }
       />
 
       {/* Penalización para evitar repetir posiciones en la raíz de la búsqueda */}
-      <label className="label" htmlFor="infoia-avoidpen" title="Penalización aplicada a movimientos raíz que llevan a posiciones repetidas">Evitar bucles (penalización)</label>
+      <label
+        className="label"
+        htmlFor="infoia-avoidpen"
+        title={
+          'Penalización aplicada a jugadas de la raíz que llevan a posiciones ya vistas.\n' +
+          'Cuanto mayor, menos probable que la IA repita.\n' +
+          'Ejemplo: 50 desincentiva fuerte repetir; 0 lo desactiva.'
+        }
+      >
+        Evitar bucles (penalización)
+      </label>
       <input
         id="infoia-avoidpen"
         className="field-num"
@@ -32,7 +55,10 @@ export function RepetitionSettings(props: {
         value={avoidPenalty}
         onChange={(e) => onAvoidPenaltyChange(Number(e.target.value))}
         style={{ width: 110 }}
-        title="Penalización [0–500] en unidades de evaluación. Valores mayores desincentivan ciclos."
+        title={
+          'Rango 0–500 (unidades de evaluación).\n' +
+          'Prueba 20–80 para evitar repeticiones sin afectar jugadas claramente ganadoras.'
+        }
       />
     </>
   );

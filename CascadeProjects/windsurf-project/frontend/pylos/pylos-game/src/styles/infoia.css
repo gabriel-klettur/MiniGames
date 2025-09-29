@@ -55,6 +55,10 @@
 /* Card title */
 .infoia__card-title {
   grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
@@ -63,6 +67,28 @@
   margin-bottom: 6px;
   border-bottom: 1px solid var(--panel-border-color);
 }
+
+/* Collapsible card body keeps original grid columns for children */
+.infoia__card-body { display: contents; }
+
+/* Toggle button style for card headers */
+.infoia__card-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 1px solid var(--panel-border-color);
+  background: rgba(17, 24, 39, 0.45);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  cursor: pointer;
+  transition: transform 160ms ease, filter 120ms ease;
+}
+.infoia__card-toggle:hover { filter: brightness(1.08); }
+.infoia__card-toggle:focus-visible { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 2px; }
+.infoia__card-toggle[aria-expanded="false"] { transform: rotate(-90deg); }
 
 /* Collapsible group wrapper for all controls */
 .infoia__group {
@@ -177,3 +203,15 @@
 
 /* Extra helpers */
 .infoia-panel .motivo-cell { max-width: min(36ch, 45vw); }
+
+/* Per-player panels (stacked vertically) */
+.infoia__player-stack { display: grid; grid-auto-rows: min-content; gap: 12px; width: 100%; }
+.infoia__player { border-radius: 12px; border: 1px solid var(--panel-border-color); background: rgba(17,24,39,0.35); box-shadow: 0 2px 8px rgba(0,0,0,0.25); padding: 8px; }
+.infoia__player-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; margin-bottom: 8px; }
+.infoia__player-title { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
+
+/* Color themes matching ball types */
+.infoia__player--light .infoia__player-header { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.22); }
+.infoia__player--light { border-left: 3px solid rgba(255,255,255,0.45); }
+.infoia__player--dark .infoia__player-header  { background: rgba(59,130,246,0.10); border: 1px solid rgba(59,130,246,0.30); }
+.infoia__player--dark { border-left: 3px solid rgba(59,130,246,0.50); }
