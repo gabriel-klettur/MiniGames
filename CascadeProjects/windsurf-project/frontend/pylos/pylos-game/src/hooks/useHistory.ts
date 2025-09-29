@@ -101,11 +101,13 @@ export function useHistoryLogic(params: {
     if (fromRect && toRect) {
       // Flag that a redo-style animation is happening to pause auto IA triggers
       redoingRef.current = true;
-      // For UNDO animation we already updated history/redo stacks above
-      // Apply prev state at the end of the flight in App's onDone handler.
+      // Schedule the visual overlay flight using the DOM rects captured above
       (window.requestAnimationFrame || setTimeout)(() => {
         setFlying({ from: fromRect as Rect, to: toRect as Rect, imgSrc, destKey: appearKey });
       });
+      // Apply previous state immediately so Undo takes effect even with animation.
+      // We cannot rely on FlyingPiece onDone because pendingState is not set for undo.
+      updateAndCheck(prev, false, false);
     } else {
       // Fallback: apply immediately without animation
       updateAndCheck(prev, false, false);
