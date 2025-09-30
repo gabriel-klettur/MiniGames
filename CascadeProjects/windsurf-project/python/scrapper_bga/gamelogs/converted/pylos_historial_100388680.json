@@ -1,0 +1,228 @@
+{
+  "exportedAt": "2025-09-30T22:00:13.388573+00:00",
+  "archived": [
+    {
+      "id": "bga-100388680",
+      "endedAt": null,
+      "winner": null,
+      "reason": null,
+      "vsAI": null,
+      "iaDepth": null,
+      "iaTimeMode": null,
+      "iaTimeSeconds": 0,
+      "totalMoves": 42,
+      "moves": [
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-1-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-0-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-0-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-2-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 2-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-1-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-0-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-2-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 2-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 0-3-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 2-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 2-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "colocar 3-0-0"
+        }
+      ]
+    }
+  ]
+}
