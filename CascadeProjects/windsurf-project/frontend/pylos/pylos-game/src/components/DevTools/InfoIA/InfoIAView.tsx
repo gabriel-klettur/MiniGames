@@ -1,6 +1,6 @@
 import { useRef, type ChangeEvent } from 'react';
 import type { InfoIAGameRecord } from '../../../utils/infoiaDb';
-import TablaIA from './views/TablaIA';
+import TablaIA from './views/Tabla/TablaIA';
 import ChartContainer from './views/Chart/ChartContainer';
 import TimeBar from './views/TimeBar';
 import CompareBar from './views/CompareBar';

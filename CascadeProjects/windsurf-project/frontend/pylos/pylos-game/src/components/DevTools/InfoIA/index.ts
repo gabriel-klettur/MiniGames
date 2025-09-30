@@ -5,7 +5,7 @@ export { default as InfoIAContainer } from './InfoIAContainer';
 export { default as Controls } from './views/Controls/Controls';
 export { default as TimeBar } from './views/TimeBar';
 export { default as CompareBar } from './views/CompareBar';
-export { default as TablaIA } from './views/TablaIA';
+export { default as TablaIA } from './views/Tabla/TablaIA';
 export { default as Chart } from './views/Chart/ChartContainer';
 export { default as ChartContainer } from './views/Chart/ChartContainer';
 

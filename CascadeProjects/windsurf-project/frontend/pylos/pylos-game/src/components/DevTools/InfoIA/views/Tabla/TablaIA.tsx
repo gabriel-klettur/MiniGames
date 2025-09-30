@@ -1,10 +1,10 @@
-import type { InfoIAGameRecord } from '../../../../utils/infoiaDb';
-import { fmtDate, fmtSecOrMinSec } from '../utils/date';
+import type { InfoIAGameRecord } from '../../../../../utils/infoiaDb';
+import { fmtDate, fmtSecOrMinSec } from '../../utils/date';
 import { useState, useMemo, Fragment } from 'react';
-import { computeDifficultyGroups } from '../utils/aggregates';
-import bolaA from '../../../../assets/bola_a.webp';
-import bolaB from '../../../../assets/bola_b.webp';
-import MoveTimeChart from './Chart/MoveTimeChart';
+import { computeDifficultyGroups } from '../../utils/aggregates';
+import bolaA from '../../../../../assets/bola_a.webp';
+import bolaB from '../../../../../assets/bola_b.webp';
+import MoveTimeChart from '../Chart/MoveTimeChart';
 
 export type TablaIAProps = {
   records: InfoIAGameRecord[];
@@ -427,8 +427,19 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   }
   const totalRepeated = repCounts.filter((c) => c >= 2).length;
   const thresholdHits = repCounts.filter((c) => c === threshold).length;
-  // Total nodes across the entire game (sum of per-move nodes)
-  const totalNodesAll = per.reduce((acc, pm) => acc + (Number.isFinite(pm.nodes as number) ? (pm.nodes as number) : 0), 0);
+  // Total nodes across the game
+  const nodesTotal = per.reduce((acc, pm) => acc + (Number.isFinite(pm.nodes as number) ? (pm.nodes as number) : 0), 0);
+  // Remaining nodes per move (total - accumulated up to and including this move)
+  const nodesRemaining: number[] = [];
+  {
+    let acc = 0;
+    for (let i = 0; i < per.length; i++) {
+      const cur = Number.isFinite(per[i].nodes as number) ? (per[i].nodes as number) : 0;
+      const rem = Math.max(0, nodesTotal - acc - cur);
+      nodesRemaining.push(rem);
+      acc += cur;
+    }
+  }
   // Resolve bitboards usage per player from first occurrence
   const bbL = (() => {
     const m = per.find((pm) => pm.player === 'L' && typeof pm.bitboardsUsed === 'boolean');
@@ -496,7 +507,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
               <th className="text-right" title="Conteo de veces que se ha visto esta posición (antes de mover) hasta ahora">rep</th>
               <th className="text-right" title="Tiempo de pensamiento de la IA para esta jugada (segundos)">t (s)</th>
               <th className="text-right" title="Profundidad máxima de búsqueda alcanzada durante la jugada">prof</th>
-              <th className="text-right" title="Número de nodos evaluados para esta jugada">nodes</th>
+              <th className="text-right" title="Nodos: jugada/restantes/totales">nodes</th>
               <th className="text-right" title="Nodos por segundo; rendimiento del motor durante la jugada">NPS</th>
               <th className="text-right" title="Valor de evaluación de la jugada desde la perspectiva del jugador actual">score</th>
               <th className="text-center" title="Origen de la jugada (book/start/search)">Origen</th>
@@ -547,7 +558,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>
                 <td className="text-right">{
                   Number.isFinite(m.nodes as number)
-                    ? `${m.nodes}/${totalNodesAll}`
+                    ? `${m.nodes}/${nodesRemaining[i]}/${nodesTotal}`
                     : '—'
                 }</td>
                 <td className="text-right">{Number.isFinite(m.nps as number) ? Number(m.nps).toFixed(3) : '—'}</td>
