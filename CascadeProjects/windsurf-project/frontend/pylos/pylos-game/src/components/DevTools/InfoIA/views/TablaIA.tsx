@@ -427,6 +427,8 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   }
   const totalRepeated = repCounts.filter((c) => c >= 2).length;
   const thresholdHits = repCounts.filter((c) => c === threshold).length;
+  // Total nodes across the entire game (sum of per-move nodes)
+  const totalNodesAll = per.reduce((acc, pm) => acc + (Number.isFinite(pm.nodes as number) ? (pm.nodes as number) : 0), 0);
   // Resolve bitboards usage per player from first occurrence
   const bbL = (() => {
     const m = per.find((pm) => pm.player === 'L' && typeof pm.bitboardsUsed === 'boolean');
@@ -543,7 +545,11 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                   <td className="text-right">{count}</td>
                   <td className="text-right">{fmtSecOrMinSec((m.elapsedMs ?? 0) / 1000, 3)}</td>
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>
-                <td className="text-right">{Number.isFinite(m.nodes as number) ? m.nodes : '—'}</td>
+                <td className="text-right">{
+                  Number.isFinite(m.nodes as number)
+                    ? `${m.nodes}/${totalNodesAll}`
+                    : '—'
+                }</td>
                 <td className="text-right">{Number.isFinite(m.nps as number) ? Number(m.nps).toFixed(3) : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.score as number) ? Number(m.score).toFixed(3) : '—'}</td>
                 <td className="text-center">{

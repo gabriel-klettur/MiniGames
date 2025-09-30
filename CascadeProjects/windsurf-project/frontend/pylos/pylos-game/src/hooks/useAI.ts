@@ -139,6 +139,8 @@ export function useAI(params: UseAIParams): UseAIResult {
   const recoverQueueRef = useRef<{ items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> } | null>(null);
   // Delay timer between removing a piece and starting its flying animation
   const recoverDelayTimerRef = useRef<number | null>(null);
+  // Flag to indicate that the current recover phase is being handled by AI animations
+  const aiRecoveryActiveRef = useRef<boolean>(false);
 
   // Disable AI when navigating the past or during animations, etc.
   const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current || (!!vsAI && !atPresent);
@@ -276,8 +278,10 @@ export function useAI(params: UseAIParams): UseAIResult {
               });
             }
             recoverQueueRef.current = items.length ? { items } : null;
+            aiRecoveryActiveRef.current = !!recoverQueueRef.current; // AI will drive recovery
           } else {
             recoverQueueRef.current = null;
+            aiRecoveryActiveRef.current = false;
           }
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
@@ -359,12 +363,13 @@ export function useAI(params: UseAIParams): UseAIResult {
     if (flying) return; // wait until no animation in progress
     const q = recoverQueueRef.current;
     if (!q || q.items.length === 0) {
-      // No more queued recoveries: if still in recover phase, finish it automatically
-      if (state.phase === 'recover' && recoverDelayTimerRef.current === null) {
+      // Only auto-finish recovery if this phase was initiated by AI and queue is done
+      if (aiRecoveryActiveRef.current && state.phase === 'recover' && recoverDelayTimerRef.current === null) {
         const fin = finishRecovery(state);
         if (!fin.error) {
           updateAndCheck(fin.state, true, true, { player: state.currentPlayer, source: 'IA', text: 'fin recuperación' });
         }
+        aiRecoveryActiveRef.current = false;
       }
       return;
     }

@@ -349,8 +349,18 @@ function App() {
     updateAndCheck,
     historyStates: history,
   });
-  // Undo/Redo availability flags (used in board actions panel)
-  const canUndo = history.length > 0 && !flying && !autoRunningRef.current && !iaBusy;
+  // Queue for undo requests while an animation is in progress
+  const undoQueuedRef = useRef<boolean>(false);
+  // Wrap original onUndo to queue if an animation is active
+  const onUndoClick = () => {
+    if (flying) {
+      undoQueuedRef.current = true;
+      return;
+    }
+    onUndo();
+  };
+  // Undo availability: keep enabled even during animations so user can queue it
+  const canUndo = history.length > 0 && !autoRunningRef.current && !iaBusy;
 
   // Compute concise winner label for modal: "Ganador: Humano/IA"
   const winnerMessage = useWinnerMessage(gameOver, state, moves, vsAI);
@@ -502,7 +512,7 @@ function App() {
         )}
         <UndoRedo
           canUndo={canUndo}
-          onUndo={onUndo}
+          onUndo={onUndoClick}
           showFinishRecovery={state.phase === 'recover'}
           onFinishRecovery={onFinishRecovery}
         />
@@ -624,6 +634,11 @@ function App() {
             const overlapMs = 250;
             window.setTimeout(() => {
               setFlying(null);
+              // If user requested undo during the animation, execute it now
+              if (undoQueuedRef.current) {
+                undoQueuedRef.current = false;
+                onUndo();
+              }
             }, overlapMs);
           }}
         />
