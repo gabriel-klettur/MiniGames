@@ -161,7 +161,7 @@ El orden en que exploras jugadas **reduce drásticamente nodos**:
 
 # ✅ Checklist de Implementación
 
-* [ ] Representación con bitboards y tablas precalculadas.
+* [X] Representación con bitboards y tablas precalculadas.
 * [X] Evaluación lineal con términos básicos y tapered eval.
 * [X] Iterative deepening con límite de tiempo.
 * [X] TT con Zobrist hashing.

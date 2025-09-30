@@ -16,6 +16,9 @@ export function HeuristicSettings(props: {
   onRootJitterProbChange: (v: number) => void;
   rootLMR: boolean;
   onRootLMRChange: (v: boolean) => void;
+  // New: per-player engine toggle
+  bitboardsEnabled?: boolean;
+  onBitboardsEnabledChange?: (v: boolean) => void;
 }) {
   const {
     diversify, onDiversifyChange,
@@ -26,10 +29,23 @@ export function HeuristicSettings(props: {
     rootJitter, onRootJitterChange,
     rootJitterProb, onRootJitterProbChange,
     rootLMR, onRootLMRChange,
+    bitboardsEnabled, onBitboardsEnabledChange,
   } = props;
 
   return (
     <>
+      <label
+        className="label"
+        htmlFor="infoia-bitboards"
+        title={
+          'Activar la ruta de bitboards (BigInt) en el motor para soporte/piezas libres.\n' +
+          'Permite comparar rendimiento y fuerza por jugador durante simulaciones.'
+        }
+      >
+        Bitboards
+      </label>
+      <input id="infoia-bitboards" type="checkbox" checked={!!bitboardsEnabled} onChange={(e) => onBitboardsEnabledChange?.(e.target.checked)} aria-checked={!!bitboardsEnabled} />
+
       <label
         className="label"
         htmlFor="infoia-topk"

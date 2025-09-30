@@ -93,7 +93,7 @@ export type ComputeOptions = {
     search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>;
     bookEnabled?: boolean;
     bookUrl?: string;
-    flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }>;
+    flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean; bitboardsEnabled: boolean }>;
     // Start behavior (first move)
     start?: Partial<{
       // Back-compat boolean (if true and no mode provided -> behaves like mode 'random')

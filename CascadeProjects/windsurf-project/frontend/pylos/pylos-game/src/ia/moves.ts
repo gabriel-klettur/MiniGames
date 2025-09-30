@@ -2,6 +2,8 @@ import type { GameState, Player, Position, Board } from '../game/types';
 import { positions, getCell, isEmpty, setCell, levelSize, isFree, inBounds, isSupported } from '../game/board';
 import { getSupports } from './precomputed';
 import { getIAFlags } from './config';
+import { boardToBitboards, occupiedUnion, isSupportedBB, isFreeBB } from './bitboard';
+import { posIndex } from './zobrist';
 
 export type PlaceMove = { kind: 'place'; dest: Position; recovers?: Position[] };
 export type LiftMove = { kind: 'lift'; src: Position; dest: Position; recovers?: Position[] };
@@ -12,6 +14,12 @@ function other(p: Player): Player { return p === 'L' ? 'D' : 'L'; }
 // Support check honoring runtime flags
 function isSupportedEffective(board: Board, pos: Position): boolean {
   const flags = getIAFlags();
+  // Use bitboards fast path when enabled
+  if (flags.bitboardsEnabled) {
+    const occ = occupiedUnion(boardToBitboards(board));
+    const idx = posIndex(pos.level, pos.row, pos.col);
+    return isSupportedBB(idx, occ);
+  }
   if (!flags.precomputedSupports) {
     return isSupported(board, pos);
   }
@@ -21,6 +29,17 @@ function isSupportedEffective(board: Board, pos: Position): boolean {
     if (!inBounds(s) || getCell(board, s) === null) return false;
   }
   return true;
+}
+
+// Free check honoring runtime flags
+function isFreeEffective(board: Board, pos: Position): boolean {
+  const flags = getIAFlags();
+  if (flags.bitboardsEnabled) {
+    const occ = occupiedUnion(boardToBitboards(board));
+    const idx = posIndex(pos.level, pos.row, pos.col);
+    return isFreeBB(idx, occ);
+  }
+  return isFree(board, pos);
 }
 
 // Pattern detection (aligned with rules.ts)
@@ -90,7 +109,7 @@ function validMoveDestinations(board: Board, source: Position): Position[] {
 }
 
 function freePiecesOf(board: Board, player: Player): Position[] {
-  return positions().filter((p) => getCell(board, p) === player && isFree(board, p));
+  return positions().filter((p) => getCell(board, p) === player && isFreeEffective(board, p));
 }
 
 export function generateBaseMoves(state: GameState): AIMove[] {

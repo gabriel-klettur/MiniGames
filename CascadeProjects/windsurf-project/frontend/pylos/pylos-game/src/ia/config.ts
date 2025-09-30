@@ -5,6 +5,7 @@ export type IAFlags = {
   pvsEnabled: boolean;
   aspirationEnabled: boolean;
   ttEnabled: boolean;
+  bitboardsEnabled: boolean;
 };
 
 const flags: IAFlags = {
@@ -13,6 +14,7 @@ const flags: IAFlags = {
   pvsEnabled: true,
   aspirationEnabled: true,
   ttEnabled: true,
+  bitboardsEnabled: true,
 };
 
 export function setIAFlags(partial: Partial<IAFlags>): void {
@@ -21,6 +23,7 @@ export function setIAFlags(partial: Partial<IAFlags>): void {
   if (typeof partial.pvsEnabled === 'boolean') flags.pvsEnabled = partial.pvsEnabled;
   if (typeof partial.aspirationEnabled === 'boolean') flags.aspirationEnabled = partial.aspirationEnabled;
   if (typeof partial.ttEnabled === 'boolean') flags.ttEnabled = partial.ttEnabled;
+  if (typeof partial.bitboardsEnabled === 'boolean') flags.bitboardsEnabled = partial.bitboardsEnabled;
 }
 
 export function getIAFlags(): IAFlags {

@@ -36,6 +36,8 @@ export type InfoIAPerMove = {
   rootLMRUsed?: boolean;
   epsilonUsed?: number;
   tieDeltaUsed?: number;
+  // Engine path used for this move
+  bitboardsUsed?: boolean;
   phaseAfter?: 'play' | 'recover';
 };
 

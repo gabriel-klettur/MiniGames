@@ -49,7 +49,7 @@ self.onmessage = async (e: MessageEvent) => {
   const drawBias: number | undefined = (typeof data.drawBias === 'number') ? Math.max(0, Math.floor(Number(data.drawBias))) : undefined;
   const rootTopK: number | undefined = (typeof data.rootTopK === 'number') ? Math.max(2, Math.min(8, Math.floor(Number(data.rootTopK)))) : undefined;
   // Optional AI configuration
-  const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean; bookUrl?: string; flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean }> };
+  const cfg = (data.cfg || {}) as { search?: Partial<{ qDepthMax: number; qNodeCap: number; futilityMargin: number; quiescence: boolean }>; bookEnabled?: boolean; bookUrl?: string; flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean; bitboardsEnabled: boolean }> };
   try { setSearchConfig(cfg.search || {}); } catch {}
   try { if (cfg.bookUrl) setBookUrl(cfg.bookUrl); } catch {}
   const bookEnabled = cfg.bookEnabled !== false; // default true

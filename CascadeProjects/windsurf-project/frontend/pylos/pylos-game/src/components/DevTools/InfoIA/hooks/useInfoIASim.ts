@@ -284,6 +284,9 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           cfg: {
             bookEnabled: (typeof anti.bookEnabled === 'boolean') ? !!anti.bookEnabled : !!useBook,
             bookUrl,
+            flags: {
+              bitboardsEnabled: (typeof adv.bitboardsEnabled === 'boolean') ? !!adv.bitboardsEnabled : undefined,
+            },
             start: {
               randomFirstMove: adv.startRandomFirstMove,
               seed: typeof adv.startSeed === 'number' ? adv.startSeed : undefined,
@@ -324,6 +327,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           rootLMRUsed: !!anti.rootLMR,
           epsilonUsed: epsilonFinal,
           tieDeltaUsed: tieDeltaFinal,
+          bitboardsUsed: (typeof adv.bitboardsEnabled === 'boolean') ? !!adv.bitboardsEnabled : undefined,
         };
         if (!res.move) break;
         // Detect progress: if the move has recoveries, consider it progress and reset counter

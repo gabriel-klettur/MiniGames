@@ -50,6 +50,10 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
   const [rootJitterProb, setRootJitterProb] = useState<number>(init.rootJitterProb ?? DEFAULTS.rootJitterProb);
   const [rootLMR, setRootLMR] = useState<boolean>(init.rootLMR ?? DEFAULTS.rootLMR);
   const [drawBias, setDrawBias] = useState<number>(init.drawBias ?? DEFAULTS.drawBias);
+  // New: per-player bitboards toggle (default true if not set)
+  const [bitboardsEnabled, setBitboardsEnabled] = useState<boolean>(
+    typeof init.bitboardsEnabled === 'boolean' ? !!init.bitboardsEnabled : true
+  );
   const [timeRiskEnabled, setTimeRiskEnabled] = useState<boolean>(init.timeRiskEnabled ?? DEFAULTS.timeRiskEnabled);
   const [noProgressLimit, setNoProgressLimit] = useState<number>(init.noProgressLimit ?? DEFAULTS.noProgressLimit);
   const [avoidStepFactor, setAvoidStepFactor] = useState<number>(init.avoidStepFactor ?? DEFAULTS.avoidStepFactor);
@@ -141,6 +145,11 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
     writeAdvancedCfgByPlayer(player, { drawBias: b });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawBias, player]);
+
+  // Persist bitboards toggle per player
+  useEffect(() => {
+    writeAdvancedCfgByPlayer(player, { bitboardsEnabled });
+  }, [player, bitboardsEnabled]);
 
   useEffect(() => { writeAdvancedCfgByPlayer(player, { timeRiskEnabled }); }, [player, timeRiskEnabled]);
   // Persist new fields
@@ -279,6 +288,8 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
               onRootJitterProbChange={setRootJitterProb}
               rootLMR={rootLMR}
               onRootLMRChange={setRootLMR}
+              bitboardsEnabled={bitboardsEnabled}
+              onBitboardsEnabledChange={setBitboardsEnabled}
             />
           </div>
         )}

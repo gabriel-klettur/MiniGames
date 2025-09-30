@@ -427,6 +427,15 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
   }
   const totalRepeated = repCounts.filter((c) => c >= 2).length;
   const thresholdHits = repCounts.filter((c) => c === threshold).length;
+  // Resolve bitboards usage per player from first occurrence
+  const bbL = (() => {
+    const m = per.find((pm) => pm.player === 'L' && typeof pm.bitboardsUsed === 'boolean');
+    return typeof m?.bitboardsUsed === 'boolean' ? m!.bitboardsUsed : undefined;
+  })();
+  const bbD = (() => {
+    const m = per.find((pm) => pm.player === 'D' && typeof pm.bitboardsUsed === 'boolean');
+    return typeof m?.bitboardsUsed === 'boolean' ? m!.bitboardsUsed : undefined;
+  })();
   return (
     <div style={{ padding: 12 }}>
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -458,6 +467,12 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
         {typeof r.startSeed === 'number' && (
           <span className="badge" title="Semilla de inicio (si aplica)">Start seed: {r.startSeed}</span>
         )}
+        {typeof bbL === 'boolean' && (
+          <span className="badge" title="Bitboards activados para L">BB L: {bbL ? 'on' : 'off'}</span>
+        )}
+        {typeof bbD === 'boolean' && (
+          <span className="badge" title="Bitboards activados para D">BB D: {bbD ? 'on' : 'off'}</span>
+        )}
         {totalRepeated > 0 && (
           <span className="badge" title="Jugadas que repiten una posición ya vista (c>=2)">Repetidas: {totalRepeated}</span>
         )}
@@ -478,11 +493,12 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
               <th title="Índice de jugada (1 = primera jugada de la partida)">#</th>
               <th className="text-right" title="Conteo de veces que se ha visto esta posición (antes de mover) hasta ahora">rep</th>
               <th className="text-right" title="Tiempo de pensamiento de la IA para esta jugada (segundos)">t (s)</th>
-              <th className="text-right" title="Profundidad máxima de búsqueda alcanzada durante la jugada">prof alcanzada</th>
+              <th className="text-right" title="Profundidad máxima de búsqueda alcanzada durante la jugada">prof</th>
               <th className="text-right" title="Número de nodos evaluados para esta jugada">nodes</th>
               <th className="text-right" title="Nodos por segundo; rendimiento del motor durante la jugada">NPS</th>
               <th className="text-right" title="Valor de evaluación de la jugada desde la perspectiva del jugador actual">score</th>
               <th className="text-center" title="Origen de la jugada (book/start/search)">Origen</th>
+              <th className="text-center" title="Uso de bitboards en esta jugada">BB</th>
               <th className="text-right" title="Workers utilizados por el motor en esta jugada">workers</th>
               <th className="text-right" title="Reservas L antes/después">rL b/a</th>
               <th className="text-right" title="Reservas D antes/después">rD b/a</th>
@@ -528,8 +544,8 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                   <td className="text-right">{fmtSecOrMinSec((m.elapsedMs ?? 0) / 1000, 3)}</td>
                 <td className="text-right">{Number.isFinite(m.depthReached as number) ? m.depthReached : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.nodes as number) ? m.nodes : '—'}</td>
-                <td className="text-right">{Number.isFinite(m.nps as number) ? m.nps : '—'}</td>
-                <td className="text-right">{Number.isFinite(m.score as number) ? m.score : '—'}</td>
+                <td className="text-right">{Number.isFinite(m.nps as number) ? Number(m.nps).toFixed(3) : '—'}</td>
+                <td className="text-right">{Number.isFinite(m.score as number) ? Number(m.score).toFixed(3) : '—'}</td>
                 <td className="text-center">{
                   (() => {
                     const s = (m as any)?.source as ("book" | "start" | "search" | undefined);
@@ -542,6 +558,7 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                     return <span className="badge" style={style as any}>{s}</span>;
                   })()
                 }</td>
+                <td className="text-center">{typeof m.bitboardsUsed === 'boolean' ? (m.bitboardsUsed ? '✓' : '—') : '—'}</td>
                 <td className="text-right">{Number.isFinite(m.workersUsed as number) ? m.workersUsed : '—'}</td>
                 <td className="text-right">{
                   (() => {
@@ -577,8 +594,16 @@ function GameDetails({ record: r }: { record: InfoIAGameRecord }) {
                   })()
                 }</td>
                 <td className="text-center">{m.phaseAfter ?? '—'}</td>
-                <td className="mono">{Number.isFinite(m.keyHi as number) ? (m.keyHi as number) >>> 0 : '—'}</td>
-                <td className="mono">{Number.isFinite(m.keyLo as number) ? (m.keyLo as number) >>> 0 : '—'}</td>
+                <td className="mono" title={Number.isFinite(m.keyHi as number) ? String(((m.keyHi as number) >>> 0)) : undefined}>{
+                  Number.isFinite(m.keyHi as number)
+                    ? (String(((m.keyHi as number) >>> 0)).slice(0, 3) + '...')
+                    : '—'
+                }</td>
+                <td className="mono" title={Number.isFinite(m.keyLo as number) ? String(((m.keyLo as number) >>> 0)) : undefined}>{
+                  Number.isFinite(m.keyLo as number)
+                    ? (String(((m.keyLo as number) >>> 0)).slice(0, 3) + '...')
+                    : '—'
+                }</td>
                 <td className="mono">{Number.isFinite(m.moveSig as number) ? (m.moveSig as number) >>> 0 : '—'}</td>
                 </tr>
               );

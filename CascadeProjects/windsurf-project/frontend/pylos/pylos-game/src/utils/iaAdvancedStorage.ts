@@ -30,6 +30,8 @@ export type AdvancedCfg = {
   tieDelta?: number;
   workers?: 'auto' | number;
   bookEnabled?: boolean;
+  // Engine bitboards toggle (per-player)
+  bitboardsEnabled?: boolean;
 };
 
 export const DEFAULTS: Required<Pick<AdvancedCfg,
@@ -87,6 +89,7 @@ export function readAdvancedCfg(): AdvancedCfg {
     const tieDelta = Number.isFinite(p?.tieDelta) ? Math.max(0, Math.min(100, Math.floor(p.tieDelta))) : undefined;
     const workers = (p?.workers === 'auto' || Number.isFinite(p?.workers)) ? (p.workers === 'auto' ? 'auto' : Math.max(1, Math.min(16, Math.floor(p.workers)))) : undefined;
     const bookEnabled = typeof p?.bookEnabled === 'boolean' ? !!p.bookEnabled : undefined;
+    const bitboardsEnabled = typeof p?.bitboardsEnabled === 'boolean' ? !!p.bitboardsEnabled : undefined;
     return {
       startRandomFirstMove,
       startSeed,
@@ -112,6 +115,7 @@ export function readAdvancedCfg(): AdvancedCfg {
       tieDelta,
       workers,
       bookEnabled,
+      bitboardsEnabled,
     };
   } catch {
     return {};
