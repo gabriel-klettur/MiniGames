@@ -417,6 +417,8 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
+        showHistory={showHistory}
+        onToggleHistory={() => setShowHistory((v) => !v)}
       />
       {showIAUser && (
         <IAUserPanel

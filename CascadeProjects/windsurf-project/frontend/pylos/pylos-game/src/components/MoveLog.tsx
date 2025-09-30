@@ -1,34 +1,47 @@
+import { useMemo, useState } from 'react';
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from '../hooks/usePersistence';
+import HistoryPagination from './HistoryPagination';
 
 export interface MoveLogProps {
   moves: MoveEntry[];
   onDownload?: () => void;
   hasArchive?: boolean;
   onClear?: () => void;
+  disablePagination?: boolean;
 }
 
 /**
  * MoveLog: pretty move list with player icon and source tag (Player/IA/AUTO).
  * Also compacts consecutive duplicate entries with a small counter.
  */
-export default function MoveLog({ moves, onDownload, hasArchive = false, onClear }: MoveLogProps) {
+export default function MoveLog({ moves, onDownload, hasArchive = false, onClear, disablePagination = true }: MoveLogProps) {
   type Entry = MoveEntry & { count: number };
 
-  const grouped: Entry[] = [];
-
-  // Group consecutive duplicates based on (source, player, text)
-  for (let i = 0; i < moves.length; i++) {
-    const parsed = moves[i];
-    const key = `${parsed.source}|${parsed.player}|${parsed.text}`;
-    const prev = grouped[grouped.length - 1];
-    if (prev && `${prev.source}|${prev.player}|${prev.text}` === key) {
-      prev.count += 1;
-    } else {
-      grouped.push({ ...parsed, count: 1 });
+  const grouped: Entry[] = useMemo(() => {
+    const acc: Entry[] = [];
+    for (let i = 0; i < moves.length; i++) {
+      const parsed = moves[i];
+      const key = `${parsed.source}|${parsed.player}|${parsed.text}`;
+      const prev = acc[acc.length - 1];
+      if (prev && `${prev.source}|${prev.player}|${prev.text}` === key) {
+        prev.count += 1;
+      } else {
+        acc.push({ ...parsed, count: 1 });
+      }
     }
-  }
+    return acc;
+  }, [moves]);
+
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState<number>(1);
+  const total = grouped.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageSafe = Math.min(Math.max(1, page), totalPages);
+  const start = (pageSafe - 1) * PAGE_SIZE;
+  const end = disablePagination ? total : Math.min(total, start + PAGE_SIZE);
+  const pageItems = disablePagination ? grouped : grouped.slice(start, end);
 
   const iconFor = (p: 'L' | 'D') => (p === 'L' ? bolaB : bolaA);
   const labelFor = (s: MoveEntry['source']) => (s === 'IA' ? 'IA' : s === 'AUTO' ? 'AUTO' : 'Jugador');
@@ -67,7 +80,7 @@ export default function MoveLog({ moves, onDownload, hasArchive = false, onClear
         <p className="muted">Sin movimientos</p>
       ) : (
         <ol>
-          {grouped.map((e, i) => (
+          {pageItems.map((e, i) => (
             <li key={i} className="moves__item">
               <img
                 src={iconFor(e.player)}
@@ -90,6 +103,9 @@ export default function MoveLog({ moves, onDownload, hasArchive = false, onClear
             </li>
           ))}
         </ol>
+      )}
+      {!disablePagination && total > PAGE_SIZE && (
+        <HistoryPagination total={total} pageSize={PAGE_SIZE} page={pageSafe} onChange={setPage} />
       )}
     </section>
   );

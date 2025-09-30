@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { FinishedGameRecord } from '../hooks/usePersistence';
 import MoveLog from './MoveLog';
+import HistoryPagination from './HistoryPagination';
 
 export interface StoredGamesProps {
   games: FinishedGameRecord[];
@@ -18,6 +19,16 @@ const StoredGames: React.FC<StoredGamesProps> = ({ games }) => {
     return [...games].sort((a, b) => (a.endedAt < b.endedAt ? 1 : -1));
   }, [games]);
 
+  // Paginación de partidas archivadas
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState<number>(1);
+  const total = ordered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const pageSafe = Math.min(Math.max(1, page), totalPages);
+  const start = (pageSafe - 1) * PAGE_SIZE;
+  const end = Math.min(total, start + PAGE_SIZE);
+  const pageItems = ordered.slice(start, end);
+
   const toggle = (id: string) => {
     setOpen((prev) => {
       const next = new Set(prev);
@@ -34,7 +45,7 @@ const StoredGames: React.FC<StoredGamesProps> = ({ games }) => {
     <section aria-label="Partidas archivadas">
       <h4 style={{ margin: '8px 0' }}>Partidas archivadas</h4>
       <ul style={{ listStyle: 'none', paddingLeft: 0, margin: 0 }}>
-        {ordered.map((g) => {
+        {pageItems.map((g) => {
           const isOpen = open.has(g.id);
           const endedLocal = new Date(g.endedAt).toLocaleString();
           const vs = g.simulated ? 'Simulada (IA vs IA)'
@@ -68,13 +79,16 @@ const StoredGames: React.FC<StoredGamesProps> = ({ games }) => {
               </button>
               {isOpen && (
                 <div style={{ padding: '8px 12px' }}>
-                  <MoveLog moves={g.moves} />
+                  <MoveLog moves={g.moves} disablePagination />
                 </div>
               )}
             </li>
           );
         })}
       </ul>
+      {total > PAGE_SIZE && (
+        <HistoryPagination total={total} pageSize={PAGE_SIZE} page={pageSafe} onChange={setPage} />
+      )}
     </section>
   );
 };

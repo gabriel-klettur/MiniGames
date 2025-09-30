@@ -16,13 +16,18 @@ export interface HeaderPanelProps {
   showDevToggle?: boolean;
   // Iniciar partida contra IA (selección de lado y dificultad)
   onStartVsAI?: (enemy: 'L' | 'D', depth: number) => void;
+  // Historial: estado de visibilidad y alternador
+  showHistory?: boolean;
+  onToggleHistory?: () => void;
+  // Control para ocultar el botón Historial en el header
+  showHistoryToggle?: boolean;
 }
 
 /**
  * HeaderPanel: muestra el nombre del juego y acciones principales (Nuevo, Dev).
  * Se piensa para el Sidebar y busca ser compacto en altura.
  */
-function HeaderPanel({ title = 'Pylos v1.29.9.610-PR', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
+function HeaderPanel({ title = 'Pylos v1.29.9.610-PR', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {}, showHistory = false, onToggleHistory = () => {}, showHistoryToggle = true }: HeaderPanelProps) {
   // Estado del popover para Partida Vs IA
   const [vsOpen, setVsOpen] = useState<boolean>(false);
   const [selectedSide, setSelectedSide] = useState<'L' | 'D' | null>(null);
@@ -124,6 +129,19 @@ function HeaderPanel({ title = 'Pylos v1.29.9.610-PR', onNewGame, showTools, onT
                 <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
               </svg>
               <span className="header-btn__label">IA</span>
+            </button>
+          )}
+          {showHistoryToggle && (
+            <button
+              onClick={onToggleHistory}
+              aria-pressed={showHistory}
+              aria-label="Alternar historial"
+              title="Historial"
+            >
+              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
+              </svg>
+              <span className="header-btn__label"></span>
             </button>
           )}
           {showDevToggle && (
