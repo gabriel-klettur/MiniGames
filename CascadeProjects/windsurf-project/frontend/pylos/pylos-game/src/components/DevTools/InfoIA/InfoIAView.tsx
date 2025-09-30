@@ -15,6 +15,7 @@ export type CompareDataset = { id: string; name: string; color: string; records:
 
 export type InfoIAViewProps = {
   toast: null | { message: string; kind: 'success' | 'error' | 'info' };
+  onToast: (message: string, kind?: 'success' | 'error' | 'info') => void;
   activeTab: 'sim' | 'charts' | 'books';
   onChangeTab: (tab: 'sim' | 'charts' | 'books') => void;
 
@@ -85,6 +86,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
 
   const {
     toast,
+    onToast,
     activeTab,
     onChangeTab,
     depth,
@@ -263,6 +265,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
                 allowDelete={activeDs == null}
                 onDelete={onDelete}
                 groupByDepth={groupByDepth}
+                onToast={onToast}
               />
             );
           })()}

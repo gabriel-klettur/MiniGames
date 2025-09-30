@@ -84,9 +84,9 @@ export function useAnimations(): UseAnimationsResult {
 
   // UI/UX animation parameters
   const [pieceScale, setPieceScale] = useState<number>(1.55);
-  const [animAppearMs, setAnimAppearMs] = useState<number>(280);
-  const [animFlashMs, setAnimFlashMs] = useState<number>(900);
-  const [animFlyMs, setAnimFlyMs] = useState<number>(900);
+  const [animAppearMs, setAnimAppearMs] = useState<number>(280);  // Appear duration (aparición de pieza)
+  const [animFlashMs, setAnimFlashMs] = useState<number>(900);  // Flash duration (remarcado de borde blanco)
+  const [animFlyMs, setAnimFlyMs] = useState<number>(2000);  // Fly duration (movimiento de pieza)
 
   // Board shading controls
   const [noShade, setNoShade] = useState<{ 0: boolean; 1: boolean; 2: boolean; 3: boolean }>({ 0: false, 1: false, 2: false, 3: false });

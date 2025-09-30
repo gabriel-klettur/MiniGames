@@ -21,6 +21,22 @@ export type InfoIAPerMove = {
   // 'start' => chosen by start policy on empty board (random/center-topk)
   // 'search' => computed by the search engine
   source?: 'book' | 'start' | 'search';
+  // Extra telemetry for diagnosis
+  reservesLBefore?: number;
+  reservesDBefore?: number;
+  reservesLAfter?: number;
+  reservesDAfter?: number;
+  recoveredThisMove?: number; // number of balls recovered in this move (0..2)
+  repCountBefore?: number; // repetition count for position before moving
+  depthTarget?: number; // configured target depth for this move (before reductions)
+  timeBudgetMs?: number; // effective time budget used this move (manual mode or adapted)
+  diversify?: 'off' | 'epsilon';
+  rootTopKUsed?: number;
+  rootJitterUsed?: boolean;
+  rootLMRUsed?: boolean;
+  epsilonUsed?: number;
+  tieDeltaUsed?: number;
+  phaseAfter?: 'play' | 'recover';
 };
 
 export type InfoIAGameRecord = {
@@ -28,6 +44,9 @@ export type InfoIAGameRecord = {
   createdAt: number; // epoch ms
   version: 'pylos-infoia-v1';
   depth: number; // difficulty used for both players
+  // Optional: per-player configured difficulties at the time of the game
+  depthL?: number;
+  depthD?: number;
   timeMode: 'auto' | 'manual';
   timeSeconds?: number; // present when manual
   pliesLimit: number;
@@ -38,7 +57,11 @@ export type InfoIAGameRecord = {
   maxWorkersUsed?: number;
   winner: 'L' | 'D' | null;
   endedReason?: string;
-  seed?: number;
+  seed?: number; // game-level seed for reproducibility
+  // Start/book settings used for this game (snapshot)
+  startRandomFirstMove?: boolean;
+  startSeed?: number;
+  bookEnabled?: boolean;
   // New: repetition metrics observed during simulation
   // repeatMax: threshold used to consider a position "repeated enough"
   // repeatHits: number of times we reached that threshold across the game

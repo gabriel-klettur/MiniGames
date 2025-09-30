@@ -58,7 +58,8 @@ export async function getBestMove(state: GameState, opts: BestMoveOptions) {
     ...opts,
     cfg: {
       ...(opts as any)?.cfg,
-      start: { ...((opts as any)?.cfg?.start || {}), ...start },
+      // Prefer per-call start settings (e.g., per-player) over legacy storage
+      start: { ...start, ...(((opts as any)?.cfg?.start) || {}) },
     },
   };
   return computeBestMoveAsync(state, merged);

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameState } from '../game/types';
+import type { GameState, Position } from '../game/types';
 import { posKey } from '../game/board';
 import { applyMove } from '../ia/moves';
 import type { AIMove } from '../ia/moves';
@@ -133,6 +133,8 @@ export function useAI(params: UseAIParams): UseAIResult {
   const [iaNps, setIaNps] = useState<number>(0);
   const [iaRootPlayer, setIaRootPlayer] = useState<'L' | 'D' | null>(null);
   const iaAbortRef = useRef<AbortController | null>(null);
+  // Queue of AI recover animations to run AFTER the main move animation completes
+  const recoverQueueRef = useRef<{ player: 'L' | 'D'; recovers: Position[] } | null>(null);
 
   // Disable AI when navigating the past or during animations, etc.
   const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current || (!!vsAI && !atPresent);
@@ -250,6 +252,9 @@ export function useAI(params: UseAIParams): UseAIResult {
           const destRect = destBtn?.getBoundingClientRect();
           const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
           const nextState = applyMove(state, res.move);
+          // Enqueue recover animations (if any) to run after main animation ends
+          const recs = (res.move as any)?.recovers as Position[] | undefined;
+          recoverQueueRef.current = (Array.isArray(recs) && recs.length > 0) ? { player: aiPlayer, recovers: [...recs] } : null;
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
@@ -270,6 +275,9 @@ export function useAI(params: UseAIParams): UseAIResult {
           const destRect = destBtn?.getBoundingClientRect();
           const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
           const nextState = applyMove(state, res.move);
+          // Enqueue recover animations (if any)
+          const recs = (res.move as any)?.recovers as Position[] | undefined;
+          recoverQueueRef.current = (Array.isArray(recs) && recs.length > 0) ? { player: aiPlayer, recovers: [...recs] } : null;
           if (srcRect && destRect) {
             const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
@@ -298,6 +306,34 @@ export function useAI(params: UseAIParams): UseAIResult {
       if (iaAbortRef.current) iaAbortRef.current.abort();
     };
   }, []);
+
+  // After main move animation completes (flying becomes null), play queued recover animations one by one.
+  useEffect(() => {
+    if (flying) return; // wait until no animation in progress
+    const q = recoverQueueRef.current;
+    if (!q || q.recovers.length === 0) return;
+    // Try to start an animation for the next available recovery.
+    // If measurement fails for a position, skip it and try the next to avoid stalling.
+    while (q.recovers.length > 0) {
+      const pos = q.recovers.shift()!;
+      const srcKey = posKey(pos);
+      const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${srcKey}"]`);
+      const srcRect = srcBtn?.getBoundingClientRect();
+      const destEl = (q.player === 'L') ? reserveLightRef.current : reserveDarkRef.current;
+      const destRect = destEl?.getBoundingClientRect();
+      const imgSrc = (q.player === 'L') ? bolaB : bolaA;
+      if (srcRect && destRect) {
+        const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
+        const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+        setFlying({ from, to, imgSrc, destKey: '' });
+        // When this animation ends, flying becomes null again and this effect will pick the next one.
+        break;
+      }
+      // Otherwise continue loop to try next position
+    }
+    // If no more items remain, clear the queue
+    if (!q.recovers.length) recoverQueueRef.current = null;
+  }, [flying, reserveLightRef, reserveDarkRef, setFlying]);
 
   // Vs AI: if it's enemy's turn, let AI move automatically (unless manual autoplay is active)
   useEffect(() => {

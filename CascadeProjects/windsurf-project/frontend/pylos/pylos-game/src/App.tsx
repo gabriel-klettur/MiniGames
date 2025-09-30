@@ -503,14 +503,16 @@ function App() {
           imgSrc={flying.imgSrc}
           durationMs={animFlyMs}
           onDone={() => {
-            // Primero retiramos el clon volador para evitar doble render (flicker)
-            setFlying(null);
-            // Luego aplicamos el nuevo estado del tablero
+            // iOS Safari puede mostrar un parpadeo entre quitar el clon volador
+            // y pintar la pieza fija del tablero. Para evitarlo, aplicamos primero
+            // el estado pendiente (que muestra la pieza fija) y mantenemos el clon
+            // volador unos milisegundos extra para solaparlos visualmente.
+            // 1) Aplicar el nuevo estado del tablero antes de retirar el overlay.
             if (pendingState) {
               const { pushHistory, clearRedo } = pendingApplyRef.current;
               updateAndCheck(pendingState, pushHistory, clearRedo, pendingLog ?? undefined);
             }
-            // Tras aplicar estado, si hay appear pendiente (redo de colocar/subir), dispararlo ahora
+            // 2) Disparar la animación de aparición de la celda si estaba pendiente.
             if (lastAppearKeyRef.current) {
               setAppearKeys(new Set([lastAppearKeyRef.current]));
             }
@@ -520,6 +522,13 @@ function App() {
             pendingApplyRef.current = { pushHistory: true, clearRedo: true };
             // Any flying animation end (including redo) — allow AI again
             redoingRef.current = false;
+
+            // 3) Mantener el clon volador un poco más para cubrir el frame donde iOS
+            // puede no haber compuesto aún la pieza fija. 250ms suele ser suficiente.
+            const overlapMs = 250;
+            window.setTimeout(() => {
+              setFlying(null);
+            }, overlapMs);
           }}
         />
       )}

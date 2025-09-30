@@ -8,13 +8,13 @@ import type { InfoIAGameRecord, InfoIAPerMove } from '../../../../utils/infoiaDb
 import { makeId } from '../../../../utils/infoiaDb';
 import { getBestMove, apply as applyAIRunner, checkGameOver } from '../services/aiRunner';
 import { useProgress } from './useProgress';
+import { readAdvancedCfgByPlayer } from '../../../../utils/iaAdvancedStorage';
 import { useAvoidPenalty } from './useAvoidPenalty';
 import { useRepetitionLimit } from './useRepetitionLimit';
 import type { TimeMode } from '../types';
 
 // Persistence for anti-loops (point 9)
 const AVOID_PERSIST_KEY = 'pylos.infoia.antiLoop.v1';
-const ADVANCED_STORAGE_KEY = 'pylos.ia.advanced.v1';
 type PersistEntry = { hi: number; lo: number; weight: number; ts: number };
 
 function readPersistedAvoid(): PersistEntry[] {
@@ -29,39 +29,6 @@ function readPersistedAvoid(): PersistEntry[] {
   } catch { return []; }
 }
 
-function readAntiStallCfg(): {
-  noveltyBonus?: number;
-  rootTopK?: number;
-  rootJitter?: boolean;
-  rootJitterProb?: number;
-  rootLMR?: boolean;
-  drawBias?: number;
-  timeRiskEnabled?: boolean;
-  noProgressLimit?: number;
-  avoidStepFactor?: number;
-  persistAntiLoopsEnabled?: boolean;
-  halfLifeDays?: number;
-  persistCap?: number;
-} {
-  try {
-    const raw = localStorage.getItem(ADVANCED_STORAGE_KEY);
-    if (!raw) return {};
-    const p = JSON.parse(raw);
-    const noveltyBonus = Number.isFinite(p?.noveltyBonus) ? Math.max(0, Math.floor(p.noveltyBonus)) : undefined;
-    const rootTopK = Number.isFinite(p?.rootTopK) ? Math.max(2, Math.min(8, Math.floor(p.rootTopK))) : undefined;
-    const rootJitter = typeof p?.rootJitter === 'boolean' ? !!p.rootJitter : undefined;
-    const rootJitterProb = Number.isFinite(p?.rootJitterProb) ? Math.max(0, Math.min(1, Number(p.rootJitterProb))) : undefined;
-    const rootLMR = typeof p?.rootLMR === 'boolean' ? !!p.rootLMR : undefined;
-    const drawBias = Number.isFinite(p?.drawBias) ? Math.max(0, Math.floor(p.drawBias)) : undefined;
-    const timeRiskEnabled = typeof p?.timeRiskEnabled === 'boolean' ? !!p.timeRiskEnabled : undefined;
-    const noProgressLimit = Number.isFinite(p?.noProgressLimit) ? Math.max(10, Math.min(400, Math.floor(p.noProgressLimit))) : undefined;
-    const avoidStepFactor = Number.isFinite(p?.avoidStepFactor) ? Math.max(0, Math.min(2, Number(p.avoidStepFactor))) : undefined;
-    const persistAntiLoopsEnabled = typeof p?.persistAntiLoopsEnabled === 'boolean' ? !!p.persistAntiLoopsEnabled : undefined;
-    const halfLifeDays = Number.isFinite(p?.halfLifeDays) ? Math.max(1, Math.min(90, Math.floor(p.halfLifeDays))) : undefined;
-    const persistCap = Number.isFinite(p?.persistCap) ? Math.max(50, Math.min(2000, Math.floor(p.persistCap))) : undefined;
-    return { noveltyBonus, rootTopK, rootJitter, rootJitterProb, rootLMR, drawBias, timeRiskEnabled, noProgressLimit, avoidStepFactor, persistAntiLoopsEnabled, halfLifeDays, persistCap };
-  } catch { return {}; }
-}
 
 function writePersistedAvoid(entries: PersistEntry[], cap: number): void {
   try {
@@ -139,10 +106,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     const repeatMax = getRepeatMax();
     const repCounts = new Map<string, number>();
     let repeatHits = 0;
-    // Load persisted anti-loop entries (decayed) and make a quick lookup map
-    // Read Anti-stall config from shared storage (IAPanel/InfoIA)
-    const antiGlobal = readAntiStallCfg();
-    const persistedDecayed = decayEntries(readPersistedAvoid(), antiGlobal.halfLifeDays ?? 7);
+    // Load persisted anti-loop entries (decayed) with a conservative half-life
+    const persistedDecayed = decayEntries(readPersistedAvoid(), 7);
     const persistedMap = new Map<string, number>();
     for (const e of persistedDecayed) {
       const key = `${(e.hi>>>0)}:${(e.lo>>>0)}`;
@@ -152,6 +117,12 @@ export function useInfoIASim(params: UseInfoIASimParams) {
 
     const ac = new AbortController();
     abortRef.current = ac;
+    // Track first-seen per-IA configured depths for this game (to display L vs D)
+    let depthL: number | undefined;
+    let depthD: number | undefined;
+    // Snapshot start/book cfg for record-level telemetry
+    const advSnapshotL: any = readAdvancedCfgByPlayer('L' as any);
+    const gameSeed = (createdAt >>> 0);
     try {
       while (moves < pliesLimit) {
         try {
@@ -182,6 +153,12 @@ export function useInfoIASim(params: UseInfoIASimParams) {
               repeatHits,
               maxWorkersUsed,
               perMove,
+              depthL: depthL ?? depth,
+              depthD: depthD ?? depth,
+              seed: gameSeed,
+              startRandomFirstMove: !!advSnapshotL?.startRandomFirstMove,
+              startSeed: Number.isFinite(advSnapshotL?.startSeed) ? Math.floor(advSnapshotL.startSeed) : undefined,
+              bookEnabled: !!useBook,
             };
           }
         } catch {}
@@ -193,8 +170,10 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             const [hiStr, loStr] = k.split(':');
             return { hi: Number(hiStr) >>> 0, lo: Number(loStr) >>> 0 };
           });
+        // Per-player advanced settings (read once per move, used across computations)
+        const adv = readAdvancedCfgByPlayer(state.currentPlayer as any);
         const basePenalty = getAvoidPenalty();
-        const stepFactor = Math.max(0, Number((antiGlobal.avoidStepFactor ?? 0.5)));
+        const stepFactor = Math.max(0, Number((adv.avoidStepFactor ?? 0.5)));
         const step = Math.max(0, Math.floor(basePenalty * stepFactor));
         const dynamicAvoidList = Array.from(repCounts.entries())
           .filter(([_, v]) => v >= repeatMax)
@@ -219,9 +198,15 @@ export function useInfoIASim(params: UseInfoIASimParams) {
         });
         // Decide diversification: activate when we already have positions at/above threshold
         const repetitionRisk = avoidKeysArr.length > 0;
+        // Resolve per-player basic settings (depth/time) each move
+        const depthForMove = Number.isFinite(adv.depth as any) ? Math.max(1, Math.min(20, Number(adv.depth))) : depth;
+        if (state.currentPlayer === 'L' && depthL === undefined) depthL = depthForMove;
+        if (state.currentPlayer === 'D' && depthD === undefined) depthD = depthForMove;
+        const timeModeForMove: TimeMode = (adv.timeMode === 'auto' || adv.timeMode === 'manual') ? adv.timeMode as TimeMode : timeMode;
+        const timeSecondsForMove = Number.isFinite(adv.timeSeconds as any) ? Math.max(0, Math.min(30, Number(adv.timeSeconds))) : timeSeconds;
         // Risk-sensitive time management: boost time budget when at repetition risk
-        let timeBudgetEffective = timeMs.current;
-        if ((antiGlobal.timeRiskEnabled ?? true) && typeof timeBudgetEffective === 'number') {
+        let timeBudgetEffective = timeModeForMove === 'manual' ? (Math.max(0, Math.min(30, timeSecondsForMove)) * 1000) : undefined;
+        if ((adv.timeRiskEnabled ?? true) && typeof timeBudgetEffective === 'number') {
           let boost = 1;
           if (repetitionRisk) boost = 1.5;
           if (repeatHits >= 2) boost = 2.0; // stronger boost when repeated hits accumulate
@@ -231,30 +216,55 @@ export function useInfoIASim(params: UseInfoIASimParams) {
         startProgress(timeBudgetEffective);
         // Seed based on game creation time and current move index for reproducibility
         const randSeed = (createdAt ^ moves) >>> 0;
-        // Adaptive diversification parameters based on repetition pressure
-        // epsilon = clamp(0.1 + 0.05 * repeatHits, 0, 0.4)
-        // tieDelta = 30 if repeatHits >= 2 else 20
-        const epsilonAdaptive = Math.max(0, Math.min(0.4, 0.1 + 0.05 * repeatHits));
-        const tieDeltaAdaptive = (repeatHits >= 2) ? 30 : 20;
-        // Read Anti-stall config from shared storage (IAPanel/InfoIA)
-        const anti = antiGlobal;
+        // Anti-stall parameters per player
+        const anti = adv;
         const noveltyBonusVal = (typeof anti.noveltyBonus === 'number') ? anti.noveltyBonus! : 5;
         const rootTopKVal = (typeof anti.rootTopK === 'number') ? anti.rootTopK! : 3;
+        // Diversification mode (per-player)
+        // 'off' => no diversification
+        // 'epsilon' => use fixed epsilon/tieDelta from player settings
+        // 'adaptive' => use repetition-driven epsilon/tieDelta
+        const epsilonAdaptive = Math.max(0, Math.min(0.4, 0.1 + 0.05 * repeatHits));
+        const tieDeltaAdaptive = (repeatHits >= 2) ? 30 : 20;
+        const diversifyMode = (anti.diversify === 'off' || anti.diversify === 'epsilon' || anti.diversify === 'adaptive') ? anti.diversify : 'adaptive';
+        const epsilonFixed = Number.isFinite(anti.epsilon as any) ? Math.max(0, Math.min(1, Number(anti.epsilon))) : 0.1;
+        const tieDeltaFixed = Number.isFinite(anti.tieDelta as any) ? Math.max(0, Math.min(100, Math.floor(Number(anti.tieDelta)))) : 20;
+        const diversifyFinal = (diversifyMode === 'off')
+          ? 'off'
+          : (diversifyMode === 'epsilon')
+            ? 'epsilon'
+            : (repetitionRisk ? 'epsilon' : 'off');
+        const epsilonFinal = (diversifyMode === 'epsilon') ? epsilonFixed : epsilonAdaptive;
+        const tieDeltaFinal = (diversifyMode === 'epsilon') ? tieDeltaFixed : tieDeltaAdaptive;
+        // Workers override per player
+        const workersFinal = (anti.workers === 'auto' || Number.isFinite(anti.workers as any)) ? (anti.workers as any) : 'auto';
         // Resolve book URL based on current depth when enabled
         const resolveDifficulty = (d: number): 'facil' | 'medio' | 'dificil' => {
           if (d <= 3) return 'facil';
           if (d <= 7) return 'medio';
           return 'dificil';
         };
-        const difficulty = resolveDifficulty(depth);
+        const difficulty = resolveDifficulty(depthForMove);
         const phase: 'aperturas' | 'medio' | 'cierres' = 'aperturas';
         const basePath = '/books';
         const bookUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
 
+        // Snapshot 'before' for telemetry
+        const reservesLBefore = state.reserves.L;
+        const reservesDBefore = state.reserves.D;
+        const repBefore = (() => {
+          try {
+            const kNow2 = computeKey(state);
+            const keyStr2 = `${(kNow2.hi>>>0)}:${(kNow2.lo>>>0)}`;
+            const countNow = (repCounts.get(keyStr2) ?? 1); // c already incremented above
+            return Math.max(0, countNow - 1);
+          } catch { return 0; }
+        })();
+
         const res = await getBestMove(state, {
-          depth,
+          depth: depthForMove,
           timeMs: timeBudgetEffective,
-          workers: 'auto',
+          workers: workersFinal,
           signal: ac.signal,
           avoidKeys: avoidKeysArr,
           avoidPenalty: basePenalty,
@@ -266,14 +276,18 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           rootJitterProb: anti.rootJitterProb,
           rootLMR: anti.rootLMR,
           drawBias: anti.drawBias,
-          diversify: repetitionRisk ? 'epsilon' : 'off',
-          epsilon: epsilonAdaptive,
-          tieDelta: tieDeltaAdaptive,
+          diversify: diversifyFinal,
+          epsilon: epsilonFinal,
+          tieDelta: tieDeltaFinal,
           randSeed,
           // Pass minimal cfg so the AI can use opening book when enabled
           cfg: {
-            bookEnabled: !!useBook,
+            bookEnabled: (typeof anti.bookEnabled === 'boolean') ? !!anti.bookEnabled : !!useBook,
             bookUrl,
+            start: {
+              randomFirstMove: adv.startRandomFirstMove,
+              seed: typeof adv.startSeed === 'number' ? adv.startSeed : undefined,
+            },
           },
         });
         stopProgress();
@@ -284,34 +298,33 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             if (uw > maxWorkersUsed) maxWorkersUsed = uw;
           }
         } catch {}
-        try {
-          const k = computeKey(state);
-          const sig = res.move ? makeSignature(res.move as AIMove) : undefined;
-          perMove.push({
-            elapsedMs: res.elapsedMs,
-            depthReached: res.depthReached,
-            nodes: res.nodes,
-            nps: res.nps,
-            score: res.score,
-            keyHi: (k.hi >>> 0),
-            keyLo: (k.lo >>> 0),
-            moveSig: sig,
-            workersUsed: (res as any).usedWorkers,
-            player: state.currentPlayer,
-            source: (res as any).source as ('book' | 'start' | 'search' | undefined),
-          });
-        } catch {
-          perMove.push({
-            elapsedMs: res.elapsedMs,
-            depthReached: res.depthReached,
-            nodes: res.nodes,
-            nps: res.nps,
-            score: res.score,
-            workersUsed: (res as any).usedWorkers,
-            player: state.currentPlayer,
-            source: (res as any).source as ('book' | 'start' | 'search' | undefined),
-          });
-        }
+        // Build per-move telemetry (pre/apply)
+        const kBefore = computeKey(state);
+        const sig = res.move ? makeSignature(res.move as AIMove) : undefined;
+        const pmBase: InfoIAPerMove = {
+          elapsedMs: res.elapsedMs,
+          depthReached: res.depthReached,
+          nodes: res.nodes,
+          nps: res.nps,
+          score: res.score,
+          keyHi: (kBefore.hi >>> 0),
+          keyLo: (kBefore.lo >>> 0),
+          moveSig: sig,
+          workersUsed: (res as any).usedWorkers,
+          player: state.currentPlayer,
+          source: (res as any).source as ('book' | 'start' | 'search' | undefined),
+          reservesLBefore,
+          reservesDBefore,
+          repCountBefore: repBefore,
+          depthTarget: depthForMove,
+          timeBudgetMs: timeBudgetEffective,
+          diversify: diversifyFinal,
+          rootTopKUsed: rootTopKVal,
+          rootJitterUsed: !!anti.rootJitter,
+          rootLMRUsed: !!anti.rootLMR,
+          epsilonUsed: epsilonFinal,
+          tieDeltaUsed: tieDeltaFinal,
+        };
         if (!res.move) break;
         // Detect progress: if the move has recoveries, consider it progress and reset counter
         try {
@@ -319,14 +332,24 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           const recs = (mv as any)?.recovers;
           const hadProgress = Array.isArray(recs) && recs.length > 0;
           noProgressPlies = hadProgress ? 0 : (noProgressPlies + 1);
+          if (Array.isArray(recs)) {
+            (pmBase as any).recoveredThisMove = recs.length;
+          }
         } catch {}
         state = applyAIRunner(state, res.move as AIMove);
+        // After apply: reserves/phase
+        try {
+          (pmBase as any).reservesLAfter = state.reserves.L;
+          (pmBase as any).reservesDAfter = state.reserves.D;
+          (pmBase as any).phaseAfter = (state.phase === 'recover' ? 'recover' : 'play');
+        } catch {}
+        perMove.push(pmBase);
         if (mirrorBoard) {
           try { onMirrorUpdate?.(state); } catch {}
         }
         moves++;
         // Check no-progress termination
-        if (noProgressPlies >= (antiGlobal.noProgressLimit ?? noProgressLimit)) {
+        if (noProgressPlies >= (adv.noProgressLimit ?? noProgressLimit)) {
           if (mirrorBoard) {
             try { onMirrorEnd?.(state); } catch {}
           }
@@ -346,8 +369,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
                 byKey.set(k, { hi, lo, weight: nextW, ts: now });
               }
             }
-            if (antiGlobal.persistAntiLoopsEnabled ?? true) {
-              writePersistedAvoid(Array.from(byKey.values()), antiGlobal.persistCap ?? 300);
+            if (adv.persistAntiLoopsEnabled ?? true) {
+              writePersistedAvoid(Array.from(byKey.values()), adv.persistCap ?? 300);
             }
           } catch {}
           return {
@@ -362,17 +385,22 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             avgThinkMs: (moves > 0 ? totalThinkMs / moves : 0),
             totalThinkMs,
             winner: null,
-            endedReason: 'no-progress',
+            endedReason: 'repetition-limit',
             repeatMax,
             repeatHits,
             maxWorkersUsed,
             perMove,
+            depthL: depthL !== undefined ? depthL : depth,
+            depthD: depthD !== undefined ? depthD : depth,
+            seed: gameSeed,
+            startRandomFirstMove: !!advSnapshotL?.startRandomFirstMove,
+            startSeed: Number.isFinite(advSnapshotL?.startSeed) ? Math.floor(advSnapshotL.startSeed) : undefined,
+            bookEnabled: !!useBook,
           };
         }
         const over = checkGameOver(state);
         if (over.over) {
           if (mirrorBoard) {
-            try { onMirrorEnd?.(state); } catch {}
           }
           return {
             id,
@@ -391,6 +419,12 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             repeatHits,
             maxWorkersUsed,
             perMove,
+            depthL: depthL ?? depth,
+            depthD: depthD ?? depth,
+            seed: gameSeed,
+            startRandomFirstMove: !!advSnapshotL?.startRandomFirstMove,
+            startSeed: Number.isFinite(advSnapshotL?.startSeed) ? Math.floor(advSnapshotL.startSeed) : undefined,
+            bookEnabled: !!useBook,
           };
         }
       }
@@ -420,6 +454,12 @@ export function useInfoIASim(params: UseInfoIASimParams) {
       repeatHits,
       maxWorkersUsed,
       perMove,
+      depthL: depthL ?? depth,
+      depthD: depthD ?? depth,
+      seed: gameSeed,
+      startRandomFirstMove: !!advSnapshotL?.startRandomFirstMove,
+      startSeed: Number.isFinite(advSnapshotL?.startSeed) ? Math.floor(advSnapshotL.startSeed) : undefined,
+      bookEnabled: !!useBook,
     };
   }, [depth, pliesLimit, timeMode, timeSeconds, mirrorBoard, onMirrorEnd, onMirrorStart, onMirrorUpdate, startProgress, stopProgress]);
 

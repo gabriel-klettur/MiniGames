@@ -213,6 +213,7 @@ export default function InfoIAContainer(props: InfoIAProps) {
   return (
     <InfoIAView
       toast={toast}
+      onToast={showToast}
       activeTab={activeTab}
       onChangeTab={setActiveTab}
       depth={depth}

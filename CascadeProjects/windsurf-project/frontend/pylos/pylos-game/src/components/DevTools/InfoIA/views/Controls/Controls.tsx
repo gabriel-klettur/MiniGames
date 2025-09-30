@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { readAdvancedCfg, writeAdvancedCfg, clearAdvancedCfg, DEFAULTS } from '../../../../../utils/iaAdvancedStorage.ts';
+import { useEffect, useState } from 'react';
+import { clearAdvancedCfg, clearAdvancedCfgByPlayer } from '../../../../../utils/iaAdvancedStorage.ts';
 import { DatasetTabs } from './DatasetTabs.tsx';
-import { DifficultyTime } from './DifficultyTime.tsx';
 import { SimulationLimits } from './SimulationLimits.tsx';
-import { StartSettings } from './StartSettings.tsx';
 import { MirrorAndBook } from './MirrorAndBook.tsx';
-import { RepetitionSettings } from './RepetitionSettings.tsx';
-import { AntiStallSettings } from './AntiStallSettings.tsx';
-import { PersistenceSettings } from './PersistenceSettings.tsx';
 import { ActionsBar } from './ActionsBar.tsx';
+import PlayerIAControls from './PlayerIAControls.tsx';
+import bolaA from '../../../../../assets/bola_a.webp';
+import bolaB from '../../../../../assets/bola_b.webp';
 
 export type ControlsProps = {
   depth: number;
@@ -50,108 +48,7 @@ export type ControlsProps = {
 
 export default function Controls(props: ControlsProps) {
   // Layout and spacing handled via CSS classes in styles/infoia.css
-
-  // Start settings (shared storage with IAPanel advanced config)
-  const init = useMemo(() => readAdvancedCfg(), []);
-  const [startRandom, setStartRandom] = useState<boolean>(init.startRandomFirstMove ?? DEFAULTS.startRandomFirstMove);
-  const [seedInput, setSeedInput] = useState<string>(
-    (init.startSeed === null || typeof init.startSeed === 'undefined') ? '' : String(init.startSeed)
-  );
-  const [repeatMax, setRepeatMax] = useState<number>(init.repeatMax ?? 3);
-  const [avoidPenalty, setAvoidPenalty] = useState<number>(init.avoidPenalty ?? 50);
-  const [noveltyBonus, setNoveltyBonus] = useState<number>(init.noveltyBonus ?? 5);
-  const [rootTopK, setRootTopK] = useState<number>(init.rootTopK ?? 3);
-  const [rootJitter, setRootJitter] = useState<boolean>(init.rootJitter ?? true);
-  const [rootJitterProb, setRootJitterProb] = useState<number>(init.rootJitterProb ?? 0.1);
-  const [rootLMR, setRootLMR] = useState<boolean>(init.rootLMR ?? true);
-  const [drawBias, setDrawBias] = useState<number>(init.drawBias ?? 5);
-  const [timeRiskEnabled, setTimeRiskEnabled] = useState<boolean>(init.timeRiskEnabled ?? true);
-  const [noProgressLimit, setNoProgressLimit] = useState<number>(init.noProgressLimit ?? 40);
-  const [avoidStepFactor, setAvoidStepFactor] = useState<number>(init.avoidStepFactor ?? 0.5);
-  const [persistAntiLoopsEnabled, setPersistAntiLoopsEnabled] = useState<boolean>(init.persistAntiLoopsEnabled ?? true);
-  const [halfLifeDays, setHalfLifeDays] = useState<number>(init.halfLifeDays ?? 7);
-  const [persistCap, setPersistCap] = useState<number>(init.persistCap ?? 300);
-
-  // Persist on change
-  useEffect(() => {
-    writeAdvancedCfg({ startRandomFirstMove: startRandom });
-  }, [startRandom]);
-  useEffect(() => {
-    if (seedInput === '') {
-      writeAdvancedCfg({ startSeed: null });
-    } else {
-      const n = Number(seedInput);
-      if (Number.isFinite(n)) writeAdvancedCfg({ startSeed: Math.floor(n) });
-    }
-  }, [seedInput]);
-  useEffect(() => {
-    const v = Math.max(1, Math.min(10, Math.floor(repeatMax)));
-    setRepeatMax(v);
-    writeAdvancedCfg({ repeatMax: v });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repeatMax]);
-  useEffect(() => {
-    const v = Math.max(0, Math.min(500, Math.floor(avoidPenalty)));
-    setAvoidPenalty(v);
-    writeAdvancedCfg({ avoidPenalty: v });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [avoidPenalty]);
-  useEffect(() => {
-    const v = Math.max(0, Math.floor(noveltyBonus));
-    setNoveltyBonus(v);
-    writeAdvancedCfg({ noveltyBonus: v });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noveltyBonus]);
-  useEffect(() => {
-    const v = Math.max(2, Math.min(8, Math.floor(rootTopK)));
-    setRootTopK(v);
-    writeAdvancedCfg({ rootTopK: v });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootTopK]);
-  useEffect(() => {
-    writeAdvancedCfg({ rootJitter });
-  }, [rootJitter]);
-  useEffect(() => {
-    const p = Math.max(0, Math.min(1, Number(rootJitterProb)));
-    setRootJitterProb(p);
-    writeAdvancedCfg({ rootJitterProb: p });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootJitterProb]);
-  useEffect(() => {
-    writeAdvancedCfg({ rootLMR });
-  }, [rootLMR]);
-  useEffect(() => {
-    const b = Math.max(0, Math.floor(drawBias));
-    setDrawBias(b);
-    writeAdvancedCfg({ drawBias: b });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawBias]);
-  useEffect(() => { writeAdvancedCfg({ timeRiskEnabled }); }, [timeRiskEnabled]);
-  useEffect(() => {
-    const v = Math.max(10, Math.min(400, Math.floor(noProgressLimit)));
-    setNoProgressLimit(v);
-    writeAdvancedCfg({ noProgressLimit: v });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noProgressLimit]);
-  useEffect(() => {
-    const f = Math.max(0, Math.min(2, Number(avoidStepFactor)));
-    setAvoidStepFactor(f);
-    writeAdvancedCfg({ avoidStepFactor: f });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [avoidStepFactor]);
-  useEffect(() => { writeAdvancedCfg({ persistAntiLoopsEnabled }); }, [persistAntiLoopsEnabled]);
-  useEffect(() => {
-    const d = Math.max(1, Math.min(90, Math.floor(halfLifeDays)));
-    setHalfLifeDays(d);
-    writeAdvancedCfg({ halfLifeDays: d });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [halfLifeDays]);
-  useEffect(() => {
-    const c = Math.max(50, Math.min(2000, Math.floor(persistCap)));
-    setPersistCap(c);
-    writeAdvancedCfg({ persistCap: c });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persistCap]);
+  const [resetTick, setResetTick] = useState(0);
 
   // Collapsible group state (persisted locally)
   const GROUP_STORE_KEY = 'pylos.infoia.controls.group.collapsed';
@@ -171,6 +68,35 @@ export default function Controls(props: ControlsProps) {
     });
   };
 
+  // Shared collapsible state for PlayerIAControls cards (synced between L/D)
+  type CardId = 'difficulty' | 'start' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic';
+  const CARDS_STORE_KEY = 'pylos.infoia.player.cards.collapsed.v1';
+  const defaultCards: Record<CardId, boolean> = {
+    difficulty: false,
+    start: false,
+    repetition: false,
+    persistence: false,
+    antiStall: false,
+    heuristic: false,
+  };
+  const [cardCollapsed, setCardCollapsed] = useState<Record<CardId, boolean>>(defaultCards);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CARDS_STORE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, boolean>;
+        setCardCollapsed((prev) => ({ ...prev, ...parsed } as any));
+      }
+    } catch {}
+  }, []);
+  const toggleCard = (id: CardId) => {
+    setCardCollapsed((prev) => {
+      const next = { ...prev, [id]: !prev[id] } as Record<CardId, boolean>;
+      try { localStorage.setItem(CARDS_STORE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
+
   return (
     <>
       <div className="infoia__group">
@@ -183,22 +109,9 @@ export default function Controls(props: ControlsProps) {
             onStop={props.onStop}
             onDefault={() => {
               clearAdvancedCfg();
-              setStartRandom(DEFAULTS.startRandomFirstMove);
-              setSeedInput('');
-              setRepeatMax(DEFAULTS.repeatMax);
-              setAvoidPenalty(DEFAULTS.avoidPenalty);
-              setNoveltyBonus(DEFAULTS.noveltyBonus);
-              setRootTopK(DEFAULTS.rootTopK);
-              setRootJitter(DEFAULTS.rootJitter);
-              setRootJitterProb(DEFAULTS.rootJitterProb);
-              setRootLMR(DEFAULTS.rootLMR);
-              setDrawBias(DEFAULTS.drawBias);
-              setTimeRiskEnabled(DEFAULTS.timeRiskEnabled);
-              setNoProgressLimit(DEFAULTS.noProgressLimit);
-              setAvoidStepFactor(DEFAULTS.avoidStepFactor);
-              setPersistAntiLoopsEnabled(DEFAULTS.persistAntiLoopsEnabled);
-              setHalfLifeDays(DEFAULTS.halfLifeDays);
-              setPersistCap(DEFAULTS.persistCap);
+              clearAdvancedCfgByPlayer('L');
+              clearAdvancedCfgByPlayer('D');
+              setResetTick((x) => x + 1);
               props.onResetDefaults();
             }}
             onExportJSON={props.onExportJSON}
@@ -208,7 +121,6 @@ export default function Controls(props: ControlsProps) {
             canClearLocal={props.canClearLocal}
             activeTableSourceId={props.activeTableSourceId}
           />
-
           {/* Botón de toggle alineado a la derecha con el título */}
           <button
             type="button"
@@ -222,48 +134,29 @@ export default function Controls(props: ControlsProps) {
             <span className="chev" aria-hidden="true">▾</span>
           </button>
         </div>
-
-      {!collapsed && (
-        <div
-          className="row infoia__controls infoia__controls--single-row"
-          id="infoia-controls-grid"
-          role="region"
-          aria-labelledby="infoia-controls-header"
-        >
-          {/* Columna 1: Dificultad y tiempo + Visualización y books (misma columna) */}
-          <div className="infoia__card-stack">
-            <div className="infoia__card">
-              <div className="infoia__card-title">Dificultad y tiempo</div>
-              <DifficultyTime
-                depth={props.depth}
-                onDepthChange={props.onDepthChange}
-                timeMode={props.timeMode}
-                onTimeModeChange={props.onTimeModeChange}
-                timeSeconds={props.timeSeconds}
-                onTimeSecondsChange={props.onTimeSecondsChange}
-              />
+        {!collapsed && (
+          <div className="infoia__controls" id="infoia-controls-grid" role="region" aria-labelledby="infoia-controls-header">
+            {/* Global: Visualización y books + Dataset */}
+            <div className="infoia__card-stack">
+              <div className="infoia__card">
+                <div className="infoia__card-title">Visualización y books</div>
+                <MirrorAndBook
+                  mirrorBoard={props.mirrorBoard}
+                  onMirrorChange={props.onMirrorChange}
+                  useBook={props.useBook}
+                  onUseBookChange={props.onUseBookChange}
+                />
+              </div>
+              <div className="infoia__card">
+                <div className="infoia__card-title">Tabla (dataset)</div>
+                <DatasetTabs
+                  activeId={props.activeTableSourceId}
+                  sets={props.compareSets}
+                  onSelect={props.onSelectTableSource}
+                />
+              </div>
             </div>
-            <div className="infoia__card">
-              <div className="infoia__card-title">Visualización y books</div>
-              <MirrorAndBook
-                mirrorBoard={props.mirrorBoard}
-                onMirrorChange={props.onMirrorChange}
-                useBook={props.useBook}
-                onUseBookChange={props.onUseBookChange}
-              />
-            </div>
-          </div>
-
-          {/* Columna 2: Tabla + Límites de simulación (misma columna) */}
-          <div className="infoia__card-stack">
-            <div className="infoia__card">
-              <div className="infoia__card-title">Tabla (dataset)</div>
-              <DatasetTabs
-                activeId={props.activeTableSourceId}
-                sets={props.compareSets}
-                onSelect={props.onSelectTableSource}
-              />
-            </div>
+            {/* Global: Límites de simulación */}
             <div className="infoia__card">
               <div className="infoia__card-title">Límites de simulación</div>
               <SimulationLimits
@@ -273,74 +166,32 @@ export default function Controls(props: ControlsProps) {
                 onGamesCountChange={props.onGamesCountChange}
               />
             </div>
-          </div>
-          {/* Columna 3: Inicio y semilla + Repetición y penalización (misma columna) */}
-          <div className="infoia__card-stack">
-            <div className="infoia__card">
-              <div className="infoia__card-title">Inicio y semilla</div>
-              <StartSettings
-                startRandom={startRandom}
-                onStartRandomChange={setStartRandom}
-                seedInput={seedInput}
-                onSeedInputChange={setSeedInput}
-              />
-            </div>
-            <div className="infoia__card">
-              <div className="infoia__card-title">Repetición y penalización</div>
-              <RepetitionSettings
-                repeatMax={repeatMax}
-                onRepeatMaxChange={setRepeatMax}
-                avoidPenalty={avoidPenalty}
-                onAvoidPenaltyChange={setAvoidPenalty}
-              />
-            </div>
-          </div>
 
-          {/* Persistencia anti-bucles y límites */}
-          <div className="infoia__card">
-            <div className="infoia__card-title">Persistencia y límites</div>
-            <PersistenceSettings
-              noProgressLimit={noProgressLimit}
-              onNoProgressLimitChange={setNoProgressLimit}
-              avoidStepFactor={avoidStepFactor}
-              onAvoidStepFactorChange={setAvoidStepFactor}
-              persistAntiLoopsEnabled={persistAntiLoopsEnabled}
-              onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
-              halfLifeDays={halfLifeDays}
-              onHalfLifeDaysChange={setHalfLifeDays}
-              persistCap={persistCap}
-              onPersistCapChange={setPersistCap}
-            />
+            <PlayerIAControls
+              key={`player-L-${resetTick}`}
+              player={'L'}
+              title={'Jugador L (Bola clara)'}
+              themeClass={'infoia__player--light'}
+              ballIconSrc={bolaB}
+              ballAlt={'Bola clara'}
+              cardCollapsed={cardCollapsed}
+              onToggleCard={toggleCard}
+            />          
+            
+            <PlayerIAControls
+              key={`player-D-${resetTick}`}
+              player={'D'}
+              title={'Jugador D (Bola oscura)'}
+              themeClass={'infoia__player--dark'}
+              ballIconSrc={bolaA}
+              ballAlt={'Bola oscura'}
+              cardCollapsed={cardCollapsed}
+              onToggleCard={toggleCard}
+            />                
+
           </div>
-
-          {/* Límites de simulación ahora se renderiza bajo 'Tabla (dataset)' */}
-
-          {/* Repetición y penalización movida a stack en 2ª fila col 2 */}
-
-          {/* Anti-estancamiento */}
-          <div className="infoia__card">
-            <div className="infoia__card-title">Anti-estancamiento</div>
-            <AntiStallSettings
-              noveltyBonus={noveltyBonus}
-              onNoveltyBonusChange={setNoveltyBonus}
-              rootTopK={rootTopK}
-              onRootTopKChange={setRootTopK}
-              rootJitter={rootJitter}
-              onRootJitterChange={setRootJitter}
-              rootJitterProb={rootJitterProb}
-              onRootJitterProbChange={setRootJitterProb}
-              rootLMR={rootLMR}
-              onRootLMRChange={setRootLMR}
-              drawBias={drawBias}
-              onDrawBiasChange={setDrawBias}
-              timeRiskEnabled={timeRiskEnabled}
-              onTimeRiskEnabledChange={setTimeRiskEnabled}
-            />
-          </div>
-        </div>
-      )}
+        )}
       </div>
-
       {/* Acciones trasladadas al header */}
     </>
   );
