@@ -363,13 +363,15 @@ export function useAI(params: UseAIParams): UseAIResult {
       if (state.phase === 'recover' && recoverDelayTimerRef.current === null) {
         const fin = finishRecovery(state);
         if (!fin.error) {
-          updateAndCheck(fin.state, true, true, { player: state.currentPlayer, source: 'IA', text: 'fin recuperar' });
+          updateAndCheck(fin.state, true, true, { player: state.currentPlayer, source: 'IA', text: 'fin recuperación' });
         }
       }
       return;
     }
     // Avoid scheduling multiple timers simultaneously
     if (recoverDelayTimerRef.current !== null) return;
+    // Guard against scheduling multiple timers simultaneously
+    if (flying) return;
     // Try to schedule the next available recovery.
     // If measurement fails for a position, skip it and try the next to avoid stalling.
     while (q.items.length > 0) {

@@ -252,6 +252,8 @@ function App() {
 
   // Clear archived and current history
   const clearHistory = () => {
+    const ok = window.confirm('¿Seguro que quieres limpiar el historial actual y todas las partidas archivadas? Esta acción no se puede deshacer.');
+    if (!ok) return;
     setMoves([]);
     setFinishedGames([]);
     // Allow archiving the next finished game again

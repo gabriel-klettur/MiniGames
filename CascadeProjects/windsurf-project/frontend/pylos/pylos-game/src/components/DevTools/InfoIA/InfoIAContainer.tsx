@@ -111,29 +111,37 @@ export default function InfoIAContainer(props: InfoIAProps) {
       // Avoid duplicates by id
       if (list.some((g) => g.id === rec.id)) return;
       const endedAt = new Date(rec.createdAt).toISOString();
-      const moves: FinishedGameRecord['moves'] = (rec.perMove || []).map((pm, i) => {
+      const moves: FinishedGameRecord['moves'] = [];
+      for (let i = 0; i < (rec.perMove || []).length; i++) {
+        const pm = rec.perMove![i]!;
         const player: 'L' | 'D' = pm.player ?? (i % 2 === 0 ? 'L' : 'D');
         // For simulated games, mimic Player vs IA labeling: L -> Jugador, D -> IA
         const source: 'PLAYER' | 'IA' = player === 'L' ? 'PLAYER' : 'IA';
-        let text = '';
         if (typeof pm.moveSig === 'number') {
           try {
             const mv = decodeSignature(pm.moveSig as number);
             if (mv.kind === 'place') {
-              text = `colocar ${posKey(mv.dest)}`;
+              moves.push({ player, source, text: `colocar ${posKey(mv.dest)}` });
             } else {
-              text = `subir ${posKey(mv.src)} -> ${posKey(mv.dest)}`;
+              moves.push({ player, source, text: `subir ${posKey(mv.src)} -> ${posKey(mv.dest)}` });
+            }
+            // Expand recoveries (if any) to match Player vs IA logs
+            if (Array.isArray(mv.recovers) && mv.recovers.length > 0) {
+              for (const r of mv.recovers) {
+                moves.push({ player, source, text: `recuperar ${posKey(r)}` });
+              }
+              // Close recovery phase
+              moves.push({ player, source, text: 'fin recuperación' });
             }
           } catch {
-            // fallback on decode error
-            text = 'movimiento';
+            // Fallback on decode error
+            moves.push({ player, source, text: 'movimiento' });
           }
         } else {
           // Fallback when no signature available
-          text = 'movimiento';
+          moves.push({ player, source, text: 'movimiento' });
         }
-        return { player, source, text };
-      });
+      }
       const mapped: FinishedGameRecord = {
         id: rec.id,
         endedAt,
@@ -143,7 +151,7 @@ export default function InfoIAContainer(props: InfoIAProps) {
         iaDepth: rec.depth,
         iaTimeMode: rec.timeMode,
         iaTimeSeconds: typeof rec.timeSeconds === 'number' ? rec.timeSeconds : 0,
-        totalMoves: rec.moves,
+        totalMoves: moves.length,
         moves,
         simulated: true,
       };
