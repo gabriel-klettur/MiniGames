@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GameState, Position } from '../game/types';
 import { posKey } from '../game/board';
-import { applyMove } from '../ia/moves';
+import { placeFromReserve, selectMoveSource, movePiece as rulesMovePiece, recoverPiece, finishRecovery } from '../game/rules';
 import type { AIMove } from '../ia/moves';
 import { computeBestMoveAsync } from '../ia';
 import { computeKey } from '../ia/zobrist';
@@ -9,6 +9,7 @@ import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from './usePersistence';
 import type { FlyingPieceState } from './useAnimations';
+type Rect = { left: number; top: number; width: number; height: number };
 export interface UseAIParams {
   state: GameState;
   iaDepth: number;
@@ -134,7 +135,10 @@ export function useAI(params: UseAIParams): UseAIResult {
   const [iaRootPlayer, setIaRootPlayer] = useState<'L' | 'D' | null>(null);
   const iaAbortRef = useRef<AbortController | null>(null);
   // Queue of AI recover animations to run AFTER the main move animation completes
-  const recoverQueueRef = useRef<{ player: 'L' | 'D'; recovers: Position[] } | null>(null);
+  // We store pre-measured rects to allow removing from the board before animating
+  const recoverQueueRef = useRef<{ items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> } | null>(null);
+  // Delay timer between removing a piece and starting its flying animation
+  const recoverDelayTimerRef = useRef<number | null>(null);
 
   // Disable AI when navigating the past or during animations, etc.
   const aiDisabled = !!gameOver || state.phase === 'recover' || !!flying || autoRunningRef.current || (!!vsAI && !atPresent);
@@ -251,10 +255,30 @@ export function useAI(params: UseAIParams): UseAIResult {
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
           const destRect = destBtn?.getBoundingClientRect();
           const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
-          const nextState = applyMove(state, res.move);
+          // Compute state after base placement only (phase may enter 'recover')
+          const placedRes = placeFromReserve(state, dest);
+          const nextState = placedRes.state;
           // Enqueue recover animations (if any) to run after main animation ends
           const recs = (res.move as any)?.recovers as Position[] | undefined;
-          recoverQueueRef.current = (Array.isArray(recs) && recs.length > 0) ? { player: aiPlayer, recovers: [...recs] } : null;
+          if (Array.isArray(recs) && recs.length > 0) {
+            const items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> = [];
+            for (const pos of recs) {
+              const sKey = posKey(pos);
+              const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
+              const sRect = srcBtn?.getBoundingClientRect();
+              const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
+              const dRect = destEl?.getBoundingClientRect();
+              items.push({
+                srcKey: sKey,
+                from: sRect ? { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height } : undefined,
+                to: dRect ? { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height } : undefined,
+                imgSrc,
+              });
+            }
+            recoverQueueRef.current = items.length ? { items } : null;
+          } else {
+            recoverQueueRef.current = null;
+          }
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
@@ -274,17 +298,35 @@ export function useAI(params: UseAIParams): UseAIResult {
           const srcRect = srcBtn?.getBoundingClientRect();
           const destRect = destBtn?.getBoundingClientRect();
           const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
-          const nextState = applyMove(state, res.move);
+          // Compute state after base lift only: select source then move
+          const sel = selectMoveSource(state, res.move.src);
+          const moved = rulesMovePiece(sel.state, res.move.dest);
+          const nextState = moved.state;
           // Enqueue recover animations (if any)
           const recs = (res.move as any)?.recovers as Position[] | undefined;
-          recoverQueueRef.current = (Array.isArray(recs) && recs.length > 0) ? { player: aiPlayer, recovers: [...recs] } : null;
+          if (Array.isArray(recs) && recs.length > 0) {
+            const items: Array<{ srcKey: string; from: Rect; to: Rect; imgSrc: string }> = [];
+            for (const pos of recs) {
+              const sKey = posKey(pos);
+              const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
+              const sRect = srcBtn?.getBoundingClientRect();
+              const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
+              const dRect = destEl?.getBoundingClientRect();
+              if (sRect && dRect) {
+                items.push({ srcKey: sKey, from: { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height }, to: { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height }, imgSrc });
+              }
+            }
+            recoverQueueRef.current = items.length ? { items } : null;
+          } else {
+            recoverQueueRef.current = null;
+          }
           if (srcRect && destRect) {
             const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
             setPendingState(nextState);
             setPendingLog({ player: aiPlayer, source: 'IA', text: `subir ${srcKey} -> ${destKey}` });
             pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-            setFlying({ from, to, imgSrc, destKey });
+            setFlying({ from, to, imgSrc, destKey, srcKey });
           } else {
             setAppearKeys(new Set([destKey]));
             updateAndCheck(nextState, true, true, { player: aiPlayer, source: 'IA', text: `subir ${srcKey} -> ${destKey}` });
@@ -304,36 +346,63 @@ export function useAI(params: UseAIParams): UseAIResult {
   useEffect(() => {
     return () => {
       if (iaAbortRef.current) iaAbortRef.current.abort();
+      if (recoverDelayTimerRef.current !== null) {
+        clearTimeout(recoverDelayTimerRef.current);
+        recoverDelayTimerRef.current = null;
+      }
     };
   }, []);
 
-  // After main move animation completes (flying becomes null), play queued recover animations one by one.
+  // After main move animation completes (flying becomes null), play queued recover animations one by one,
+  // removing a piece first (update board via rules.recoverPiece) and then starting its flight ~100ms later.
   useEffect(() => {
     if (flying) return; // wait until no animation in progress
     const q = recoverQueueRef.current;
-    if (!q || q.recovers.length === 0) return;
-    // Try to start an animation for the next available recovery.
-    // If measurement fails for a position, skip it and try the next to avoid stalling.
-    while (q.recovers.length > 0) {
-      const pos = q.recovers.shift()!;
-      const srcKey = posKey(pos);
-      const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${srcKey}"]`);
-      const srcRect = srcBtn?.getBoundingClientRect();
-      const destEl = (q.player === 'L') ? reserveLightRef.current : reserveDarkRef.current;
-      const destRect = destEl?.getBoundingClientRect();
-      const imgSrc = (q.player === 'L') ? bolaB : bolaA;
-      if (srcRect && destRect) {
-        const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
-        const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
-        setFlying({ from, to, imgSrc, destKey: '' });
-        // When this animation ends, flying becomes null again and this effect will pick the next one.
-        break;
+    if (!q || q.items.length === 0) {
+      // No more queued recoveries: if still in recover phase, finish it automatically
+      if (state.phase === 'recover' && recoverDelayTimerRef.current === null) {
+        const fin = finishRecovery(state);
+        if (!fin.error) {
+          updateAndCheck(fin.state, true, true, { player: state.currentPlayer, source: 'IA', text: 'fin recuperar' });
+        }
       }
-      // Otherwise continue loop to try next position
+      return;
+    }
+    // Avoid scheduling multiple timers simultaneously
+    if (recoverDelayTimerRef.current !== null) return;
+    // Try to schedule the next available recovery.
+    // If measurement fails for a position, skip it and try the next to avoid stalling.
+    while (q.items.length > 0) {
+      const item = q.items.shift()!;
+      // 1) Remove the piece from the board via rules.recoverPiece (AI player is current in recover phase)
+      const [lvl, row, col] = item.srcKey.split('-').map((n) => parseInt(n, 10));
+      const pos = { level: lvl, row, col } as Position;
+      const recRes = recoverPiece(state, pos);
+      if (recRes.error) {
+        // Skip this item if invalid now (e.g., became non-free); try next to avoid stalling
+        continue;
+      }
+      // Apply the removal immediately (adds to reserves and updates phase/recovery counters)
+      updateAndCheck(recRes.state, true, true, { player: recRes.state.recovery?.player ?? state.currentPlayer, source: 'IA', text: `recuperar ${item.srcKey}` });
+      // 2) Start the flying animation (if we have rects) a short while after the board reflects the removal
+      if (item.from && item.to) {
+        recoverDelayTimerRef.current = window.setTimeout(() => {
+          setFlying({ from: item.from!, to: item.to!, imgSrc: item.imgSrc, destKey: '' });
+          // Clear timer ref; the next recovery will be scheduled when `flying` becomes null again
+          if (recoverDelayTimerRef.current !== null) {
+            clearTimeout(recoverDelayTimerRef.current);
+            recoverDelayTimerRef.current = null;
+          }
+        }, 100);
+        break;
+      } else {
+        // No animation possible: continue to next item in the same tick
+        continue;
+      }
     }
     // If no more items remain, clear the queue
-    if (!q.recovers.length) recoverQueueRef.current = null;
-  }, [flying, reserveLightRef, reserveDarkRef, setFlying]);
+    if (!q.items.length) recoverQueueRef.current = null;
+  }, [flying, state, reserveLightRef, reserveDarkRef, setFlying]);
 
   // Vs AI: if it's enemy's turn, let AI move automatically (unless manual autoplay is active)
   useEffect(() => {

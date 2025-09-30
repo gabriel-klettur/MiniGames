@@ -10,6 +10,8 @@ export interface FlyingPieceState {
   to: Rect;
   imgSrc: string;
   destKey: string; // key to trigger appear after applying state
+  // Optional: for lift animations, the origin board cell to hide during flight
+  srcKey?: string;
 }
 
 export interface UseAnimationsResult {
@@ -33,6 +35,10 @@ export interface UseAnimationsResult {
   appearKeys: Set<string>;
   setAppearKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
   getFlashKeys: (state: GameState) => Set<string>;
+
+  // Cells temporarily hidden (e.g., source of a lift during flight)
+  hiddenKeys: Set<string>;
+  setHiddenKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
 
   // UI/UX config
   pieceScale: number;
@@ -73,6 +79,8 @@ export function useAnimations(): UseAnimationsResult {
 
   // Cell animation keys
   const [appearKeys, setAppearKeys] = useState<Set<string>>(new Set());
+  // Temporarily hidden cells (e.g., hide source on lift while flying)
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
 
   // Flash keys are derived from state on-demand (pure)
   const getFlashKeys = (state: GameState): Set<string> => {
@@ -114,6 +122,8 @@ export function useAnimations(): UseAnimationsResult {
     appearKeys,
     setAppearKeys,
     getFlashKeys,
+    hiddenKeys,
+    setHiddenKeys,
     pieceScale,
     setPieceScale,
     animAppearMs,

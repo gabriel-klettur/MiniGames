@@ -27,9 +27,11 @@ export interface BoardProps {
   showHoleBorders?: boolean;
   // Optional style to inject CSS custom properties (scaling, etc.) on the board root
   style?: CSSProperties;
+  // Claves de celdas a ocultar temporalmente (p.ej., origen durante una elevación)
+  hiddenKeys?: Set<string>;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false, style }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false, style, hiddenKeys }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -83,7 +85,7 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
         onDrop={isHighlighted ? ((e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }) : undefined}
         title={`L${pos.level} (${pos.row},${pos.col})`}
       >
-        {cell && (
+        {cell && !(hiddenKeys?.has(key)) && (
           <span
             className={[
               'piece',

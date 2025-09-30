@@ -116,7 +116,7 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
           setPendingState(attempt.state);
           setPendingLog(log);
           pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-          setFlying({ from, to, imgSrc, destKey: dstKey });
+          setFlying({ from, to, imgSrc, destKey: dstKey, srcKey: srcKey2 });
         } else {
           setAppearKeys(new Set([dstKey]));
           updateAndCheck(attempt.state, true, true, log);

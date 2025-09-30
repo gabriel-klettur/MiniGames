@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Board from './components/Board';
 import InfoPanel from './components/InfoPanel';
 import HeaderPanel from './components/HeaderPanel';
@@ -93,6 +93,8 @@ function App() {
     appearKeys,
     setAppearKeys,
     getFlashKeys,
+    hiddenKeys,
+    setHiddenKeys,
     pieceScale,
     setPieceScale,
     animAppearMs,
@@ -297,6 +299,25 @@ function App() {
   // During a flying animation, use the pending state's reserves so the UI counter updates immediately
   const reservesForDisplay = useReservesDisplay(state, flying, pendingState);
 
+  // When a lift animation starts, hide the origin cell shortly after (100–200ms)
+  useEffect(() => {
+    if (!flying) {
+      // Clear any temporary hidden cells at the end of animations
+      setHiddenKeys(new Set());
+      return;
+    }
+    if (flying.srcKey) {
+      const t = window.setTimeout(() => {
+        setHiddenKeys((prev) => {
+          const next = new Set(prev);
+          next.add(flying.srcKey!);
+          return next;
+        });
+      }, 150);
+      return () => window.clearTimeout(t);
+    }
+  }, [flying, setHiddenKeys]);
+
   return (
     <div
       className="app"
@@ -374,6 +395,7 @@ function App() {
               noShade={noShadeEffective}
               shadeOnlyHoles={shadeOnlyHoles}
               showHoleBorders={holeBorders}
+              hiddenKeys={hiddenKeys}
             />
           </div>
         ) : (
@@ -401,6 +423,7 @@ function App() {
               noShade={noShadeEffective}
               shadeOnlyHoles={shadeOnlyHoles}
               showHoleBorders={holeBorders}
+              hiddenKeys={hiddenKeys}
             />
           </>
         )}
