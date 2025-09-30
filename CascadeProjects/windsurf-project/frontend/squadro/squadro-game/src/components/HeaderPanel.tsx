@@ -15,7 +15,7 @@ export default function HeaderPanel() {
 
   return (
     <header className="w-full flex items-center justify-between py-3">
-      <span>Squadro v0.7.29.9.2025</span>
+      <span>Squadro v0.71.29.9.2025</span>
       <div className="flex items-center gap-3">
         {winner && (
           <span className="px-2.5 py-1 rounded-md bg-emerald-600/20 text-emerald-300 border border-emerald-500/30">

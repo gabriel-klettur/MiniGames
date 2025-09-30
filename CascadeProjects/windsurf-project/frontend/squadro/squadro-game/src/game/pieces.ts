@@ -40,6 +40,7 @@ export function createInitialState(): GameState {
       speed: 'normal',
       timeMode: 'manual',
       timeSeconds: 10,
+      useWorkers: true,
     },
   };
   return state;

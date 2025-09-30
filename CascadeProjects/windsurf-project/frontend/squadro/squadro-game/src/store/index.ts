@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAITimeMode, setAITimeSeconds } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -68,10 +68,11 @@ store.subscribe(() => {
 type StoredAI = {
   enabled?: boolean;
   aiSide?: 'Light' | 'Dark';
-  difficulty?: number; // 1..10
+  difficulty?: number; // 1..20
   speed?: 'auto' | 'rapido' | 'normal' | 'lento';
   timeMode?: 'auto' | 'manual';
   timeSeconds?: number;
+  useWorkers?: boolean;
 };
 
 function loadStoredAI(): StoredAI | undefined {
@@ -102,6 +103,7 @@ if (storedAI) {
   if (storedAI.speed === 'auto' || storedAI.speed === 'rapido' || storedAI.speed === 'normal' || storedAI.speed === 'lento') store.dispatch(setAISpeed(storedAI.speed));
   if (storedAI.timeMode === 'auto' || storedAI.timeMode === 'manual') store.dispatch(setAITimeMode(storedAI.timeMode));
   if (typeof storedAI.timeSeconds === 'number') store.dispatch(setAITimeSeconds(storedAI.timeSeconds));
+  if (typeof storedAI.useWorkers === 'boolean') store.dispatch(setAIUseWorkers(storedAI.useWorkers));
 }
 
 let lastSavedAI: StoredAI | undefined;
@@ -116,6 +118,7 @@ store.subscribe(() => {
     speed: ai.speed,
     timeMode: ai.timeMode,
     timeSeconds: ai.timeSeconds,
+    useWorkers: ai.useWorkers,
   };
   const changed = JSON.stringify(toSave) !== JSON.stringify(lastSavedAI);
   if (changed) {

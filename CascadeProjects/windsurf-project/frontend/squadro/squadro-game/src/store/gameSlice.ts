@@ -72,7 +72,7 @@ const gameSlice = createSlice({
     },
     setAIDifficulty(state: GameState, action: PayloadAction<number>) {
       if (!state.ai) return;
-      const d = Math.max(1, Math.min(10, Math.round(action.payload)));
+      const d = Math.max(1, Math.min(20, Math.round(action.payload)));
       state.ai.difficulty = d;
     },
     setAISpeed(state: GameState, action: PayloadAction<AISpeed>) {
@@ -86,6 +86,10 @@ const gameSlice = createSlice({
         state.ai.timeMode = 'manual';
         state.ai.timeSeconds = speed === 'rapido' ? 5 : speed === 'normal' ? 10 : 30;
       }
+    },
+    setAIUseWorkers(state: GameState, action: PayloadAction<boolean>) {
+      if (!state.ai) return;
+      state.ai.useWorkers = !!action.payload;
     },
     setAITimeMode(state: GameState, action: PayloadAction<'auto' | 'manual'>) {
       if (!state.ai) return;
@@ -136,5 +140,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
 export default gameSlice.reducer;

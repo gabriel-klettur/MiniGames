@@ -77,7 +77,7 @@ export default function IAPanel({ open, anchorRect, onClose }: IAPanelProps) {
       {/* Dificultad */}
       <div className="text-center text-neutral-400 text-xs uppercase tracking-wide">Dificultad</div>
       <div className="grid grid-cols-5 gap-2 mt-2">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((d) => (
+        {Array.from({ length: 20 }, (_, i) => i + 1).map((d) => (
           <button
             key={d}
             onClick={() => {

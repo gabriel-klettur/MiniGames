@@ -54,10 +54,11 @@ export type AISpeed = 'auto' | 'rapido' | 'normal' | 'lento';
 export interface AISettings {
   enabled: boolean;          // if true, game is vs AI
   aiSide: Player;            // which side AI plays
-  difficulty: number;        // 1..10
+  difficulty: number;        // 1..20
   speed: AISpeed;            // UI label; maps to time budget
   timeMode: 'auto' | 'manual';
   timeSeconds: number;       // when manual, budget per move
+  useWorkers?: boolean;      // if true (default), run AI in Web Workers
   busy?: boolean;            // ephemeral: IA pensando
   // --- Instrumentation (ephemeral, not persisted) ---
   nodesVisited?: number;     // nodes searched in current/last search

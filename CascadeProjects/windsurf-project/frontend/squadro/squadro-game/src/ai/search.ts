@@ -69,6 +69,8 @@ export interface SearchOptions {
   maxDepth: number; // 1..N
   timeLimitMs: number; // wall clock budget
   onProgress?: (ev: SearchEvent) => void; // optional hooks for instrumentation
+  // Optional: restrict root node to a subset of move IDs (for parallelization)
+  rootMoves?: string[];
 }
 
 export async function findBestMove(rootState: GameState, opts: SearchOptions): Promise<BestMove> {
@@ -83,6 +85,8 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
   // Kick an early progress so the UI shows activity even before thresholds
   opts.onProgress?.({ type: 'progress', nodesVisited });
 
+  const allowedRootMoves = opts.rootMoves ? new Set(opts.rootMoves) : undefined;
+
   // Iterative deepening for better anytime behavior
   for (let depth = 1; depth <= opts.maxDepth; depth++) {
     const remaining = deadline - performance.now();
@@ -95,7 +99,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
         lastProgressAt = now;
         opts.onProgress?.({ type: 'progress', nodesVisited });
       }
-    });
+    }, allowedRootMoves, true);
     if (res.timeout) break;
     best = { moveId: res.moveId, score: res.score, depthReached: depth };
     opts.onProgress?.({ type: 'iter', depth, score: res.score, bestMove: res.moveId });
@@ -118,6 +122,8 @@ function negamax(
   root: Player,
   deadline: number,
   onNode?: () => void,
+  allowedRootMoves?: Set<string>,
+  isRoot?: boolean,
 ): { score: number; moveId: string | null; timeout: boolean } {
   if (performance.now() >= deadline) {
     return { score: 0, moveId: null, timeout: true };
@@ -127,7 +133,10 @@ function negamax(
     return { score: evaluate(gs, root), moveId: null, timeout: false };
   }
 
-  const moves = generateMoves(gs);
+  let moves = generateMoves(gs);
+  if (isRoot && allowedRootMoves) {
+    moves = moves.filter((m) => allowedRootMoves.has(m));
+  }
   if (moves.length === 0) {
     // No legal moves shouldn't happen in Squadro, but evaluate anyway
     onNode?.(); // count degenerate evaluation as a node
@@ -142,7 +151,7 @@ function negamax(
     onNode?.();
     const child = cloneState(gs);
     applyMoveRules(child, moveId);
-    const r = negamax(child, depth - 1, -beta, -a, root, deadline, onNode);
+    const r = negamax(child, depth - 1, -beta, -a, root, deadline, onNode, allowedRootMoves, false);
     if (r.timeout) return { score: 0, moveId: null, timeout: true };
     const score = -r.score;
     if (score > bestScore) {
