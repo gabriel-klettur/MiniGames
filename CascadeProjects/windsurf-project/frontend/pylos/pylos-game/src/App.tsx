@@ -50,6 +50,8 @@ function App() {
     setIaTimeSeconds,
     showIAUser,
     setShowIAUser,
+    finishedGames,
+    setFinishedGames,
   } = usePersistence();
   // History stacks managed by useHistoryLogic (initialized later)
   let history: GameState[] = [];
@@ -79,6 +81,9 @@ function App() {
   // Auto-completion running flag (timer handled inside useAutoFill)
   const autoRunningRef = useRef<boolean>(false);
   // IA autoplay timer is managed inside useAI
+
+  // Track whether current finished game has been archived (to avoid duplicates)
+  const archivedRef = useRef<boolean>(false);
 
   // Animations and UI/UX via hook
   const {
@@ -170,6 +175,24 @@ function App() {
     if (over.over) {
       const text = over.winner ? `Ganador: ${over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} — ${over.reason ?? ''}` : 'Partida terminada';
       setGameOver(text);
+      // Archive finished game once
+      if (!archivedRef.current) {
+        const now = new Date();
+        const record = {
+          id: String(now.getTime()),
+          endedAt: now.toISOString(),
+          winner: over.winner ?? null,
+          reason: over.reason,
+          vsAI: vsAI,
+          iaDepth,
+          iaTimeMode,
+          iaTimeSeconds,
+          totalMoves: moves.length + (logEntry ? 1 : 0),
+          moves: logEntry ? [...moves, logEntry] : [...moves],
+        };
+        setFinishedGames((prev) => [...prev, record]);
+        archivedRef.current = true;
+      }
     } else {
       setGameOver(undefined);
     }
@@ -188,6 +211,52 @@ function App() {
     updateAndCheck,
     setFlying,
   });
+
+  // Wrap onNewGame to reset archived flag
+  const handleNewGame = () => {
+    archivedRef.current = false;
+    onNewGame();
+  };
+
+  // Download current game log as JSON with metadata
+  const downloadCurrentGame = () => {
+    const over = isGameOver(state);
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const current = (moves.length > 0 || over.over)
+      ? {
+          id: `current-${ts}`,
+          endedAt: new Date().toISOString(),
+          winner: over.over ? (over.winner ?? null) : null,
+          reason: over.reason ?? undefined,
+          vsAI,
+          iaDepth,
+          iaTimeMode,
+          iaTimeSeconds,
+          totalMoves: moves.length,
+          moves,
+        }
+      : null;
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      archived: finishedGames,
+      current,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pylos_historial_${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Clear archived and current history
+  const clearHistory = () => {
+    setMoves([]);
+    setFinishedGames([]);
+    // Allow archiving the next finished game again
+    archivedRef.current = false;
+  };
   ({ history, setHistory, redo, setRedo } = historyHook);
   const { onUndo, redoingRef } = historyHook;
 
@@ -338,7 +407,7 @@ function App() {
       }
     >
       <HeaderPanel
-        onNewGame={onNewGame}
+        onNewGame={handleNewGame}
         showTools={showTools}
         onToggleDev={() => setShowTools((v) => !v)}
         showIA={showIAUser}
@@ -433,7 +502,7 @@ function App() {
           showFinishRecovery={state.phase === 'recover'}
           onFinishRecovery={onFinishRecovery}
         />
-        <HistoryPanel visible={showHistory} moves={moves} />
+        <HistoryPanel visible={showHistory} moves={moves} finishedGames={finishedGames} onDownload={downloadCurrentGame} onClear={clearHistory} />
         {showFases && (
           <FasePanel state={state} gameOverText={gameOver} />
         )}
@@ -516,7 +585,7 @@ function App() {
           />
         )}
         {gameOver && winnerMessage && (
-          <GameOverModal message={winnerMessage} onConfirm={onNewGame} />
+          <GameOverModal message={winnerMessage} onConfirm={handleNewGame} />
         )}
       </div>
       {flying && (

@@ -8,6 +8,9 @@ import { useExports } from './hooks/useExports';
 import { publishAllBooksToDevServer, clearBooksOnDevServer } from './services/publishBooks';
 import { useInfoIASim } from './hooks/useInfoIASim';
 import type { TimeMode } from './types';
+import { LS_KEYS, type FinishedGameRecord } from '../../../hooks/usePersistence';
+import { decodeSignature } from '../../../ia/signature';
+import { posKey } from '../../../game/board';
 
 export type InfoIAProps = {
   onMirrorStart?: () => void;
@@ -101,14 +104,67 @@ export default function InfoIAContainer(props: InfoIAProps) {
     onMirrorEnd: props.onMirrorEnd,
   });
 
+  const appendSimToFinished = useCallback((rec: InfoIAGameRecord) => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.finished);
+      const list: FinishedGameRecord[] = raw ? (JSON.parse(raw) as FinishedGameRecord[]) : [];
+      // Avoid duplicates by id
+      if (list.some((g) => g.id === rec.id)) return;
+      const endedAt = new Date(rec.createdAt).toISOString();
+      const moves: FinishedGameRecord['moves'] = (rec.perMove || []).map((pm, i) => {
+        const player: 'L' | 'D' = pm.player ?? (i % 2 === 0 ? 'L' : 'D');
+        // For simulated games, mimic Player vs IA labeling: L -> Jugador, D -> IA
+        const source: 'PLAYER' | 'IA' = player === 'L' ? 'PLAYER' : 'IA';
+        let text = '';
+        if (typeof pm.moveSig === 'number') {
+          try {
+            const mv = decodeSignature(pm.moveSig as number);
+            if (mv.kind === 'place') {
+              text = `colocar ${posKey(mv.dest)}`;
+            } else {
+              text = `subir ${posKey(mv.src)} -> ${posKey(mv.dest)}`;
+            }
+          } catch {
+            // fallback on decode error
+            text = 'movimiento';
+          }
+        } else {
+          // Fallback when no signature available
+          text = 'movimiento';
+        }
+        return { player, source, text };
+      });
+      const mapped: FinishedGameRecord = {
+        id: rec.id,
+        endedAt,
+        winner: rec.winner,
+        reason: rec.endedReason,
+        vsAI: null, // simulación IA vs IA
+        iaDepth: rec.depth,
+        iaTimeMode: rec.timeMode,
+        iaTimeSeconds: typeof rec.timeSeconds === 'number' ? rec.timeSeconds : 0,
+        totalMoves: rec.moves,
+        moves,
+        simulated: true,
+      };
+      const next = [...list, mapped];
+      localStorage.setItem(LS_KEYS.finished, JSON.stringify(next));
+      // Notify same-tab listeners to refresh finished games state
+      try { window.dispatchEvent(new Event('pylos.finished.changed')); } catch {}
+    } catch {
+      // ignore persistence errors
+    }
+  }, []);
+
   const onStart = useCallback(async () => {
     await start({
       onGame: async (rec: InfoIAGameRecord) => {
         await saveRecord(rec);
         setRecords((prev) => [rec, ...prev]);
+        appendSimToFinished(rec);
       },
     });
-  }, [start]);
+  }, [start, appendSimToFinished]);
 
   const onStop = useCallback(() => {
     stop();

@@ -1,17 +1,19 @@
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
-
-export type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
+import type { MoveEntry } from '../hooks/usePersistence';
 
 export interface MoveLogProps {
   moves: MoveEntry[];
+  onDownload?: () => void;
+  hasArchive?: boolean;
+  onClear?: () => void;
 }
 
 /**
  * MoveLog: pretty move list with player icon and source tag (Player/IA/AUTO).
  * Also compacts consecutive duplicate entries with a small counter.
  */
-export default function MoveLog({ moves }: MoveLogProps) {
+export default function MoveLog({ moves, onDownload, hasArchive = false, onClear }: MoveLogProps) {
   type Entry = MoveEntry & { count: number };
 
   const grouped: Entry[] = [];
@@ -33,7 +35,34 @@ export default function MoveLog({ moves }: MoveLogProps) {
 
   return (
     <section className="moves" aria-label="Historial de movimientos">
-      <h3>Historial</h3>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={{ margin: 0 }}>Historial</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {onDownload && (
+            <>
+              {onClear && (
+                <button
+                  type="button"
+                  onClick={onClear}
+                  title="Limpiar historial (actual + archivadas)"
+                  style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #555', background: '#2a2a2a', color: '#fff', cursor: 'pointer' }}
+                >
+                  Limpiar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onDownload}
+                disabled={grouped.length === 0 && !hasArchive}
+                title={grouped.length === 0 && !hasArchive ? 'No hay datos para descargar' : 'Descargar historial (actual + archivadas)'}
+                style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #555', background: '#222', color: '#fff', cursor: grouped.length === 0 && !hasArchive ? 'not-allowed' : 'pointer' }}
+              >
+                Descargar
+              </button>
+            </>
+          )}
+        </div>
+      </div>
       {grouped.length === 0 ? (
         <p className="muted">Sin movimientos</p>
       ) : (

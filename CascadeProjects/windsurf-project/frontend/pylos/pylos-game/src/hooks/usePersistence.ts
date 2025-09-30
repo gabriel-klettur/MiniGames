@@ -9,11 +9,26 @@ export const LS_KEYS = {
   vsai: 'pylos.vsai.v1',
   ia: 'pylos.ia.config.v1',
   iaShow: 'pylos.ia.showUser.v1',
+  finished: 'pylos.finished.v1',
 } as const;
 
 export type MoveEntry = { player: 'L' | 'D'; source: 'PLAYER' | 'IA' | 'AUTO'; text: string };
 
-type VsAIConfig = null | { enemy: 'L' | 'D'; depth: number };
+export type VsAIConfig = null | { enemy: 'L' | 'D'; depth: number };
+
+export interface FinishedGameRecord {
+  id: string; // unique id, e.g., timestamp-based
+  endedAt: string; // ISO date string
+  winner: 'L' | 'D' | null;
+  reason?: string;
+  vsAI: VsAIConfig;
+  iaDepth: number;
+  iaTimeMode: 'auto' | 'manual';
+  iaTimeSeconds: number;
+  totalMoves: number;
+  moves: MoveEntry[];
+  simulated?: boolean; // true when coming from InfoIA simulations (IA vs IA)
+}
 
 export interface UsePersistenceResult {
   state: GameState;
@@ -34,6 +49,9 @@ export interface UsePersistenceResult {
 
   showIAUser: boolean;
   setShowIAUser: React.Dispatch<React.SetStateAction<boolean>>;
+
+  finishedGames: FinishedGameRecord[];
+  setFinishedGames: React.Dispatch<React.SetStateAction<FinishedGameRecord[]>>;
 }
 
 /**
@@ -118,6 +136,17 @@ export function usePersistence(): UsePersistenceResult {
     return null;
   });
 
+  const [finishedGames, setFinishedGames] = useState<FinishedGameRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEYS.finished);
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) return list as FinishedGameRecord[];
+      }
+    } catch {}
+    return [];
+  });
+
   // Persist changes
   useEffect(() => {
     try {
@@ -152,6 +181,34 @@ export function usePersistence(): UsePersistenceResult {
     } catch {}
   }, [showIAUser]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEYS.finished, JSON.stringify(finishedGames));
+    } catch {}
+  }, [finishedGames]);
+
+  // Listen to external updates to finished games (e.g., InfoIA simulations)
+  useEffect(() => {
+    const onExternalUpdate = () => {
+      try {
+        const raw = localStorage.getItem(LS_KEYS.finished);
+        const list = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(list)) setFinishedGames(list as FinishedGameRecord[]);
+      } catch {}
+    };
+    // Custom app event for same-tab updates
+    window.addEventListener('pylos.finished.changed', onExternalUpdate as EventListener);
+    // Cross-tab updates
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === LS_KEYS.finished) onExternalUpdate();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('pylos.finished.changed', onExternalUpdate as EventListener);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [setFinishedGames]);
+
   // Wrapper to keep setState signature identical to React's setter (value only)
   const setState = (next: GameState) => _setState(next);
 
@@ -170,6 +227,8 @@ export function usePersistence(): UsePersistenceResult {
     setIaTimeSeconds,
     showIAUser,
     setShowIAUser,
+    finishedGames,
+    setFinishedGames,
   };
 }
 

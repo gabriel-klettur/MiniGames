@@ -154,7 +154,6 @@ El orden en que exploras jugadas **reduce drásticamente nodos**:
 ## 13. Extra: Opciones de Rendimiento
 
 * **TypedArrays** para TT.
-* **Bitmasks** precalculados para supports, squares, centro.
 * **Abort flag** compartido (Atomics) para control de tiempo.
 * (Opcional) **WASM** (Rust/C++) → +2–5× velocidad.
 
@@ -167,11 +166,9 @@ El orden en que exploras jugadas **reduce drásticamente nodos**:
 * [X] Iterative deepening con límite de tiempo.
 * [X] TT con Zobrist hashing.
 * [X] Ordenación con PV, hash, killers, history.
-* [ ] Quiescence search en jugadas tácticas.
+* [X] Quiescence search en jugadas tácticas.
 * [X] Aspiration windows y PVS.
-* [ ] Libro de aperturas cargado desde archivo.
+* [X] Libro de aperturas cargado desde archivo.
 * [ ] Tabla de finales para posiciones pequeñas.
 * [ ] Cache de book/egtb en IndexedDB.
 * [X] Motor en Worker, UI en React.
-
----
