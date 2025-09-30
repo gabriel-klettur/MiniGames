@@ -4,6 +4,12 @@ import { niceStep } from '../../utils/chart';
 
 export type PerMove = {
   elapsedMs?: number;
+  // Optional reserves to derive total balls on board after the move
+  reservesLAfter?: number;
+  reservesDAfter?: number;
+  // If 'after' not present, we might fallback to 'before' for approximate display
+  reservesLBefore?: number;
+  reservesDBefore?: number;
 };
 
 type Props = {
@@ -23,6 +29,24 @@ export default function MoveTimeChart({ perMoves }: Props) {
 
   const hasData = valuesSec.length > 0 && valuesSec.some((v) => v > 0);
   if (!hasData) return null;
+
+  // Derive total balls on board after each move when reserves info is present
+  // Default Pylos: 15 balls per side (30 total)
+  const BALLS_PER_SIDE = 15;
+  const ballsOnBoard = useMemo(() => {
+    const out: Array<number | null> = [];
+    for (const m of perMoves || []) {
+      const rL = Number.isFinite(m?.reservesLAfter as number) ? (m!.reservesLAfter as number) : (Number.isFinite(m?.reservesLBefore as number) ? (m!.reservesLBefore as number) : null);
+      const rD = Number.isFinite(m?.reservesDAfter as number) ? (m!.reservesDAfter as number) : (Number.isFinite(m?.reservesDBefore as number) ? (m!.reservesDBefore as number) : null);
+      if (rL == null || rD == null) {
+        out.push(null);
+      } else {
+        out.push(2 * BALLS_PER_SIDE - (rL + rD));
+      }
+    }
+    return out;
+  }, [perMoves]);
+  const hasBallsSeries = ballsOnBoard.some((v) => typeof v === 'number');
 
   // Compute outlier threshold using IQR; fallback to mean+3*std if IQR≈0
   const { thresholdSec, outlierMask } = useMemo(() => {
@@ -96,6 +120,18 @@ export default function MoveTimeChart({ perMoves }: Props) {
   for (let y = 0; y <= niceMaxY + 1e-9; y += step) ticksY.push(Number(y.toFixed(6)));
   const yScale = (s: number) => H - margin.bottom - innerH * (s / (niceMaxY || 1));
 
+  // Right Y axis for balls series (if available)
+  const minBalls = hasBallsSeries ? Math.min(...(ballsOnBoard.filter((v): v is number => typeof v === 'number'))) : 0;
+  const maxBalls = hasBallsSeries ? Math.max(...(ballsOnBoard.filter((v): v is number => typeof v === 'number'))) : 0;
+  const stepBalls = hasBallsSeries ? niceStep(minBalls, Math.max(minBalls + 1, maxBalls), 5) : 1;
+  const niceMinBalls = hasBallsSeries ? Math.floor(minBalls / stepBalls) * stepBalls : 0;
+  const niceMaxBalls = hasBallsSeries ? Math.ceil(Math.max(minBalls + 1, maxBalls) / stepBalls) * stepBalls : 0;
+  const ticksBalls: number[] = [];
+  if (hasBallsSeries) {
+    for (let b = niceMinBalls; b <= niceMaxBalls + 1e-9; b += stepBalls) ticksBalls.push(Number(b.toFixed(6)));
+  }
+  const y2Scale = (b: number) => H - margin.bottom - innerH * ((b - niceMinBalls) / Math.max(1, (niceMaxBalls - niceMinBalls)));
+
   const N = valuesSec.length;
   const xForIndex = (i: number) => margin.left + (N <= 1 ? innerW / 2 : (i * innerW) / (N - 1));
 
@@ -118,6 +154,29 @@ export default function MoveTimeChart({ perMoves }: Props) {
     for (let i = 1; i < pts.length; i++) d += ` L${pts[i].x},${pts[i].y}`;
     return d;
   }, [N, valuesSec]);
+
+  // Path for balls series (may contain gaps when data missing)
+  const pathBalls = useMemo(() => {
+    if (!hasBallsSeries) return '';
+    let d = '';
+    let inSeg = false;
+    for (let i = 0; i < N; i++) {
+      const v = ballsOnBoard[i];
+      if (typeof v === 'number') {
+        const x = xForIndex(i);
+        const y = y2Scale(v);
+        if (!inSeg) {
+          d += `M${x},${y}`;
+          inSeg = true;
+        } else {
+          d += ` L${x},${y}`;
+        }
+      } else {
+        inSeg = false;
+      }
+    }
+    return d;
+  }, [N, ballsOnBoard, hasBallsSeries, niceMinBalls, niceMaxBalls]);
 
   const containerStyle: CSSProperties = { width: '100%', display: 'block' };
 
@@ -148,6 +207,19 @@ export default function MoveTimeChart({ perMoves }: Props) {
             ))}
             <text x={W - margin.right} y={H - 6} textAnchor="end" fontSize={10} opacity={0.9} fill="#ffffff">Jugada</text>
           </g>
+
+          {/* Right Y axis for balls */}
+          {hasBallsSeries && (
+            <g aria-hidden="true">
+              {ticksBalls.map((t, i) => (
+                <g key={i}>
+                  <line x1={margin.left} y1={y2Scale(t)} x2={W - margin.right} y2={y2Scale(t)} stroke="#0b1220" opacity={0.18} />
+                  <text x={W - margin.right + 6} y={y2Scale(t) + 4} textAnchor="start" fontSize={10} fill="#93c5fd">{t}</text>
+                </g>
+              ))}
+              <text x={W - margin.right} y={margin.top - 10} textAnchor="end" fontSize={10} opacity={0.9} fill="#93c5fd">Bolas</text>
+            </g>
+          )}
 
           {/* Threshold line for outliers (IQR) */}
           {typeof thresholdSec === 'number' && isFinite(thresholdSec) && thresholdSec <= niceMaxY && thresholdSec >= 0 && (
@@ -190,10 +262,42 @@ export default function MoveTimeChart({ perMoves }: Props) {
                     stroke="#0b1220"
                     strokeWidth={1}
                   />
-                  <title>{`#${i + 1}: ${v.toFixed(3)}s${isOutlier ? ' · atípico' : ''}`}</title>
+                  <title>{`#${i + 1}: ${v.toFixed(3)}s${isOutlier ? ' · atípico' : ''}${hasBallsSeries && typeof ballsOnBoard[i] === 'number' ? ` · bolas=${ballsOnBoard[i]}` : ''}`}</title>
                 </g>
               );
             })}
+          </g>
+
+          {/* Balls series */}
+          {hasBallsSeries && (
+            <g>
+              <path d={pathBalls} fill="none" stroke="#38bdf8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" opacity={0.95} />
+              {ballsOnBoard.map((v, i) => {
+                if (typeof v !== 'number') return null;
+                const cx = xForIndex(i);
+                const cy = y2Scale(v);
+                return (
+                  <g key={`b-${i}`}>
+                    <circle cx={cx} cy={cy} r={2.8} fill="#38bdf8" stroke="#0b1220" strokeWidth={1} />
+                    <title>{`#${i + 1}: bolas=${v}`}</title>
+                  </g>
+                );
+              })}
+            </g>
+          )}
+
+          {/* Legend */}
+          <g aria-hidden="true">
+            <g transform={`translate(${margin.left + 8}, ${margin.top - 12})`}>
+              <line x1={0} y1={0} x2={16} y2={0} stroke="#22c55e" strokeWidth={2.2} />
+              <text x={20} y={3} fontSize={10} fill="#ffffff">Tiempo (s)</text>
+            </g>
+            {hasBallsSeries && (
+              <g transform={`translate(${margin.left + 110}, ${margin.top - 12})`}>
+                <line x1={0} y1={0} x2={16} y2={0} stroke="#38bdf8" strokeWidth={2} />
+                <text x={20} y={3} fontSize={10} fill="#93c5fd">Bolas</text>
+              </g>
+            )}
           </g>
         </svg>
       )}

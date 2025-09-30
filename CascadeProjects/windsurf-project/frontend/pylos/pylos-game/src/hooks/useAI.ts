@@ -75,6 +75,139 @@ export interface UseAIParams {
   historyStates?: GameState[];
 }
 
+// ----------------------
+// Helpers (pure/local)
+// ----------------------
+
+function resolveDifficulty(depth: number): 'facil' | 'medio' | 'dificil' {
+  if (depth <= 3) return 'facil';
+  if (depth <= 7) return 'medio';
+  return 'dificil';
+}
+
+function resolveBookUrl(iaDepth: number, iaConfig?: UseAIParams['iaConfig']): string {
+  const mode = iaConfig?.bookMode ?? 'auto';
+  const phase = iaConfig?.bookPhase ?? 'aperturas';
+  const basePathRaw = iaConfig?.bookBasePath ?? '/books';
+  const basePath = basePathRaw.endsWith('/') ? basePathRaw.slice(0, -1) : basePathRaw;
+  const difficulty = resolveDifficulty(iaDepth);
+  const autoUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
+  return mode === 'manual' ? (iaConfig?.bookUrl || '/aperturas_book.json') : autoUrl;
+}
+
+function computeAvoidKeys(historyStates: UseAIParams['historyStates'], state: GameState, repeatMaxCfg?: number): Array<{ hi: number; lo: number }> | undefined {
+  const repeatMax = Math.max(1, Math.min(10, Math.floor(repeatMaxCfg ?? 3)));
+  if (!historyStates || historyStates.length === 0) return undefined;
+  const counts = new Map<string, { hi: number; lo: number; c: number }>();
+  for (const s of historyStates) {
+    const k = computeKey(s);
+    const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+    const prev = counts.get(keyStr) ?? { hi: (k.hi >>> 0), lo: (k.lo >>> 0), c: 0 };
+    prev.c += 1;
+    counts.set(keyStr, prev);
+  }
+  // Include current position as well
+  const curK = computeKey(state);
+  const curStr = `${(curK.hi >>> 0)}:${(curK.lo >>> 0)}`;
+  const curPrev = counts.get(curStr) ?? { hi: (curK.hi >>> 0), lo: (curK.lo >>> 0), c: 0 };
+  curPrev.c += 1;
+  counts.set(curStr, curPrev);
+  const res: Array<{ hi: number; lo: number }> = [];
+  for (const v of counts.values()) {
+    if (v.c >= repeatMax) res.push({ hi: v.hi, lo: v.lo });
+  }
+  return res.length ? res : undefined;
+}
+
+function resetAIMetrics(setters: {
+  setIaBusy: (v: boolean) => void;
+  setIaProgress: (v: { depth: number; score: number } | null) => void;
+  setIaEval: (v: number | null) => void;
+  setIaDepthReached: (v: number | null) => void;
+  setIaPV: (v: AIMove[]) => void;
+  setIaRootMoves: (v: Array<{ move: AIMove; score: number }>) => void;
+  setIaNodes: (v: number) => void;
+  setIaElapsedMs: (v: number) => void;
+  setIaNps: (v: number) => void;
+}) {
+  setters.setIaBusy(true);
+  setters.setIaProgress(null);
+  setters.setIaEval(null);
+  setters.setIaDepthReached(null);
+  setters.setIaPV([]);
+  setters.setIaRootMoves([]);
+  setters.setIaNodes(0);
+  setters.setIaElapsedMs(0);
+  setters.setIaNps(0);
+}
+
+function getImageSrcForPlayer(p: 'L' | 'D'): string {
+  return p === 'L' ? bolaB : bolaA;
+}
+
+function enqueueRecoverItemsPlace(
+  recs: Position[] | undefined,
+  aiPlayer: 'L' | 'D',
+  reserveLightRef: React.MutableRefObject<HTMLSpanElement | null>,
+  reserveDarkRef: React.MutableRefObject<HTMLSpanElement | null>,
+  recoverQueueRef: React.MutableRefObject<{ items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> } | null>,
+  aiRecoveryActiveRef: React.MutableRefObject<boolean>,
+) {
+  if (!Array.isArray(recs) || recs.length === 0) {
+    recoverQueueRef.current = null;
+    aiRecoveryActiveRef.current = false;
+    return;
+  }
+  const imgSrc = getImageSrcForPlayer(aiPlayer);
+  const items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> = [];
+  for (const pos of recs) {
+    const sKey = posKey(pos);
+    const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
+    const sRect = srcBtn?.getBoundingClientRect();
+    const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
+    const dRect = destEl?.getBoundingClientRect();
+    items.push({
+      srcKey: sKey,
+      from: sRect ? { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height } : undefined,
+      to: dRect ? { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height } : undefined,
+      imgSrc,
+    });
+  }
+  recoverQueueRef.current = items.length ? { items } : null;
+  aiRecoveryActiveRef.current = !!recoverQueueRef.current;
+}
+
+function enqueueRecoverItemsLift(
+  recs: Position[] | undefined,
+  aiPlayer: 'L' | 'D',
+  reserveLightRef: React.MutableRefObject<HTMLSpanElement | null>,
+  reserveDarkRef: React.MutableRefObject<HTMLSpanElement | null>,
+  recoverQueueRef: React.MutableRefObject<{ items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> } | null>,
+) {
+  if (!Array.isArray(recs) || recs.length === 0) {
+    recoverQueueRef.current = null;
+    return;
+  }
+  const imgSrc = getImageSrcForPlayer(aiPlayer);
+  const items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> = [];
+  for (const pos of recs) {
+    const sKey = posKey(pos);
+    const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
+    const sRect = srcBtn?.getBoundingClientRect();
+    const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
+    const dRect = destEl?.getBoundingClientRect();
+    if (sRect && dRect) {
+      items.push({
+        srcKey: sKey,
+        from: { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height },
+        to: { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height },
+        imgSrc,
+      });
+    }
+  }
+  recoverQueueRef.current = items.length ? { items } : null;
+}
+
 export interface UseAIResult {
   iaBusy: boolean;
   aiDisabled: boolean;
@@ -147,15 +280,17 @@ export function useAI(params: UseAIParams): UseAIResult {
 
   const onAIMove = async () => {
     if (aiDisabled || iaBusy) return;
-    setIaBusy(true);
-    setIaProgress(null);
-    setIaEval(null);
-    setIaDepthReached(null);
-    setIaPV([]);
-    setIaRootMoves([]);
-    setIaNodes(0);
-    setIaElapsedMs(0);
-    setIaNps(0);
+    resetAIMetrics({
+      setIaBusy,
+      setIaProgress,
+      setIaEval,
+      setIaDepthReached,
+      setIaPV,
+      setIaRootMoves,
+      setIaNodes,
+      setIaElapsedMs,
+      setIaNps,
+    });
     // Capture the AI's player at the moment thinking starts to avoid races
     const aiPlayer: 'L' | 'D' = state.currentPlayer;
     setIaRootPlayer(aiPlayer);
@@ -164,44 +299,14 @@ export function useAI(params: UseAIParams): UseAIResult {
     try {
       // Resolve time budget
       const timeMs = iaTimeMode === 'auto' ? undefined : Math.max(0, Math.min(30, iaTimeSeconds)) * 1000;
-      // Build repetition-avoidance keys from history if enabled
+      // Build repetition-avoidance keys (optional)
       let avoidKeys: Array<{ hi: number; lo: number }> | undefined = undefined;
       const avoidEnabled = iaConfig?.avoidRepeats ?? true;
-      const repeatMax = Math.max(1, Math.min(10, Math.floor(iaConfig?.repeatMax ?? 3)));
-      if (avoidEnabled && historyStates && historyStates.length > 0) {
-        const counts = new Map<string, { hi: number; lo: number; c: number }>();
-        for (const s of historyStates) {
-          const k = computeKey(s);
-          const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
-          const prev = counts.get(keyStr) ?? { hi: (k.hi >>> 0), lo: (k.lo >>> 0), c: 0 };
-          prev.c += 1;
-          counts.set(keyStr, prev);
-        }
-        // Include current position as well
-        const curK = computeKey(state);
-        const curStr = `${(curK.hi >>> 0)}:${(curK.lo >>> 0)}`;
-        const curPrev = counts.get(curStr) ?? { hi: (curK.hi >>> 0), lo: (curK.lo >>> 0), c: 0 };
-        curPrev.c += 1;
-        counts.set(curStr, curPrev);
-        avoidKeys = [];
-        for (const v of counts.values()) {
-          if (v.c >= repeatMax) avoidKeys.push({ hi: v.hi, lo: v.lo });
-        }
-        if (avoidKeys.length === 0) avoidKeys = undefined;
+      if (avoidEnabled) {
+        avoidKeys = computeAvoidKeys(historyStates, state, iaConfig?.repeatMax);
       }
       // Resolve effective book URL
-      const resolveDifficulty = (d: number): 'facil' | 'medio' | 'dificil' => {
-        if (d <= 3) return 'facil';
-        if (d <= 7) return 'medio';
-        return 'dificil';
-      };
-      const mode = iaConfig?.bookMode ?? 'auto';
-      const phase = iaConfig?.bookPhase ?? 'aperturas';
-      const basePathRaw = iaConfig?.bookBasePath ?? '/books';
-      const basePath = basePathRaw.endsWith('/') ? basePathRaw.slice(0, -1) : basePathRaw;
-      const difficulty = resolveDifficulty(iaDepth);
-      const autoUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
-      const effectiveBookUrl = mode === 'manual' ? (iaConfig?.bookUrl || '/aperturas_book.json') : autoUrl;
+      const effectiveBookUrl = resolveBookUrl(iaDepth, iaConfig);
 
       const res = await computeBestMoveAsync(state, {
         depth: iaDepth,
@@ -256,33 +361,20 @@ export function useAI(params: UseAIParams): UseAIResult {
           const originRect = originEl?.getBoundingClientRect();
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
+          const imgSrc = getImageSrcForPlayer(aiPlayer);
           // Compute state after base placement only (phase may enter 'recover')
           const placedRes = placeFromReserve(state, dest);
           const nextState = placedRes.state;
           // Enqueue recover animations (if any) to run after main animation ends
           const recs = (res.move as any)?.recovers as Position[] | undefined;
-          if (Array.isArray(recs) && recs.length > 0) {
-            const items: Array<{ srcKey: string; from?: Rect; to?: Rect; imgSrc: string }> = [];
-            for (const pos of recs) {
-              const sKey = posKey(pos);
-              const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
-              const sRect = srcBtn?.getBoundingClientRect();
-              const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
-              const dRect = destEl?.getBoundingClientRect();
-              items.push({
-                srcKey: sKey,
-                from: sRect ? { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height } : undefined,
-                to: dRect ? { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height } : undefined,
-                imgSrc,
-              });
-            }
-            recoverQueueRef.current = items.length ? { items } : null;
-            aiRecoveryActiveRef.current = !!recoverQueueRef.current; // AI will drive recovery
-          } else {
-            recoverQueueRef.current = null;
-            aiRecoveryActiveRef.current = false;
-          }
+          enqueueRecoverItemsPlace(
+            recs,
+            aiPlayer,
+            reserveLightRef,
+            reserveDarkRef,
+            recoverQueueRef,
+            aiRecoveryActiveRef,
+          );
           if (originRect && destRect) {
             const from = { left: originRect.left, top: originRect.top, width: originRect.width, height: originRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
@@ -301,29 +393,20 @@ export function useAI(params: UseAIParams): UseAIResult {
           const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${destKey}"]`);
           const srcRect = srcBtn?.getBoundingClientRect();
           const destRect = destBtn?.getBoundingClientRect();
-          const imgSrc = aiPlayer === 'L' ? bolaB : bolaA;
+          const imgSrc = getImageSrcForPlayer(aiPlayer);
           // Compute state after base lift only: select source then move
           const sel = selectMoveSource(state, res.move.src);
           const moved = rulesMovePiece(sel.state, res.move.dest);
           const nextState = moved.state;
           // Enqueue recover animations (if any)
           const recs = (res.move as any)?.recovers as Position[] | undefined;
-          if (Array.isArray(recs) && recs.length > 0) {
-            const items: Array<{ srcKey: string; from: Rect; to: Rect; imgSrc: string }> = [];
-            for (const pos of recs) {
-              const sKey = posKey(pos);
-              const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${sKey}"]`);
-              const sRect = srcBtn?.getBoundingClientRect();
-              const destEl = (aiPlayer === 'L') ? reserveLightRef.current : reserveDarkRef.current;
-              const dRect = destEl?.getBoundingClientRect();
-              if (sRect && dRect) {
-                items.push({ srcKey: sKey, from: { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height }, to: { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height }, imgSrc });
-              }
-            }
-            recoverQueueRef.current = items.length ? { items } : null;
-          } else {
-            recoverQueueRef.current = null;
-          }
+          enqueueRecoverItemsLift(
+            recs,
+            aiPlayer,
+            reserveLightRef,
+            reserveDarkRef,
+            recoverQueueRef,
+          );
           if (srcRect && destRect) {
             const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
             const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
