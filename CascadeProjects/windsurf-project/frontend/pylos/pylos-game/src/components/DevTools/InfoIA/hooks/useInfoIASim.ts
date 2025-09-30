@@ -3,6 +3,7 @@ import { initialState } from '../../../../game/rules';
 import type { AIMove } from '../../../../ia/moves';
 import { computeKey } from '../../../../ia/zobrist';
 import { makeSignature } from '../../../../ia/signature';
+import { resolveDifficulty } from '../../../../ia/book';
 import type { GameState } from '../../../../game/types';
 import type { InfoIAGameRecord, InfoIAPerMove } from '../../../../utils/infoiaDb';
 import { makeId } from '../../../../utils/infoiaDb';
@@ -239,11 +240,6 @@ export function useInfoIASim(params: UseInfoIASimParams) {
         // Workers override per player
         const workersFinal = (anti.workers === 'auto' || Number.isFinite(anti.workers as any)) ? (anti.workers as any) : 'auto';
         // Resolve book URL based on current depth when enabled
-        const resolveDifficulty = (d: number): 'facil' | 'medio' | 'dificil' => {
-          if (d <= 3) return 'facil';
-          if (d <= 7) return 'medio';
-          return 'dificil';
-        };
         const difficulty = resolveDifficulty(depthForMove);
         const phase: 'aperturas' | 'medio' | 'cierres' = 'aperturas';
         const basePath = '/books';

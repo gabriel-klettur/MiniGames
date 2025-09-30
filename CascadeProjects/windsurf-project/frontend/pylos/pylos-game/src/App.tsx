@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Board from './components/Board';
-import InfoPanel from './components/InfoPanel';
+import { useEffect, useRef, useState } from 'react';
+// Board and InfoPanel are now used via GameView
+import GameView from './components/GameView';
 import HeaderPanel from './components/HeaderPanel';
 import FasePanel from './components/DevTools/FasePanel/FasePanel';
-import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import InfoIA from './components/DevTools/InfoIA/InfoIA';
+import DevToolsOrchestrator from './components/DevTools/DevToolsOrchestrator';
 import RulesPanel from './components/DevTools/RulesPanel/RulesPanel';
 import { useGameLogger } from './hooks/useGameLogger';
 import type { GameState } from './game/types';
-import { posKey, positions, isSupported } from './game/board';
+import { posKey } from './game/board';
 import FlyingPiece from './components/FlyingPiece';
 import HistoryPanel from './components/HistoryPanel';
 import UndoRedo from './components/UndoRedo';
@@ -22,7 +22,6 @@ import type { MoveEntry } from './hooks/usePersistence';
 import { useAnimations } from './hooks/useAnimations';
 import { useHistoryLogic } from './hooks/useHistory';
 import { useAI } from './hooks/useAI';
-import { isGameOver } from './game/rules';
 import {
   useIaAdvancedConfig,
   useAutoFill,
@@ -32,7 +31,16 @@ import {
   useGameLifecycle,
   useHighlights,
   useReservesDisplay,
+  useUpdateAndCheck,
+  useExportHistory,
+  useUIPanels,
+  useLastIaMove,
+  useLayoutStyle,
+  useAvailableLevels,
+  useShadeConfig,
+  useHistoryUI,
 } from './hooks/app';
+import { useFlyingDone } from './hooks/app/useFlyingDone';
 
 function App() {
   const {
@@ -59,20 +67,41 @@ function App() {
   let redo: GameState[] = [];
   let setRedo: React.Dispatch<React.SetStateAction<GameState[]>>;
   const [gameOver, setGameOver] = useState<string | undefined>(undefined);
-  // Dev/tools toggle and Rules panel toggle
-  const [showTools, setShowTools] = useState<boolean>(false);
-  // IA panel toggles y parámetros (User vs DevTools)
-  const [showIATools, setShowIATools] = useState<boolean>(false);   // IAPanel dentro de DevToolsPanel
-  // Historial de movimientos (inicialmente oculto)
-  const [showHistory, setShowHistory] = useState<boolean>(false);
-  // FasePanel (inicialmente oculto)
-  const [showFases, setShowFases] = useState<boolean>(false);
-  const [showRules, setShowRules] = useState<boolean>(false);
-  // InfoIA panel (simulaciones y métricas) dentro de DevTools
-  const [showInfoIA, setShowInfoIA] = useState<boolean>(false);
+  // Track whether current finished game has been archived (to avoid duplicates)
+  const archivedRef = useRef<boolean>(false);
+  // Local redo moves stack setter (used by updateAndCheck to clear redo)
+  const [, setRedoMoves] = useState<MoveEntry[]>([]);
+  // Centralizar toggles de paneles en un hook dedicado
+  const {
+    showTools, toggleTools,
+    showIATools, toggleIATools,
+    showHistory, toggleHistory,
+    showFases, toggleFases,
+    showRules, toggleRules,
+    showInfoIA, toggleInfoIA,
+    showUX, toggleUX,
+  } = useUIPanels();
   // IA advanced configuration (persisted)
   const [iaConfig, setIaConfig] = useIaAdvancedConfig();
   const { logSnapshot } = useGameLogger(state);
+  // Centralized state transition handler (history/redo/log/archive + game over)
+  const updateAndCheck = useUpdateAndCheck({
+    state,
+    moves,
+    vsAI,
+    iaDepth,
+    iaTimeMode,
+    iaTimeSeconds,
+    archivedRef,
+    setState,
+    setHistory: (v) => setHistory(v),
+    setRedo: (v) => setRedo(v),
+    setMoves,
+    setRedoMoves,
+    setFinishedGames,
+    setGameOver,
+    logSnapshot,
+  });
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
   // Refs for reserve icons in InfoPanel (left: L, right: D)
@@ -82,8 +111,7 @@ function App() {
   const autoRunningRef = useRef<boolean>(false);
   // IA autoplay timer is managed inside useAI
 
-  // Track whether current finished game has been archived (to avoid duplicates)
-  const archivedRef = useRef<boolean>(false);
+  // archivedRef defined above
 
   // Animations and UI/UX via hook
   const {
@@ -119,84 +147,22 @@ function App() {
   } = useAnimations();
   
   const highlights: Set<string> = useHighlights(state, gameOver);
-
-  // Flash keys derived via hook helper
   const flashKeys: Set<string> = getFlashKeys(state);
-  const [, setRedoMoves] = useState<MoveEntry[]>([]);
-  // Derive last IA move side for InfoPanel indicator
-  const lastIaMove: 'L' | 'D' | null = useMemo(() => {
-    for (let i = moves.length - 1; i >= 0; i--) {
-      if (moves[i].source === 'IA') return moves[i].player;
-    }
-    return null;
-  }, [moves]);
+  const lastIaMove = useLastIaMove(moves);
 
-  // === UI/UX CONFIG STATE ===
-  // Mostrar panel UI/UX en DevTools
-  const [showUX, setShowUX] = useState<boolean>(false);
+  // === UI/UX CONFIG STATE === (visibilidad vía useUIPanels)
   // Pausa entre pasos de autocolocación final (ms) gestionada por hook
   // Valor y setter provienen de useAutoFill más abajo
 
-  // Calcular niveles disponibles según el tablero actual
-  const availableLevels = useMemo(() => {
-    const avail: Record<0 | 1 | 2 | 3, boolean> = { 0: true, 1: false, 2: false, 3: false } as any;
-    for (let l = 1 as 0 | 1 | 2 | 3; l <= 3; l = (l + 1) as 0 | 1 | 2 | 3) {
-      const someSupported = positions(l).some((p) => isSupported(state.board, p));
-      (avail as any)[l] = someSupported;
-    }
-    return avail;
-  }, [state.board]);
-
-  // noShade efectivo: si el modo auto está activo, ocultamos sombreado en niveles NO disponibles
-  const noShadeEffective = shadeOnlyAvailable
-    ? ({ 0: !availableLevels[0], 1: !availableLevels[1], 2: !availableLevels[2], 3: !availableLevels[3] } as { 0: boolean; 1: boolean; 2: boolean; 3: boolean })
-    : noShade;
+  // Calcular niveles disponibles y sombreado efectivo (extraído a hooks)
+  const availableLevels = useAvailableLevels(state.board);
+  const noShadeEffective = useShadeConfig(availableLevels, shadeOnlyAvailable, noShade as { 0: boolean; 1: boolean; 2: boolean; 3: boolean });
 
   // CSS variables are synchronized inside useAnimations hook
 
   // Persistence handled by usePersistence
 
-  const updateAndCheck = (nextState: typeof state, pushHistory: boolean = true, clearRedo: boolean = true, logEntry?: MoveEntry) => {
-    // Save current state before applying the next one
-    if (pushHistory) {
-      setHistory((h) => [...h, state]);
-    }
-    if (clearRedo) {
-      setRedo([]);
-      setRedoMoves([]);
-    }
-    if (logEntry) {
-      setMoves((m) => [...m, logEntry]);
-    }
-    setState(nextState);
-    // Log board snapshot after each state update
-    logSnapshot(nextState);
-    const over = isGameOver(nextState);
-    if (over.over) {
-      const text = over.winner ? `Ganador: ${over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} — ${over.reason ?? ''}` : 'Partida terminada';
-      setGameOver(text);
-      // Archive finished game once
-      if (!archivedRef.current) {
-        const now = new Date();
-        const record = {
-          id: String(now.getTime()),
-          endedAt: now.toISOString(),
-          winner: over.winner ?? null,
-          reason: over.reason,
-          vsAI: vsAI,
-          iaDepth,
-          iaTimeMode,
-          iaTimeSeconds,
-          totalMoves: moves.length + (logEntry ? 1 : 0),
-          moves: logEntry ? [...moves, logEntry] : [...moves],
-        };
-        setFinishedGames((prev) => [...prev, record]);
-        archivedRef.current = true;
-      }
-    } else {
-      setGameOver(undefined);
-    }
-  };
+  // (was inline) now provided by useUpdateAndCheck
 
   // History logic hook (includes onUndo with animation)
   const historyHook = useHistoryLogic({
@@ -218,44 +184,20 @@ function App() {
     onNewGame();
   };
 
-  // Download current game log as JSON with metadata
-  const downloadCurrentGame = () => {
-    const over = isGameOver(state);
-    const ts = new Date().toISOString().replace(/[:.]/g, '-');
-    const current = (moves.length > 0 || over.over)
-      ? {
-          id: `current-${ts}`,
-          endedAt: new Date().toISOString(),
-          winner: over.over ? (over.winner ?? null) : null,
-          reason: over.reason ?? undefined,
-          vsAI,
-          iaDepth,
-          iaTimeMode,
-          iaTimeSeconds,
-          totalMoves: moves.length,
-          moves,
-        }
-      : null;
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      archived: finishedGames,
-      current,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `pylos_historial_${ts}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  // Clear archived and current history
-  const clearHistory = () => {
-    const ok = window.confirm('¿Seguro que quieres limpiar el historial actual y todas las partidas archivadas? Esta acción no se puede deshacer.');
-    if (!ok) return;
-    setMoves([]);
-    setFinishedGames([]);
+  // Download/Clear history extracted into a hook
+  const { downloadCurrentGame, clearHistory } = useExportHistory({
+    state,
+    moves,
+    finishedGames,
+    setMoves,
+    setFinishedGames,
+    vsAI,
+    iaDepth,
+    iaTimeMode,
+    iaTimeSeconds,
+  });
+  const clearHistoryAll = () => {
+    clearHistory();
     // Allow archiving the next finished game again
     archivedRef.current = false;
   };
@@ -349,18 +291,14 @@ function App() {
     updateAndCheck,
     historyStates: history,
   });
-  // Queue for undo requests while an animation is in progress
-  const undoQueuedRef = useRef<boolean>(false);
-  // Wrap original onUndo to queue if an animation is active
-  const onUndoClick = () => {
-    if (flying) {
-      undoQueuedRef.current = true;
-      return;
-    }
-    onUndo();
-  };
-  // Undo availability: keep enabled even during animations so user can queue it
-  const canUndo = history.length > 0 && !autoRunningRef.current && !iaBusy;
+  // Undo UI logic encapsulated in a hook
+  const { canUndo, onUndoClick, flushQueuedUndo } = useHistoryUI({
+    historyLength: history.length,
+    autoRunningRef,
+    iaBusy,
+    flying,
+    onUndo,
+  });
 
   // Compute concise winner label for modal: "Ganador: Humano/IA"
   const winnerMessage = useWinnerMessage(gameOver, state, moves, vsAI);
@@ -399,36 +337,37 @@ function App() {
     }
   }, [flying, setHiddenKeys]);
 
+  const layoutStyle = useLayoutStyle(showTools, showInfoIA);
+  // FlyingPiece onDone logic extracted to a hook (keeps App as orchestrator)
+  const onFlyingDone = useFlyingDone({
+    pendingState,
+    pendingLog,
+    pendingApplyRef,
+    lastAppearKeyRef,
+    setAppearKeys,
+    setPendingState,
+    setPendingLog,
+    setFlying,
+    redoingRef,
+    onUndo,
+    updateAndCheck,
+    overlapMs: 250,
+    afterClear: () => { flushQueuedUndo(); },
+  });
+
   return (
-    <div
-      className="app"
-      style={
-        (showTools && showInfoIA)
-          ? ({
-            // Tamaño general del tablero
-            ['--board-scale' as any]: '0.75',
-            
-            ['--ball-scale' as any]: '0.25',      // Restaurar tamaño completo de bolas cuando InfoIA está abierto                        
-            ['--hole-scale' as any]: '0.35',      // 0.85..1.05 para afinar            
-
-            ['--ball-matrix-scale' as any]: '0.45',  // 0.5 = la matriz ocupa la mitad
-            ['--hole-matrix-scale' as any]: '0.45',
-
-            } as React.CSSProperties)
-          : undefined
-      }
-    >
+    <div className="app" style={layoutStyle}>
       <HeaderPanel
         onNewGame={handleNewGame}
         showTools={showTools}
-        onToggleDev={() => setShowTools((v) => !v)}
+        onToggleDev={toggleTools}
         showIA={showIAUser}
         onToggleIA={() => setShowIAUser((v) => !v)}
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAI}
         showHistory={showHistory}
-        onToggleHistory={() => setShowHistory((v) => !v)}
+        onToggleHistory={toggleHistory}
       />
       {showIAUser && (
         <IAUserPanel
@@ -447,157 +386,108 @@ function App() {
         <RulesPanel />
       )}
       <div className="content">
-        {/** InfoPanel is now rendered inside the conditional wrapper below to allow size overrides */}
-        {/**
-         * While the InfoIA panel is visible, reduce the board size to half and
-         * also shrink InfoPanel piece icons. When InfoIA is hidden, render both
-         * components without overrides so base styles apply.
-         */}
-        {(showTools && showInfoIA) ? (
-          <div>
-            <InfoPanel
-              state={state}
-              aiEnemy={vsAI?.enemy ?? null}
-              aiLastMove={lastIaMove}
-              aiThinking={iaBusy}
-              reservesOverride={reservesForDisplay}
-              currentPieceRef={currentPieceRef}
-              reserveLightRef={reserveLightRef}
-              reserveDarkRef={reserveDarkRef}
-            />
-            <Board
-              state={state}
-              onCellClick={onCellClick}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              highlights={highlights}
-              selected={state.selectedSource}
-              posKey={posKey}
-              appearKeys={appearKeys}
-              flashKeys={flashKeys}
-              noShade={noShadeEffective}
-              shadeOnlyHoles={shadeOnlyHoles}
-              showHoleBorders={holeBorders}
-              hiddenKeys={hiddenKeys}
-            />
-          </div>
-        ) : (
-          <>
-            <InfoPanel
-              state={state}
-              aiEnemy={vsAI?.enemy ?? null}
-              aiLastMove={lastIaMove}
-              aiThinking={iaBusy}
-              reservesOverride={reservesForDisplay}
-              currentPieceRef={currentPieceRef}
-              reserveLightRef={reserveLightRef}
-              reserveDarkRef={reserveDarkRef}
-            />
-            <Board
-              state={state}
-              onCellClick={onCellClick}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              highlights={highlights}
-              selected={state.selectedSource}
-              posKey={posKey}
-              appearKeys={appearKeys}
-              flashKeys={flashKeys}
-              noShade={noShadeEffective}
-              shadeOnlyHoles={shadeOnlyHoles}
-              showHoleBorders={holeBorders}
-              hiddenKeys={hiddenKeys}
-            />
-          </>
-        )}
+        <GameView
+          state={state}
+          aiEnemy={vsAI?.enemy ?? null}
+          aiLastMove={lastIaMove}
+          aiThinking={iaBusy}
+          reservesOverride={reservesForDisplay}
+          currentPieceRef={currentPieceRef}
+          reserveLightRef={reserveLightRef}
+          reserveDarkRef={reserveDarkRef}
+          onCellClick={onCellClick}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          highlights={highlights}
+          selected={state.selectedSource ?? undefined}
+          posKey={posKey}
+          appearKeys={appearKeys}
+          flashKeys={flashKeys}
+          noShade={noShadeEffective}
+          shadeOnlyHoles={shadeOnlyHoles}
+          showHoleBorders={holeBorders}
+          hiddenKeys={hiddenKeys}
+        />
         <UndoRedo
           canUndo={canUndo}
           onUndo={onUndoClick}
           showFinishRecovery={state.phase === 'recover'}
           onFinishRecovery={onFinishRecovery}
         />
-        <HistoryPanel visible={showHistory} moves={moves} finishedGames={finishedGames} onDownload={downloadCurrentGame} onClear={clearHistory} />
+        <HistoryPanel visible={showHistory} moves={moves} finishedGames={finishedGames} onDownload={downloadCurrentGame} onClear={clearHistoryAll} />
         {showFases && (
           <FasePanel state={state} gameOverText={gameOver} />
         )}
-        {showTools && (
-          <DevToolsPanel
-            onToggleRules={() => setShowRules((v) => !v)}
-            showIA={showIATools}
-            onToggleIA={() => setShowIATools((v) => !v)}
-            showInfoIA={showInfoIA}
-            onToggleInfoIA={() => setShowInfoIA((v) => !v)}
-            showHistory={showHistory}
-            onToggleHistory={() => setShowHistory((v) => !v)}
-            showFases={showFases}
-            onToggleFases={() => setShowFases((v) => !v)}
-            showUX={showUX}
-            onToggleUX={() => setShowUX((v) => !v)}
-            fullWidth
-            iaPanel={(
-              <IAPanel
-                state={state}
-                depth={iaDepth}
-                onChangeDepth={setIaDepth}
-                onAIMove={onAIMove}
-                disabled={aiDisabled || iaBusy}
-                timeMode={iaTimeMode}
-                timeSeconds={iaTimeSeconds}
-                onChangeTimeMode={setIaTimeMode}
-                onChangeTimeSeconds={setIaTimeSeconds}
-                busy={iaBusy}
-                progress={iaProgress}
-                evalScore={iaEval}
-                depthReached={iaDepthReached}
-                pv={iaPV}
-                rootMoves={iaRootMoves}
-                nodes={iaNodes}
-                elapsedMs={iaElapsedMs}
-                nps={iaNps}
-                rootPlayer={iaRootPlayer ?? undefined}
-                moving={!!flying}
-                aiAutoplayActive={iaAutoplay}
-                onToggleAiAutoplay={() => {
-                  setIaAutoplay((v) => !v);
-                }}
-                iaConfig={iaConfig}
-                onChangeIaConfig={(patch) => setIaConfig((prev) => ({ ...prev, ...patch }))}
-              />
-            )}
-            infoIAPanel={(
-              <InfoIA
-                onMirrorStart={onMirrorStart}
-                onMirrorUpdate={onMirrorUpdate}
-                onMirrorEnd={onMirrorEnd}
-              />
-            )}
-            uxPanel={(
-              <UXPanel
-                noShadeL0={noShade[0]}
-                noShadeL1={noShade[1]}
-                noShadeL2={noShade[2]}
-                noShadeL3={noShade[3]}
-                onChangeNoShade={(level, value) => setNoShade((prev) => ({ ...prev, [level]: value }))}
-                shadeOnlyAvailable={shadeOnlyAvailable}
-                onToggleShadeOnlyAvailable={setShadeOnlyAvailable}
-                shadeOnlyHoles={shadeOnlyHoles}
-                onToggleShadeOnlyHoles={setShadeOnlyHoles}
-                holeBorders={holeBorders}
-                onToggleHoleBorders={setHoleBorders}
-                pieceScale={pieceScale}
-                onChangePieceScale={setPieceScale}
-                appearMs={animAppearMs}
-                flashMs={animFlashMs}
-                flyMs={animFlyMs}
-                onChangeAppearMs={setAnimAppearMs}
-                onChangeFlashMs={setAnimFlashMs}
-                onChangeFlyMs={setAnimFlyMs}
-                autoFillDelayMs={autoFillDelayMs}
-                onChangeAutoFillDelayMs={setAutoFillDelayMs}
-              />
-            )}
-          />
-        )}
+        <DevToolsOrchestrator
+          showTools={showTools}
+          toggleRules={toggleRules}
+          showIATools={showIATools}
+          toggleIATools={toggleIATools}
+          showInfoIA={showInfoIA}
+          toggleInfoIA={toggleInfoIA}
+          showHistory={showHistory}
+          toggleHistory={toggleHistory}
+          showFases={showFases}
+          toggleFases={toggleFases}
+          showUX={showUX}
+          toggleUX={toggleUX}
+          iaPanel={(
+            <IAPanel
+              state={state}
+              depth={iaDepth}
+              onChangeDepth={setIaDepth}
+              onAIMove={onAIMove}
+              disabled={aiDisabled || iaBusy}
+              timeMode={iaTimeMode}
+              timeSeconds={iaTimeSeconds}
+              onChangeTimeMode={setIaTimeMode}
+              onChangeTimeSeconds={setIaTimeSeconds}
+              busy={iaBusy}
+              progress={iaProgress}
+              evalScore={iaEval}
+              depthReached={iaDepthReached}
+              pv={iaPV}
+              rootMoves={iaRootMoves}
+              nodes={iaNodes}
+              elapsedMs={iaElapsedMs}
+              nps={iaNps}
+              rootPlayer={iaRootPlayer ?? undefined}
+              moving={!!flying}
+              aiAutoplayActive={iaAutoplay}
+              onToggleAiAutoplay={() => {
+                setIaAutoplay((v) => !v);
+              }}
+              iaConfig={iaConfig}
+              onChangeIaConfig={(patch) => setIaConfig((prev) => ({ ...prev, ...patch }))}
+            />
+          )}
+          infoIAPanel={(<InfoIA onMirrorStart={onMirrorStart} onMirrorUpdate={onMirrorUpdate} onMirrorEnd={onMirrorEnd} />)}
+          uxPanel={(
+            <UXPanel
+              noShadeL0={noShade[0]}
+              noShadeL1={noShade[1]}
+              noShadeL2={noShade[2]}
+              noShadeL3={noShade[3]}
+              onChangeNoShade={(level, value) => setNoShade((prev) => ({ ...prev, [level]: value }))}
+              shadeOnlyAvailable={shadeOnlyAvailable}
+              onToggleShadeOnlyAvailable={setShadeOnlyAvailable}
+              shadeOnlyHoles={shadeOnlyHoles}
+              onToggleShadeOnlyHoles={setShadeOnlyHoles}
+              holeBorders={holeBorders}
+              onToggleHoleBorders={setHoleBorders}
+              pieceScale={pieceScale}
+              onChangePieceScale={setPieceScale}
+              appearMs={animAppearMs}
+              flashMs={animFlashMs}
+              flyMs={animFlyMs}
+              onChangeAppearMs={setAnimAppearMs}
+              onChangeFlashMs={setAnimFlashMs}
+              onChangeFlyMs={setAnimFlyMs}
+              autoFillDelayMs={autoFillDelayMs}
+              onChangeAutoFillDelayMs={setAutoFillDelayMs}
+            />
+          )}
+        />
         {gameOver && winnerMessage && (
           <GameOverModal message={winnerMessage} onConfirm={handleNewGame} />
         )}
@@ -608,44 +498,12 @@ function App() {
           to={flying.to}
           imgSrc={flying.imgSrc}
           durationMs={animFlyMs}
-          onDone={() => {
-            // iOS Safari puede mostrar un parpadeo entre quitar el clon volador
-            // y pintar la pieza fija del tablero. Para evitarlo, aplicamos primero
-            // el estado pendiente (que muestra la pieza fija) y mantenemos el clon
-            // volador unos milisegundos extra para solaparlos visualmente.
-            // 1) Aplicar el nuevo estado del tablero antes de retirar el overlay.
-            if (pendingState) {
-              const { pushHistory, clearRedo } = pendingApplyRef.current;
-              updateAndCheck(pendingState, pushHistory, clearRedo, pendingLog ?? undefined);
-            }
-            // 2) Disparar la animación de aparición de la celda si estaba pendiente.
-            if (lastAppearKeyRef.current) {
-              setAppearKeys(new Set([lastAppearKeyRef.current]));
-            }
-            lastAppearKeyRef.current = "";
-            setPendingState(null);
-            setPendingLog(null);
-            pendingApplyRef.current = { pushHistory: true, clearRedo: true };
-            // Any flying animation end (including redo) — allow AI again
-            redoingRef.current = false;
-
-            // 3) Mantener el clon volador un poco más para cubrir el frame donde iOS
-            // puede no haber compuesto aún la pieza fija. 250ms suele ser suficiente.
-            const overlapMs = 250;
-            window.setTimeout(() => {
-              setFlying(null);
-              // If user requested undo during the animation, execute it now
-              if (undoQueuedRef.current) {
-                undoQueuedRef.current = false;
-                onUndo();
-              }
-            }, overlapMs);
-          }}
+          onDone={onFlyingDone}
         />
       )}
       <FootPanel
         showTools={showTools}
-        onToggleDev={() => setShowTools((v) => !v)}
+        onToggleDev={toggleTools}
       />
     </div>
   );

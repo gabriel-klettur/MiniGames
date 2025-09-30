@@ -5,6 +5,7 @@ import { placeFromReserve, selectMoveSource, movePiece as rulesMovePiece, recove
 import type { AIMove } from '../ia/moves';
 import { computeBestMoveAsync } from '../ia';
 import { computeKey } from '../ia/zobrist';
+import { resolveBookUrlByDepth } from '../ia/book';
 import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from './usePersistence';
@@ -76,24 +77,8 @@ export interface UseAIParams {
 }
 
 // ----------------------
-// Helpers (pure/local)
+// Helpers (shared)
 // ----------------------
-
-function resolveDifficulty(depth: number): 'facil' | 'medio' | 'dificil' {
-  if (depth <= 3) return 'facil';
-  if (depth <= 7) return 'medio';
-  return 'dificil';
-}
-
-function resolveBookUrl(iaDepth: number, iaConfig?: UseAIParams['iaConfig']): string {
-  const mode = iaConfig?.bookMode ?? 'auto';
-  const phase = iaConfig?.bookPhase ?? 'aperturas';
-  const basePathRaw = iaConfig?.bookBasePath ?? '/books';
-  const basePath = basePathRaw.endsWith('/') ? basePathRaw.slice(0, -1) : basePathRaw;
-  const difficulty = resolveDifficulty(iaDepth);
-  const autoUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
-  return mode === 'manual' ? (iaConfig?.bookUrl || '/aperturas_book.json') : autoUrl;
-}
 
 function computeAvoidKeys(historyStates: UseAIParams['historyStates'], state: GameState, repeatMaxCfg?: number): Array<{ hi: number; lo: number }> | undefined {
   const repeatMax = Math.max(1, Math.min(10, Math.floor(repeatMaxCfg ?? 3)));
@@ -305,8 +290,8 @@ export function useAI(params: UseAIParams): UseAIResult {
       if (avoidEnabled) {
         avoidKeys = computeAvoidKeys(historyStates, state, iaConfig?.repeatMax);
       }
-      // Resolve effective book URL
-      const effectiveBookUrl = resolveBookUrl(iaDepth, iaConfig);
+      // Resolve effective book URL via shared helper
+      const effectiveBookUrl = resolveBookUrlByDepth(iaDepth, iaConfig);
 
       const res = await computeBestMoveAsync(state, {
         depth: iaDepth,

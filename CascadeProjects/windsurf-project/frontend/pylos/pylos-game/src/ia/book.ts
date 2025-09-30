@@ -1,3 +1,8 @@
+import type { GameState } from '../game/types';
+import type { AIMove } from './moves';
+import { computeKey } from './zobrist';
+import { decodeSignature, type MoveSignature } from './signature';
+
 // Default URL for the opening book (can be changed at runtime)
 let BOOK_URL = '/aperturas_book.json';
 export function setBookUrl(url: string): void {
@@ -10,10 +15,30 @@ export function setBookUrl(url: string): void {
     }
   }
 }
-import type { GameState } from '../game/types';
-import type { AIMove } from './moves';
-import { computeKey } from './zobrist';
-import { decodeSignature, type MoveSignature } from './signature';
+
+// Shared helpers to standardize book URL resolution across the app
+export function resolveDifficulty(depth: number): 'facil' | 'medio' | 'dificil' {
+  if (depth <= 3) return 'facil';
+  if (depth <= 7) return 'medio';
+  return 'dificil';
+}
+
+export type IaConfigBookOptions = {
+  bookMode?: 'auto' | 'manual';
+  bookPhase?: 'aperturas' | 'medio' | 'cierres';
+  bookBasePath?: string;
+  bookUrl?: string;
+};
+
+export function resolveBookUrlByDepth(iaDepth: number, cfg?: IaConfigBookOptions): string {
+  const mode = cfg?.bookMode ?? 'auto';
+  const phase = cfg?.bookPhase ?? 'aperturas';
+  const basePathRaw = cfg?.bookBasePath ?? '/books';
+  const basePath = basePathRaw.endsWith('/') ? basePathRaw.slice(0, -1) : basePathRaw;
+  const difficulty = resolveDifficulty(iaDepth);
+  const autoUrl = `${basePath}/${difficulty}/${difficulty}_${phase}_book.json`;
+  return mode === 'manual' ? (cfg?.bookUrl || '/aperturas_book.json') : autoUrl;
+}
 
 // Opening book structure
 export type BookEntry = { keyHi: number; keyLo: number; bestMove: MoveSignature };

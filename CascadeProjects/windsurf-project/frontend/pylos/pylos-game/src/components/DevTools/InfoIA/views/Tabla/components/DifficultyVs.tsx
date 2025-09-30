@@ -1,4 +1,3 @@
-
 import bolaA from '../../../../../../assets/bola_a.webp';
 import bolaB from '../../../../../../assets/bola_b.webp';
 
