@@ -60,6 +60,23 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
     updateAndCheck,
   } = params;
 
+  // Compute the visual center of a board cell button, including the matrix offset used by piece images.
+  // Falls back to the geometric center if CSS variables are unavailable.
+  const getCellVisualCenter = (btn: HTMLButtonElement) => {
+    const r = btn.getBoundingClientRect();
+    const styles = window.getComputedStyle(btn);
+    const parsePx = (v: string) => {
+      const n = parseFloat(v || '0');
+      return Number.isFinite(n) ? n : 0;
+    };
+    // CSS vars evaluate to px (due to center-step in px). If unavailable, they may be empty.
+    const tx = parsePx(styles.getPropertyValue('--ball-tx'));
+    const ty = parsePx(styles.getPropertyValue('--ball-ty'));
+    const cx = r.left + (r.width / 2) + tx;
+    const cy = r.top + (r.height / 2) + ty;
+    return { cx, cy, r };
+  };
+
   const onCellClick = useCallback((pos: Position) => {
     if (gameOver) return;
     if (autoRunningRef.current) return;
@@ -70,14 +87,26 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
       if (!res.error) {
         const key = posKey(pos);
         const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
-        const srcRect = srcBtn?.getBoundingClientRect();
+        const srcCenter = srcBtn ? getCellVisualCenter(srcBtn) : null;
         const destEl = state.currentPlayer === 'L' ? reserveLightRef.current : reserveDarkRef.current;
         const destRect = destEl?.getBoundingClientRect();
         const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
         const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `recuperar ${key}` };
-        if (srcRect && destRect) {
-          const from = { left: srcRect.left, top: srcRect.top, width: srcRect.width, height: srcRect.height };
-          const to = { left: destRect.left, top: destRect.top, width: destRect.width, height: destRect.height };
+        if (srcCenter && destRect) {
+          // Source: center of piece inside the cell
+          const from = {
+            left: srcCenter.cx - (srcCenter.r.width / 2),
+            top: srcCenter.cy - (srcCenter.r.height / 2),
+            width: srcCenter.r.width,
+            height: srcCenter.r.height,
+          };
+          // Destination: center of reserve icon (no matrix offset)
+          const to = {
+            left: (destRect.left + destRect.width / 2) - (destRect.width / 2),
+            top: (destRect.top + destRect.height / 2) - (destRect.height / 2),
+            width: destRect.width,
+            height: destRect.height,
+          };
           updateAndCheck(res.state, true, true, log);
           setFlying({ from, to, imgSrc, destKey: '' });
         } else {
@@ -107,12 +136,22 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
         const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey2} -> ${dstKey}` };
         const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${srcKey2}"]`);
         const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${dstKey}"]`);
-        const sRect = srcBtn?.getBoundingClientRect();
-        const dRect = destBtn?.getBoundingClientRect();
+        const sCenter = srcBtn ? getCellVisualCenter(srcBtn) : null;
+        const dCenter = destBtn ? getCellVisualCenter(destBtn) : null;
         const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
-        if (sRect && dRect) {
-          const from = { left: sRect.left, top: sRect.top, width: sRect.width, height: sRect.height };
-          const to = { left: dRect.left, top: dRect.top, width: dRect.width, height: dRect.height };
+        if (sCenter && dCenter) {
+          const from = {
+            left: sCenter.cx - (sCenter.r.width / 2),
+            top: sCenter.cy - (sCenter.r.height / 2),
+            width: sCenter.r.width,
+            height: sCenter.r.height,
+          };
+          const to = {
+            left: dCenter.cx - (dCenter.r.width / 2),
+            top: dCenter.cy - (dCenter.r.height / 2),
+            width: dCenter.r.width,
+            height: dCenter.r.height,
+          };
           setPendingState(attempt.state);
           setPendingLog(log);
           pendingApplyRef.current = { pushHistory: true, clearRedo: true };
@@ -136,11 +175,16 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
         const originEl = primaryOriginEl ?? fallbackOriginEl ?? null;
         const originRect = originEl?.getBoundingClientRect();
         const destBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
-        const destRect = destBtn?.getBoundingClientRect();
-        if (originRect && destRect) {
+        const dCenter = destBtn ? getCellVisualCenter(destBtn) : null;
+        if (originRect && dCenter) {
           const minSize = 12;
           const from = { left: originRect.left, top: originRect.top, width: Math.max(minSize, originRect.width), height: Math.max(minSize, originRect.height) };
-          const to = { left: destRect.left, top: destRect.top, width: Math.max(minSize, destRect.width), height: Math.max(minSize, destRect.height) };
+          const to = {
+            left: dCenter.cx - (Math.max(minSize, dCenter.r.width) / 2),
+            top: dCenter.cy - (Math.max(minSize, dCenter.r.height) / 2),
+            width: Math.max(minSize, dCenter.r.width),
+            height: Math.max(minSize, dCenter.r.height),
+          };
           const imgSrc = state.currentPlayer === 'L' ? bolaB : bolaA;
           setFlying({ from, to, imgSrc, destKey: key });
           setPendingState(placed.state);

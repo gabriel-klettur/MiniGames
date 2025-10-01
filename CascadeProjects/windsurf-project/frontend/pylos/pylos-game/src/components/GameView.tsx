@@ -30,6 +30,13 @@ type Props = {
   shadeOnlyHoles: boolean;
   showHoleBorders: boolean;
   hiddenKeys: Set<string>;
+  debugHitTest?: boolean;
+  // Fine-grained debug flags
+  debugShowGrid?: boolean;
+  debugShowOverlays?: boolean;
+  debugShowCellOutlines?: boolean;
+  debugShowDisabledCells?: boolean;
+  debugShowClickable?: boolean;
 };
 
 export default function GameView(props: Props) {
@@ -58,6 +65,12 @@ export default function GameView(props: Props) {
     shadeOnlyHoles,
     showHoleBorders,
     hiddenKeys,
+    debugHitTest,
+    debugShowGrid,
+    debugShowOverlays,
+    debugShowCellOutlines,
+    debugShowDisabledCells,
+    debugShowClickable,
   } = props;
 
   return (
@@ -90,6 +103,12 @@ export default function GameView(props: Props) {
         shadeOnlyHoles={shadeOnlyHoles}
         showHoleBorders={showHoleBorders}
         hiddenKeys={hiddenKeys}
+        debugHitTest={!!debugHitTest}
+        debugShowGrid={!!debugShowGrid}
+        debugShowOverlays={!!debugShowOverlays}
+        debugShowCellOutlines={!!debugShowCellOutlines}
+        debugShowDisabledCells={!!debugShowDisabledCells}
+        debugShowClickable={!!debugShowClickable}
       />
     </>
   );

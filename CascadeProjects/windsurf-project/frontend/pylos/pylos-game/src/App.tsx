@@ -144,6 +144,64 @@ function App() {
     setShadeOnlyHoles,
     holeBorders,
     setHoleBorders,
+    // Geometry and layout
+    scale,
+    setScale,
+    boardWidthFactor,
+    setBoardWidthFactor,
+    boardOffsetX,
+    setBoardOffsetX,
+    boardOffsetYBase,
+    setBoardOffsetYBase,
+    gridOffsetExtraX,
+    setGridOffsetExtraX,
+    gridOffsetExtraY,
+    setGridOffsetExtraY,
+    levelGapBase,
+    setLevelGapBase,
+    cellSizeMin,
+    setCellSizeMin,
+    cellSizeMult,
+    setCellSizeMult,
+    overlayNudgeX,
+    setOverlayNudgeX,
+    boardTopGap,
+    setBoardTopGap,
+    boardActionsGap,
+    setBoardActionsGap,
+    // Holes/Balls
+    holeScale,
+    setHoleScale,
+    ballMatrixScale,
+    setBallMatrixScale,
+    holeMatrixScale,
+    setHoleMatrixScale,
+    holeRingW,
+    setHoleRingW,
+    holeInset,
+    setHoleInset,
+    // Debug
+    debugHitTest,
+    setDebugHitTest,
+    debugShowGrid,
+    setDebugShowGrid,
+    debugShowOverlays,
+    setDebugShowOverlays,
+    debugShowCellOutlines,
+    setDebugShowCellOutlines,
+    debugShowDisabledCells,
+    setDebugShowDisabledCells,
+    debugShowClickable,
+    setDebugShowClickable,
+    // Debug sizes
+    dbgGridOutlineW,
+    setDbgGridOutlineW,
+    dbgCellOutlineW,
+    setDbgCellOutlineW,
+    dbgDisabledOutlineW,
+    setDbgDisabledOutlineW,
+    dbgClickableOutlineW,
+    setDbgClickableOutlineW,
   } = useAnimations();
   
   const highlights: Set<string> = useHighlights(state, gameOver);
@@ -459,6 +517,12 @@ function App() {
           shadeOnlyHoles={shadeOnlyHoles}
           showHoleBorders={holeBorders}
           hiddenKeys={hiddenKeys}
+          debugHitTest={debugHitTest}
+          debugShowGrid={debugShowGrid}
+          debugShowOverlays={debugShowOverlays}
+          debugShowCellOutlines={debugShowCellOutlines}
+          debugShowDisabledCells={debugShowDisabledCells}
+          debugShowClickable={debugShowClickable}
         />
         <UndoRedo
           canUndo={canUndo}
@@ -537,6 +601,64 @@ function App() {
               onChangeFlyMs={setAnimFlyMs}
               autoFillDelayMs={autoFillDelayMs}
               onChangeAutoFillDelayMs={setAutoFillDelayMs}
+              // Board/Layout
+              scale={scale}
+              onChangeScale={setScale}
+              boardWidthFactor={boardWidthFactor}
+              onChangeBoardWidthFactor={setBoardWidthFactor}
+              boardOffsetX={boardOffsetX}
+              onChangeBoardOffsetX={setBoardOffsetX}
+              boardOffsetYBase={boardOffsetYBase}
+              onChangeBoardOffsetYBase={setBoardOffsetYBase}
+              gridOffsetExtraX={gridOffsetExtraX}
+              onChangeGridOffsetExtraX={setGridOffsetExtraX}
+              gridOffsetExtraY={gridOffsetExtraY}
+              onChangeGridOffsetExtraY={setGridOffsetExtraY}
+              levelGapBase={levelGapBase}
+              onChangeLevelGapBase={setLevelGapBase}
+              cellSizeMin={cellSizeMin}
+              onChangeCellSizeMin={setCellSizeMin}
+              cellSizeMult={cellSizeMult}
+              onChangeCellSizeMult={setCellSizeMult}
+              overlayNudgeX={overlayNudgeX}
+              onChangeOverlayNudgeX={setOverlayNudgeX}
+              boardTopGap={boardTopGap}
+              onChangeBoardTopGap={setBoardTopGap}
+              boardActionsGap={boardActionsGap}
+              onChangeBoardActionsGap={setBoardActionsGap}
+              // Holes/Balls
+              holeScale={holeScale}
+              onChangeHoleScale={setHoleScale}
+              ballMatrixScale={ballMatrixScale}
+              onChangeBallMatrixScale={setBallMatrixScale}
+              holeMatrixScale={holeMatrixScale}
+              onChangeHoleMatrixScale={setHoleMatrixScale}
+              holeRingW={holeRingW}
+              onChangeHoleRingW={setHoleRingW}
+              holeInset={holeInset}
+              onChangeHoleInset={setHoleInset}
+              // Debug
+              debugHitTest={debugHitTest}
+              onToggleDebugHitTest={setDebugHitTest}
+              debugShowGrid={debugShowGrid}
+              onToggleDebugShowGrid={setDebugShowGrid}
+              debugShowOverlays={debugShowOverlays}
+              onToggleDebugShowOverlays={setDebugShowOverlays}
+              debugShowCellOutlines={debugShowCellOutlines}
+              onToggleDebugShowCellOutlines={setDebugShowCellOutlines}
+              debugShowDisabledCells={debugShowDisabledCells}
+              onToggleDebugShowDisabledCells={setDebugShowDisabledCells}
+              debugShowClickable={debugShowClickable}
+              onToggleDebugShowClickable={setDebugShowClickable}
+              // Debug sizes (px)
+              dbgGridOutlineW={dbgGridOutlineW}
+              onChangeDbgGridOutlineW={setDbgGridOutlineW}
+              dbgCellOutlineW={dbgCellOutlineW}
+              onChangeDbgCellOutlineW={setDbgCellOutlineW}
+              dbgDisabledOutlineW={dbgDisabledOutlineW}
+              onChangeDbgDisabledOutlineW={setDbgDisabledOutlineW}
+              dbgClickableOutlineW={dbgClickableOutlineW}
+              onChangeDbgClickableOutlineW={setDbgClickableOutlineW}
             />
           )}
         />

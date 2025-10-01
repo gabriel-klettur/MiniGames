@@ -19,6 +19,12 @@ export interface BoardProps {
   flashKeys?: Set<string>;
   viewMode?: 'pyramid' | 'stacked';
   debugHitTest?: boolean;
+  // Fine-grained debug overlays (active only if debugHitTest)
+  debugShowGrid?: boolean;
+  debugShowOverlays?: boolean;
+  debugShowCellOutlines?: boolean;
+  debugShowDisabledCells?: boolean;
+  debugShowClickable?: boolean;
   // Control de sombreado por nivel (L0..L3). true = ocultar sombreado
   noShade?: { 0?: boolean; 1?: boolean; 2?: boolean; 3?: boolean };
   // Modo: sombreado solo huecos disponibles (celdas soportadas vacías)
@@ -31,7 +37,7 @@ export interface BoardProps {
   hiddenKeys?: Set<string>;
 }
 
-export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false, style, hiddenKeys }: BoardProps) {
+export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, selected, posKey, appearKeys, flashKeys, viewMode = 'pyramid', debugHitTest = false, debugShowGrid = true, debugShowOverlays = true, debugShowCellOutlines = true, debugShowDisabledCells = true, debugShowClickable = true, noShade = {}, shadeOnlyHoles = false, showHoleBorders = false, style, hiddenKeys }: BoardProps) {
   // Helper to render a single cell button with interactivity constraints
   const renderCellBtn = (pos: Position) => {
     const cell = getCell(state.board, pos);
@@ -57,9 +63,13 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
     const isSelectedWhenSelecting = isSelected && state.phase === 'selectMoveDest';
     const canSwitchSource = state.phase === 'selectMoveDest' && hasMoves;
     const interactive = isHighlighted || canClickOwnFreePiece || canSwitchSource || canClickEmptyBase || isSelectedWhenSelecting;
+    // Passive-ghost click: only for occupied cells on level 2 (2x2), when nothing actionable can be done
+    const canGhostClick = !!cell && pos.level === 2 && !interactive && state.phase !== 'recover';
     // In pyramid view we allow base-level empty cells to receive clicks even if not highlighted,
     // to compensate for overlays that may occlude them visually. Do NOT enable this for occupied cells.
     const baseEmptyOverride = !cell && state.phase === 'play' && viewMode === 'pyramid' && pos.level === 0;
+    // A unified flag for actual clickability (used for classes and pointer-events)
+    const clickable = interactive || baseEmptyOverride;
     const canDrag = !!cell && state.currentPlayer === cell && free && hasMoves && state.phase !== 'recover';
 
     return (
@@ -72,15 +82,48 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
           supported ? 'cell--supported' : '',
           isSelected ? 'cell--selected' : '',
           isFlashing ? 'cell--flash' : '',
-          !interactive ? 'cell--disabled' : '',
+          clickable ? 'cell--clickable' : '',
+          baseEmptyOverride ? 'cell--base-override' : '',
+          !clickable ? 'cell--disabled' : '',
         ].join(' ')}
         style={{
-          pointerEvents: (interactive || baseEmptyOverride) ? 'auto' : 'none',
+          // Allow pointer events if clickable OR if we want to capture a passive ghost click
+          pointerEvents: (clickable || canGhostClick) ? 'auto' : 'none',
           ['--cell-dx' as any]: String(dxUnits),
           ['--cell-dy' as any]: String(dyUnits),
         }}
-        // Only attach handlers when interactive or when base empty override applies
-        onClick={(interactive || baseEmptyOverride) ? (() => { if (debugHitTest) { console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell }); } onCellClick(pos); }) : undefined}
+        // Attach game click handler only when interactive or base empty override applies;
+        // otherwise, if canGhostClick, trigger a visual-only fade animation on the piece.
+        onClick={
+          clickable
+            ? (() => {
+                if (debugHitTest) {
+                  console.log('cell-click', { pos, level: pos.level, highlighted: isHighlighted, selected: isSelected, free, supported, cell, baseEmptyOverride });
+                }
+                onCellClick(pos);
+              })
+            : (canGhostClick
+                ? ((e) => {
+                    if (debugHitTest) {
+                      console.log('ghost-click', { pos, level: pos.level });
+                    }
+                    const btn = e.currentTarget as HTMLButtonElement;
+                    const pieceEl = btn.querySelector('.piece');
+                    if (pieceEl) {
+                      // Restart animation if already applied
+                      pieceEl.classList.remove('piece--ghost');
+                      // Force reflow to allow restarting the CSS animation
+                      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+                      (pieceEl as HTMLElement).offsetWidth;
+                      pieceEl.classList.add('piece--ghost');
+                      // Clean up class after animation ends (3s total)
+                      window.setTimeout(() => {
+                        pieceEl.classList.remove('piece--ghost');
+                      }, 3000);
+                    }
+                  })
+                : undefined)
+        }
         onDragOver={isHighlighted ? ((e) => { e.preventDefault(); }) : undefined}
         onDrop={isHighlighted ? ((e) => { e.preventDefault(); (state.phase !== 'recover') && (onCellClick(pos)); }) : undefined}
         title={`L${pos.level} (${pos.row},${pos.col})`}
@@ -124,7 +167,19 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
       noShade[3] ? 'no-shade-l3' : '',
     ].filter(Boolean).join(' ');
     return (
-      <div className={["board", "board--stacked", debugHitTest ? "board--debug" : "", shadeClasses, shadeOnlyHoles ? 'shade-only-holes' : '', showHoleBorders ? 'hole-borders' : ''].join(' ').trim()}>
+      <div className={[
+        'board',
+        'board--stacked',
+        debugHitTest ? 'board--debug' : '',
+        debugHitTest && debugShowGrid ? 'board--dbg-grid' : '',
+        debugHitTest && debugShowOverlays ? 'board--dbg-overlays' : '',
+        debugHitTest && debugShowCellOutlines ? 'board--dbg-cells' : '',
+        debugHitTest && debugShowDisabledCells ? 'board--dbg-disabled' : '',
+        debugHitTest && debugShowClickable ? 'board--dbg-clickable' : '',
+        shadeClasses,
+        shadeOnlyHoles ? 'shade-only-holes' : '',
+        showHoleBorders ? 'hole-borders' : ''
+      ].join(' ').trim()}>
         {Array.from({ length: LEVELS }).map((_, level) => {
           const size = levelSize(level);
           return (
@@ -150,6 +205,11 @@ export function Board({ state, onCellClick, onDragStart, onDragEnd, highlights, 
   const baseSize = levelSize(0);
   return (
     <div className={["board", "board--pyramid", debugHitTest ? "board--debug" : "",
+      debugHitTest && debugShowGrid ? 'board--dbg-grid' : '',
+      debugHitTest && debugShowOverlays ? 'board--dbg-overlays' : '',
+      debugHitTest && debugShowCellOutlines ? 'board--dbg-cells' : '',
+      debugHitTest && debugShowDisabledCells ? 'board--dbg-disabled' : '',
+      debugHitTest && debugShowClickable ? 'board--dbg-clickable' : '',
       noShade[0] ? 'no-shade-l0' : '',
       noShade[1] ? 'no-shade-l1' : '',
       noShade[2] ? 'no-shade-l2' : '',

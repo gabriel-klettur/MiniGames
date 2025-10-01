@@ -59,6 +59,68 @@ export interface UseAnimationsResult {
   setShadeOnlyHoles: React.Dispatch<React.SetStateAction<boolean>>;
   holeBorders: boolean;
   setHoleBorders: React.Dispatch<React.SetStateAction<boolean>>;
+
+  // Board layout and geometry (CSS vars)
+  scale: number;
+  setScale: React.Dispatch<React.SetStateAction<number>>;
+  boardWidthFactor: number;
+  setBoardWidthFactor: React.Dispatch<React.SetStateAction<number>>;
+  boardOffsetX: number; // px
+  setBoardOffsetX: React.Dispatch<React.SetStateAction<number>>;
+  boardOffsetYBase: number; // px
+  setBoardOffsetYBase: React.Dispatch<React.SetStateAction<number>>;
+  gridOffsetExtraX: number; // px
+  setGridOffsetExtraX: React.Dispatch<React.SetStateAction<number>>;
+  gridOffsetExtraY: number; // px
+  setGridOffsetExtraY: React.Dispatch<React.SetStateAction<number>>;
+  levelGapBase: number; // px
+  setLevelGapBase: React.Dispatch<React.SetStateAction<number>>;
+  cellSizeMin: number; // px
+  setCellSizeMin: React.Dispatch<React.SetStateAction<number>>;
+  cellSizeMult: number; // multiplier
+  setCellSizeMult: React.Dispatch<React.SetStateAction<number>>;
+  overlayNudgeX: number; // px
+  setOverlayNudgeX: React.Dispatch<React.SetStateAction<number>>;
+  boardTopGap: number; // px
+  setBoardTopGap: React.Dispatch<React.SetStateAction<number>>;
+  boardActionsGap: number; // px
+  setBoardActionsGap: React.Dispatch<React.SetStateAction<number>>;
+
+  // Hole/ball matrix and visuals
+  holeScale: number;
+  setHoleScale: React.Dispatch<React.SetStateAction<number>>;
+  ballMatrixScale: number;
+  setBallMatrixScale: React.Dispatch<React.SetStateAction<number>>;
+  holeMatrixScale: number;
+  setHoleMatrixScale: React.Dispatch<React.SetStateAction<number>>;
+  holeRingW: number; // px
+  setHoleRingW: React.Dispatch<React.SetStateAction<number>>;
+  holeInset: number; // px
+  setHoleInset: React.Dispatch<React.SetStateAction<number>>;
+
+  // Debug
+  debugHitTest: boolean;
+  setDebugHitTest: React.Dispatch<React.SetStateAction<boolean>>;
+  // Fine-grained debug overlays
+  debugShowGrid: boolean;
+  setDebugShowGrid: React.Dispatch<React.SetStateAction<boolean>>;
+  debugShowOverlays: boolean;
+  setDebugShowOverlays: React.Dispatch<React.SetStateAction<boolean>>;
+  debugShowCellOutlines: boolean;
+  setDebugShowCellOutlines: React.Dispatch<React.SetStateAction<boolean>>;
+  debugShowDisabledCells: boolean;
+  setDebugShowDisabledCells: React.Dispatch<React.SetStateAction<boolean>>;
+  debugShowClickable: boolean;
+  setDebugShowClickable: React.Dispatch<React.SetStateAction<boolean>>;
+  // Debug sizes (px)
+  dbgGridOutlineW: number;
+  setDbgGridOutlineW: React.Dispatch<React.SetStateAction<number>>;
+  dbgCellOutlineW: number;
+  setDbgCellOutlineW: React.Dispatch<React.SetStateAction<number>>;
+  dbgDisabledOutlineW: number;
+  setDbgDisabledOutlineW: React.Dispatch<React.SetStateAction<number>>;
+  dbgClickableOutlineW: number;
+  setDbgClickableOutlineW: React.Dispatch<React.SetStateAction<number>>;
 }
 
 /**
@@ -102,13 +164,81 @@ export function useAnimations(): UseAnimationsResult {
   const [shadeOnlyHoles, setShadeOnlyHoles] = useState<boolean>(true);
   const [holeBorders, setHoleBorders] = useState<boolean>(false);
 
+  // Board layout and geometry defaults (match tokens.css)
+  const [scale, setScale] = useState<number>(0.5);
+  const [boardWidthFactor, setBoardWidthFactor] = useState<number>(1);
+  const [boardOffsetX, setBoardOffsetX] = useState<number>(0);
+  const [boardOffsetYBase, setBoardOffsetYBase] = useState<number>(-60);
+  const [gridOffsetExtraX, setGridOffsetExtraX] = useState<number>(0);
+  const [gridOffsetExtraY, setGridOffsetExtraY] = useState<number>(0);
+  const [levelGapBase, setLevelGapBase] = useState<number>(8);
+  const [cellSizeMin, setCellSizeMin] = useState<number>(36);
+  const [cellSizeMult, setCellSizeMult] = useState<number>(1);
+  const [overlayNudgeX, setOverlayNudgeX] = useState<number>(0);
+  const [boardTopGap, setBoardTopGap] = useState<number>(0);
+  const [boardActionsGap, setBoardActionsGap] = useState<number>(-40);
+
+  // Hole/ball visuals
+  const [holeScale, setHoleScale] = useState<number>(0.9);
+  const [ballMatrixScale, setBallMatrixScale] = useState<number>(1.04);
+  const [holeMatrixScale, setHoleMatrixScale] = useState<number>(1.04);
+  const [holeRingW, setHoleRingW] = useState<number>(3);
+  const [holeInset, setHoleInset] = useState<number>(2);
+
+  // Debug
+  const [debugHitTest, setDebugHitTest] = useState<boolean>(false);
+  const [debugShowGrid, setDebugShowGrid] = useState<boolean>(true);
+  const [debugShowOverlays, setDebugShowOverlays] = useState<boolean>(true);
+  const [debugShowCellOutlines, setDebugShowCellOutlines] = useState<boolean>(true);
+  const [debugShowDisabledCells, setDebugShowDisabledCells] = useState<boolean>(true);
+  const [debugShowClickable, setDebugShowClickable] = useState<boolean>(true);
+  // Debug outline widths (px)
+  const [dbgGridOutlineW, setDbgGridOutlineW] = useState<number>(1);
+  const [dbgCellOutlineW, setDbgCellOutlineW] = useState<number>(1);
+  const [dbgDisabledOutlineW, setDbgDisabledOutlineW] = useState<number>(1);
+  const [dbgClickableOutlineW, setDbgClickableOutlineW] = useState<number>(2);
+
   // Sync global CSS variables whenever core animation params change
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--piece-scale', String(pieceScale));
     root.style.setProperty('--anim-appear-ms', `${Math.max(0, animAppearMs)}ms`);
     root.style.setProperty('--anim-flash-ms', `${Math.max(0, animFlashMs)}ms`);
-  }, [pieceScale, animAppearMs, animFlashMs]);
+    // Board geometry tokens
+    root.style.setProperty('--scale', String(scale));
+    root.style.setProperty('--board-width-factor', String(boardWidthFactor));
+    root.style.setProperty('--board-offset-x', `${boardOffsetX}px`);
+    root.style.setProperty('--board-offset-y-base', `${boardOffsetYBase}px`);
+    root.style.setProperty('--grid-offset-extra-x', `${gridOffsetExtraX}px`);
+    root.style.setProperty('--grid-offset-extra-y', `${gridOffsetExtraY}px`);
+    root.style.setProperty('--level-gap-base', `${levelGapBase}px`);
+    root.style.setProperty('--cell-size-min', `${cellSizeMin}px`);
+    root.style.setProperty('--cell-size-mult', String(cellSizeMult));
+    root.style.setProperty('--overlay-nudge-x', `${overlayNudgeX}px`);
+    root.style.setProperty('--board-top-gap', `${boardTopGap}px`);
+    root.style.setProperty('--board-actions-gap', `${boardActionsGap}px`);
+    // Hole/ball
+    root.style.setProperty('--hole-scale', String(holeScale));
+    root.style.setProperty('--ball-matrix-scale', String(ballMatrixScale));
+    root.style.setProperty('--hole-matrix-scale', String(holeMatrixScale));
+    root.style.setProperty('--hole-ring-w', `${holeRingW}px`);
+    root.style.setProperty('--hole-inset', `${holeInset}px`);
+  }, [
+    pieceScale, animAppearMs, animFlashMs,
+    scale, boardWidthFactor, boardOffsetX, boardOffsetYBase,
+    gridOffsetExtraX, gridOffsetExtraY, levelGapBase, cellSizeMin, cellSizeMult,
+    overlayNudgeX, boardTopGap, boardActionsGap,
+    holeScale, ballMatrixScale, holeMatrixScale, holeRingW, holeInset,
+  ]);
+
+  // Sync debug outline sizes to CSS variables
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--dbg-grid-outline-w', `${Math.max(0, dbgGridOutlineW)}px`);
+    root.style.setProperty('--dbg-cell-outline-w', `${Math.max(0, dbgCellOutlineW)}px`);
+    root.style.setProperty('--dbg-disabled-outline-w', `${Math.max(0, dbgDisabledOutlineW)}px`);
+    root.style.setProperty('--dbg-clickable-outline-w', `${Math.max(0, dbgClickableOutlineW)}px`);
+  }, [dbgGridOutlineW, dbgCellOutlineW, dbgDisabledOutlineW, dbgClickableOutlineW]);
 
   return {
     flying,
@@ -140,6 +270,64 @@ export function useAnimations(): UseAnimationsResult {
     setShadeOnlyHoles,
     holeBorders,
     setHoleBorders,
+    // Geometry
+    scale,
+    setScale,
+    boardWidthFactor,
+    setBoardWidthFactor,
+    boardOffsetX,
+    setBoardOffsetX,
+    boardOffsetYBase,
+    setBoardOffsetYBase,
+    gridOffsetExtraX,
+    setGridOffsetExtraX,
+    gridOffsetExtraY,
+    setGridOffsetExtraY,
+    levelGapBase,
+    setLevelGapBase,
+    cellSizeMin,
+    setCellSizeMin,
+    cellSizeMult,
+    setCellSizeMult,
+    overlayNudgeX,
+    setOverlayNudgeX,
+    boardTopGap,
+    setBoardTopGap,
+    boardActionsGap,
+    setBoardActionsGap,
+    // Holes/Balls
+    holeScale,
+    setHoleScale,
+    ballMatrixScale,
+    setBallMatrixScale,
+    holeMatrixScale,
+    setHoleMatrixScale,
+    holeRingW,
+    setHoleRingW,
+    holeInset,
+    setHoleInset,
+    // Debug
+    debugHitTest,
+    setDebugHitTest,
+    debugShowGrid,
+    setDebugShowGrid,
+    debugShowOverlays,
+    setDebugShowOverlays,
+    debugShowCellOutlines,
+    setDebugShowCellOutlines,
+    debugShowDisabledCells,
+    setDebugShowDisabledCells,
+    debugShowClickable,
+    setDebugShowClickable,
+    // Debug sizes
+    dbgGridOutlineW,
+    setDbgGridOutlineW,
+    dbgCellOutlineW,
+    setDbgCellOutlineW,
+    dbgDisabledOutlineW,
+    setDbgDisabledOutlineW,
+    dbgClickableOutlineW,
+    setDbgClickableOutlineW,
   };
 }
 

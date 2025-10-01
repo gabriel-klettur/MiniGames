@@ -21,11 +21,21 @@
   z-index: -1;          /* render below any grid content and transient overlays */
 }
 
-/* Debugging helpers */
-.board--debug .level { outline: 1px dashed rgba(255,255,255,0.25); }
-.board--debug .level--overlay { background: rgba(255, 255, 0, 0.06); }
-.board--debug .cell { box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.25); }
-.board--debug .cell.cell--disabled { box-shadow: inset 0 0 0 1px rgba(255, 99, 71, 0.35); }
+/* Debugging helpers (fine-grained via board--dbg-* flags) */
+.board--debug.board--dbg-grid .level { outline: var(--dbg-grid-outline-w, 1px) dashed rgba(255,255,255,0.25); }
+.board--debug.board--dbg-overlays .level--overlay { background: rgba(255, 255, 0, 0.06); }
+.board--debug.board--dbg-cells .cell { box-shadow: inset 0 0 0 var(--dbg-cell-outline-w, 1px) rgba(0, 255, 255, 0.25); }
+.board--debug.board--dbg-disabled .cell.cell--disabled { box-shadow: inset 0 0 0 var(--dbg-disabled-outline-w, 1px) rgba(255, 99, 71, 0.35); }
+/* Clickable hitboxes in debug: pink outline/fill for true interactive zones */
+.board--debug.board--dbg-clickable .cell--clickable {
+  background: rgba(255, 20, 147, 0.18);           /* deep pink w/ alpha */
+  box-shadow: inset 0 0 0 var(--dbg-clickable-outline-w, 2px) rgba(255, 20, 147, 0.6);
+}
+/* Optional: distinguish base override clicks (pyramid base allowance) */
+.board--debug.board--dbg-clickable .cell--clickable.cell--base-override {
+  background: rgba(255, 20, 147, 0.12);
+  box-shadow: inset 0 0 0 2px rgba(255, 20, 147, 0.35), 0 0 0 2px rgba(255, 20, 147, 0.2);
+}
 
 .level {
   display: grid;
@@ -119,6 +129,15 @@
 /* Base level cells are transparent so the wood board shows through */
 .level--board > .cell { background: transparent; border-color: transparent; }
 .level--board > .cell.cell--supported { background: transparent; }
+/* In debug, ensure base-level clickable cells also show the pink hitbox despite transparency rule above */
+.board--debug.board--dbg-clickable .level--board > .cell.cell--clickable {
+  background: rgba(255, 20, 147, 0.24);
+  box-shadow: inset 0 0 0 var(--dbg-clickable-outline-w, 2px) rgba(255, 20, 147, 0.6);
+}
+.board--debug.board--dbg-clickable .level--board > .cell.cell--clickable.cell--base-override {
+  background: rgba(255, 20, 147, 0.18);
+  box-shadow: inset 0 0 0 var(--dbg-clickable-outline-w, 2px) rgba(255, 20, 147, 0.45), 0 0 0 var(--dbg-clickable-outline-w, 2px) rgba(255, 20, 147, 0.2);
+}
 
 /* Highlight state: soft semi-transparent white */
 .cell--highlight { outline: none; background: rgba(255, 255, 255, 0.28); box-shadow: none; }
@@ -168,6 +187,14 @@
 .piece--free { box-shadow: none; }
 .piece--fixed { opacity: 1; }
 .piece--appear { animation: pieceAppear var(--anim-appear-ms) ease-out both; }
+
+/* Passive ghost fade for non-actionable 2x2 level pieces (triggered by .piece--ghost class) */
+.piece--ghost { animation: pieceGhost 3000ms ease-in-out 1 both; }
+@keyframes pieceGhost {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
 
 .piece[draggable="true"] { cursor: grab; }
 .piece[draggable="true"]:active { cursor: grabbing; }

@@ -1,4 +1,13 @@
 import { useState } from 'react';
+import UXPanelHeader from './components/UXPanelHeader';
+import ShadeTab from './components/tabs/ShadeTab';
+import SizeTab from './components/tabs/SizeTab';
+import AnimTab from './components/tabs/AnimTab';
+import LayoutTab from './components/tabs/LayoutTab';
+import HolesTab from './components/tabs/HolesTab';
+import DebugTab from './components/tabs/DebugTab';
+import { buildConfig, applyConfig } from './utils/config';
+import { saveJson, loadJsonFromFile } from './utils/fileIO';
 
 export interface UXPanelProps {
   // Shading toggles per level
@@ -29,6 +38,68 @@ export interface UXPanelProps {
   // Delay between auto-placement steps (ms)
   autoFillDelayMs: number;
   onChangeAutoFillDelayMs: (ms: number) => void;
+
+  // Layout / Board geometry
+  scale: number;
+  onChangeScale: (v: number) => void;
+  boardWidthFactor: number;
+  onChangeBoardWidthFactor: (v: number) => void;
+  boardOffsetX: number;
+  onChangeBoardOffsetX: (v: number) => void;
+  boardOffsetYBase: number;
+  onChangeBoardOffsetYBase: (v: number) => void;
+  gridOffsetExtraX: number;
+  onChangeGridOffsetExtraX: (v: number) => void;
+  gridOffsetExtraY: number;
+  onChangeGridOffsetExtraY: (v: number) => void;
+  levelGapBase: number;
+  onChangeLevelGapBase: (v: number) => void;
+  cellSizeMin: number;
+  onChangeCellSizeMin: (v: number) => void;
+  cellSizeMult: number;
+  onChangeCellSizeMult: (v: number) => void;
+  overlayNudgeX: number;
+  onChangeOverlayNudgeX: (v: number) => void;
+  boardTopGap: number;
+  onChangeBoardTopGap: (v: number) => void;
+  boardActionsGap: number;
+  onChangeBoardActionsGap: (v: number) => void;
+
+  // Holes / Balls visuals
+  holeScale: number;
+  onChangeHoleScale: (v: number) => void;
+  ballMatrixScale: number;
+  onChangeBallMatrixScale: (v: number) => void;
+  holeMatrixScale: number;
+  onChangeHoleMatrixScale: (v: number) => void;
+  holeRingW: number;
+  onChangeHoleRingW: (v: number) => void;
+  holeInset: number;
+  onChangeHoleInset: (v: number) => void;
+
+  // Debug
+  debugHitTest: boolean;
+  onToggleDebugHitTest: (v: boolean) => void;
+  // Fine-grained debug toggles
+  debugShowGrid: boolean;
+  onToggleDebugShowGrid: (v: boolean) => void;
+  debugShowOverlays: boolean;
+  onToggleDebugShowOverlays: (v: boolean) => void;
+  debugShowCellOutlines: boolean;
+  onToggleDebugShowCellOutlines: (v: boolean) => void;
+  debugShowDisabledCells: boolean;
+  onToggleDebugShowDisabledCells: (v: boolean) => void;
+  debugShowClickable: boolean;
+  onToggleDebugShowClickable: (v: boolean) => void;
+  // Debug sizes (px)
+  dbgGridOutlineW: number;
+  onChangeDbgGridOutlineW: (v: number) => void;
+  dbgCellOutlineW: number;
+  onChangeDbgCellOutlineW: (v: number) => void;
+  dbgDisabledOutlineW: number;
+  onChangeDbgDisabledOutlineW: (v: number) => void;
+  dbgClickableOutlineW: number;
+  onChangeDbgClickableOutlineW: (v: number) => void;
 }
 
 /**
@@ -48,24 +119,152 @@ export default function UXPanel(props: UXPanelProps) {
     appearMs, flashMs, flyMs,
     onChangeAppearMs, onChangeFlashMs, onChangeFlyMs,
     autoFillDelayMs, onChangeAutoFillDelayMs,
+    // Layout
+    scale, onChangeScale,
+    boardWidthFactor, onChangeBoardWidthFactor,
+    boardOffsetX, onChangeBoardOffsetX,
+    boardOffsetYBase, onChangeBoardOffsetYBase,
+    gridOffsetExtraX, onChangeGridOffsetExtraX,
+    gridOffsetExtraY, onChangeGridOffsetExtraY,
+    levelGapBase, onChangeLevelGapBase,
+    cellSizeMin, onChangeCellSizeMin,
+    cellSizeMult, onChangeCellSizeMult,
+    overlayNudgeX, onChangeOverlayNudgeX,
+    boardTopGap, onChangeBoardTopGap,
+    boardActionsGap, onChangeBoardActionsGap,
+    // Holes/Balls
+    holeScale, onChangeHoleScale,
+    ballMatrixScale, onChangeBallMatrixScale,
+    holeMatrixScale, onChangeHoleMatrixScale,
+    holeRingW, onChangeHoleRingW,
+    holeInset, onChangeHoleInset,
+    // Debug
+    debugHitTest, onToggleDebugHitTest,
+    debugShowGrid, onToggleDebugShowGrid,
+    debugShowOverlays, onToggleDebugShowOverlays,
+    debugShowCellOutlines, onToggleDebugShowCellOutlines,
+    debugShowDisabledCells, onToggleDebugShowDisabledCells,
+    debugShowClickable, onToggleDebugShowClickable,
+    dbgGridOutlineW, onChangeDbgGridOutlineW,
+    dbgCellOutlineW, onChangeDbgCellOutlineW,
+    dbgDisabledOutlineW, onChangeDbgDisabledOutlineW,
+    dbgClickableOutlineW, onChangeDbgClickableOutlineW,
   } = props;
 
-  const [tab, setTab] = useState<'shade' | 'size' | 'anim'>('shade');
+  const [tab, setTab] = useState<'shade' | 'size' | 'anim' | 'layout' | 'holes' | 'debug'>('shade');
 
   const onKeyNav = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     e.preventDefault();
-    const order: Array<typeof tab> = ['shade', 'size', 'anim'];
+    const order: Array<typeof tab> = ['shade', 'size', 'anim', 'layout', 'holes', 'debug'];
     const idx = order.indexOf(tab);
     const next = e.key === 'ArrowRight' ? (idx + 1) % order.length : (idx - 1 + order.length) % order.length;
     setTab(order[next]);
   };
+  // Snapshot of current values (for export/apply)
+  const current = () => ({
+    shading: {
+      shadeOnlyAvailable,
+      shadeOnlyHoles,
+      holeBorders,
+      noShade: { 0: noShadeL0, 1: noShadeL1, 2: noShadeL2, 3: noShadeL3 } as const,
+    },
+    size: { pieceScale },
+    anim: { appearMs, flashMs, flyMs, autoFillDelayMs },
+    layout: {
+      scale,
+      boardWidthFactor,
+      boardOffsetX,
+      boardOffsetYBase,
+      gridOffsetExtraX,
+      gridOffsetExtraY,
+      levelGapBase,
+      cellSizeMin,
+      cellSizeMult,
+      overlayNudgeX,
+      boardTopGap,
+      boardActionsGap,
+    },
+    holes: { holeScale, ballMatrixScale, holeMatrixScale, holeRingW, holeInset },
+    debug: {
+      debugHitTest,
+      showGrid: debugShowGrid,
+      showOverlays: debugShowOverlays,
+      showCellOutlines: debugShowCellOutlines,
+      showDisabledCells: debugShowDisabledCells,
+      showClickable: debugShowClickable,
+      gridOutlineW: dbgGridOutlineW,
+      cellOutlineW: dbgCellOutlineW,
+      disabledOutlineW: dbgDisabledOutlineW,
+      clickableOutlineW: dbgClickableOutlineW,
+    },
+  });
+
+  const appliers = {
+    onToggleShadeOnlyAvailable,
+    onToggleShadeOnlyHoles,
+    onToggleHoleBorders,
+    onChangeNoShade,
+    onChangePieceScale,
+    onChangeAppearMs,
+    onChangeFlashMs,
+    onChangeFlyMs,
+    onChangeAutoFillDelayMs,
+    onChangeScale,
+    onChangeBoardWidthFactor,
+    onChangeBoardOffsetX,
+    onChangeBoardOffsetYBase,
+    onChangeGridOffsetExtraX,
+    onChangeGridOffsetExtraY,
+    onChangeLevelGapBase,
+    onChangeCellSizeMin,
+    onChangeCellSizeMult,
+    onChangeOverlayNudgeX,
+    onChangeBoardTopGap,
+    onChangeBoardActionsGap,
+    onChangeHoleScale,
+    onChangeBallMatrixScale,
+    onChangeHoleMatrixScale,
+    onChangeHoleRingW,
+    onChangeHoleInset,
+    onToggleDebugHitTest,
+    onToggleDebugShowGrid,
+    onToggleDebugShowOverlays,
+    onToggleDebugShowCellOutlines,
+    onToggleDebugShowDisabledCells,
+    onToggleDebugShowClickable,
+    onChangeDbgGridOutlineW,
+    onChangeDbgCellOutlineW,
+    onChangeDbgDisabledOutlineW,
+    onChangeDbgClickableOutlineW,
+  } as const;
+
+  const handleSave = () => {
+    try {
+      const cfg = buildConfig(current() as any);
+      saveJson('pylos-ux-config', cfg);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Save UX config error:', err);
+      window.alert('Error al guardar configuración UI/UX.');
+    }
+  };
+
+  const handleFileSelected = async (file: File) => {
+    try {
+      const json = await loadJsonFromFile(file);
+      applyConfig(json, current() as any, appliers as any);
+      window.alert('Configuración UI/UX cargada.');
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Load UX config error:', err);
+      window.alert('JSON inválido o incompatible.');
+    }
+  };
 
   return (
     <div className="ux-panel">
-      <div className="row">
-        <h3 style={{ margin: 0, fontSize: 16 }}>Opciones UI/UX</h3>
-      </div>
+      <UXPanelHeader title="Opciones UI/UX" onRequestSave={handleSave} onFileSelected={handleFileSelected} />
 
       {/* Tabs header */}
       <div className="tabs" onKeyDown={onKeyNav}>
@@ -97,127 +296,170 @@ export default function UXPanel(props: UXPanelProps) {
             className="tabs__tab"
             onClick={() => setTab('anim')}
           >Animaciones</button>
+          <button
+            role="tab"
+            id="tab-layout"
+            aria-controls="panel-layout"
+            aria-selected={tab === 'layout'}
+            tabIndex={tab === 'layout' ? 0 : -1}
+            className="tabs__tab"
+            onClick={() => setTab('layout')}
+          >Tablero</button>
+          <button
+            role="tab"
+            id="tab-holes"
+            aria-controls="panel-holes"
+            aria-selected={tab === 'holes'}
+            tabIndex={tab === 'holes' ? 0 : -1}
+            className="tabs__tab"
+            onClick={() => setTab('holes')}
+          >Huecos/Bolas</button>
+          <button
+            role="tab"
+            id="tab-debug"
+            aria-controls="panel-debug"
+            aria-selected={tab === 'debug'}
+            tabIndex={tab === 'debug' ? 0 : -1}
+            className="tabs__tab"
+            onClick={() => setTab('debug')}
+          >Depuración</button>
         </div>
       </div>
 
       {/* Tab panels */}
       {tab === 'shade' && (
-        <div role="tabpanel" id="panel-shade" aria-labelledby="tab-shade" className="tabs__panel">
-          <div className="row">
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={shadeOnlyAvailable}
-                onChange={(e) => onToggleShadeOnlyAvailable(e.target.checked)}
-              />
-              Sombreado solo niveles disponibles
-            </label>
-          </div>
-          <div className="row">
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={shadeOnlyHoles}
-                onChange={(e) => onToggleShadeOnlyHoles(e.target.checked)}
-              />
-              Sombreado solo huecos disponibles
-            </label>
-          </div>
-          <div className="row">
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                checked={holeBorders}
-                onChange={(e) => onToggleHoleBorders(e.target.checked)}
-              />
-              Bordes blancos en huecos disponibles
-            </label>
-          </div>
-          <div className="row" aria-disabled={shadeOnlyAvailable}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: 10, alignItems: 'center' }}>
-              <label><input type="checkbox" disabled={shadeOnlyAvailable} checked={noShadeL0} onChange={(e) => onChangeNoShade(0, e.target.checked)} /> Ocultar sombreado L0</label>
-              <label><input type="checkbox" disabled={shadeOnlyAvailable} checked={noShadeL1} onChange={(e) => onChangeNoShade(1, e.target.checked)} /> Ocultar sombreado L1</label>
-              <label><input type="checkbox" disabled={shadeOnlyAvailable} checked={noShadeL2} onChange={(e) => onChangeNoShade(2, e.target.checked)} /> Ocultar sombreado L2</label>
-              <label><input type="checkbox" disabled={shadeOnlyAvailable} checked={noShadeL3} onChange={(e) => onChangeNoShade(3, e.target.checked)} /> Ocultar sombreado L3</label>
-            </div>
-          </div>
-        </div>
+        <ShadeTab
+          shadeOnlyAvailable={shadeOnlyAvailable}
+          onToggleShadeOnlyAvailable={onToggleShadeOnlyAvailable}
+          shadeOnlyHoles={shadeOnlyHoles}
+          onToggleShadeOnlyHoles={onToggleShadeOnlyHoles}
+          holeBorders={holeBorders}
+          onToggleHoleBorders={onToggleHoleBorders}
+          noShadeL0={noShadeL0}
+          noShadeL1={noShadeL1}
+          noShadeL2={noShadeL2}
+          noShadeL3={noShadeL3}
+          onChangeNoShade={onChangeNoShade}
+        />
       )}
 
       {tab === 'size' && (
-        <div role="tabpanel" id="panel-size" aria-labelledby="tab-size" className="tabs__panel">
-          <div className="row">
-            <label className="label">Tamaño bola (escala)</label>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="number"
-                min={0.8}
-                max={2.5}
-                step={0.05}
-                value={Number.isFinite(pieceScale) ? pieceScale : 1}
-                onChange={(e) => onChangePieceScale(parseFloat(e.target.value))}
-                style={{ width: 90 }}
-                aria-label="Escala de la bola"
-              />
-              <span style={{ color: 'var(--muted)' }}>(1.0–2.5)</span>
-            </div>
-          </div>
-        </div>
+        <SizeTab
+          // Pieces
+          pieceScale={pieceScale}
+          onChangePieceScale={onChangePieceScale}
+          // Board & Cells
+          scale={scale}
+          onChangeScale={onChangeScale}
+          cellSizeMin={cellSizeMin}
+          onChangeCellSizeMin={onChangeCellSizeMin}
+          cellSizeMult={cellSizeMult}
+          onChangeCellSizeMult={onChangeCellSizeMult}
+          levelGapBase={levelGapBase}
+          onChangeLevelGapBase={onChangeLevelGapBase}
+          // Holes
+          holeScale={holeScale}
+          onChangeHoleScale={onChangeHoleScale}
+          ballMatrixScale={ballMatrixScale}
+          onChangeBallMatrixScale={onChangeBallMatrixScale}
+          holeMatrixScale={holeMatrixScale}
+          onChangeHoleMatrixScale={onChangeHoleMatrixScale}
+          holeRingW={holeRingW}
+          onChangeHoleRingW={onChangeHoleRingW}
+          holeInset={holeInset}
+          onChangeHoleInset={onChangeHoleInset}
+          // Debug outline widths
+          dbgGridOutlineW={dbgGridOutlineW}
+          onChangeDbgGridOutlineW={onChangeDbgGridOutlineW}
+          dbgCellOutlineW={dbgCellOutlineW}
+          onChangeDbgCellOutlineW={onChangeDbgCellOutlineW}
+          dbgDisabledOutlineW={dbgDisabledOutlineW}
+          onChangeDbgDisabledOutlineW={onChangeDbgDisabledOutlineW}
+          dbgClickableOutlineW={dbgClickableOutlineW}
+          onChangeDbgClickableOutlineW={onChangeDbgClickableOutlineW}
+        />
       )}
 
       {tab === 'anim' && (
-        <div role="tabpanel" id="panel-anim" aria-labelledby="tab-anim" className="tabs__panel">
-          <div className="row">
-            <h4 style={{ margin: '4px 0' }}>Velocidad de animaciones (ms)</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
-              <label className="label">Aparición pieza</label>
-              <input
-                type="number"
-                min={50}
-                max={4000}
-                step={10}
-                value={Number.isFinite(appearMs) ? appearMs : 280}
-                onChange={(e) => onChangeAppearMs(parseInt(e.target.value, 10) || 0)}
-                style={{ width: 100 }}
-                aria-label="Duración aparición pieza (ms)"
-              />
-              <label className="label">Flash celda</label>
-              <input
-                type="number"
-                min={50}
-                max={5000}
-                step={10}
-                value={Number.isFinite(flashMs) ? flashMs : 900}
-                onChange={(e) => onChangeFlashMs(parseInt(e.target.value, 10) || 0)}
-                style={{ width: 100 }}
-                aria-label="Duración flash celda (ms)"
-              />
-              <label className="label">Vuelo pieza</label>
-              <input
-                type="number"
-                min={50}
-                max={6000}
-                step={10}
-                value={Number.isFinite(flyMs) ? flyMs : 1500}
-                onChange={(e) => onChangeFlyMs(parseInt(e.target.value, 10) || 0)}
-                style={{ width: 100 }}
-                aria-label="Duración vuelo pieza (ms)"
-              />
-              <label className="label">Pausa auto-colocación final</label>
-              <input
-                type="number"
-                min={0}
-                max={5000}
-                step={10}
-                value={Number.isFinite(autoFillDelayMs) ? autoFillDelayMs : 250}
-                onChange={(e) => onChangeAutoFillDelayMs(parseInt(e.target.value, 10) || 0)}
-                style={{ width: 100 }}
-                aria-label="Pausa entre auto-colocaciones (ms)"
-                title="Retraso entre pasos de autocolocación cuando un jugador se queda sin bolas"
-              />
-            </div>
-          </div>
-        </div>
+        <AnimTab
+          appearMs={appearMs}
+          flashMs={flashMs}
+          flyMs={flyMs}
+          autoFillDelayMs={autoFillDelayMs}
+          onChangeAppearMs={onChangeAppearMs}
+          onChangeFlashMs={onChangeFlashMs}
+          onChangeFlyMs={onChangeFlyMs}
+          onChangeAutoFillDelayMs={onChangeAutoFillDelayMs}
+        />
+      )}
+
+      {tab === 'layout' && (
+        <LayoutTab
+          scale={scale}
+          onChangeScale={onChangeScale}
+          boardWidthFactor={boardWidthFactor}
+          onChangeBoardWidthFactor={onChangeBoardWidthFactor}
+          boardOffsetX={boardOffsetX}
+          onChangeBoardOffsetX={onChangeBoardOffsetX}
+          boardOffsetYBase={boardOffsetYBase}
+          onChangeBoardOffsetYBase={onChangeBoardOffsetYBase}
+          gridOffsetExtraX={gridOffsetExtraX}
+          onChangeGridOffsetExtraX={onChangeGridOffsetExtraX}
+          gridOffsetExtraY={gridOffsetExtraY}
+          onChangeGridOffsetExtraY={onChangeGridOffsetExtraY}
+          levelGapBase={levelGapBase}
+          onChangeLevelGapBase={onChangeLevelGapBase}
+          cellSizeMin={cellSizeMin}
+          onChangeCellSizeMin={onChangeCellSizeMin}
+          cellSizeMult={cellSizeMult}
+          onChangeCellSizeMult={onChangeCellSizeMult}
+          overlayNudgeX={overlayNudgeX}
+          onChangeOverlayNudgeX={onChangeOverlayNudgeX}
+          boardTopGap={boardTopGap}
+          onChangeBoardTopGap={onChangeBoardTopGap}
+          boardActionsGap={boardActionsGap}
+          onChangeBoardActionsGap={onChangeBoardActionsGap}
+        />
+      )}
+
+      {tab === 'holes' && (
+        <HolesTab
+          holeScale={holeScale}
+          onChangeHoleScale={onChangeHoleScale}
+          ballMatrixScale={ballMatrixScale}
+          onChangeBallMatrixScale={onChangeBallMatrixScale}
+          holeMatrixScale={holeMatrixScale}
+          onChangeHoleMatrixScale={onChangeHoleMatrixScale}
+          holeRingW={holeRingW}
+          onChangeHoleRingW={onChangeHoleRingW}
+          holeInset={holeInset}
+          onChangeHoleInset={onChangeHoleInset}
+        />
+      )}
+
+      {tab === 'debug' && (
+        <DebugTab
+          debugHitTest={debugHitTest}
+          onToggleDebugHitTest={onToggleDebugHitTest}
+          debugShowGrid={debugShowGrid}
+          onToggleDebugShowGrid={onToggleDebugShowGrid}
+          debugShowOverlays={debugShowOverlays}
+          onToggleDebugShowOverlays={onToggleDebugShowOverlays}
+          debugShowCellOutlines={debugShowCellOutlines}
+          onToggleDebugShowCellOutlines={onToggleDebugShowCellOutlines}
+          debugShowDisabledCells={debugShowDisabledCells}
+          onToggleDebugShowDisabledCells={onToggleDebugShowDisabledCells}
+          debugShowClickable={debugShowClickable}
+          onToggleDebugShowClickable={onToggleDebugShowClickable}
+          dbgGridOutlineW={dbgGridOutlineW}
+          onChangeDbgGridOutlineW={onChangeDbgGridOutlineW}
+          dbgCellOutlineW={dbgCellOutlineW}
+          onChangeDbgCellOutlineW={onChangeDbgCellOutlineW}
+          dbgDisabledOutlineW={dbgDisabledOutlineW}
+          onChangeDbgDisabledOutlineW={onChangeDbgDisabledOutlineW}
+          dbgClickableOutlineW={dbgClickableOutlineW}
+          onChangeDbgClickableOutlineW={onChangeDbgClickableOutlineW}
+        />
       )}
     </div>
   );
