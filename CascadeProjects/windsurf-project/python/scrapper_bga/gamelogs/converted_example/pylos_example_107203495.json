@@ -1,0 +1,441 @@
+{
+  "tableId": "107203495",
+  "winner": null,
+  "moves": [
+    {
+      "move": 2,
+      "time": "8/16/2020 2:34:30 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 3,
+      "time": "3:04:20 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 4,
+      "time": "4:02:04 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 5,
+      "time": "4:10:27 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 6,
+      "time": "4:40:52 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 7,
+      "time": "4:43:36 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 8,
+      "time": "6:01:15 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 9,
+      "time": "6:16:41 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 10,
+      "time": "6:22:07 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 11,
+      "time": "6:25:02 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 12,
+      "time": "6:41:31 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 13,
+      "time": "6:55:45 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 14,
+      "time": "7:27:41 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 15,
+      "time": "7:28:03 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 16,
+      "time": "7:49:55 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (2, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-1-2",
+        "localText": "colocar 1-1-2"
+      }
+    },
+    {
+      "move": 17,
+      "time": "7:50:15 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 2, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-2-1",
+        "localText": "colocar 1-2-1"
+      }
+    },
+    {
+      "move": 18,
+      "time": "8:23:55 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 19,
+      "time": "8:27:13 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 1, 1) to (2, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "local": "0-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 2,
+          "local": "1-1-0"
+        },
+        "localText": "subir 0-0-0 -> 1-1-0"
+      }
+    },
+    {
+      "move": 20,
+      "time": "8:47:57 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente moves up a ball from (1, 2, 1) to (2, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 2,
+          "z": 1,
+          "local": "0-0-1"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 2,
+          "local": "1-1-1"
+        },
+        "localText": "subir 0-0-1 -> 1-1-1"
+      }
+    },
+    {
+      "move": 21,
+      "time": "8:48:59 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 22,
+      "time": "9:53:13 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 23,
+      "time": "9:56:11 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    },
+    {
+      "move": 24,
+      "time": "10:52:49 PM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (2, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "colocar 2-1-1"
+      }
+    },
+    {
+      "move": 25,
+      "time": "8/17/2020 5:51:26 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 26,
+      "time": "10:01:06 AM",
+      "actor": "MolhoQuente",
+      "raw": "MolhoQuente places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 27,
+      "time": "10:01:23 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "colocar 2-1-0"
+      }
+    },
+    {
+      "move": 28,
+      "time": "10:01:56 AM",
+      "actor": null,
+      "raw": "MolhoQuente concedes the game.",
+      "parsed": null
+    }
+  ]
+}

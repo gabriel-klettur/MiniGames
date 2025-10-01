@@ -1,0 +1,962 @@
+{
+  "tableId": "108929496",
+  "winner": null,
+  "moves": [
+    {
+      "move": 3,
+      "time": "8/27/2020 9:10:00 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 4,
+      "time": "9:10:07 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 5,
+      "time": "9:12:47 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 6,
+      "time": "9:26:30 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 7,
+      "time": "11:48:45 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 8,
+      "time": "12:00:47 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 9,
+      "time": "8/28/2020 8:26:22 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 10,
+      "time": "9:59:05 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 11,
+      "time": "4:28:11 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 12,
+      "time": "7:42:38 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 13,
+      "time": "8:43:05 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 14,
+      "time": "9:03:59 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 15,
+      "time": "8/29/2020 7:50:47 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 16,
+      "time": "8:03:38 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (3, 1, 1) to (3, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 1,
+          "z": 1,
+          "local": "0-2-0"
+        },
+        "dst": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "localText": "subir 0-2-0 -> 1-2-1"
+      }
+    },
+    {
+      "move": 17,
+      "time": "9:33:15 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 18,
+      "time": "10:16:34 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 19,
+      "time": "8/30/2020 8:48:27 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (2, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-1-2",
+        "localText": "colocar 1-1-2"
+      }
+    },
+    {
+      "move": 20,
+      "time": "8:49:12 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 21,
+      "time": "9:32:33 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    },
+    {
+      "move": 22,
+      "time": "9:59:04 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 23,
+      "time": "10:23:33 AM",
+      "actor": "robbaap",
+      "raw": "robbaap moves up a ball from (4, 1, 1) to (2, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 2,
+          "local": "1-1-0"
+        },
+        "localText": "subir 0-3-0 -> 1-1-0"
+      }
+    },
+    {
+      "move": 24,
+      "time": "12:51:43 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-1-1",
+        "localText": "colocar 1-1-1"
+      }
+    },
+    {
+      "move": 25,
+      "time": "12:57:58 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (2, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "colocar 2-1-1"
+      }
+    },
+    {
+      "move": 26,
+      "time": "6:21:56 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 27,
+      "time": "6:30:16 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 28,
+      "time": "6:30:19 PM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (2, 1, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-1-0",
+        "localText": "recuperar 1-1-0"
+      }
+    },
+    {
+      "move": 29,
+      "time": "6:30:32 PM",
+      "actor": "robbaap",
+      "raw": "robbaap does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 30,
+      "time": "7:34:08 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 4, 1) to (2, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 4,
+          "z": 1,
+          "local": "0-0-3"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 2,
+          "local": "1-1-0"
+        },
+        "localText": "subir 0-0-3 -> 1-1-0"
+      }
+    },
+    {
+      "move": 31,
+      "time": "7:40:46 PM",
+      "actor": "robbaap",
+      "raw": "robbaap moves up a ball from (1, 1, 2) to (2, 1, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 3,
+          "local": "2-1-0"
+        },
+        "localText": "subir 1-0-0 -> 2-1-0"
+      }
+    },
+    {
+      "move": 32,
+      "time": "7:42:10 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    },
+    {
+      "move": 33,
+      "time": "7:54:51 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 34,
+      "time": "7:54:55 PM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (1, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "recuperar 0-0-3"
+      }
+    },
+    {
+      "move": 35,
+      "time": "7:54:58 PM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (2, 1, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "recuperar 2-1-0"
+      }
+    },
+    {
+      "move": 36,
+      "time": "8:41:35 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "colocar 2-1-0"
+      }
+    },
+    {
+      "move": 37,
+      "time": "8/31/2020 10:44:19 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 38,
+      "time": "10:44:21 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (1, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "recuperar 0-0-3"
+      }
+    },
+    {
+      "move": 39,
+      "time": "10:44:23 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (2, 2, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "recuperar 2-1-1"
+      }
+    },
+    {
+      "move": 40,
+      "time": "11:47:21 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "colocar 2-1-1"
+      }
+    },
+    {
+      "move": 41,
+      "time": "11:55:59 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 42,
+      "time": "11:56:01 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (1, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "recuperar 0-0-3"
+      }
+    },
+    {
+      "move": 43,
+      "time": "12:20:26 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 44,
+      "time": "4:57:24 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 45,
+      "time": "6:15:59 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 4, 1) to (1, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 4,
+          "z": 1,
+          "local": "0-0-3"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 2,
+          "local": "1-0-1"
+        },
+        "localText": "subir 0-0-3 -> 1-0-1"
+      }
+    },
+    {
+      "move": 46,
+      "time": "6:16:26 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 2, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "recuperar 2-1-1"
+      }
+    },
+    {
+      "move": 47,
+      "time": "6:16:28 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 1, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "recuperar 2-1-0"
+      }
+    },
+    {
+      "move": 48,
+      "time": "6:30:39 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 1, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-0-0",
+        "localText": "colocar 2-0-0"
+      }
+    },
+    {
+      "move": 49,
+      "time": "6:32:29 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 50,
+      "time": "8:46:45 PM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (1, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "colocar 1-0-2"
+      }
+    },
+    {
+      "move": 51,
+      "time": "8:53:06 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (3, 2, 2) to (1, 2, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 3,
+          "local": "2-0-1"
+        },
+        "localText": "subir 1-2-1 -> 2-0-1"
+      }
+    },
+    {
+      "move": 52,
+      "time": "9/1/2020 7:57:12 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 2, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-2-1",
+        "localText": "colocar 1-2-1"
+      }
+    },
+    {
+      "move": 53,
+      "time": "8:14:16 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (3, 3, 2) to (2, 1, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 3,
+          "z": 2,
+          "local": "1-2-2"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 3,
+          "local": "2-1-0"
+        },
+        "localText": "subir 1-2-2 -> 2-1-0"
+      }
+    },
+    {
+      "move": 54,
+      "time": "8:24:30 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 55,
+      "time": "8:24:33 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (3, 3, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "recuperar 1-2-2"
+      }
+    },
+    {
+      "move": 56,
+      "time": "8:24:38 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (4, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "recuperar 0-3-3"
+      }
+    },
+    {
+      "move": 57,
+      "time": "8:30:01 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 58,
+      "time": "8:52:38 AM",
+      "actor": "robbaap",
+      "raw": "robbaap places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 59,
+      "time": "8:52:45 AM",
+      "actor": "robbaap",
+      "raw": "robbaap returned the ball at (3, 3, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "recuperar 1-2-2"
+      }
+    },
+    {
+      "move": 60,
+      "time": "8:52:47 AM",
+      "actor": "robbaap",
+      "raw": "robbaap does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    }
+  ]
+}

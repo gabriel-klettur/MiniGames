@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2025-09-30T22:00:13.396774+00:00",
+  "exportedAt": "2025-10-01T23:10:35.961628+00:00",
   "archived": [
     {
       "id": "bga-102592039",
@@ -10,7 +10,7 @@
       "iaDepth": null,
       "iaTimeMode": null,
       "iaTimeSeconds": 0,
-      "totalMoves": 30,
+      "totalMoves": 38,
       "moves": [
         {
           "player": null,
@@ -41,6 +41,11 @@
           "player": null,
           "source": null,
           "text": "colocar 0-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-0-2 -> 1-1-1"
         },
         {
           "player": null,
@@ -90,7 +95,17 @@
         {
           "player": null,
           "source": null,
+          "text": "recuperar 0-3-1"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-3-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-0 -> 1-2-1"
         },
         {
           "player": null,
@@ -106,6 +121,16 @@
           "player": null,
           "source": null,
           "text": "colocar 0-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-0-3 -> 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-0-2 -> 2-1-0"
         },
         {
           "player": null,
@@ -130,7 +155,22 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-0-3 -> 1-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 1-2-2 -> 2-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 1-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "recuperar 1-2-2"
         },
         {
           "player": null,

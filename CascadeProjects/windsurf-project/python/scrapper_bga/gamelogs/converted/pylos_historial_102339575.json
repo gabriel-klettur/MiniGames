@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2025-09-30T22:00:13.395468+00:00",
+  "exportedAt": "2025-10-01T23:10:35.958725+00:00",
   "archived": [
     {
       "id": "bga-102339575",
@@ -10,7 +10,7 @@
       "iaDepth": null,
       "iaTimeMode": null,
       "iaTimeSeconds": 0,
-      "totalMoves": 29,
+      "totalMoves": 39,
       "moves": [
         {
           "player": null,
@@ -60,6 +60,11 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-3-1 -> 1-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-3-0"
         },
         {
@@ -95,6 +100,16 @@
         {
           "player": null,
           "source": null,
+          "text": "recuperar 0-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "recuperar 0-3-0"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-0-1"
         },
         {
@@ -105,12 +120,32 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-3-1 -> 1-1-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-1-0 -> 1-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-2-0 -> 2-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-3-0"
         },
         {
           "player": null,
           "source": null,
           "text": "colocar 0-3-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-0 -> 1-2-2"
         },
         {
           "player": null,
@@ -140,7 +175,17 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-0-0 -> 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 1-2-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 1-2-0 -> 2-1-1"
         },
         {
           "player": null,
@@ -156,6 +201,11 @@
           "player": null,
           "source": null,
           "text": "colocar 1-2-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 1-0-0 -> 2-1-0"
         }
       ]
     }

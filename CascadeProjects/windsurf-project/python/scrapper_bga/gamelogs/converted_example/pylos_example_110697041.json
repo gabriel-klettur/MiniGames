@@ -1,0 +1,948 @@
+{
+  "tableId": "110697041",
+  "winner": null,
+  "moves": [
+    {
+      "move": 2,
+      "time": "9/6/2020 6:51:43 AM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 3,
+      "time": "8:31:37 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 4,
+      "time": "12:00:55 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 5,
+      "time": "12:01:59 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 6,
+      "time": "12:06:42 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 7,
+      "time": "12:16:30 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 8,
+      "time": "12:17:05 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 9,
+      "time": "12:17:36 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 10,
+      "time": "12:18:02 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 11,
+      "time": "12:18:10 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li returned the ball at (2, 2, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "recuperar 0-1-1"
+      }
+    },
+    {
+      "move": 12,
+      "time": "12:18:14 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li returned the ball at (2, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "recuperar 0-1-3"
+      }
+    },
+    {
+      "move": 13,
+      "time": "12:18:38 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 14,
+      "time": "12:19:09 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 15,
+      "time": "12:19:39 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 16,
+      "time": "12:21:00 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 17,
+      "time": "12:22:44 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 18,
+      "time": "12:23:42 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (3, 2, 1) to (1, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 2,
+          "z": 1,
+          "local": "0-2-1"
+        },
+        "dst": {
+          "x": 1,
+          "y": 3,
+          "z": 2,
+          "local": "1-0-2"
+        },
+        "localText": "subir 0-2-1 -> 1-0-2"
+      }
+    },
+    {
+      "move": 19,
+      "time": "12:25:10 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 20,
+      "time": "12:25:37 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 21,
+      "time": "12:26:40 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 22,
+      "time": "12:26:42 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (3, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "recuperar 0-2-3"
+      }
+    },
+    {
+      "move": 23,
+      "time": "12:26:45 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 24,
+      "time": "12:26:52 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 25,
+      "time": "12:27:07 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 4, 1) to (2, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 4,
+          "z": 1,
+          "local": "0-3-3"
+        },
+        "dst": {
+          "x": 2,
+          "y": 3,
+          "z": 2,
+          "local": "1-1-2"
+        },
+        "localText": "subir 0-3-3 -> 1-1-2"
+      }
+    },
+    {
+      "move": 26,
+      "time": "12:27:16 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 27,
+      "time": "12:27:36 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 2, 1) to (3, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 2,
+          "z": 1,
+          "local": "0-0-1"
+        },
+        "dst": {
+          "x": 3,
+          "y": 1,
+          "z": 2,
+          "local": "1-2-0"
+        },
+        "localText": "subir 0-0-1 -> 1-2-0"
+      }
+    },
+    {
+      "move": 28,
+      "time": "12:28:11 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (2, 1, 1) to (3, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "local": "0-1-0"
+        },
+        "dst": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "localText": "subir 0-1-0 -> 1-2-1"
+      }
+    },
+    {
+      "move": 29,
+      "time": "12:28:45 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 30,
+      "time": "12:29:38 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 31,
+      "time": "12:31:49 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 1, 1) to (2, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "local": "0-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 2,
+          "local": "1-1-0"
+        },
+        "localText": "subir 0-0-0 -> 1-1-0"
+      }
+    },
+    {
+      "move": 32,
+      "time": "12:32:37 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 33,
+      "time": "12:33:24 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-1-1",
+        "localText": "colocar 1-1-1"
+      }
+    },
+    {
+      "move": 34,
+      "time": "12:33:40 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 2, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-1-1",
+        "localText": "recuperar 1-1-1"
+      }
+    },
+    {
+      "move": 35,
+      "time": "12:34:09 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (3, 1, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "recuperar 1-2-0"
+      }
+    },
+    {
+      "move": 36,
+      "time": "12:34:47 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (1, 1, 1) to (2, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "local": "0-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 2,
+          "local": "1-1-1"
+        },
+        "localText": "subir 0-0-0 -> 1-1-1"
+      }
+    },
+    {
+      "move": 37,
+      "time": "12:35:11 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 38,
+      "time": "12:35:19 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 39,
+      "time": "12:35:40 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "colocar 2-1-0"
+      }
+    },
+    {
+      "move": 40,
+      "time": "12:36:09 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 41,
+      "time": "12:36:20 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 1, 1) to (3, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "local": "0-0-0"
+        },
+        "dst": {
+          "x": 3,
+          "y": 3,
+          "z": 2,
+          "local": "1-2-2"
+        },
+        "localText": "subir 0-0-0 -> 1-2-2"
+      }
+    },
+    {
+      "move": 42,
+      "time": "12:36:36 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (1, 3, 2) to (2, 2, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 3,
+          "z": 2,
+          "local": "1-0-2"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 3,
+          "local": "2-1-1"
+        },
+        "localText": "subir 1-0-2 -> 2-1-1"
+      }
+    },
+    {
+      "move": 43,
+      "time": "12:36:41 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "colocar 1-0-2"
+      }
+    },
+    {
+      "move": 44,
+      "time": "12:36:45 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (1, 3, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "recuperar 1-0-2"
+      }
+    },
+    {
+      "move": 45,
+      "time": "12:36:49 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 46,
+      "time": "12:37:06 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 47,
+      "time": "12:37:12 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "colocar 1-0-2"
+      }
+    },
+    {
+      "move": 48,
+      "time": "12:37:20 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (1, 3, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "recuperar 1-0-2"
+      }
+    },
+    {
+      "move": 49,
+      "time": "12:37:22 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 1, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-1-0",
+        "localText": "recuperar 2-1-0"
+      }
+    },
+    {
+      "move": 50,
+      "time": "12:38:09 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (1, 3, 1) to (2, 1, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 3,
+          "z": 1,
+          "local": "0-0-2"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 3,
+          "local": "2-1-0"
+        },
+        "localText": "subir 0-0-2 -> 2-1-0"
+      }
+    },
+    {
+      "move": 51,
+      "time": "12:38:53 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 52,
+      "time": "12:41:18 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    },
+    {
+      "move": 53,
+      "time": "12:41:29 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 54,
+      "time": "12:42:05 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li places a ball at (1, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "colocar 1-0-2"
+      }
+    },
+    {
+      "move": 55,
+      "time": "12:42:34 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-0-1",
+        "localText": "colocar 1-0-1"
+      }
+    },
+    {
+      "move": 56,
+      "time": "12:42:57 PM",
+      "actor": "123456Lina Li",
+      "raw": "123456Lina Li moves up a ball from (1, 1, 2) to (1, 2, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 3,
+          "local": "2-0-1"
+        },
+        "localText": "subir 1-0-0 -> 2-0-1"
+      }
+    },
+    {
+      "move": 57,
+      "time": "12:43:07 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    }
+  ]
+}

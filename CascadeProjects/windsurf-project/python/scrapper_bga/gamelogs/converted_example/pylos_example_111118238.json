@@ -1,0 +1,829 @@
+{
+  "tableId": "111118238",
+  "winner": null,
+  "moves": [
+    {
+      "move": 2,
+      "time": "9/8/2020 8:21:04 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 3,
+      "time": "1:47:58 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 4,
+      "time": "1:56:02 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 5,
+      "time": "1:59:28 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 6,
+      "time": "2:00:31 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 7,
+      "time": "2:02:44 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 8,
+      "time": "2:11:40 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 9,
+      "time": "2:26:53 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 10,
+      "time": "5:21:27 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 11,
+      "time": "5:23:41 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 12,
+      "time": "5:23:45 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility returned the ball at (2, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "recuperar 0-1-3"
+      }
+    },
+    {
+      "move": 13,
+      "time": "5:24:03 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility returned the ball at (2, 3, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "recuperar 0-1-2"
+      }
+    },
+    {
+      "move": 14,
+      "time": "5:55:48 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 15,
+      "time": "7:21:45 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 16,
+      "time": "7:23:19 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 17,
+      "time": "8:29:25 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility moves up a ball from (4, 2, 1) to (1, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 2,
+          "z": 1,
+          "local": "0-3-1"
+        },
+        "dst": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "localText": "subir 0-3-1 -> 1-0-0"
+      }
+    },
+    {
+      "move": 18,
+      "time": "8:38:14 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 19,
+      "time": "8:38:20 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 4, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "recuperar 0-1-3"
+      }
+    },
+    {
+      "move": 20,
+      "time": "8:38:24 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 21,
+      "time": "8:46:49 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 22,
+      "time": "8:55:33 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 23,
+      "time": "9:18:37 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 24,
+      "time": "9:36:54 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 3, 1) to (2, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 3,
+          "z": 1,
+          "local": "0-0-2"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 2,
+          "local": "1-1-1"
+        },
+        "localText": "subir 0-0-2 -> 1-1-1"
+      }
+    },
+    {
+      "move": 25,
+      "time": "10:00:20 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-1-2",
+        "localText": "colocar 1-1-2"
+      }
+    },
+    {
+      "move": 26,
+      "time": "9/9/2020 8:06:22 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 27,
+      "time": "4:54:42 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 28,
+      "time": "5:08:34 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 2, 1) to (3, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 2,
+          "z": 1,
+          "local": "0-3-1"
+        },
+        "dst": {
+          "x": 3,
+          "y": 3,
+          "z": 2,
+          "local": "1-2-2"
+        },
+        "localText": "subir 0-3-1 -> 1-2-2"
+      }
+    },
+    {
+      "move": 29,
+      "time": "5:53:52 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 30,
+      "time": "6:12:23 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 1, 1) to (3, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "localText": "subir 0-3-0 -> 1-2-1"
+      }
+    },
+    {
+      "move": 31,
+      "time": "9:05:14 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility moves up a ball from (1, 1, 2) to (2, 2, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 3,
+          "local": "2-1-1"
+        },
+        "localText": "subir 1-0-0 -> 2-1-1"
+      }
+    },
+    {
+      "move": 32,
+      "time": "9:07:32 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 4, 1) to (1, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 4,
+          "z": 1,
+          "local": "0-0-3"
+        },
+        "dst": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "localText": "subir 0-0-3 -> 1-0-0"
+      }
+    },
+    {
+      "move": 33,
+      "time": "9:10:14 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 34,
+      "time": "9:11:56 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 35,
+      "time": "9:13:23 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 36,
+      "time": "9:17:15 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 4, 1) to (1, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 4,
+          "z": 1,
+          "local": "0-0-3"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 2,
+          "local": "1-0-1"
+        },
+        "localText": "subir 0-0-3 -> 1-0-1"
+      }
+    },
+    {
+      "move": 37,
+      "time": "9:17:32 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (1, 2, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 2
+        },
+        "localKey": "1-0-1",
+        "localText": "recuperar 1-0-1"
+      }
+    },
+    {
+      "move": 38,
+      "time": "9:17:38 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 39,
+      "time": "9:25:20 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility moves up a ball from (4, 1, 1) to (1, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 2,
+          "local": "1-0-1"
+        },
+        "localText": "subir 0-3-0 -> 1-0-1"
+      }
+    },
+    {
+      "move": 40,
+      "time": "9:27:56 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 41,
+      "time": "9:36:39 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 42,
+      "time": "9/10/2020 7:47:32 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 1, 1) to (1, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 3,
+          "z": 2,
+          "local": "1-0-2"
+        },
+        "localText": "subir 0-3-0 -> 1-0-2"
+      }
+    },
+    {
+      "move": 43,
+      "time": "1:56:38 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 44,
+      "time": "4:26:21 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-0-1",
+        "localText": "colocar 2-0-1"
+      }
+    },
+    {
+      "move": 45,
+      "time": "4:49:11 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 46,
+      "time": "8:06:46 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 47,
+      "time": "8:06:49 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (1, 2, 3) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-0-1",
+        "localText": "recuperar 2-0-1"
+      }
+    },
+    {
+      "move": 48,
+      "time": "8:06:53 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 49,
+      "time": "9:16:46 PM",
+      "actor": "Invisibility",
+      "raw": "Invisibility places a ball at (2, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-1-0",
+        "localText": "colocar 1-1-0"
+      }
+    },
+    {
+      "move": 50,
+      "time": "9:18:49 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 1, 2) to (2, 1, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 3,
+          "local": "2-1-0"
+        },
+        "localText": "subir 1-0-0 -> 2-1-0"
+      }
+    }
+  ]
+}

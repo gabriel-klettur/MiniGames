@@ -1,0 +1,723 @@
+{
+  "tableId": "105422955",
+  "winner": null,
+  "moves": [
+    {
+      "move": 3,
+      "time": "8/6/2020 9:42:09 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 4,
+      "time": "10:54:18 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 5,
+      "time": "10:56:03 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 6,
+      "time": "10:58:05 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 7,
+      "time": "10:58:41 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 8,
+      "time": "11:00:18 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 9,
+      "time": "11:00:53 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 10,
+      "time": "11:01:06 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K moves up a ball from (2, 1, 1) to (2, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "local": "0-1-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 2,
+          "local": "1-1-1"
+        },
+        "localText": "subir 0-1-0 -> 1-1-1"
+      }
+    },
+    {
+      "move": 11,
+      "time": "11:01:36 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 12,
+      "time": "11:01:48 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 13,
+      "time": "11:01:54 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 14,
+      "time": "11:02:09 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 15,
+      "time": "11:02:17 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 16,
+      "time": "11:02:32 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 17,
+      "time": "11:02:39 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (3, 4, 1) to (3, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 4,
+          "z": 1,
+          "local": "0-2-3"
+        },
+        "dst": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "localText": "subir 0-2-3 -> 1-2-1"
+      }
+    },
+    {
+      "move": 18,
+      "time": "11:02:45 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 19,
+      "time": "11:02:55 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 20,
+      "time": "11:03:01 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K moves up a ball from (2, 1, 1) to (1, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "local": "0-1-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 3,
+          "z": 2,
+          "local": "1-0-2"
+        },
+        "localText": "subir 0-1-0 -> 1-0-2"
+      }
+    },
+    {
+      "move": 21,
+      "time": "11:03:04 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 22,
+      "time": "11:03:12 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 23,
+      "time": "11:03:29 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (2, 1, 1) to (1, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 2,
+          "y": 1,
+          "z": 1,
+          "local": "0-1-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 2,
+          "local": "1-0-1"
+        },
+        "localText": "subir 0-1-0 -> 1-0-1"
+      }
+    },
+    {
+      "move": 24,
+      "time": "11:04:20 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 25,
+      "time": "11:04:26 AM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 4, 1) to (2, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 4,
+          "z": 1,
+          "local": "0-3-3"
+        },
+        "dst": {
+          "x": 2,
+          "y": 3,
+          "z": 2,
+          "local": "1-1-2"
+        },
+        "localText": "subir 0-3-3 -> 1-1-2"
+      }
+    },
+    {
+      "move": 26,
+      "time": "11:04:32 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (1, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-0-1",
+        "localText": "colocar 2-0-1"
+      }
+    },
+    {
+      "move": 27,
+      "time": "11:04:42 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 28,
+      "time": "11:04:50 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 29,
+      "time": "11:04:52 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 30,
+      "time": "11:04:54 AM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 1, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "recuperar 0-1-0"
+      }
+    },
+    {
+      "move": 31,
+      "time": "11:04:56 AM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 32,
+      "time": "11:05:21 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 33,
+      "time": "11:05:33 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 34,
+      "time": "11:05:39 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K moves up a ball from (3, 1, 2) to (2, 2, 3)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 3,
+          "y": 1,
+          "z": 2,
+          "local": "1-2-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 3,
+          "local": "2-1-1"
+        },
+        "localText": "subir 1-2-0 -> 2-1-1"
+      }
+    },
+    {
+      "move": 35,
+      "time": "11:05:43 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 36,
+      "time": "11:05:47 AM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (3, 1, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "recuperar 1-2-0"
+      }
+    },
+    {
+      "move": 37,
+      "time": "11:05:59 AM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (3, 1, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "recuperar 0-2-0"
+      }
+    },
+    {
+      "move": 38,
+      "time": "11:06:17 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 39,
+      "time": "11:06:26 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 40,
+      "time": "11:06:28 AM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (3, 1, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "recuperar 1-2-0"
+      }
+    },
+    {
+      "move": 41,
+      "time": "11:06:31 AM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (1, 1, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "recuperar 0-0-0"
+      }
+    },
+    {
+      "move": 42,
+      "time": "11:06:45 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (3, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-2-0",
+        "localText": "colocar 1-2-0"
+      }
+    },
+    {
+      "move": 43,
+      "time": "11:06:48 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 44,
+      "time": "11:06:53 AM",
+      "actor": "Loki-Master3K",
+      "raw": "Loki-Master3K places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 45,
+      "time": "11:06:58 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 2
+        },
+        "localKey": "1-0-0",
+        "localText": "colocar 1-0-0"
+      }
+    }
+  ]
+}

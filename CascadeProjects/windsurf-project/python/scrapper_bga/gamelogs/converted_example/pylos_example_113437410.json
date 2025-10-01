@@ -1,0 +1,739 @@
+{
+  "tableId": "113437410",
+  "winner": null,
+  "moves": [
+    {
+      "move": 2,
+      "time": "9/22/2020 11:17:49 AM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (2, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-1-1",
+        "localText": "colocar 0-1-1"
+      }
+    },
+    {
+      "move": 3,
+      "time": "11:19:51 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 4,
+      "time": "11:30:35 AM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (3, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-2-1",
+        "localText": "colocar 0-2-1"
+      }
+    },
+    {
+      "move": 5,
+      "time": "11:31:53 AM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-2-2",
+        "localText": "colocar 0-2-2"
+      }
+    },
+    {
+      "move": 6,
+      "time": "8:30:49 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 7,
+      "time": "8:35:52 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-2-0",
+        "localText": "colocar 0-2-0"
+      }
+    },
+    {
+      "move": 8,
+      "time": "8:51:12 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (1, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-0-2",
+        "localText": "colocar 0-0-2"
+      }
+    },
+    {
+      "move": 9,
+      "time": "8:55:26 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-3-3",
+        "localText": "colocar 0-3-3"
+      }
+    },
+    {
+      "move": 10,
+      "time": "9:13:54 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 11,
+      "time": "9:33:04 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (2, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-1-2",
+        "localText": "colocar 0-1-2"
+      }
+    },
+    {
+      "move": 12,
+      "time": "9:34:01 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 13,
+      "time": "9:34:37 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM returned the ball at (1, 2, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "recuperar 0-0-1"
+      }
+    },
+    {
+      "move": 14,
+      "time": "9:34:42 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM returned the ball at (4, 1, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "recuperar 0-3-0"
+      }
+    },
+    {
+      "move": 15,
+      "time": "9:34:51 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-0-1",
+        "localText": "colocar 0-0-1"
+      }
+    },
+    {
+      "move": 16,
+      "time": "9:35:30 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM moves up a ball from (4, 2, 1) to (2, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 2,
+          "z": 1,
+          "local": "0-3-1"
+        },
+        "dst": {
+          "x": 2,
+          "y": 2,
+          "z": 2,
+          "local": "1-1-1"
+        },
+        "localText": "subir 0-3-1 -> 1-1-1"
+      }
+    },
+    {
+      "move": 17,
+      "time": "9:35:50 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 18,
+      "time": "9:36:01 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (2, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-1-0",
+        "localText": "colocar 0-1-0"
+      }
+    },
+    {
+      "move": 19,
+      "time": "9:36:24 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 20,
+      "time": "9:36:50 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 21,
+      "time": "9:37:05 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 1, 1) to (2, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 1,
+          "z": 1,
+          "local": "0-0-0"
+        },
+        "dst": {
+          "x": 2,
+          "y": 1,
+          "z": 2,
+          "local": "1-1-0"
+        },
+        "localText": "subir 0-0-0 -> 1-1-0"
+      }
+    },
+    {
+      "move": 22,
+      "time": "9:37:33 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM moves up a ball from (4, 3, 1) to (1, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 3,
+          "z": 1,
+          "local": "0-3-2"
+        },
+        "dst": {
+          "x": 1,
+          "y": 2,
+          "z": 2,
+          "local": "1-0-1"
+        },
+        "localText": "subir 0-3-2 -> 1-0-1"
+      }
+    },
+    {
+      "move": 23,
+      "time": "9:37:58 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 24,
+      "time": "9:38:05 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (3, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-2-3",
+        "localText": "colocar 0-2-3"
+      }
+    },
+    {
+      "move": 25,
+      "time": "9:38:39 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 26,
+      "time": "9:38:46 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (4, 2, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "recuperar 0-3-1"
+      }
+    },
+    {
+      "move": 27,
+      "time": "9:38:54 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (4, 3, 1) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "recuperar 0-3-2"
+      }
+    },
+    {
+      "move": 28,
+      "time": "9:39:25 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (4, 3, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 3,
+          "z": 1
+        },
+        "localKey": "0-3-2",
+        "localText": "colocar 0-3-2"
+      }
+    },
+    {
+      "move": 29,
+      "time": "9:39:32 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (3, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 3,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-2-2",
+        "localText": "colocar 1-2-2"
+      }
+    },
+    {
+      "move": 30,
+      "time": "9:39:55 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (2, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-1-3",
+        "localText": "colocar 0-1-3"
+      }
+    },
+    {
+      "move": 31,
+      "time": "9:40:01 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (1, 4, 1) to (2, 3, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 1,
+          "y": 4,
+          "z": 1,
+          "local": "0-0-3"
+        },
+        "dst": {
+          "x": 2,
+          "y": 3,
+          "z": 2,
+          "local": "1-1-2"
+        },
+        "localText": "subir 0-0-3 -> 1-1-2"
+      }
+    },
+    {
+      "move": 32,
+      "time": "9:40:28 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (1, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-0-0",
+        "localText": "colocar 0-0-0"
+      }
+    },
+    {
+      "move": 33,
+      "time": "9:40:35 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 1, 1) to (1, 1, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 1,
+          "y": 1,
+          "z": 2,
+          "local": "1-0-0"
+        },
+        "localText": "subir 0-3-0 -> 1-0-0"
+      }
+    },
+    {
+      "move": 34,
+      "time": "9:40:50 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (1, 1, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 1,
+          "z": 3
+        },
+        "localKey": "2-0-0",
+        "localText": "colocar 2-0-0"
+      }
+    },
+    {
+      "move": 35,
+      "time": "9:40:52 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    },
+    {
+      "move": 36,
+      "time": "9:41:02 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (1, 4, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 4,
+          "z": 1
+        },
+        "localKey": "0-0-3",
+        "localText": "colocar 0-0-3"
+      }
+    },
+    {
+      "move": 37,
+      "time": "9:41:06 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-0-2",
+        "localText": "colocar 1-0-2"
+      }
+    },
+    {
+      "move": 38,
+      "time": "9:41:08 PM",
+      "actor": "stst",
+      "raw": "stst returned the ball at (2, 3, 2) to the reserve",
+      "parsed": {
+        "action": "recover",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-1-2",
+        "localText": "recuperar 1-1-2"
+      }
+    },
+    {
+      "move": 39,
+      "time": "9:41:10 PM",
+      "actor": "stst",
+      "raw": "stst does not return a second ball",
+      "parsed": {
+        "action": "no_second_return"
+      }
+    },
+    {
+      "move": 40,
+      "time": "9:41:20 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (2, 3, 2)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 3,
+          "z": 2
+        },
+        "localKey": "1-1-2",
+        "localText": "colocar 1-1-2"
+      }
+    },
+    {
+      "move": 41,
+      "time": "9:41:23 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (1, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 1,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-0-1",
+        "localText": "colocar 2-0-1"
+      }
+    },
+    {
+      "move": 42,
+      "time": "9:41:41 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (4, 2, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 2,
+          "z": 1
+        },
+        "localKey": "0-3-1",
+        "localText": "colocar 0-3-1"
+      }
+    },
+    {
+      "move": 43,
+      "time": "9:41:47 PM",
+      "actor": "stst",
+      "raw": "stst moves up a ball from (4, 1, 1) to (3, 2, 2)",
+      "parsed": {
+        "action": "lift",
+        "src": {
+          "x": 4,
+          "y": 1,
+          "z": 1,
+          "local": "0-3-0"
+        },
+        "dst": {
+          "x": 3,
+          "y": 2,
+          "z": 2,
+          "local": "1-2-1"
+        },
+        "localText": "subir 0-3-0 -> 1-2-1"
+      }
+    },
+    {
+      "move": 44,
+      "time": "9:42:00 PM",
+      "actor": "DrZRM",
+      "raw": "DrZRM places a ball at (2, 2, 3)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 2,
+          "y": 2,
+          "z": 3
+        },
+        "localKey": "2-1-1",
+        "localText": "colocar 2-1-1"
+      }
+    },
+    {
+      "move": 45,
+      "time": "9:42:02 PM",
+      "actor": "stst",
+      "raw": "stst places a ball at (4, 1, 1)",
+      "parsed": {
+        "action": "place",
+        "coords": {
+          "x": 4,
+          "y": 1,
+          "z": 1
+        },
+        "localKey": "0-3-0",
+        "localText": "colocar 0-3-0"
+      }
+    }
+  ]
+}

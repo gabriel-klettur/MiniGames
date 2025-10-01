@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2025-09-30T22:00:13.407797+00:00",
+  "exportedAt": "2025-10-01T23:10:35.986858+00:00",
   "archived": [
     {
       "id": "bga-105600391",
@@ -10,7 +10,7 @@
       "iaDepth": null,
       "iaTimeMode": null,
       "iaTimeSeconds": 0,
-      "totalMoves": 29,
+      "totalMoves": 37,
       "moves": [
         {
           "player": null,
@@ -50,6 +50,11 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-2-0 -> 1-1-1"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-0-3"
         },
         {
@@ -80,6 +85,16 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-0-0 -> 1-0-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-2-0 -> 1-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-0-0"
         },
         {
@@ -100,7 +115,22 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-2-0 -> 1-0-0"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-2-3"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-0 -> 1-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-1 -> 2-0-1"
         },
         {
           "player": null,
@@ -121,6 +151,11 @@
           "player": null,
           "source": null,
           "text": "colocar 0-3-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-0 -> 1-2-1"
         },
         {
           "player": null,
@@ -146,6 +181,11 @@
           "player": null,
           "source": null,
           "text": "colocar 1-1-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 1-2-0 -> 2-0-0"
         },
         {
           "player": null,

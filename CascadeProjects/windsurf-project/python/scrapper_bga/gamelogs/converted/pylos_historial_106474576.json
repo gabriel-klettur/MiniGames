@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2025-09-30T22:00:13.408742+00:00",
+  "exportedAt": "2025-10-01T23:10:35.989555+00:00",
   "archived": [
     {
       "id": "bga-106474576",
@@ -10,7 +10,7 @@
       "iaDepth": null,
       "iaTimeMode": null,
       "iaTimeSeconds": 0,
-      "totalMoves": 29,
+      "totalMoves": 33,
       "moves": [
         {
           "player": null,
@@ -85,6 +85,16 @@
         {
           "player": null,
           "source": null,
+          "text": "subir 0-0-3 -> 1-2-2"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-0-1 -> 1-1-2"
+        },
+        {
+          "player": null,
+          "source": null,
           "text": "colocar 0-1-1"
         },
         {
@@ -101,6 +111,11 @@
           "player": null,
           "source": null,
           "text": "colocar 0-0-1"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-0-2 -> 1-0-0"
         },
         {
           "player": null,
@@ -136,6 +151,11 @@
           "player": null,
           "source": null,
           "text": "colocar 0-2-0"
+        },
+        {
+          "player": null,
+          "source": null,
+          "text": "subir 0-3-0 -> 1-1-0"
         },
         {
           "player": null,
