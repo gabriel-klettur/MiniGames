@@ -37,6 +37,7 @@ SCRAPED_JSON_PATH = Path(__file__).parent / "scraped_ids.json"  # IDs ya procesa
 OUTPUT_DIR = Path(__file__).parent / "gamelogs"                 # Carpeta de salida
 CREDENTIALS_PATH = Path(__file__).parent / "email_password.json"  # Emails y passwords
 MAX_QUERIES_PER_ACCOUNT = 10  # Límite de BGA por email antes de rotar
+MANUAL_LOGIN = True  # Si True, espera a que el usuario se loguee manualmente y presione ENTER para comenzar el scraping
 
 
 def load_ids(path: Path) -> set[str]:
@@ -105,13 +106,30 @@ def load_credentials(path: Path) -> List[Tuple[str, str]]:
     return creds
 
 
+def click_button_by_text(driver: webdriver.Chrome, texts: List[str], timeout: int = 8) -> bool:
+    """Intenta clicar un botón/enlace con clase de botón cuyo texto coincida con alguno de `texts`.
+
+    Acepta diferentes idiomas; desplaza a la vista antes de hacer click. Devuelve True si clicó algo.
+    """
+    for t in texts:
+        try:
+            locator = (By.XPATH, f'//a[contains(@class, "bga-button") and normalize-space()="{t}"]')
+            btn = WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(locator))
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", btn)
+            btn.click()
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def login_bga(driver: webdriver.Chrome, email: str, password: str, *, base_url: str = "https://en.boardgamearena.com", timeout: int = 20) -> bool:
     """Realiza login en Board Game Arena con Selenium.
 
     Estrategia robusta:
     - Abre la home y clica el link de cuenta (href="/account").
-    - Rellena email y password.
-    - Envía el formulario con ENTER para evitar depender del texto del botón.
+    - Paso 1: escribe email y pulsa "Next".
+    - Paso 2: espera el campo de password, escribe y pulsa "Login".
     - Si aparece el botón "Let's play!", lo pulsa.
 
     Retorna True si parece estar logueado, False si falla.
@@ -119,34 +137,58 @@ def login_bga(driver: webdriver.Chrome, email: str, password: str, *, base_url: 
     try:
         driver.get(base_url)
 
-        # Abrir el panel de cuenta/login
-        WebDriverWait(driver, timeout).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="/account"]'))
-        ).click()
+        # Pausa manual: permite preparar la UI (idioma, cookies, banners, etc.)
+        print("⏸️ Ajusta la página (idioma/cookies/modal). Cuando esté lista, presiona ENTER para continuar con el login automático…")
+        input()
 
-        # Rellenar email
-        email_input = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[name="email"]'))
-        )
+        # Abrir el panel de cuenta/login (si aplica). Si ya estás en la pantalla de login, continúa.
+        try:
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="/account"]'))
+            ).click()
+        except Exception:
+            pass
+
+        # Paso 1: introducir email y pulsar "Next"
+        print("🧭 Buscando campo de email…")
+        try:
+            email_input = WebDriverWait(driver, 7).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[name="email"]'))
+            )
+        except TimeoutException:
+            # Fallback: ir directo a la pantalla de login
+            print("↩️ Email no visible. Navegando a /account?section=login…")
+            driver.get(f"{base_url}/account?section=login")
+            email_input = WebDriverWait(driver, timeout).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[name="email"]'))
+            )
         email_input.clear()
         email_input.send_keys(email)
+        print("👉 Pulsando Next/Siguiente…")
+        clicked_next = click_button_by_text(driver, ["Next", "Siguiente"], timeout=8)
+        if not clicked_next:
+            # Último recurso: ENTER desde el email
+            print("↩️ Botón Next no localizado, enviando ENTER…")
+            email_input.send_keys(Keys.ENTER)
 
-        # Rellenar password (cualquier input de tipo password)
+        # Paso 2: esperar el input de password y pulsar "Login"
+        print("🧭 Esperando campo de password…")
         pwd_input = WebDriverWait(driver, timeout).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"]'))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[type="password"]'))
         )
         pwd_input.clear()
         pwd_input.send_keys(password)
-
-        # Enviar con ENTER para evitar cambios en el texto del botón
-        pwd_input.send_keys(Keys.ENTER)
+        print("👉 Pulsando Login/Acceder…")
+        clicked_login = click_button_by_text(driver, ["Login", "Acceder", "Sign in", "Iniciar sesión"], timeout=8)
+        if not clicked_login:
+            print("↩️ Botón Login no localizado, enviando ENTER…")
+            pwd_input.send_keys(Keys.ENTER)
 
         # Si aparece el botón "Let's play!", pulsarlo (no siempre es necesario)
         try:
-            lets_play = WebDriverWait(driver, 8).until(
-                EC.element_to_be_clickable((By.XPATH, '//a[contains(@class, "bga-button") and contains(., "Let\'s play!")]'))
-            )
-            lets_play.click()
+            # Soporta inglés y español
+            if not click_button_by_text(driver, ["Let's play!", "¡A jugar!"], timeout=6):
+                pass
         except Exception:
             # Si no aparece, continuamos. A veces ya estamos listos.
             pass
@@ -235,32 +277,44 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(options=options)
 
     try:
-        # PASO 1: Login automático con rotación de cuentas
-        creds = load_credentials(CREDENTIALS_PATH)
-        current_idx = 0
-        queries_with_current = 0
-
-        if creds:
-            # Intentar login con la primera credencial disponible; si falla, probar siguientes
-            logged_in = False
-            tried = 0
-            while tried < len(creds) and not logged_in:
-                idx_try = (current_idx + tried) % len(creds)
-                print(f"🔐 Intentando login con cuenta #{idx_try + 1}…")
-                used_idx = relogin_with_credentials(driver, creds, idx_try)
-                if used_idx is not None:
-                    current_idx = used_idx
-                    logged_in = True
-                else:
-                    tried += 1
-            if not logged_in:
-                print("❌ No se pudo iniciar sesión con ninguna credencial. Puedes loguearte manualmente y continuar.")
-                print("   Presiona ENTER cuando hayas terminado el login manual…")
-                input()
-        else:
-            print("⚠️ No hay credenciales. Realiza login manual y presiona ENTER para continuar…")
+        # PASO 1: Login manual o automático según configuración
+        if MANUAL_LOGIN:
+            print("⏸️ Modo login manual activo.")
             driver.get("https://en.boardgamearena.com")
+            print("👉 Inicia sesión manualmente hasta estar COMPLETAMENTE logueado (ver tu avatar o el botón 'Let's play!').")
+            print("   Cuando estés listo para comenzar el scraping, presiona ENTER en esta consola…")
             input()
+            current_idx = 0
+            queries_with_current = 0
+            creds = []  # Rotación desactivada en modo manual para mantener tu sesión
+            print("🔒 Rotación de cuentas desactivada en modo manual (se mantendrá tu sesión actual).")
+        else:
+            # Login automático con rotación de cuentas
+            creds = load_credentials(CREDENTIALS_PATH)
+            current_idx = 0
+            queries_with_current = 0
+
+            if creds:
+                # Intentar login con la primera credencial disponible; si falla, probar siguientes
+                logged_in = False
+                tried = 0
+                while tried < len(creds) and not logged_in:
+                    idx_try = (current_idx + tried) % len(creds)
+                    print(f"🔐 Intentando login con cuenta #{idx_try + 1}…")
+                    used_idx = relogin_with_credentials(driver, creds, idx_try)
+                    if used_idx is not None:
+                        current_idx = used_idx
+                        logged_in = True
+                    else:
+                        tried += 1
+                if not logged_in:
+                    print("❌ No se pudo iniciar sesión con ninguna credencial. Puedes loguearte manualmente y continuar.")
+                    print("   Presiona ENTER cuando hayas terminado el login manual…")
+                    input()
+            else:
+                print("⚠️ No hay credenciales. Realiza login manual y presiona ENTER para continuar…")
+                driver.get("https://en.boardgamearena.com")
+                input()
 
         # PASO 2: Cargar IDs y preparar estado de ejecución
         all_ids = load_ids(JSON_PATH)
