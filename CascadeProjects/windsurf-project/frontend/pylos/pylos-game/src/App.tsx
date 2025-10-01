@@ -13,7 +13,7 @@ import FlyingPiece from './components/FlyingPiece';
 import HistoryPanel from './components/HistoryPanel';
 import UndoRedo from './components/UndoRedo';
 import IAPanel from './components/DevTools/IAPanel/index';
-import IAUserPanel from './components/IAUserPanel';
+import IAUserPanel from './components/IAUserPanel/IAUserPanel';
 import FootPanel from './components/FootPanel';
 import UXPanel from './components/DevTools/UXPanel/UXPanel';
 import GameOverModal from './components/GameOverModal';

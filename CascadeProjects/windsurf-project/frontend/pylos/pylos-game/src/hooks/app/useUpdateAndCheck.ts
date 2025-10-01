@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import type { GameState } from '../../game/types';
 import type { MoveEntry } from '../usePersistence';
 import { isGameOver } from '../../game/rules';
+import { computeKey } from '../../ia/zobrist';
+import { recordStateKey } from '../../utils/repetitionDb';
 
 export interface UseUpdateAndCheckParams {
   state: GameState;
@@ -58,6 +60,11 @@ export function useUpdateAndCheck(params: UseUpdateAndCheckParams) {
     }
     setState(nextState);
     logSnapshot(nextState);
+    // Persistently record the next state's Zobrist key to support cross-game repetition avoidance.
+    try {
+      const k = computeKey(nextState);
+      recordStateKey(k);
+    } catch {}
 
     const over = isGameOver(nextState);
     if (over.over) {

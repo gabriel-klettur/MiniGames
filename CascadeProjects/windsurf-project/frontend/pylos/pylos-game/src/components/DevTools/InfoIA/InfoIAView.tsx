@@ -7,6 +7,7 @@ import CompareBar from './views/CompareBar';
 import Controls from './views/Controls/Controls';
 import Books from './views/Books';
 import type { TimeMode } from './types';
+import RepeatsTab from './views/RepeatsTab';
 
 // Lightweight heads for compare datasets (for UI lists)
 export type CompareHead = { id: string; name: string; color: string };
@@ -16,8 +17,8 @@ export type CompareDataset = { id: string; name: string; color: string; records:
 export type InfoIAViewProps = {
   toast: null | { message: string; kind: 'success' | 'error' | 'info' };
   onToast: (message: string, kind?: 'success' | 'error' | 'info') => void;
-  activeTab: 'sim' | 'charts' | 'books';
-  onChangeTab: (tab: 'sim' | 'charts' | 'books') => void;
+  activeTab: 'repeats' | 'sim' | 'charts' | 'books';
+  onChangeTab: (tab: 'repeats' | 'sim' | 'charts' | 'books') => void;
 
   // Controls state
   depth: number;
@@ -158,6 +159,15 @@ export default function InfoIAView(props: InfoIAViewProps) {
         <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>InfoIA</h3>
         <div className="infoia__tabs segmented" role="tablist" aria-label="Secciones de InfoIA">
           <button
+            className={activeTab === 'repeats' ? 'active' : ''}
+            role="tab"
+            aria-selected={activeTab === 'repeats'}
+            onClick={() => onChangeTab('repeats')}
+            title="Configurar y visualizar jugadas repetidas"
+          >
+            Jugadas Repetidas
+          </button>
+          <button
             className={activeTab === 'sim' ? 'active' : ''}
             role="tab"
             aria-selected={activeTab === 'sim'}
@@ -213,6 +223,10 @@ export default function InfoIAView(props: InfoIAViewProps) {
             onClearBooks={onClearBooks}
           />
         </div>
+      )}
+
+      {activeTab === 'repeats' && (
+        <RepeatsTab />
       )}
 
       {activeTab === 'sim' && (

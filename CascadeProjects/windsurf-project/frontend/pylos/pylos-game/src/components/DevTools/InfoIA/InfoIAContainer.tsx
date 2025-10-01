@@ -76,8 +76,8 @@ export default function InfoIAContainer(props: InfoIAProps) {
     } catch {}
   }, [depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, useBook]);
 
-  // Tabs UI: 'sim' | 'charts' | 'books'
-  const [activeTab, setActiveTab] = useState<'sim' | 'charts' | 'books'>('sim');
+  // Tabs UI: 'repeats' | 'sim' | 'charts' | 'books'
+  const [activeTab, setActiveTab] = useState<'repeats' | 'sim' | 'charts' | 'books'>('sim');
 
   const refresh = useCallback(async () => {
     setLoading(true);

@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { AIAdvancedConfig } from '../../types';
+import { getGlobalEnabled, setGlobalEnabled } from '../../../../../utils/repetitionDb';
 
 export interface RepetitionSettingsProps {
   iaConfig: AIAdvancedConfig;
@@ -6,8 +8,24 @@ export interface RepetitionSettingsProps {
 }
 
 export default function RepetitionSettings({ iaConfig, onChangeIaConfig }: RepetitionSettingsProps) {
+  const [globalAvoidEnabled, setGlobalAvoidEnabled] = useState<boolean>(() => getGlobalEnabled());
   return (
     <>
+      <label>Evitar repeticiones (entre partidas, global)</label>
+      <div>
+        <input
+          id="ia-global-avoid-enabled"
+          type="checkbox"
+          checked={!!globalAvoidEnabled}
+          onChange={(e) => {
+            const v = !!e.target.checked;
+            setGlobalAvoidEnabled(v);
+            try { setGlobalEnabled(v); } catch {}
+          }}
+        />
+        <label htmlFor="ia-global-avoid-enabled" style={{ marginLeft: 6 }}>Protocolo activo</label>
+      </div>
+
       <label>Evitar repeticiones (raíz)</label>
       <div>
         <input id="ia-avoid-rep" type="checkbox" checked={iaConfig.avoidRepeats ?? true} onChange={(e) => onChangeIaConfig({ avoidRepeats: e.target.checked })} />

@@ -13,6 +13,7 @@ import { readAdvancedCfgByPlayer } from '../../../../utils/iaAdvancedStorage';
 import { useAvoidPenalty } from './useAvoidPenalty';
 import { useRepetitionLimit } from './useRepetitionLimit';
 import type { TimeMode } from '../types';
+import { recordStateKey } from '../../../../utils/repetitionDb';
 
 // Persistence for anti-loops (point 9)
 const AVOID_PERSIST_KEY = 'pylos.infoia.antiLoop.v1';
@@ -91,6 +92,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     const createdAt = Date.now();
     const id = makeId();
     let state = initialState();
+    // Persist initial state key so simulated games contribute to repetition DB
+    try { recordStateKey(computeKey(state)); } catch {}
     let moves = 0;
     let totalThinkMs = 0;
     let maxWorkersUsed = 1;
@@ -337,6 +340,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           }
         } catch {}
         state = applyAIRunner(state, res.move as AIMove);
+        // After applying the move, persist the new state's key for repetition DB
+        try { recordStateKey(computeKey(state)); } catch {}
         // After apply: reserves/phase
         try {
           (pmBase as any).reservesLAfter = state.reserves.L;

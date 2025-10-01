@@ -71,7 +71,7 @@ self.onmessage = async (e: MessageEvent) => {
       }
     } catch {}
   }
-  let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }> } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
+  let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }>; avoidAppliedCount?: number; avoidAppliedWeight?: number } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
   let reached = 0;
   let nodes = 0;
   let ttReads = 0;
@@ -125,5 +125,5 @@ self.onmessage = async (e: MessageEvent) => {
   const elapsedMs = performance.now() - start;
   const nps = elapsedMs > 0 ? (nodes * 1000) / elapsedMs : nodes;
   // @ts-ignore
-  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached, pv: best.pv ?? [], rootMoves: best.rootMoves ?? [], nodes, elapsedMs, nps, ttReads, ttHits, source: 'search' });
+  self.postMessage({ type: 'RESULT', bestMove: best.move, score: best.score, depthReached: reached, pv: best.pv ?? [], rootMoves: best.rootMoves ?? [], nodes, elapsedMs, nps, ttReads, ttHits, source: 'search', avoidAppliedCount: best.avoidAppliedCount, avoidAppliedWeight: best.avoidAppliedWeight });
 };

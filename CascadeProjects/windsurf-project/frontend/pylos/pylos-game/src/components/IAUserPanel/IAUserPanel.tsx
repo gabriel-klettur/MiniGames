@@ -38,8 +38,7 @@ export default function IAUserPanel(props: IAUserPanelProps) {
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
-        </div>
-        {/* Tiempo/velocidad removidos: configuración centralizada en IAPanel (DevTools) */}
+        </div>        
         <div className="iauser-right" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <button
             className="primary"

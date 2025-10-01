@@ -144,6 +144,8 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   ttHits?: number;
   usedWorkers?: number;
   source?: 'book' | 'start' | 'search';
+  avoidAppliedCount?: number;
+  avoidAppliedWeight?: number;
 }>
 {
   // Special-case: configurable first move if board is empty (AI starts the match)
@@ -203,6 +205,8 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           ttHits: data.ttHits,
           usedWorkers: 1,
           source: data.source as ('book' | 'start' | 'search' | undefined),
+          avoidAppliedCount: data.avoidAppliedCount,
+          avoidAppliedWeight: data.avoidAppliedWeight,
         });
       }
     };
@@ -306,6 +310,8 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
   ttHits?: number;
   usedWorkers: number;
   source?: 'book' | 'start' | 'search';
+  avoidAppliedCount?: number;
+  avoidAppliedWeight?: number;
 }> {
   const depth = Math.max(1, Math.min(10, Math.floor(opts.depth ?? 3)));
   const timeMs = typeof opts.timeMs === 'number' ? Math.max(50, Math.floor(opts.timeMs)) : undefined;
@@ -329,18 +335,18 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     }
     const mv = pickFirstMoveByMode(rootMoves, opts.cfg?.start);
     if (mv) {
-    return {
-      move: mv,
-      score: 0,
-      depthReached: 0,
-      pv: [mv],
-      rootMoves: rootMoves.map((m) => ({ move: m, score: 0 })),
-      nodes: 0,
-      elapsedMs: 0,
-      nps: 0,
-      usedWorkers: 1,
-      source: 'start',
-    };
+      return {
+        move: mv,
+        score: 0,
+        depthReached: 0,
+        pv: [mv],
+        rootMoves: rootMoves.map((m) => ({ move: m, score: 0 })),
+        nodes: 0,
+        elapsedMs: 0,
+        nps: 0,
+        usedWorkers: 1,
+        source: 'start',
+      };
     }
   }
   if (rootMoves.length === 0) {
@@ -382,6 +388,8 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     ttReads?: number;
     ttHits?: number;
     source?: 'book' | 'search';
+    avoidAppliedCount?: number;
+    avoidAppliedWeight?: number;
   };
 
   const partials: PartialResult[] = new Array(shards.length);
@@ -429,6 +437,8 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           ttReads: data.ttReads,
           ttHits: data.ttHits,
           source: data.source as ('book' | 'search' | undefined),
+          avoidAppliedCount: data.avoidAppliedCount,
+          avoidAppliedWeight: data.avoidAppliedWeight,
         };
         doneCount++;
         if (doneCount >= shards.length) {
@@ -444,6 +454,8 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           const nps = elapsedMs > 0 ? (nodes * 1000) / elapsedMs : nodes;
           const mergedRoot: Array<{ move: AIMove; score: number }> = [];
           for (const pr of partials) if (pr) mergedRoot.push(...pr.rootMoves);
+          const totalAvoidCount = partials.reduce((acc, pr) => acc + ((pr && pr.avoidAppliedCount) || 0), 0);
+          const totalAvoidWeight = partials.reduce((acc, pr) => acc + ((pr && pr.avoidAppliedWeight) || 0), 0);
           resolve({
             move: best?.move ?? null,
             score: best?.score ?? 0,
@@ -457,6 +469,8 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
             ttHits: undefined,
             usedWorkers: shards.length,
             source: best?.source,
+            avoidAppliedCount: totalAvoidCount,
+            avoidAppliedWeight: totalAvoidWeight,
           });
         }
       }

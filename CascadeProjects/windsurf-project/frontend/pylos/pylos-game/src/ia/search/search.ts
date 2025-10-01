@@ -353,7 +353,7 @@ export function bestMove(
   depth: number,
   stats?: SearchStats,
   opts?: SearchOptions
-): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }> } {
+): { move: AIMove | null; score: number; pv: AIMove[]; rootMoves: Array<{ move: AIMove; score: number }>; avoidAppliedCount?: number; avoidAppliedWeight?: number } {
   const me: Player = state.currentPlayer;
   // Generate all legal moves at root
   let movesGen = generateAllMoves(state);
@@ -388,6 +388,9 @@ export function bestMove(
   let bestPV: AIMove[] = [];
   const rootMoves: Array<{ move: AIMove; score: number }> = [];
   const candidates: Array<{ move: AIMove; score: number; pv: AIMove[] }> = [];
+  // Metrics: how many root children got penalized and total weight applied
+  let avoidAppliedCount = 0;
+  let avoidAppliedWeight = 0;
 
   // Build a fast lookup for avoided keys; prefer weighted list if provided
   let avoidMap: Map<string, number> | null = null;
@@ -491,7 +494,11 @@ export function bestMove(
       const k = computeKey(nxt);
       const keyStr = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
       const w = avoidMap.get(keyStr);
-      if (typeof w === 'number' && w > 0) childScore = childScore - w;
+      if (typeof w === 'number' && w > 0) {
+        childScore = childScore - w;
+        avoidAppliedCount += 1;
+        avoidAppliedWeight += w;
+      }
     }
     // Apply novelty bonus if this child leads to a state not in the seen set
     if (noveltySet && noveltyBonus > 0) {
@@ -540,5 +547,5 @@ export function bestMove(
     }
   }
 
-  return { move: bestMoveSel, score: bestScore, pv: bestPV, rootMoves };
+  return { move: bestMoveSel, score: bestScore, pv: bestPV, rootMoves, avoidAppliedCount, avoidAppliedWeight };
 }

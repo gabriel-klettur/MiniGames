@@ -6,6 +6,8 @@ export type PlayerId = 'L' | 'D';
 export type AdvancedCfg = {
   startRandomFirstMove?: boolean;
   startSeed?: number | null;
+  // Global repetition toggle (root-level behavior)
+  avoidRepeats?: boolean;
   repeatMax?: number;
   avoidPenalty?: number;
   noveltyBonus?: number;
@@ -65,6 +67,7 @@ export function readAdvancedCfg(): AdvancedCfg {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     const p = JSON.parse(raw);
+    const avoidRepeats = typeof p?.avoidRepeats === 'boolean' ? !!p.avoidRepeats : undefined;
     const startRandomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
     const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : (p?.startSeed === null ? null : undefined);
     const repeatMax = Number.isFinite(p?.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : undefined;
@@ -91,6 +94,7 @@ export function readAdvancedCfg(): AdvancedCfg {
     const bookEnabled = typeof p?.bookEnabled === 'boolean' ? !!p.bookEnabled : undefined;
     const bitboardsEnabled = typeof p?.bitboardsEnabled === 'boolean' ? !!p.bitboardsEnabled : undefined;
     return {
+      avoidRepeats,
       startRandomFirstMove,
       startSeed,
       repeatMax,

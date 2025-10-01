@@ -10,6 +10,7 @@ import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from './usePersistence';
 import type { FlyingPieceState } from './useAnimations';
+import { getAvoidList, getGlobalPenalty, getGlobalEnabled, setLastAvoidImpact, appendImpactHistory } from '../utils/repetitionDb';
 type Rect = { left: number; top: number; width: number; height: number };
 export interface UseAIParams {
   state: GameState;
@@ -290,6 +291,40 @@ export function useAI(params: UseAIParams): UseAIResult {
       if (avoidEnabled) {
         avoidKeys = computeAvoidKeys(historyStates, state, iaConfig?.repeatMax);
       }
+      // Global repetition avoidance list (weighted) from persistent DB
+      const avoidList = (() => {
+        const enabled = getGlobalEnabled();
+        if (!enabled) return undefined;
+        const globalScale = getGlobalPenalty();
+        return getAvoidList({
+          scale: Math.max(1, Math.min(500, Math.floor(globalScale))),
+          limit: 512,
+          minCount: 2,
+        });
+      })();
+      // Novelty keys for current game: all seen states (history + current)
+      let noveltyKeys: Array<{ hi: number; lo: number }> | undefined = undefined;
+      try {
+        const seen = new Set<string>();
+        if (historyStates && historyStates.length > 0) {
+          for (const s of historyStates) {
+            const k = computeKey(s);
+            const ks = `${(k.hi >>> 0)}:${(k.lo >>> 0)}`;
+            if (!seen.has(ks)) {
+              seen.add(ks);
+            }
+          }
+        }
+        const cur = computeKey(state);
+        const curStr = `${(cur.hi >>> 0)}:${(cur.lo >>> 0)}`;
+        seen.add(curStr);
+        if (seen.size > 0) {
+          noveltyKeys = Array.from(seen).map((s) => {
+            const [hiStr, loStr] = s.split(':');
+            return { hi: (parseInt(hiStr, 10) >>> 0) || 0, lo: (parseInt(loStr, 10) >>> 0) || 0 };
+          });
+        }
+      } catch {}
       // Resolve effective book URL via shared helper
       const effectiveBookUrl = resolveBookUrlByDepth(iaDepth, iaConfig);
 
@@ -300,7 +335,9 @@ export function useAI(params: UseAIParams): UseAIResult {
         signal: ac.signal,
         avoidKeys,
         avoidPenalty: Math.max(0, Math.min(500, Math.floor(iaConfig?.avoidPenalty ?? 50))),
+        avoidList,
         // Anti-stall tuning from IAPanel advanced config (optional)
+        noveltyKeys,
         noveltyBonus: (typeof iaConfig?.noveltyBonus === 'number') ? Math.max(0, Math.floor(iaConfig!.noveltyBonus as number)) : undefined,
         rootTopK: (typeof iaConfig?.rootTopK === 'number') ? Math.max(2, Math.min(8, Math.floor(iaConfig!.rootTopK as number))) : undefined,
         rootJitter: (typeof iaConfig?.rootJitter === 'boolean') ? !!iaConfig!.rootJitter : undefined,
@@ -338,6 +375,14 @@ export function useAI(params: UseAIParams): UseAIResult {
       setIaNodes(res.nodes);
       setIaElapsedMs(res.elapsedMs);
       setIaNps(res.nps);
+      // Persist latest cross-game repetition impact metrics for DevTools display
+      try {
+        const count = Math.max(0, Math.floor(Number((res as any)?.avoidAppliedCount ?? 0)));
+        const weight = Math.max(0, Math.floor(Number((res as any)?.avoidAppliedWeight ?? 0)));
+        const ts = Date.now();
+        setLastAvoidImpact({ count, weight, ts });
+        appendImpactHistory({ count, weight, ts }, 400);
+      } catch {}
       if (res.move) {
         if (res.move.kind === 'place') {
           const dest = res.move.dest;
