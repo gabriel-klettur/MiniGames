@@ -43,6 +43,32 @@ export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSetti
           disabled={!random}
         />
       </div>
+
+      <label>Inicio de partida — turnos aleatorios por lado</label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'center' }}>
+        <label htmlFor="ia-start-early-l" title="Número de primeras jugadas de L que serán 100% aleatorias">L — Turnos 1..N aleatorios</label>
+        <input
+          id="ia-start-early-l"
+          type="number"
+          min={0}
+          max={10}
+          step={1}
+          value={Math.max(0, Math.min(10, iaConfig.startEarlyRandomL ?? 2))}
+          onChange={(e) => onChangeIaConfig({ startEarlyRandomL: Math.max(0, Math.min(10, Number(e.target.value))) })}
+          style={{ width: 90 }}
+        />
+        <label htmlFor="ia-start-early-d" title="Número de primeras jugadas de D que serán 100% aleatorias">D — Turnos 1..N aleatorios</label>
+        <input
+          id="ia-start-early-d"
+          type="number"
+          min={0}
+          max={10}
+          step={1}
+          value={Math.max(0, Math.min(10, iaConfig.startEarlyRandomD ?? 2))}
+          onChange={(e) => onChangeIaConfig({ startEarlyRandomD: Math.max(0, Math.min(10, Number(e.target.value))) })}
+          style={{ width: 90 }}
+        />
+      </div>
     </>
   );
 }

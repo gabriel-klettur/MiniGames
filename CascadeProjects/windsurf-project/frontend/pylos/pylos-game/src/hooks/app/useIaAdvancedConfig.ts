@@ -26,6 +26,9 @@ export interface IaAdvancedConfig {
   startSeed?: number | null;
   startMode?: 'book' | 'random' | 'center-topk';
   startCenterTopK?: number;
+  // New: number of initial placements per side to play at random
+  startEarlyRandomL?: number;
+  startEarlyRandomD?: number;
 }
 
 const STORAGE_KEY = 'pylos.ia.advanced.v1';
@@ -64,6 +67,8 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
             startSeed: (Number.isFinite(p.startSeed) ? Math.floor(p.startSeed) : null),
             startMode: (p.startMode === 'book' || p.startMode === 'random' || p.startMode === 'center-topk') ? p.startMode : undefined,
             startCenterTopK: Number.isFinite(p.startCenterTopK) ? Math.max(1, Math.min(16, Math.floor(p.startCenterTopK))) : undefined,
+            startEarlyRandomL: Number.isFinite(p.startEarlyRandomL) ? Math.max(0, Math.min(10, Math.floor(p.startEarlyRandomL))) : 2,
+            startEarlyRandomD: Number.isFinite(p.startEarlyRandomD) ? Math.max(0, Math.min(10, Math.floor(p.startEarlyRandomD))) : 2,
           } as IaAdvancedConfig;
         }
       }
@@ -90,6 +95,8 @@ export function useIaAdvancedConfig(): [IaAdvancedConfig, React.Dispatch<React.S
       startSeed: null,
       startMode: 'book',
       startCenterTopK: 4,
+      startEarlyRandomL: 2,
+      startEarlyRandomD: 2,
     } as IaAdvancedConfig;
   });
 

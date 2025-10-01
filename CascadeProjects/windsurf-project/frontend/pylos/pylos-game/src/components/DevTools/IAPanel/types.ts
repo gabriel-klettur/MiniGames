@@ -39,6 +39,12 @@ export interface AIAdvancedConfig {
   // Start behavior (first move)
   startRandomFirstMove?: boolean; // default false (preserve current)
   startSeed?: number | null; // optional reproducible seed
+  // Extended start behavior options
+  startMode?: 'book' | 'random' | 'center-topk';
+  startCenterTopK?: number; // 1..16 when center-topk is selected
+  // New: early random turns per side (0 disables)
+  startEarlyRandomL?: number; // e.g., 2 means L's first 2 turns are random
+  startEarlyRandomD?: number; // e.g., 2 means D's first 2 turns are random
 
   // Anti-stall (root-level tuning)
   noveltyBonus?: number; // small bonus for unseen states at root

@@ -27,8 +27,6 @@ export default function IAUserPanel(props: IAUserPanelProps) {
     onChangeDepth,
     onAIMove,
     disabled = false,
-    aiAutoplayActive = false,
-    onToggleAiAutoplay,
     aiControlL = false,
     aiControlD = false,
     onToggleAiControlL,

@@ -6,6 +6,8 @@ export type PlayerId = 'L' | 'D';
 export type AdvancedCfg = {
   startRandomFirstMove?: boolean;
   startSeed?: number | null;
+  // New: number of initial placements for THIS player to be fully random
+  startEarlyRandom?: number;
   // Global repetition toggle (root-level behavior)
   avoidRepeats?: boolean;
   repeatMax?: number;
@@ -70,6 +72,7 @@ export function readAdvancedCfg(): AdvancedCfg {
     const avoidRepeats = typeof p?.avoidRepeats === 'boolean' ? !!p.avoidRepeats : undefined;
     const startRandomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
     const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : (p?.startSeed === null ? null : undefined);
+    const startEarlyRandom = Number.isFinite(p?.startEarlyRandom) ? Math.max(0, Math.min(10, Math.floor(p.startEarlyRandom))) : undefined;
     const repeatMax = Number.isFinite(p?.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : undefined;
     const avoidPenalty = Number.isFinite(p?.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : undefined;
     const noveltyBonus = Number.isFinite(p?.noveltyBonus) ? Math.max(0, Math.floor(p.noveltyBonus)) : undefined;
@@ -97,6 +100,7 @@ export function readAdvancedCfg(): AdvancedCfg {
       avoidRepeats,
       startRandomFirstMove,
       startSeed,
+      startEarlyRandom,
       repeatMax,
       avoidPenalty,
       noveltyBonus,
@@ -152,6 +156,7 @@ function sanitizeCfg(p: any): AdvancedCfg {
   try {
     const startRandomFirstMove = typeof p?.startRandomFirstMove === 'boolean' ? p.startRandomFirstMove : undefined;
     const startSeed = Number.isFinite(p?.startSeed) ? Math.floor(p.startSeed) : (p?.startSeed === null ? null : undefined);
+    const startEarlyRandom = Number.isFinite(p?.startEarlyRandom) ? Math.max(0, Math.min(10, Math.floor(p.startEarlyRandom))) : undefined;
     const repeatMax = Number.isFinite(p?.repeatMax) ? Math.max(1, Math.min(10, Math.floor(p.repeatMax))) : undefined;
     const avoidPenalty = Number.isFinite(p?.avoidPenalty) ? Math.max(0, Math.min(500, Math.floor(p.avoidPenalty))) : undefined;
     const noveltyBonus = Number.isFinite(p?.noveltyBonus) ? Math.max(0, Math.floor(p.noveltyBonus)) : undefined;
@@ -177,6 +182,7 @@ function sanitizeCfg(p: any): AdvancedCfg {
     return {
       startRandomFirstMove,
       startSeed,
+      startEarlyRandom,
       repeatMax,
       avoidPenalty,
       noveltyBonus,

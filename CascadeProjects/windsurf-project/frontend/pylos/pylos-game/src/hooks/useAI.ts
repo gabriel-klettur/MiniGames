@@ -46,6 +46,10 @@ export interface UseAIParams {
     // Start behavior
     startRandomFirstMove?: boolean;
     startSeed?: number | null;
+    startMode?: 'book' | 'random' | 'center-topk';
+    startCenterTopK?: number;
+    startEarlyRandomL?: number;
+    startEarlyRandomD?: number;
 
     // Anti-stall (root-level tuning)
     noveltyBonus?: number;
@@ -364,6 +368,10 @@ export function useAI(params: UseAIParams): UseAIResult {
           start: {
             randomFirstMove: iaConfig?.startRandomFirstMove ?? true,
             seed: (typeof iaConfig?.startSeed === 'number') ? Math.floor(iaConfig!.startSeed as number) : undefined,
+            mode: iaConfig?.startMode,
+            centerTopK: (typeof iaConfig?.startCenterTopK === 'number') ? Math.max(1, Math.min(16, Math.floor(iaConfig!.startCenterTopK as number))) : undefined,
+            earlyRandomL: (typeof iaConfig?.startEarlyRandomL === 'number') ? Math.max(0, Math.min(10, Math.floor(iaConfig!.startEarlyRandomL as number))) : undefined,
+            earlyRandomD: (typeof iaConfig?.startEarlyRandomD === 'number') ? Math.max(0, Math.min(10, Math.floor(iaConfig!.startEarlyRandomD as number))) : undefined,
           },
         },
       });

@@ -34,7 +34,7 @@ export type BestMoveOptions = {
     bookEnabled?: boolean;
     bookUrl?: string;
     flags?: Partial<{ precomputedSupports: boolean; precomputedCenter: boolean; pvsEnabled: boolean; aspirationEnabled: boolean; ttEnabled: boolean; bitboardsEnabled: boolean }>;
-    start?: { randomFirstMove?: boolean; seed?: number };
+    start?: { randomFirstMove?: boolean; seed?: number; earlyRandomL?: number; earlyRandomD?: number };
   };
 };
 

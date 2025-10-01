@@ -103,6 +103,7 @@ export default function GameDetails({ record: r }: { record: InfoIAGameRecord })
         <span>Origen:</span>
         <span className="badge" style={{ background: '#16a34a', color: '#fff' }}>book</span>
         <span className="badge" style={{ background: '#7c3aed', color: '#fff' }}>start</span>
+        <span className="badge" style={{ background: '#f59e0b', color: '#111' }}>aleatorio</span>
         <span className="badge" style={{ background: '#2563eb', color: '#fff' }}>search</span>
       </div>
 
@@ -170,17 +171,20 @@ export default function GameDetails({ record: r }: { record: InfoIAGameRecord })
                   <td className="text-right">{Number.isFinite(m.score as number) ? Number(m.score).toFixed(3) : '—'}</td>
                   <td className="text-center">
                     {(() => {
-                      const s = (m as any)?.source as ('book' | 'start' | 'search' | undefined);
+                      const s = (m as any)?.source as ('book' | 'start' | 'search' | 'random' | undefined);
                       if (!s) return '—';
                       const style =
                         s === 'book'
                           ? { background: '#16a34a', color: '#fff' }
                           : s === 'start'
                           ? { background: '#7c3aed', color: '#fff' }
+                          : s === 'random'
+                          ? { background: '#f59e0b', color: '#111' }
                           : { background: '#2563eb', color: '#fff' };
+                      const label = (s === 'random') ? 'aleatorio' : s;
                       return (
                         <span className="badge" style={style as any}>
-                          {s}
+                          {label}
                         </span>
                       );
                     })()}

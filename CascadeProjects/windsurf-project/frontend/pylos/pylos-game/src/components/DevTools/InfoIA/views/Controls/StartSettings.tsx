@@ -6,8 +6,11 @@ export function StartSettings(props: {
   // New: per-player opening book toggle
   bookEnabled?: boolean;
   onBookEnabledChange?: (v: boolean) => void;
+  // New: per-player early-random turns count
+  earlyRandom?: number;
+  onEarlyRandomChange?: (n: number) => void;
 }) {
-  const { startRandom, onStartRandomChange, seedInput, onSeedInputChange, bookEnabled, onBookEnabledChange } = props;
+  const { startRandom, onStartRandomChange, seedInput, onSeedInputChange, bookEnabled, onBookEnabledChange, earlyRandom, onEarlyRandomChange } = props;
   return (
     <>
       <label
@@ -34,6 +37,20 @@ export function StartSettings(props: {
           }
         />
         <label htmlFor="infoia-start-rand">Movimiento inicial aleatorio</label>
+        {/* Per-player early-random turns */}
+        <label className="label" htmlFor="infoia-start-early" style={{ marginLeft: 8 }} title={'Número de primeras jugadas de este jugador que serán 100% aleatorias.'}>N (aleatorio)</label>
+        <input
+          id="infoia-start-early"
+          className="field-num"
+          type="number"
+          min={0}
+          max={10}
+          step={1}
+          value={Math.max(0, Math.min(10, Number.isFinite(earlyRandom as number) ? Number(earlyRandom) : 2))}
+          onChange={(e) => onEarlyRandomChange?.(Math.max(0, Math.min(10, Math.floor(Number(e.target.value))))) }
+          style={{ width: 80 }}
+          title={'Ej.: 2 ⇒ las dos primeras jugadas de este jugador serán aleatorias.'}
+        />
         <label
           className="label"
           htmlFor="infoia-start-seed"

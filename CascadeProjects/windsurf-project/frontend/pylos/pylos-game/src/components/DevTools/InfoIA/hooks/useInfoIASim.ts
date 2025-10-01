@@ -176,6 +176,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           });
         // Per-player advanced settings (read once per move, used across computations)
         const adv = readAdvancedCfgByPlayer(state.currentPlayer as any);
+        const advL = readAdvancedCfgByPlayer('L' as any);
+        const advD = readAdvancedCfgByPlayer('D' as any);
         const basePenalty = getAvoidPenalty();
         const stepFactor = Math.max(0, Number((adv.avoidStepFactor ?? 0.5)));
         const step = Math.max(0, Math.floor(basePenalty * stepFactor));
@@ -289,6 +291,8 @@ export function useInfoIASim(params: UseInfoIASimParams) {
             start: {
               randomFirstMove: adv.startRandomFirstMove,
               seed: typeof adv.startSeed === 'number' ? adv.startSeed : undefined,
+              earlyRandomL: Number.isFinite(advL?.startEarlyRandom as number) ? Math.max(0, Math.min(10, Math.floor(Number(advL!.startEarlyRandom)))) : undefined,
+              earlyRandomD: Number.isFinite(advD?.startEarlyRandom as number) ? Math.max(0, Math.min(10, Math.floor(Number(advD!.startEarlyRandom)))) : undefined,
             },
           },
         });

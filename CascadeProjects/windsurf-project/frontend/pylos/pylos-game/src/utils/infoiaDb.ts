@@ -17,10 +17,11 @@ export type InfoIAPerMove = {
   // New: player that made this move ('L' o 'D') para mostrar ficha en la UI
   player?: 'L' | 'D';
   // New: origin of the move as reported by the engine
-  // 'book'  => returned from opening book instantly
-  // 'start' => chosen by start policy on empty board (random/center-topk)
-  // 'search' => computed by the search engine
-  source?: 'book' | 'start' | 'search';
+  // 'book'    => returned from opening book instantly
+  // 'start'   => chosen by start policy on empty board (non-random policy like center-topk)
+  // 'random'  => chosen aleatoriamente (ventana inicial por lado o modo inicio aleatorio)
+  // 'search'  => computed by the search engine
+  source?: 'book' | 'start' | 'search' | 'random';
   // Extra telemetry for diagnosis
   reservesLBefore?: number;
   reservesDBefore?: number;

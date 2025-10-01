@@ -104,6 +104,9 @@ export type ComputeOptions = {
       seed: number;
       // For 'center-topk': number of top central placements to sample from
       centerTopK: number;
+      // New: per-side early random windows (in number of initial placements for that side)
+      earlyRandomL: number;
+      earlyRandomD: number;
     }>;
   };
   // Optional: desired number of workers for parallel search. If 'auto', we pick a sensible
@@ -143,16 +146,52 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
   ttReads?: number;
   ttHits?: number;
   usedWorkers?: number;
-  source?: 'book' | 'start' | 'search';
+  source?: 'book' | 'start' | 'search' | 'random';
   avoidAppliedCount?: number;
   avoidAppliedWeight?: number;
 }>
 {
+  // Early-random gate: allow fully random selection for the first N placements per side
+  try {
+    const startCfg = opts.cfg?.start;
+    const side = state.currentPlayer as ('L' | 'D');
+    const threshold = Math.max(0, Math.floor(side === 'L' ? (startCfg?.earlyRandomL as number ?? 0) : (startCfg?.earlyRandomD as number ?? 0)));
+    if (threshold > 0) {
+      const initialRes = 15; // from rules.initialState
+      const placementsDone = initialRes - (state.reserves[side] >>> 0);
+      if (placementsDone < threshold) {
+        const rootMoves = generateAllMoves(state);
+        if (rootMoves.length > 0) {
+          // Force random mode for early window, preserve seed if provided
+          const mv = pickFirstMoveByMode(rootMoves, { ...startCfg, mode: 'random' });
+          if (mv) {
+            return {
+              move: mv,
+              score: 0,
+              depthReached: 0,
+              pv: [mv],
+              rootMoves: [{ move: mv, score: 0 }],
+              nodes: 0,
+              elapsedMs: 0,
+              nps: 0,
+              ttReads: 0,
+              ttHits: 0,
+              usedWorkers: 1,
+              source: 'random',
+            };
+          }
+        }
+      }
+    }
+  } catch {}
   // Special-case: configurable first move if board is empty (AI starts the match)
   if (isBoardEmpty(state)) {
     const rootMoves = generateAllMoves(state);
     const mv = pickFirstMoveByMode(rootMoves, opts.cfg?.start);
     if (mv) {
+      // Determine effective mode to label origin
+      const st = opts.cfg?.start;
+      const effMode = (st?.mode ?? (st?.randomFirstMove ? 'random' : 'book')) as ('book'|'random'|'center-topk');
       return {
         move: mv,
         score: 0,
@@ -165,7 +204,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
         ttReads: 0,
         ttHits: 0,
         usedWorkers: 1,
-        source: 'start',
+        source: (effMode === 'random' ? 'random' : 'start'),
       };
     }
   }
@@ -204,7 +243,7 @@ export async function computeBestMoveAsync(state: GameState, opts: ComputeOption
           ttReads: data.ttReads,
           ttHits: data.ttHits,
           usedWorkers: 1,
-          source: data.source as ('book' | 'start' | 'search' | undefined),
+          source: data.source as ('book' | 'start' | 'search' | 'random' | undefined),
           avoidAppliedCount: data.avoidAppliedCount,
           avoidAppliedWeight: data.avoidAppliedWeight,
         });
@@ -309,7 +348,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
   ttReads?: number;
   ttHits?: number;
   usedWorkers: number;
-  source?: 'book' | 'start' | 'search';
+  source?: 'book' | 'start' | 'search' | 'random';
   avoidAppliedCount?: number;
   avoidAppliedWeight?: number;
 }> {
@@ -318,6 +357,47 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
 
   // Generate and shard root moves by signature
   const rootMoves = generateAllMoves(state);
+  // Early-random gate (parallel path): allow random selection during first N placements for current side
+  try {
+    const startCfg = opts.cfg?.start;
+    const side = state.currentPlayer as ('L' | 'D');
+    const threshold = Math.max(0, Math.floor(side === 'L' ? (startCfg?.earlyRandomL as number ?? 0) : (startCfg?.earlyRandomD as number ?? 0)));
+    if (threshold > 0) {
+      const initialRes = 15; // from rules.initialState
+      const placementsDone = initialRes - (state.reserves[side] >>> 0);
+      if (placementsDone < threshold) {
+        if (rootMoves.length === 0) {
+          const startEval = bestMove(state, 1);
+          return {
+            move: null,
+            score: startEval.score,
+            depthReached: 0,
+            pv: [],
+            rootMoves: [],
+            nodes: 0,
+            elapsedMs: 0,
+            nps: 0,
+            usedWorkers: 1,
+          };
+        }
+        const mv = pickFirstMoveByMode(rootMoves, { ...startCfg, mode: 'random' });
+        if (mv) {
+          return {
+            move: mv,
+            score: 0,
+            depthReached: 0,
+            pv: [mv],
+            rootMoves: rootMoves.map((m) => ({ move: m, score: 0 })),
+            nodes: 0,
+            elapsedMs: 0,
+            nps: 0,
+            usedWorkers: 1,
+            source: 'random',
+          };
+        }
+      }
+    }
+  } catch {}
   if (isBoardEmpty(state)) {
     if (rootMoves.length === 0) {
       const startEval = bestMove(state, 1); // quick evaluate for score
@@ -335,6 +415,9 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     }
     const mv = pickFirstMoveByMode(rootMoves, opts.cfg?.start);
     if (mv) {
+      // Determine effective mode to label origin
+      const st = opts.cfg?.start;
+      const effMode = (st?.mode ?? (st?.randomFirstMove ? 'random' : 'book')) as ('book'|'random'|'center-topk');
       return {
         move: mv,
         score: 0,
@@ -345,7 +428,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
         elapsedMs: 0,
         nps: 0,
         usedWorkers: 1,
-        source: 'start',
+        source: (effMode === 'random' ? 'random' : 'start'),
       };
     }
   }
@@ -387,7 +470,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
     nps: number;
     ttReads?: number;
     ttHits?: number;
-    source?: 'book' | 'search';
+    source?: 'book' | 'search' | 'random' | 'start';
     avoidAppliedCount?: number;
     avoidAppliedWeight?: number;
   };
@@ -436,7 +519,7 @@ export async function computeBestMoveParallel(state: GameState, opts: ComputeOpt
           nps: data.nps ?? 0,
           ttReads: data.ttReads,
           ttHits: data.ttHits,
-          source: data.source as ('book' | 'search' | undefined),
+          source: data.source as ('book' | 'search' | 'start' | 'random' | undefined),
           avoidAppliedCount: data.avoidAppliedCount,
           avoidAppliedWeight: data.avoidAppliedWeight,
         };

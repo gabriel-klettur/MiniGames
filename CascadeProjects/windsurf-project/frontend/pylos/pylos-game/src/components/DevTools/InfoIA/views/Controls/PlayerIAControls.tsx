@@ -42,6 +42,10 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
       ? ''
       : String(init.startSeed)
   );
+  // New: per-player early random turns N
+  const [earlyRandom, setEarlyRandom] = useState<number>(
+    Number.isFinite(init.startEarlyRandom as number) ? Math.max(0, Math.min(10, Math.floor(Number(init.startEarlyRandom)))) : 2
+  );
   const [repeatMax, setRepeatMax] = useState<number>(init.repeatMax ?? DEFAULTS.repeatMax);
   const [avoidPenalty, setAvoidPenalty] = useState<number>(init.avoidPenalty ?? DEFAULTS.avoidPenalty);
   const [noveltyBonus, setNoveltyBonus] = useState<number>(init.noveltyBonus ?? DEFAULTS.noveltyBonus);
@@ -99,6 +103,14 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
       if (Number.isFinite(n)) writeAdvancedCfgByPlayer(player, { startSeed: Math.floor(n) });
     }
   }, [player, seedInput]);
+
+  // Persist early-random N per player
+  useEffect(() => {
+    const v = Math.max(0, Math.min(10, Math.floor(earlyRandom)));
+    setEarlyRandom(v);
+    writeAdvancedCfgByPlayer(player, { startEarlyRandom: v });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [earlyRandom, player]);
 
   useEffect(() => {
     const v = Math.max(1, Math.min(10, Math.floor(repeatMax)));
@@ -262,6 +274,8 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
               onSeedInputChange={setSeedInput}
               bookEnabled={bookEnabled}
               onBookEnabledChange={setBookEnabled}
+              earlyRandom={earlyRandom}
+              onEarlyRandomChange={setEarlyRandom}
             />
           </div>
         )}
