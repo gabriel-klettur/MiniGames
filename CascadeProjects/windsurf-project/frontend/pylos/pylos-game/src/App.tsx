@@ -34,7 +34,6 @@ import {
   useUpdateAndCheck,
   useExportHistory,
   useUIPanels,
-  useLastIaMove,
   useLayoutStyle,
   useAvailableLevels,
   useShadeConfig,
@@ -102,6 +101,7 @@ function App() {
     setGameOver,
     logSnapshot,
   });
+
   // Ref to the current player's piece icon in the InfoPanel (animation origin)
   const currentPieceRef = useRef<HTMLSpanElement | null>(null);
   // Refs for reserve icons in InfoPanel (left: L, right: D)
@@ -148,7 +148,11 @@ function App() {
   
   const highlights: Set<string> = useHighlights(state, gameOver);
   const flashKeys: Set<string> = getFlashKeys(state);
-  const lastIaMove = useLastIaMove(moves);
+  // Removed lastIaMove usage: InfoPanel switches icons based on aiEnemy only
+
+  // IA control por color (persisten durante la partida actual)
+  const [aiControlL, setAiControlL] = useState<boolean>(false);
+  const [aiControlD, setAiControlD] = useState<boolean>(false);
 
   // === UI/UX CONFIG STATE === (visibilidad vía useUIPanels)
   // Pausa entre pasos de autocolocación final (ms) gestionada por hook
@@ -182,6 +186,9 @@ function App() {
   const handleNewGame = () => {
     archivedRef.current = false;
     onNewGame();
+    // Resetear control por color al iniciar nueva partida
+    setAiControlL(false);
+    setAiControlD(false);
   };
 
   // Download/Clear history extracted into a hook
@@ -251,6 +258,13 @@ function App() {
     logSnapshot,
   });
 
+  // Envolver inicio Vs IA para limpiar toggles de control por color
+  const onStartVsAIWrapped = (enemy: 'L' | 'D', depth: number) => {
+    setAiControlL(false);
+    setAiControlD(false);
+    onStartVsAI(enemy, depth);
+  };
+
   // Disable AI when we are navigating the past (redo has entries) in Vs IA mode.
   const atPresent = redo.length === 0;
   // AI logic hook
@@ -304,6 +318,36 @@ function App() {
   const winnerMessage = useWinnerMessage(gameOver, state, moves, vsAI);
 
   // onFinishRecovery provided by useBoardInteractions
+
+  // Último actor por lado (ai/human) segun historial de movimientos
+  const lastActorL: 'ai' | 'human' = (() => {
+    for (let i = moves.length - 1; i >= 0; i--) {
+      const m = moves[i];
+      if (m.player === 'L') return m.source === 'IA' ? 'ai' : 'human';
+    }
+    return 'human';
+  })();
+  const lastActorD: 'ai' | 'human' = (() => {
+    for (let i = moves.length - 1; i >= 0; i--) {
+      const m = moves[i];
+      if (m.player === 'D') return m.source === 'IA' ? 'ai' : 'human';
+    }
+    return 'human';
+  })();
+
+  // Auto-movimiento cuando IA controla un color específico (L/D) mediante los toggles del panel de usuario.
+  // Se evita duplicar la lógica cuando está activo el modo Vs IA para ese color (en cuyo caso ya lo gestiona useAI).
+  useEffect(() => {
+    if (gameOver) return;
+    if (!atPresent) return;
+    if (iaBusy || aiDisabled) return;
+    const cur = state.currentPlayer;
+    const aiShouldPlay = (cur === 'L' && aiControlL) || (cur === 'D' && aiControlD);
+    if (!aiShouldPlay) return;
+    if (vsAI && vsAI.enemy === cur) return; // Evitar doble disparo; Vs IA ya mueve
+    const t = setTimeout(() => { void onAIMove(); }, 50);
+    return () => clearTimeout(t);
+  }, [aiControlL, aiControlD, state.currentPlayer, iaBusy, aiDisabled, atPresent, gameOver, vsAI, onAIMove]);
 
   // === InfoIA mirroring callbacks (fast, no animations) ===
   const { onMirrorStart, onMirrorUpdate, onMirrorEnd } = useMirrorPreview({
@@ -365,7 +409,7 @@ function App() {
         onToggleIA={() => setShowIAUser((v) => !v)}
         showIAToggle={true}
         showDevToggle={false}
-        onStartVsAI={onStartVsAI}
+        onStartVsAI={onStartVsAIWrapped}
         showHistory={showHistory}
         onToggleHistory={toggleHistory}
       />
@@ -380,6 +424,10 @@ function App() {
             // toggle autoplay (timer is handled inside useAI)
             setIaAutoplay((v) => !v);
           }}
+          aiControlL={aiControlL}
+          aiControlD={aiControlD}
+          onToggleAiControlL={() => setAiControlL((v) => !v)}
+          onToggleAiControlD={() => setAiControlD((v) => !v)}
         />
       )}
       {showRules && (
@@ -389,8 +437,10 @@ function App() {
         <GameView
           state={state}
           aiEnemy={vsAI?.enemy ?? null}
-          aiLastMove={lastIaMove}
           aiThinking={iaBusy}
+          aiThinkingSide={iaBusy ? (iaRootPlayer ?? null) : null}
+          lastActorL={lastActorL}
+          lastActorD={lastActorD}
           reservesOverride={reservesForDisplay}
           currentPieceRef={currentPieceRef}
           reserveLightRef={reserveLightRef}

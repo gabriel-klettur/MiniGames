@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { IAPanelProps } from './types';
 import { toRatio } from './utils/math';
 import { useTimeBudget } from './hooks/useTimeBudget';
@@ -44,65 +44,135 @@ export default function IAPanel(props: IAPanelProps) {
       .slice(0, 6);
   }, [rootMoves]);
 
+  // UI: pestañas de categoría
+  const [activeTab, setActiveTab] = useState<'control' | 'analysis' | 'advanced'>('control');
+
   return (
     <section className="panel ia-panel" aria-label="Panel de IA">
       {/* Encabezado */}
       <Header title="Inteligencia Artificial" moving={moving} busy={busy} progressDepth={progress?.depth ?? null} />
 
-      {/* Avanzado: Configuración del motor */}
-      <details className="ia-panel__advanced" style={{ marginTop: 12 }}>
-        <summary>Avanzado</summary>
-        <div className="advanced-grid" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: 8, alignItems: 'center', marginTop: 8 }}>
-          <SearchSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <RepetitionSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <BookSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <QuiescenceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <PerformanceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <StartSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-          <AntiStallSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
-        </div>
-      </details>
+      {/* Tabs de categoría, estilo similar a InfoIA */}
+      <div className="ia__tabs segmented" role="tablist" aria-label="Secciones del Panel de IA" style={{ marginTop: 8 }}>
+        <button
+          className={activeTab === 'control' ? 'active' : ''}
+          role="tab"
+          aria-selected={activeTab === 'control'}
+          onClick={() => setActiveTab('control')}
+          title="Controles y acciones de cálculo"
+        >
+          Control
+        </button>
+        <button
+          className={activeTab === 'analysis' ? 'active' : ''}
+          role="tab"
+          aria-selected={activeTab === 'analysis'}
+          onClick={() => setActiveTab('analysis')}
+          title="Evaluación, PV, métricas y top jugadas"
+        >
+          Análisis
+        </button>
+        <button
+          className={activeTab === 'advanced' ? 'active' : ''}
+          role="tab"
+          aria-selected={activeTab === 'advanced'}
+          onClick={() => setActiveTab('advanced')}
+          title="Configuración avanzada del motor"
+        >
+          Avanzado
+        </button>
+      </div>
 
-      {/* Controles */}
-      <div className="ia-panel__controls">
-        <DepthSelector depth={depth} onChangeDepth={onChangeDepth} />
-        <TimeControls
-          timeMode={timeMode}
-          timeSeconds={timeSeconds}
-          onChangeTimeMode={onChangeTimeMode}
-          onChangeTimeSeconds={onChangeTimeSeconds}
-        />
-        {/* Quick toggle for using opening books */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <input
-            id="ia-usebook"
-            type="checkbox"
-            checked={!!iaConfig.bookEnabled}
-            onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })}
+      {/* Tab: Control */}
+      {activeTab === 'control' && (
+        <div className="ia-panel__controls" style={{ marginTop: 8 }}>
+          <DepthSelector depth={depth} onChangeDepth={onChangeDepth} />
+          <TimeControls
+            timeMode={timeMode}
+            timeSeconds={timeSeconds}
+            onChangeTimeMode={onChangeTimeMode}
+            onChangeTimeSeconds={onChangeTimeSeconds}
           />
-          <label htmlFor="ia-usebook" title="Usar libro de aperturas si está disponible">Utilizar books</label>
+          {/* Quick toggle for using opening books */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <input
+              id="ia-usebook"
+              type="checkbox"
+              checked={!!iaConfig.bookEnabled}
+              onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })}
+            />
+            <label htmlFor="ia-usebook" title="Usar libro de aperturas si está disponible">Utilizar books</label>
+          </div>
+          {/* Barra de tiempo para visualizar el progreso respecto al límite */}
+          <TimeBar ratio={ratio} busy={!!busy} isOver={isOver} shownElapsedMs={shownElapsedMs} limitMs={limitMs} />
+          <Actions
+            onAIMove={onAIMove}
+            disabled={!!disabled}
+            aiAutoplayActive={aiAutoplayActive}
+            onToggleAiAutoplay={onToggleAiAutoplay}
+          />
         </div>
-        {/* Barra de tiempo para visualizar el progreso respecto al límite */}
-        <TimeBar ratio={ratio} busy={!!busy} isOver={isOver} shownElapsedMs={shownElapsedMs} limitMs={limitMs} />
-        <Actions
-          onAIMove={onAIMove}
-          disabled={!!disabled}
-          aiAutoplayActive={aiAutoplayActive}
-          onToggleAiAutoplay={onToggleAiAutoplay}
-        />
-      </div>
+      )}
 
-      {/* Evaluación y PV */}
-      <div className="ia-panel__evaluation" aria-label="Evaluación y PV">
-        <EvaluationBar evalScore={evalScore} atRootLabel={atRootLabel} />
-        <PVLine pv={pv} depthReached={depthReached ?? null} />
-      </div>
+      {/* Tab: Análisis */}
+      {activeTab === 'analysis' && (
+        <div className="ia-panel__analysis" aria-label="Evaluación y análisis" style={{ marginTop: 8 }}>
+          {/* Evaluación y PV */}
+          <div className="ia-panel__evaluation">
+            <EvaluationBar evalScore={evalScore} atRootLabel={atRootLabel} />
+            <PVLine pv={pv} depthReached={depthReached ?? null} />
+          </div>
 
-      {/* KPIs */}
-      <KPIs nodes={nodes || 0} elapsedMs={elapsedMs || 0} nps={nps || 0} currentLabel={current} />
+          {/* KPIs */}
+          <KPIs nodes={nodes || 0} elapsedMs={elapsedMs || 0} nps={nps || 0} currentLabel={current} />
 
-      {/* Top jugadas */}
-      <RootMovesList rootMoves={rootSorted} limit={6} />
+          {/* Top jugadas */}
+          <RootMovesList rootMoves={rootSorted} limit={6} />
+        </div>
+      )}
+
+      {/* Tab: Avanzado */}
+      {activeTab === 'advanced' && (
+        <div className="ia-panel__advanced" style={{ marginTop: 8 }}>
+          {/* Estructura por paneles al estilo RepeatsTab: tarjetas con título y contenido */}
+          <div className="row" style={{ display: 'flex', gap: 16, alignItems: 'stretch', flexWrap: 'wrap' }}>
+            <div className="panel small" style={{ minWidth: 300 }} title="Algoritmos y heurísticas de búsqueda (PVS, aspiración, TT)">
+              <h4 style={{ marginTop: 0 }}>Búsqueda</h4>
+              <SearchSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel small" style={{ minWidth: 300 }} title="Evitar repeticiones en raíz dentro de la partida">
+              <h4 style={{ marginTop: 0 }}>Repeticiones (intra-partida)</h4>
+              <RepetitionSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel small" style={{ minWidth: 300 }} title="Uso de libros de aperturas y fuente de datos">
+              <h4 style={{ marginTop: 0 }}>Books</h4>
+              <BookSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel small" style={{ minWidth: 300 }} title="Extensión quiescente y parámetros de recorte">
+              <h4 style={{ marginTop: 0 }}>Quiescence</h4>
+              <QuiescenceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel small" style={{ minWidth: 300 }} title="Optimizaciones de rendimiento y precomputados">
+              <h4 style={{ marginTop: 0 }}>Rendimiento</h4>
+              <PerformanceSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel small" style={{ minWidth: 300 }} title="Comportamiento en la primera jugada (semilla, aleatoriedad)">
+              <h4 style={{ marginTop: 0 }}>Inicio de partida</h4>
+              <StartSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+
+            <div className="panel" style={{ minWidth: 300 }} title="Ajustes anti-estancamiento a nivel raíz (novedad, Top-K, jitter, LMR, sesgo de tablas)">
+              <h4 style={{ marginTop: 0 }}>Anti-stall (raíz)</h4>
+              <AntiStallSettings iaConfig={iaConfig} onChangeIaConfig={onChangeIaConfig} />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

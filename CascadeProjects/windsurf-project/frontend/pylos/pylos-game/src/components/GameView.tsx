@@ -7,8 +7,10 @@ import type { Position } from '../game/types';
 type Props = {
   state: GameState;
   aiEnemy: 'L' | 'D' | null;
-  aiLastMove: 'L' | 'D' | null;
   aiThinking: boolean;
+  aiThinkingSide?: 'L' | 'D' | null;
+  lastActorL?: 'ai' | 'human';
+  lastActorD?: 'ai' | 'human';
   reservesOverride?: { L: number; D: number } | null;
   currentPieceRef: React.MutableRefObject<HTMLSpanElement | null>;
   reserveLightRef: React.MutableRefObject<HTMLSpanElement | null>;
@@ -32,8 +34,10 @@ export default function GameView(props: Props) {
   const {
     state,
     aiEnemy,
-    aiLastMove,
     aiThinking,
+    aiThinkingSide,
+    lastActorL,
+    lastActorD,
     reservesOverride,
     currentPieceRef,
     reserveLightRef,
@@ -57,8 +61,10 @@ export default function GameView(props: Props) {
       <InfoPanel
         state={state}
         aiEnemy={aiEnemy}
-        aiLastMove={aiLastMove}
         aiThinking={aiThinking}
+        aiThinkingSide={aiThinkingSide}
+        lastActorL={lastActorL}
+        lastActorD={lastActorD}
         reservesOverride={reservesOverride || undefined}
         currentPieceRef={currentPieceRef}
         reserveLightRef={reserveLightRef}
