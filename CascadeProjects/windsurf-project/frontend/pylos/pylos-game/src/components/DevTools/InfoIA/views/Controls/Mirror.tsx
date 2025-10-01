@@ -4,7 +4,7 @@ export function MirrorAndBook(props: {
   useBook: boolean;
   onUseBookChange: (v: boolean) => void;
 }) {
-  const { mirrorBoard, onMirrorChange, useBook, onUseBookChange } = props;
+  const { mirrorBoard, onMirrorChange } = props;
   return (
     <>
       {/* Visualizar simulación en el tablero (sin animaciones) */}
@@ -17,18 +17,7 @@ export function MirrorAndBook(props: {
         aria-checked={mirrorBoard}
         title="Mostrar la partida simulada en el tablero (sin animaciones)"
       />
-
-      {/* Usar libro de aperturas en simulaciones */}
-      <label className="label" htmlFor="infoia-usebook" title="Usar libro de aperturas (si existe) durante la simulación">Utilizar books</label>
-      <input
-        id="infoia-usebook"
-        type="checkbox"
-        checked={useBook}
-        onChange={(e) => onUseBookChange(e.target.checked)}
-        aria-checked={useBook}
-        title="Activar/desactivar uso de book en InfoIA (deshabilitado por defecto)"
-        disabled
-      />
+      {/* Nota: el control global de books se ha movido a nivel de jugador. Este toggle se oculta para evitar confusiones. */}
     </>
   );
 }

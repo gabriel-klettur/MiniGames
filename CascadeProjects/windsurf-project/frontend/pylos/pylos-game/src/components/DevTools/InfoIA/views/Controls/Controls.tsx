@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { clearAdvancedCfg, clearAdvancedCfgByPlayer } from '../../../../../utils/iaAdvancedStorage.ts';
 import { DatasetTabs } from './DatasetTabs.tsx';
 import { SimulationLimits } from './SimulationLimits.tsx';
-import { MirrorAndBook } from './MirrorAndBook.tsx';
+import { MirrorAndBook } from './Mirror.tsx';
 import { ActionsBar } from './ActionsBar.tsx';
 import PlayerIAControls from './PlayerIAControls.tsx';
 import bolaA from '../../../../../assets/bola_a.webp';
@@ -69,11 +69,12 @@ export default function Controls(props: ControlsProps) {
   };
 
   // Shared collapsible state for PlayerIAControls cards (synced between L/D)
-  type CardId = 'difficulty' | 'start' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic';
+  type CardId = 'difficulty' | 'start' | 'book' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic';
   const CARDS_STORE_KEY = 'pylos.infoia.player.cards.collapsed.v1';
   const defaultCards: Record<CardId, boolean> = {
     difficulty: false,
     start: false,
+    book: false,
     repetition: false,
     persistence: false,
     antiStall: false,

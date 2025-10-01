@@ -11,6 +11,7 @@ import { AntiStallSettings } from './AntiStallSettings';
 import { PersistenceSettings } from './PersistenceSettings';
 import { DifficultyTime } from './DifficultyTime';
 import { HeuristicSettings } from './HeuristicSettings';
+import { BookSettings } from './BookSettings';
 
 export type PlayerIAControlsProps = {
   player: PlayerId; // 'L' | 'D'
@@ -19,8 +20,8 @@ export type PlayerIAControlsProps = {
   ballIconSrc: string;
   ballAlt: string;
   // Shared collapsible state (synced across players)
-  cardCollapsed: Record<'difficulty' | 'start' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic', boolean>;
-  onToggleCard: (id: 'difficulty' | 'start' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic') => void;
+  cardCollapsed: Record<'difficulty' | 'start' | 'book' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic', boolean>;
+  onToggleCard: (id: 'difficulty' | 'start' | 'book' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic') => void;
 };
 
 export default function PlayerIAControls(props: PlayerIAControlsProps) {
@@ -222,7 +223,7 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
   const { cardCollapsed, onToggleCard } = props;
 
   const renderCardHeader = (
-    id: 'difficulty' | 'start' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic',
+    id: 'difficulty' | 'start' | 'book' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic',
     titleText: string
   ) => (
     <div className="infoia__card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -272,10 +273,20 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
               onStartRandomChange={setStartRandom}
               seedInput={seedInput}
               onSeedInputChange={setSeedInput}
-              bookEnabled={bookEnabled}
-              onBookEnabledChange={setBookEnabled}
               earlyRandom={earlyRandom}
               onEarlyRandomChange={setEarlyRandom}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="infoia__card">
+        {renderCardHeader('book', 'Libro (aperturas)')}
+        {!cardCollapsed.book && (
+          <div className="infoia__card-body" id={`card-${player}-book`}>
+            <BookSettings
+              bookEnabled={bookEnabled}
+              onBookEnabledChange={setBookEnabled}
             />
           </div>
         )}
