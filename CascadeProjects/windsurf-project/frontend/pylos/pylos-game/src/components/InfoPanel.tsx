@@ -19,6 +19,13 @@ export interface InfoPanelProps {
    */
   aiThinkingSide?: 'L' | 'D' | null;
   /**
+   * Immediate AI control toggles per side (from IAUserPanel). When true, the
+   * InfoPanel should show the robot icon for that side immediately, without
+   * waiting for a move to be made.
+   */
+  aiControlL?: boolean;
+  aiControlD?: boolean;
+  /**
    * Last actor who moved for each side (ai/human). If undefined, defaults to human.
    */
   lastActorL?: 'ai' | 'human';
@@ -44,15 +51,19 @@ export interface InfoPanelProps {
  * InfoPanel: muestra estado general (turno, reservas, fase) y acciones contextuales.
  * Botones contextuales se gestionan fuera de este panel.
  */
-function InfoPanel({ state, aiEnemy = null, aiThinking = false, aiThinkingSide = null, lastActorL, lastActorD, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
+function InfoPanel({ state, aiEnemy = null, aiThinking = false, aiThinkingSide = null, aiControlL = false, aiControlD = false, reservesOverride, currentPieceRef, reserveLightRef, reserveDarkRef }: InfoPanelProps) {
   const { currentPlayer, reserves } = state;
   const reservesDisplay = reservesOverride ?? reserves;
   const effectiveThinkSide = aiThinking ? (aiThinkingSide ?? aiEnemy ?? null) : null;
   const thinkL = aiThinking && effectiveThinkSide === 'L';
   const thinkD = aiThinking && effectiveThinkSide === 'D';
-  // Show robot if last actor was AI OR if AI is currently thinking for that side (to allow blinking)
-  const robotL = (lastActorL === 'ai') || thinkL;
-  const robotD = (lastActorD === 'ai') || thinkD;
+  // Show robot if the side is currently controlled by AI (Vs AI or IAUserPanel toggle),
+  // or if AI is currently thinking for that side. This ensures immediate UI feedback
+  // when toggling control on/off, independent of who moved last.
+  const controlledByAIL = aiControlL || aiEnemy === 'L';
+  const controlledByAID = aiControlD || aiEnemy === 'D';
+  const robotL = controlledByAIL || thinkL;
+  const robotD = controlledByAID || thinkD;
 
   return (
     <section className="info-panel" aria-label="Panel de información y acciones">

@@ -34,6 +34,7 @@ export function StartSettings(props: {
             alignItems: 'center'
           }}
         >
+          
           {/* N (aleatorio) */}
           <label className="label" htmlFor="infoia-start-early" style={{ justifySelf: 'end' }} title={'Número de primeras jugadas de este jugador que serán 100% aleatorias.'}>N (aleatorio)</label>
           <input

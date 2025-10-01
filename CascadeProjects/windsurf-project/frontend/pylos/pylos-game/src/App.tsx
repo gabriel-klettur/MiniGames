@@ -439,6 +439,8 @@ function App() {
           aiEnemy={vsAI?.enemy ?? null}
           aiThinking={iaBusy}
           aiThinkingSide={iaBusy ? (iaRootPlayer ?? null) : null}
+          aiControlL={aiControlL}
+          aiControlD={aiControlD}
           lastActorL={lastActorL}
           lastActorD={lastActorD}
           reservesOverride={reservesForDisplay}

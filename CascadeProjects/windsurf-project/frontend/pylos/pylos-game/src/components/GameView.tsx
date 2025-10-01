@@ -9,6 +9,8 @@ type Props = {
   aiEnemy: 'L' | 'D' | null;
   aiThinking: boolean;
   aiThinkingSide?: 'L' | 'D' | null;
+  aiControlL?: boolean;
+  aiControlD?: boolean;
   lastActorL?: 'ai' | 'human';
   lastActorD?: 'ai' | 'human';
   reservesOverride?: { L: number; D: number } | null;
@@ -36,6 +38,8 @@ export default function GameView(props: Props) {
     aiEnemy,
     aiThinking,
     aiThinkingSide,
+    aiControlL,
+    aiControlD,
     lastActorL,
     lastActorD,
     reservesOverride,
@@ -63,6 +67,8 @@ export default function GameView(props: Props) {
         aiEnemy={aiEnemy}
         aiThinking={aiThinking}
         aiThinkingSide={aiThinkingSide}
+        aiControlL={aiControlL}
+        aiControlD={aiControlD}
         lastActorL={lastActorL}
         lastActorD={lastActorD}
         reservesOverride={reservesOverride || undefined}
