@@ -2,21 +2,24 @@ from __future__ import annotations
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import time
 import json
 from pathlib import Path
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from typing import List, Tuple
 
 """
 Scraper de BGA: extrae el HTML completo del bloque <div id="gamelogs"> para
 cada partida (table_id) listada en table_ids.json. Evita reprocesar IDs ya
-scrapeados gracias a scraped_ids.json. Requiere login manual antes de iniciar.
+scrapeados gracias a scraped_ids.json. Realiza login automático y rota cuentas
+tras alcanzar el límite de consultas por email.
 
 Flujo:
-- Abre navegador en boardgamearena.com
-- Espera a que el usuario haga login y presione ENTER en la terminal
+- Abre navegador en boardgamearena.com y realiza login automático
+- Rota credenciales cada 10 visitas (configurable con MAX_QUERIES_PER_ACCOUNT)
 - Lee IDs desde table_ids.json
 - Filtra los que ya estén en scraped_ids.json
 - Para cada ID pendiente:
@@ -32,6 +35,8 @@ Nota: El navegador queda abierto (detach=True) para facilitar inspección.
 JSON_PATH = Path(__file__).parent / "table_ids.json"           # IDs a procesar
 SCRAPED_JSON_PATH = Path(__file__).parent / "scraped_ids.json"  # IDs ya procesados
 OUTPUT_DIR = Path(__file__).parent / "gamelogs"                 # Carpeta de salida
+CREDENTIALS_PATH = Path(__file__).parent / "email_password.json"  # Emails y passwords
+MAX_QUERIES_PER_ACCOUNT = 10  # Límite de BGA por email antes de rotar
 
 
 def load_ids(path: Path) -> set[str]:
@@ -69,6 +74,108 @@ def ensure_dir(path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         print(f"❌ No se pudo crear el directorio {path}: {e}")
+
+
+def load_credentials(path: Path) -> List[Tuple[str, str]]:
+    """Carga credenciales desde un JSON con formato ["email:password", ...].
+
+    Devuelve una lista de tuplas (email, password). Si no existe o hay error,
+    devuelve una lista vacía.
+    """
+    creds: List[Tuple[str, str]] = []
+    if not path.exists():
+        print(f"⚠️ Archivo de credenciales no encontrado: {path}")
+        return creds
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, list):
+            print("⚠️ Formato inválido en email_password.json: se esperaba una lista")
+            return creds
+        for item in data:
+            if not isinstance(item, str) or ":" not in item:
+                continue
+            email, pwd = item.split(":", 1)
+            email = email.strip()
+            pwd = pwd.strip()
+            if email and pwd:
+                creds.append((email, pwd))
+    except Exception as e:
+        print(f"⚠️ No se pudo leer {path.name}: {e}. Se continuará sin credenciales.")
+    return creds
+
+
+def login_bga(driver: webdriver.Chrome, email: str, password: str, *, base_url: str = "https://en.boardgamearena.com", timeout: int = 20) -> bool:
+    """Realiza login en Board Game Arena con Selenium.
+
+    Estrategia robusta:
+    - Abre la home y clica el link de cuenta (href="/account").
+    - Rellena email y password.
+    - Envía el formulario con ENTER para evitar depender del texto del botón.
+    - Si aparece el botón "Let's play!", lo pulsa.
+
+    Retorna True si parece estar logueado, False si falla.
+    """
+    try:
+        driver.get(base_url)
+
+        # Abrir el panel de cuenta/login
+        WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a[href="/account"]'))
+        ).click()
+
+        # Rellenar email
+        email_input = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[name="email"]'))
+        )
+        email_input.clear()
+        email_input.send_keys(email)
+
+        # Rellenar password (cualquier input de tipo password)
+        pwd_input = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"]'))
+        )
+        pwd_input.clear()
+        pwd_input.send_keys(password)
+
+        # Enviar con ENTER para evitar cambios en el texto del botón
+        pwd_input.send_keys(Keys.ENTER)
+
+        # Si aparece el botón "Let's play!", pulsarlo (no siempre es necesario)
+        try:
+            lets_play = WebDriverWait(driver, 8).until(
+                EC.element_to_be_clickable((By.XPATH, '//a[contains(@class, "bga-button") and contains(., "Let\'s play!")]'))
+            )
+            lets_play.click()
+        except Exception:
+            # Si no aparece, continuamos. A veces ya estamos listos.
+            pass
+
+        # Heurística simple: tras login, deberíamos poder ver la home cargada
+        WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'a[href="/account"]'))
+        )
+        return True
+    except Exception as e:
+        print(f"❌ Falló el login para {email}: {e}")
+        return False
+
+
+def relogin_with_credentials(driver: webdriver.Chrome, creds: List[Tuple[str, str]], index: int) -> int | None:
+    """Limpia sesión y reintenta login con la credencial en `index`.
+
+    Devuelve el índice usado si tuvo éxito; en caso contrario, None.
+    """
+    if not creds:
+        return None
+    try:
+        driver.delete_all_cookies()
+    except Exception:
+        pass
+
+    email, pwd = creds[index]
+    ok = login_bga(driver, email, pwd)
+    return index if ok else None
 
 
 def fetch_gamelogs_html(driver: webdriver.Chrome, table_id: str, timeout: int = 15) -> str | None:
@@ -128,10 +235,32 @@ if __name__ == "__main__":
     driver = webdriver.Chrome(options=options)
 
     try:
-        # PASO 1: Iniciar navegador e ir al login de BGA
-        driver.get("https://boardgamearena.com")
-        print("⚠️ Inicia sesión manualmente en el navegador, luego presiona ENTER aquí para comenzar…")
-        input()
+        # PASO 1: Login automático con rotación de cuentas
+        creds = load_credentials(CREDENTIALS_PATH)
+        current_idx = 0
+        queries_with_current = 0
+
+        if creds:
+            # Intentar login con la primera credencial disponible; si falla, probar siguientes
+            logged_in = False
+            tried = 0
+            while tried < len(creds) and not logged_in:
+                idx_try = (current_idx + tried) % len(creds)
+                print(f"🔐 Intentando login con cuenta #{idx_try + 1}…")
+                used_idx = relogin_with_credentials(driver, creds, idx_try)
+                if used_idx is not None:
+                    current_idx = used_idx
+                    logged_in = True
+                else:
+                    tried += 1
+            if not logged_in:
+                print("❌ No se pudo iniciar sesión con ninguna credencial. Puedes loguearte manualmente y continuar.")
+                print("   Presiona ENTER cuando hayas terminado el login manual…")
+                input()
+        else:
+            print("⚠️ No hay credenciales. Realiza login manual y presiona ENTER para continuar…")
+            driver.get("https://en.boardgamearena.com")
+            input()
 
         # PASO 2: Cargar IDs y preparar estado de ejecución
         all_ids = load_ids(JSON_PATH)
@@ -153,6 +282,19 @@ if __name__ == "__main__":
             failed = 0
             for idx, table_id in enumerate(pending_ids, start=1):
                 print(f"\n[{idx}/{len(pending_ids)}] Procesando table_id={table_id}")
+
+                # Rotación de credenciales si alcanzamos el límite de consultas por cuenta
+                if 'creds' in locals() and creds:
+                    if queries_with_current >= MAX_QUERIES_PER_ACCOUNT:
+                        next_idx = (current_idx + 1) % len(creds)
+                        print(f"🔄 Límite alcanzado ({MAX_QUERIES_PER_ACCOUNT}). Rotando a cuenta #{next_idx + 1}…")
+                        used_idx = relogin_with_credentials(driver, creds, next_idx)
+                        if used_idx is not None:
+                            current_idx = used_idx
+                            queries_with_current = 0
+                        else:
+                            print("⚠️ Falló la rotación de credenciales. Se intentará continuar con la cuenta actual.")
+
                 html = fetch_gamelogs_html(driver, table_id)
                 if html:
                     out = save_gamelogs_html(table_id, html)
@@ -170,6 +312,10 @@ if __name__ == "__main__":
 
                 # Pausa breve: reduce carga y riesgo de rate limiting
                 time.sleep(0.8)
+
+                # Contabilizar la visita para rotación por cuenta (independiente del resultado)
+                if 'creds' in locals() and creds:
+                    queries_with_current += 1
 
             print("\n🏁 Proceso completado.")
             print(f"- Éxitos: {success}")
