@@ -4,6 +4,9 @@
 .board-wrapper {
   position: relative;
   overflow: visible; /* no recortar fichas al borde */
+  /* Centrar horizontalmente el área jugable respecto a la pantalla */
+  display: flex;
+  justify-content: center;
 }
 
 .board-grid {

@@ -47,7 +47,6 @@ export default function IAUserPanel(props: IAUserPanelProps) {
         </div>
         <div className="iauser-right" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <button
-            className={`btn btn-primary ${busy ? 'loading' : ''}`}
             onClick={onAIMove}
             disabled={disabled || busy}
             aria-label={busy ? 'IA pensando' : 'Mover IA'}

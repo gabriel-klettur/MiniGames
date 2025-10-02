@@ -1,13 +1,13 @@
 import './style/index.css';
-import IAUserPanel from './ia/IAUserPanel';
+import IAUserPanel from './components/IAUserPanel';
 import HeaderPanel from './components/HeaderPanel';
-import Board from './components/Board';
-import FootPanel from './components/FootPanel';
+import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FasesPanel from './components/DevTools/FasesPanel';
 import RulesPanel from './components/DevTools/RulesPanel';
 import UIUX from './components/DevTools/UIUX';
-import IAPanel from './ia/IAPanel';
+import IAPanel from './components/IAPanel/IAPanel';
+import InfoPanel from './components/InfoPanel';
 import { useGame } from './game/store';
 import { useLocalStorageBoolean } from './hooks/useLocalStorage';
 import { useAiController } from './hooks/useAiController';
@@ -18,6 +18,7 @@ function App() {
   const [showFases, setShowFases] = useLocalStorageBoolean('soluna:dev:showFases', false);
   const [showRules, setShowRules] = useLocalStorageBoolean('soluna:dev:showRules', false);
   const [showUX, setShowUX] = useLocalStorageBoolean('soluna:dev:showUX', false);
+  const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
   const {
     aiDepth, setAiDepth,
     aiTimeMode, setAiTimeMode,
@@ -28,9 +29,10 @@ function App() {
     doAIMove,
   } = useAiController(state, dispatch);
   return (
-    <div className="app-layout">
-      <HeaderPanel />
-      <main className={`main-area ${showDev ? '' : 'no-dev'}`}>
+    <div className="app">
+      <HeaderPanel showIA={showIA} onToggleIA={() => setShowIA((v) => !v)} />
+      {/* Panel de usuario IA: centrado, estilo Pylos (toggleable desde header) */}
+      {showIA && (
         <IAUserPanel
           depth={aiDepth}
           onChangeDepth={setAiDepth}
@@ -42,8 +44,16 @@ function App() {
           progress={aiProgress}
           busyElapsedMs={aiBusyElapsedMs}
         />
+      )}
+      {/* Badges/Jugadores: panel centrado */}
+      <InfoPanel />
+      {/* Contenido principal: siempre centrado */}
+      <div className="content">
         <Board />
-        {showDev && (
+      </div>
+      {/* DevTools a ancho completo, fila independiente */}
+      {showDev && (
+        <div className="devtools-row">
           <div className="devtools-card">
             <DevToolsPanel
               showFases={showFases}
@@ -100,12 +110,11 @@ function App() {
               </section>
             )}
           </div>
-        )}
-      </main>
+        </div>
+      )}
       <button className={`dev-toggle-btn ${showDev ? 'active' : ''}`} onClick={() => setShowDev((v) => !v)}>
         Dev
       </button>
-      <FootPanel />
     </div>
   );
 }

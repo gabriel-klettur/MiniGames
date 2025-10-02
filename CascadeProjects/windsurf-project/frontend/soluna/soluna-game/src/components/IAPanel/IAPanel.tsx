@@ -1,5 +1,5 @@
-import type { GameState } from '../game/types';
-import type { AIMove } from './index';
+import type { GameState } from '../../game/types';
+import type { AIMove } from '../../ia/index';
 
 export interface IAPanelProps {
   state: GameState;

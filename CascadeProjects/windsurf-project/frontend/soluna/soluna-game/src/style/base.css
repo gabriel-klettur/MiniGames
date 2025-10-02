@@ -6,9 +6,64 @@
   --board-max: 48rem;
   --play-card-pad: 16px;
   --board-zoom: 1.25;
+  /* Design tokens (alineado con Pylos) */
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --accent: #22c55e; /* verde */
+  --panel-alpha: 0.78;
+  --panel-radius: 16px;
+  --panel-border-color: rgba(255, 255, 255, 0.10);
+  --panel-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --panel-blur: 8px;
 }
 
 html, body { overflow-x: hidden; }
+
+/* Fondo global tipo Pylos: color base + imagen + viñeta/scrim para contraste */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: #0f172a; }
+
+#root { position: relative; z-index: 0; }
+/* Imagen de fondo a pantalla completa.
+   Nota: coloca una copia de background_b.png en src/assets/ para usar la misma imagen que Pylos. */
+#root::before {
+  content: "";
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background-image: url('../assets/background_b.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: -1;
+  transform: none; /* sin rotación en móvil */
+}
+
+/* Viñeta + scrim superior para mejorar contraste bajo header/paneles */
+#root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1; /* por encima del ::before, por debajo del contenido */
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,0.18) 100%),
+    linear-gradient(to top, rgba(0,0,0,0.28), rgba(0,0,0,0) 140px);
+}
+
+/* Desktop: asegura cobertura en rotación (si se desea replicar el efecto exacto) */
+@media (min-width: 768px) {
+  #root::before {
+    width: 100vmax;
+    height: 100vmax;
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+  }
+}
 
 #root {
   width: 100%;

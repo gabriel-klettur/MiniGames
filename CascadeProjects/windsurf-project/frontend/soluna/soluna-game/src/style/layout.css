@@ -1,3 +1,25 @@
+/* App layout (inspirado en Pylos): estructura simple y centrada */
+.app {
+  display: grid;
+  grid-template-columns: 1fr; /* una sola columna */
+  gap: var(--app-gap, 16px);
+  padding: var(--app-padding, 16px);
+  min-height: 100vh;
+  align-content: start; /* compactar filas al inicio */
+  background: transparent;
+  color: var(--text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column; /* pila vertical */
+  align-items: center;     /* centrar tablero horizontalmente */
+  justify-content: flex-start;
+  --content-gap: clamp(16px, 2.5vw, 28px);
+  gap: var(--content-gap);
+  width: 100%;
+}
+
 /* Layout de la app y paneles principales */
 
 .app-layout {
@@ -39,9 +61,25 @@
   align-items: start;
   column-gap: 0.75rem;
   row-gap: 0;
+  /* Centrar por defecto los items en su celda; afinamos con justify-self por item */
+  justify-items: center;
 }
 .main-area.no-dev { grid-template-columns: 1fr; }
 .main-area .iauser-panel { margin-bottom: 0; }
+
+/* Centrar siempre el board a nivel de pantalla
+   - El board ocupa una fila completa (1 / -1)
+   - Su contenido (.play-area) ya se centra con margin auto y width min(100%, var(--board-max)) */
+.main-area .board-wrapper {
+  grid-column: 1 / -1;
+  justify-self: center; /* asegurar centrado del wrapper en toda la fila */
+}
+
+/* En modo con Dev, mantener IAUserPanel en la columna derecha */
+.main-area:not(.no-dev) .iauser-panel {
+  grid-column: 2;
+  justify-self: end; /* pegar a la derecha de su columna */
+}
 
 .board-wrapper {
   width: 100%;
@@ -62,6 +100,18 @@
   background: rgba(17, 24, 39, 0.45);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+}
+
+/* DevTools en fila independiente a ancho completo, sin afectar el tamaño de las columnas del grid */
+.devtools-row {
+  width: 100%;
+}
+
+.devtools-row .devtools-card {
+  width: 100%;
+  box-sizing: border-box;
+  /* opcional: pequeña separación respecto a la fila superior */
+  margin-top: 0.75rem;
 }
 
 .foot-panel {

@@ -1,0 +1,86 @@
+/* Generic panel and header styles (inspirado en Pylos) */
+.panel {
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 12px;
+  align-self: start;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+
+/* Fila de acciones dentro de paneles */
+.panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* Ritmo vertical consistente */
+.panel .row + .row { margin-top: 6px; }
+/* Variante compacta */
+.panel.small { padding: 10px; border-radius: calc(var(--panel-radius) - 2px); }
+
+/* Botones estilo glass/pill (no primarios) */
+.panel .row.actions button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 9999px;
+  transition: background-color 150ms ease, filter 150ms ease, transform 120ms ease;
+}
+.panel .row.actions button:not(.primary) {
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.panel .row.actions button[aria-pressed="true"]:not(.primary) {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.panel .row.actions button:not(.primary):hover { filter: brightness(1.07); }
+.panel .row.actions button:not(.primary):active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel .row.actions button:disabled { opacity: 0.65; cursor: not-allowed; filter: none; transform: none; }
+
+/* Iconos en botones de cabecera/paneles */
+.header-btn__icon {
+  display: inline-block;
+  color: var(--text);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+/* InfoPanel (centrado, estilo glass) */
+.info-panel {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 12px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+.info-panel .row { margin: 6px 0; font-size: 14px; }
+
+/* Badges de jugadores */
+.player-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.player-badge.active {
+  border-color: var(--accent);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06), 0 0 0 1px rgba(16, 185, 129, 0.25);
+}

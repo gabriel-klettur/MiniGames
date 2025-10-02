@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useGame } from '../game/store';
-import { canMerge } from '../game/rules';
-import { SymbolIcon } from './Icons';
-import GameOverModal from './GameOverModal';
+import { useGame } from '../../game/store';
+import { canMerge } from '../../game/rules';
+import { SymbolIcon } from '../Icons';
+import GameOverModal from '../GameOverModal';
 
 export default function Board() {
   const { state, dispatch } = useGame();
