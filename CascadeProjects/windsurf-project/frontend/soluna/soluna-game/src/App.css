@@ -334,7 +334,7 @@ html, body { overflow-x: hidden; }
   --drop-highlight: 1; /* 1 on, 0 off */
   --max-discs: 10;
   --merge-threshold-factor: 0.6;
-  --icon-scaleY: 1; /* 1 keeps icon as-is; >1 stretches to compensate oval */
+  --icon-scaleY: 1.28; /* compensate oval top (approx 1 / 0.78) */
   --free-move: 1; /* 1 keep position after drop; 0 revert if no merge */
   position: relative;
   width: 100%;
@@ -477,12 +477,13 @@ html, body { overflow-x: hidden; }
 
 .token {
   position: absolute;
-  /* Anchor at the top circle center by shifting up half of the side height */
-  --stack-px: calc(12px + var(--stack-level, 0) * var(--stack-step, 18px));
-  transform: translate(-50%, calc(-50% - var(--stack-px) / 2));
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
+  /* Direct token image: size equals token-size and center on coordinates */
+  width: var(--token-size);
+  height: var(--token-size);
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
   border: none;
   background: transparent;
   cursor: grab;
@@ -499,28 +500,18 @@ html, body { overflow-x: hidden; }
   z-index: 1000000; /* over most UI, but still below .board-overlay (1000001) */
 }
 
-.token-top {
-  width: var(--token-size);
-  height: var(--token-size);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #1c4b8a, #0c2a52 70%);
-  border: 3px solid #0b2344;
-  box-shadow:
-    inset 0 8px 16px rgba(255,255,255,0.08),
-    inset 0 -8px 16px rgba(0,0,0,0.35),
-    0 6px 8px rgba(0,0,0,0.35);
-  display: grid;
-  place-items: center;
-  position: relative;
-  z-index: 1; /* ensure above .token-stack discs */
-  /* Make the top disc oval by vertically compressing it */
-  transform: scaleY(var(--oval-scale, 0.78));
-}
+/* Legacy token-top visuals removed; the PNG asset is the token */
 
-.token-icon {
-  width: calc(var(--token-size) * 0.62);
-  height: calc(var(--token-size) * 0.62);
-  transform: scaleY(var(--icon-scaleY, 1));
+/* Ensure the token image fills the token area cleanly */
+.token > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  z-index: 1; /* ensure it renders above .token-stack */
 }
 
 /* Visual stacked discs behind the top token */
@@ -531,6 +522,16 @@ html, body { overflow-x: hidden; }
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 0;
+}
+
+/* Each stacked disc image sits below the top image by i * --stack-step */
+.token-disc-img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--token-size);
+  height: var(--token-size);
+  transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, 18px))));
 }
 
 /* Cylindrical base approximating the total stacked height */
@@ -570,7 +571,7 @@ html, body { overflow-x: hidden; }
 }
 
 /* Highlight potential drop target during drag */
-.token.droppable-target .token-top {
+.token.droppable-target {
   box-shadow:
     inset 0 8px 16px rgba(255,255,255,0.12),
     inset 0 -8px 16px rgba(0,0,0,0.45),
@@ -593,7 +594,7 @@ html, body { overflow-x: hidden; }
   border: 1px solid rgba(255,255,255,0.15);
 }
 
-.token.selected .token-top {
+.token.selected {
   box-shadow:
     inset 0 8px 16px rgba(255,255,255,0.12),
     inset 0 -8px 16px rgba(0,0,0,0.45),
@@ -603,12 +604,12 @@ html, body { overflow-x: hidden; }
   filter: brightness(1.05);
 }
 
-.token:hover .token-top {
+.token:hover {
   filter: brightness(1.03);
 }
 
 .token:active {
-  transform: translate(-50%, calc(-50% - var(--stack-px) / 2)) scale(0.98);
+  transform: translate(-50%, -50%) scale(0.98);
 }
 
 /* Remove default button focus outline and tap highlight for tokens */
@@ -630,7 +631,7 @@ html, body { overflow-x: hidden; }
 }
 
 /* Outline in light-cyan for tokens that match the selected height (>=2). Placed BEFORE symbol-match so symbol-match stays dominant */
-.play-field.has-selection .token.height-match:not(.selected):not(.droppable-target) .token-top {
+.play-field.has-selection .token.height-match:not(.selected):not(.droppable-target) {
   box-shadow:
     inset 0 6px 12px rgba(255,255,255,0.06),
     inset 0 -6px 12px rgba(0,0,0,0.32),
@@ -640,10 +641,10 @@ html, body { overflow-x: hidden; }
 }
 
 /* When a token is selected, outline in white ONLY tokens with the same symbol */
-.play-field.has-selection.selected-sol .token[data-symbol="sol"]:not(.selected):not(.droppable-target) .token-top,
-.play-field.has-selection.selected-luna .token[data-symbol="luna"]:not(.selected):not(.droppable-target) .token-top,
-.play-field.has-selection.selected-estrella .token[data-symbol="estrella"]:not(.selected):not(.droppable-target) .token-top,
-.play-field.has-selection.selected-fugaz .token[data-symbol="fugaz"]:not(.selected):not(.droppable-target) .token-top {
+.play-field.has-selection.selected-sol .token[data-symbol="sol"]:not(.selected):not(.droppable-target),
+.play-field.has-selection.selected-luna .token[data-symbol="luna"]:not(.selected):not(.droppable-target),
+.play-field.has-selection.selected-estrella .token[data-symbol="estrella"]:not(.selected):not(.droppable-target),
+.play-field.has-selection.selected-fugaz .token[data-symbol="fugaz"]:not(.selected):not(.droppable-target) {
   box-shadow:
     inset 0 6px 12px rgba(255,255,255,0.08),
     inset 0 -6px 12px rgba(0,0,0,0.35),

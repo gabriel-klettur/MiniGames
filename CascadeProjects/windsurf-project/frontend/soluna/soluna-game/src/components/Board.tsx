@@ -280,17 +280,25 @@ export default function Board() {
                 onPointerCancel={(e) => handlePointerCancel(e, t.id)}
                 title={`h:${t.height} · top:${t.top}`}
               >
-                <div className="token-base" aria-hidden="true" />
+                {/* Render stacked images for all discs below the top */}
                 <div className="token-stack" aria-hidden="true">
-                  {Array.from({ length: Math.min(sizes.maxDiscs, t.height - 1) }).map((_, i) => (
-                    <span key={i} className="token-disc" style={{ ['--i' as any]: i + 1 }} />
-                  ))}
+                  {(() => {
+                    const below = t.stack.slice(0, Math.max(0, t.stack.length - 1)); // base -> one below top
+                    const count = below.length;
+                    // Render from just-below-top (i=1) downwards to base (i=count)
+                    return below.slice().reverse().map((sym, i) => (
+                      <div
+                        key={i}
+                        className="token-disc-img"
+                        style={{ ['--i' as any]: i + 1, zIndex: (count - i) }}
+                      >
+                        <SymbolIcon type={sym} />
+                      </div>
+                    ));
+                  })()}
                 </div>
-                <div className="token-top">
-                  <div className="token-icon">
-                    <SymbolIcon type={t.top} />
-                  </div>
-                </div>
+                {/* Top-most disc image */}
+                <SymbolIcon type={t.top} />
                 <div className="token-height">{t.height}</div>
               </button>
             ))}
