@@ -21,6 +21,11 @@ export interface AiController {
   setAiTimeSeconds: (s: number) => void;
   aiAutoplay: boolean;
   setAiAutoplay: (next: boolean | ((v: boolean) => boolean)) => void;
+  // Per-player toggles
+  aiControlP1: boolean;
+  setAiControlP1: (next: boolean | ((v: boolean) => boolean)) => void;
+  aiControlP2: boolean;
+  setAiControlP2: (next: boolean | ((v: boolean) => boolean)) => void;
 
   // Status
   aiBusy: boolean;
@@ -52,6 +57,9 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiTimeMode, setAiTimeMode] = useState<TimeMode>('auto');
   const [aiTimeSeconds, setAiTimeSeconds] = useState(3);
   const [aiAutoplay, setAiAutoplay] = useState(false);
+  // Per-player control toggles: when on, the AI will move automatically for that player
+  const [aiControlP1, setAiControlP1] = useState(false);
+  const [aiControlP2, setAiControlP2] = useState(false);
 
   // Status/metrics
   const [aiBusy, setAiBusy] = useState(false);
@@ -189,20 +197,24 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     }
   }, [aiBusy, aiDepth, aiTimeMode, aiTimeSeconds, dispatch]);
 
-  // Autoplay
+  // Autoplay: active if global autoplay OR current player's control toggle is on
   useEffect(() => {
-    if (!aiAutoplay) return;
+    const currentToggle = latestStateRef.current.currentPlayer === 1 ? aiControlP1 : aiControlP2;
+    const shouldAuto = aiAutoplay || currentToggle;
+    if (!shouldAuto) return;
     if (aiBusy) return;
     if (state.roundOver || state.gameOver) return;
     const t = setTimeout(() => { doAIMove(); }, aiTimeMode === 'manual' ? Math.max(0, Math.floor(aiTimeSeconds * 1000)) : 0);
     return () => clearTimeout(t);
-  }, [aiAutoplay, aiBusy, aiTimeMode, aiTimeSeconds, state.roundOver, state.gameOver, state.currentPlayer, doAIMove]);
+  }, [aiAutoplay, aiControlP1, aiControlP2, aiBusy, aiTimeMode, aiTimeSeconds, state.roundOver, state.gameOver, state.currentPlayer, doAIMove]);
 
   return {
     aiDepth, setAiDepth,
     aiTimeMode, setAiTimeMode,
     aiTimeSeconds, setAiTimeSeconds,
     aiAutoplay, setAiAutoplay,
+    aiControlP1, setAiControlP1,
+    aiControlP2, setAiControlP2,
 
     aiBusy, aiProgress, aiBusyElapsedMs,
 

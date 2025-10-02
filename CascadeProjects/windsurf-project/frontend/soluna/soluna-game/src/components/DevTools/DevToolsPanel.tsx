@@ -8,6 +8,8 @@ export interface DevToolsPanelProps {
   showUX?: boolean;
   onToggleUX?: () => void;
   onToggleRules?: () => void;
+  showIAPanel?: boolean;
+  onToggleIAPanel?: () => void;
 }
 
 // DevToolsPanel — Acciones de desarrollo/diagnóstico (presentacional), estilo Quoridor
@@ -18,8 +20,10 @@ export default function DevToolsPanel({
   showUX = false,
   onToggleUX = () => {},
   onToggleRules = () => {},
+  showIAPanel = false,
+  onToggleIAPanel = () => {},
 }: DevToolsPanelProps) {
-  const { state, dispatch } = useGame();
+  const { dispatch } = useGame();
   const [showState, setShowState] = useState(false);
   return (
     <div className={["devtools-panel", className ?? ""].join(" ").trim()}>
@@ -41,11 +45,11 @@ export default function DevToolsPanel({
           UI/UX
         </button>
         <button
-          className="btn btn-primary"
-          disabled={!state.roundOver || state.gameOver}
-          onClick={() => dispatch({ type: 'new-round' })}
+          className={`btn ${showIAPanel ? 'btn-primary' : 'btn-secondary'}`}
+          aria-pressed={showIAPanel}
+          onClick={onToggleIAPanel}
         >
-          Nueva ronda
+          IAPanel
         </button>
         <button className="btn btn-secondary" onClick={() => dispatch({ type: 'reset-game' })}>Reset juego</button>
         <label className="toggle">

@@ -19,11 +19,14 @@ function App() {
   const [showRules, setShowRules] = useLocalStorageBoolean('soluna:dev:showRules', false);
   const [showUX, setShowUX] = useLocalStorageBoolean('soluna:dev:showUX', false);
   const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
+  const [showIAPanel, setShowIAPanel] = useLocalStorageBoolean('soluna:dev:showIAPanel', false);
   const {
     aiDepth, setAiDepth,
     aiTimeMode, setAiTimeMode,
     aiTimeSeconds, setAiTimeSeconds,
     aiAutoplay, setAiAutoplay,
+    aiControlP1, setAiControlP1,
+    aiControlP2, setAiControlP2,
     aiBusy, aiProgress, aiBusyElapsedMs,
     aiEval, aiPV, aiRootMoves, aiNodes, aiElapsed, aiNps, aiDepthReached,
     doAIMove,
@@ -40,6 +43,10 @@ function App() {
           disabled={state.roundOver || state.gameOver}
           aiAutoplayActive={aiAutoplay}
           onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
+          aiControlP1={aiControlP1}
+          aiControlP2={aiControlP2}
+          onToggleAiControlP1={() => setAiControlP1((v) => !v)}
+          onToggleAiControlP2={() => setAiControlP2((v) => !v)}
           busy={aiBusy}
           progress={aiProgress}
           busyElapsedMs={aiBusyElapsedMs}
@@ -61,35 +68,39 @@ function App() {
               showUX={showUX}
               onToggleUX={() => setShowUX((v) => !v)}
               onToggleRules={() => setShowRules((v) => !v)}
+              showIAPanel={showIAPanel}
+              onToggleIAPanel={() => setShowIAPanel((v) => !v)}
             />
-            <section className="devtools-card-section">
-              <div className="section-title">IA</div>
-              <IAPanel
-                state={state}
-                depth={aiDepth}
-                onChangeDepth={setAiDepth}
-                onAIMove={doAIMove}
-                disabled={state.roundOver || state.gameOver}
-                timeMode={aiTimeMode}
-                timeSeconds={aiTimeSeconds}
-                onChangeTimeMode={setAiTimeMode}
-                onChangeTimeSeconds={setAiTimeSeconds}
-                busy={aiBusy}
-                progress={aiProgress}
-                evalScore={aiEval}
-                depthReached={aiDepthReached}
-                pv={aiPV}
-                rootMoves={aiRootMoves}
-                nodes={aiNodes}
-                elapsedMs={aiElapsed}
-                nps={aiNps}
-                rootPlayer={state.currentPlayer}
-                moving={false}
-                aiAutoplayActive={aiAutoplay}
-                onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
-                busyElapsedMs={aiBusyElapsedMs}
-              />
-            </section>
+            {showIAPanel && (
+              <section className="devtools-card-section">
+                <div className="section-title">IA</div>
+                <IAPanel
+                  state={state}
+                  depth={aiDepth}
+                  onChangeDepth={setAiDepth}
+                  onAIMove={doAIMove}
+                  disabled={state.roundOver || state.gameOver}
+                  timeMode={aiTimeMode}
+                  timeSeconds={aiTimeSeconds}
+                  onChangeTimeMode={setAiTimeMode}
+                  onChangeTimeSeconds={setAiTimeSeconds}
+                  busy={aiBusy}
+                  progress={aiProgress}
+                  evalScore={aiEval}
+                  depthReached={aiDepthReached}
+                  pv={aiPV}
+                  rootMoves={aiRootMoves}
+                  nodes={aiNodes}
+                  elapsedMs={aiElapsed}
+                  nps={aiNps}
+                  rootPlayer={state.currentPlayer}
+                  moving={false}
+                  aiAutoplayActive={aiAutoplay}
+                  onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
+                  busyElapsedMs={aiBusyElapsedMs}
+                />
+              </section>
+            )}
             {/* Secciones bajo los toggles */}
             {showRules && (
               <section className="devtools-card-section">
@@ -120,3 +131,4 @@ function App() {
 }
 
 export default App
+

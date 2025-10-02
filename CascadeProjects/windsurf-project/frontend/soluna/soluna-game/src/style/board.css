@@ -85,6 +85,8 @@
   /* Curved flight controls */
   --flight-curve-enabled: 1; /* 1 on, 0 off */
   --flight-curve-bend: 0.22; /* multiplier for path curvature */
+  /* Force the curve to arc upwards (screen-above). 1 = always up, 0 = default side */
+  --flight-curve-up: 1;
   position: relative;
   width: 100%;
   min-height: 0;

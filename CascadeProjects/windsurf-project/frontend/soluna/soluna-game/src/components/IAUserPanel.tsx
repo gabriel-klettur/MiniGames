@@ -6,6 +6,11 @@ export interface IAUserPanelProps {
   // Autoplay de IA (Play/Stop)
   aiAutoplayActive?: boolean;
   onToggleAiAutoplay?: () => void;
+  // Control por jugador: IA controla P1/P2
+  aiControlP1?: boolean;
+  aiControlP2?: boolean;
+  onToggleAiControlP1?: () => void;
+  onToggleAiControlP2?: () => void;
   // Estado de cálculo
   busy?: boolean;
   progress?: { depth: number; score: number } | null;
@@ -23,11 +28,10 @@ export default function IAUserPanel(props: IAUserPanelProps) {
     onChangeDepth,
     onAIMove,
     disabled = false,
-    aiAutoplayActive = false,
-    onToggleAiAutoplay,
-    busy = false,
-    progress = null,
-    busyElapsedMs = 0,
+    aiControlP1 = false,
+    aiControlP2 = false,
+    onToggleAiControlP1,
+    onToggleAiControlP2,
   } = props;
 
   return (
@@ -46,61 +50,75 @@ export default function IAUserPanel(props: IAUserPanelProps) {
           </select>
         </div>
         <div className="iauser-right" style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          {/* Toggle IA controla P1 */}
           <button
-            onClick={onAIMove}
-            disabled={disabled || busy}
-            aria-label={busy ? 'IA pensando' : 'Mover IA'}
-            title={busy ? 'IA pensando…' : 'Mover IA'}
+            onClick={onToggleAiControlP1}
+            aria-pressed={aiControlP1}
+            title={aiControlP1 ? 'Devolver control a jugador P1' : 'IA controla P1'}
+            aria-label={aiControlP1 ? 'Devolver control a jugador P1' : 'IA controla P1'}
           >
-            {busy ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span className="ia-btn__spinner" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.25" />
-                    <path d="M21 12a9 9 0 0 1-9 9" stroke="currentColor" strokeWidth="2" fill="none" />
-                  </svg>
-                </span>
-                <span className="btn-label" aria-live="polite">
-                  Pensando{progress?.depth ? ` d${progress.depth}` : ''}{typeof busyElapsedMs === 'number' ? ` · ${(busyElapsedMs / 1000).toFixed(1)}s` : ''}
-                </span>
-                <span className="ia-btn__dots" aria-hidden="true">
-                  <span>•</span><span>•</span><span>•</span>
-                </span>
-              </span>
-            ) : (
-              <>
-                {/* Icono de robot/IA */}
-                <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="currentColor" d="M11 2h2v3h-2z"/>
-                  <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                  <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
-                  <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
-                  <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
-                  <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
-                </svg>
-                <span className="sr-only">Mover IA</span>
-              </>
-            )}
+            <svg
+              className={[
+                'robot-icon',
+                aiControlP1 ? 'is-active is-thinking' : 'is-passive',
+              ].join(' ')}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+            <span className="sr-only">{aiControlP1 ? 'Jugador controla P1' : 'IA controla P1'}</span>
           </button>
+          {/* Toggle IA controla P2 */}
           <button
-            onClick={onToggleAiAutoplay}
-            aria-pressed={aiAutoplayActive}
-            disabled={disabled && !aiAutoplayActive}
-            title={aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}
-            aria-label={aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}
+            onClick={onToggleAiControlP2}
+            aria-pressed={aiControlP2}
+            title={aiControlP2 ? 'Devolver control a jugador P2' : 'IA controla P2'}
+            aria-label={aiControlP2 ? 'Devolver control a jugador P2' : 'IA controla P2'}
           >
-            {aiAutoplayActive ? (
-              // Stop (square)
-              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor" d="M6 6h12v12H6z" />
-              </svg>
-            ) : (
-              // Play (triangle)
-              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor" d="M8 5v14l11-7z" />
-              </svg>
-            )}
-            <span className="sr-only">{aiAutoplayActive ? 'Detener autoplay de la IA' : 'Iniciar autoplay de la IA'}</span>
+            <svg
+              className={[
+                'robot-icon',
+                aiControlP2 ? 'is-active is-thinking' : 'is-passive',
+              ].join(' ')}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+            <span className="sr-only">{aiControlP2 ? 'Jugador controla P2' : 'IA controla P2'}</span>
+          </button>
+          {/* Acción principal: Mover IA */}
+          <button
+            className="primary"
+            onClick={onAIMove}
+            disabled={disabled}
+            aria-label="Mover IA"
+            title="Mover IA"
+          >
+            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M11 2h2v3h-2z"/>
+              <rect x="5" y="7" width="14" height="10" rx="2" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+              <circle cx="9" cy="12" r="1.6" fill="currentColor"/>
+              <circle cx="15" cy="12" r="1.6" fill="currentColor"/>
+              <path fill="currentColor" d="M7 19h3v2H7zM14 19h3v2h-3z"/>
+              <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
+            </svg>
+            <span className="sr-only">Mover IA</span>
           </button>
         </div>
       </div>

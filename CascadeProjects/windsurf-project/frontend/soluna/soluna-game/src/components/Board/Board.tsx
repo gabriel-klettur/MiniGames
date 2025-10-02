@@ -8,7 +8,7 @@ export default function Board() {
   const { state, dispatch } = useGame();
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const ellipseRef = useRef<HTMLDivElement | null>(null);
-  const [sizes, setSizes] = useState<{ w: number; h: number; token: number; stackStep: number; maxDiscs: number; mergeFactor: number; dropHighlight: boolean; freeMove: boolean; curveEnabled: boolean; curveBend: number }>({ w: 0, h: 0, token: 0, stackStep: 18, maxDiscs: 10, mergeFactor: 0.6, dropHighlight: true, freeMove: true, curveEnabled: true, curveBend: 0.22 });
+  const [sizes, setSizes] = useState<{ w: number; h: number; token: number; stackStep: number; maxDiscs: number; mergeFactor: number; dropHighlight: boolean; freeMove: boolean; curveEnabled: boolean; curveBend: number; curveUp: boolean }>({ w: 0, h: 0, token: 0, stackStep: 18, maxDiscs: 10, mergeFactor: 0.6, dropHighlight: true, freeMove: true, curveEnabled: true, curveBend: 0.22, curveUp: false });
   const [dragId, setDragId] = useState<string | null>(null);
   const dragStartRef = useRef<{ id: string; pos: { x: number; y: number } } | null>(null);
   const movedDuringDragRef = useRef(false);
@@ -40,7 +40,8 @@ export default function Board() {
       const freeMove = (parseFloat(cs.getPropertyValue('--free-move').trim() || '1') || 0) > 0;
       const curveEnabled = (parseFloat(cs.getPropertyValue('--flight-curve-enabled').trim() || '1') || 0) > 0;
       const curveBend = parseFloat(cs.getPropertyValue('--flight-curve-bend').trim() || '0.22') || 0.22;
-      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove, curveEnabled, curveBend });
+      const curveUp = (parseFloat(cs.getPropertyValue('--flight-curve-up').trim() || '0') || 0) > 0;
+      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove, curveEnabled, curveBend, curveUp });
     });
     ro.observe(el);
     ro.observe(ellipse);
@@ -141,6 +142,8 @@ export default function Board() {
     // Perpendicular vector for outward bend
     let nx = -dy;
     let ny = dx;
+    // Always ensure the perpendicular points upwards (negative screen Y)
+    if (ny > 0) { nx = -nx; ny = -ny; }
     const nlen = Math.hypot(nx, ny) || 1;
     // Bend magnitude proportional to distance, clamped
     const bend = Math.min(180, Math.max(40, dist * sizes.curveBend));
