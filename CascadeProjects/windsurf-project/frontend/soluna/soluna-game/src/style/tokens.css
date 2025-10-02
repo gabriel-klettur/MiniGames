@@ -37,7 +37,7 @@
 .token-stack { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; }
 
 /* Cada disco apilado (imagen) */
-.token-disc-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, 18px)))); }
+.token-disc-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
 
 /* Base cilíndrica según altura total */
 .token-base {
@@ -57,7 +57,7 @@
 .token-disc {
   position: absolute; left: 50%; top: 50%;
   width: var(--token-size); height: var(--token-size);
-  transform: translate(-50%, calc(-50% + (var(--stack-level, 0) - var(--i) + 1) * var(--stack-step, 18px))) scaleY(var(--oval-scale, 0.78));
+  transform: translate(-50%, calc(-50% + (var(--stack-level, 0) - var(--i) + 1) * var(--stack-step, calc(var(--token-size) * 0.25)))) scaleY(var(--oval-scale, 0.78));
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #173f78, #0a2242 70%);
   border: var(--disc-border-width, 2px) solid rgba(255,255,255,0.92);

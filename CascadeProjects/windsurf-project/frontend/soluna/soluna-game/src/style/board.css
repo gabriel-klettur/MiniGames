@@ -68,7 +68,8 @@
   --token-base: clamp(48px, 6.8vw, 96px);
   --token-size: calc(var(--token-base) * var(--zoom));
   --oval-scale: 0.78;
-  --stack-step: 18px;
+  /* Option A: stacking step proportional to token size (keeps visual ratio constant) */
+  --stack-step: calc(var(--token-size) * 0.15);
   --disc-border-width: 2px;
   --show-base: 1;
   --drop-highlight: 1;
