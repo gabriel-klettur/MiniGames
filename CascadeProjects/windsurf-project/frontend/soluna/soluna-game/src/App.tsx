@@ -33,7 +33,19 @@ function App() {
   } = useAiController(state, dispatch);
   return (
     <div className="app">
-      <HeaderPanel showIA={showIA} onToggleIA={() => setShowIA((v) => !v)} />
+      <HeaderPanel
+        showIA={showIA}
+        onToggleIA={() => setShowIA((v) => !v)}
+        onStartVsAI={(enemy, depth) => {
+          // Reinicia la partida y configura IA con el estilo "Vs IA"
+          dispatch({ type: 'reset-game' });
+          setAiDepth(depth);
+          setShowIA(true);
+          // Activar control de IA para el lado enemigo seleccionado
+          setAiControlP1(enemy === 1);
+          setAiControlP2(enemy === 2);
+        }}
+      />
       {/* Panel de usuario IA: centrado, estilo Pylos (toggleable desde header) */}
       {showIA && (
         <IAUserPanel

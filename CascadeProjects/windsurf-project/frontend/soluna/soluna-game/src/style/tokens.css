@@ -210,3 +210,9 @@
   from { -webkit-offset-distance: 0%; }
   to   { -webkit-offset-distance: 100%; }
 }
+
+/* Standard keyframes to accompany the prefixed rule (for linters and non-WebKit parsing) */
+@keyframes flight-curve-webkit {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
+}
