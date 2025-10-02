@@ -181,8 +181,8 @@
   to   { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 }
 
-.token-flight-body.running { animation: flight-move 320ms cubic-bezier(.2,.8,.2,1) both; }
+.token-flight-body.running { animation: flight-move 1250ms cubic-bezier(.2,.8,.2,1) both; }
 
 .token-flight-body .token-inner {
-  transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease-out;
+  transition: transform 1250ms cubic-bezier(.2,.8,.2,1), opacity 600ms ease-out;
 }
