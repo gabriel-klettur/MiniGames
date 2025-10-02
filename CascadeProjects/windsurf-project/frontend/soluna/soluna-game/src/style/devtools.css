@@ -1,0 +1,58 @@
+/* Paneles y utilidades de DevTools, botón flotante y animaciones IA */
+
+.devtools-panel {
+  position: sticky;
+  top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.03);
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.devtools-card {
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.50);
+  padding: 0.75rem;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.35);
+}
+
+.devtools-header { font-weight: 600; }
+.devtools-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.devtools-card-section { margin-top: 0.25rem; padding-top: 0.25rem; }
+.devtools-card-section .section-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+.devtools-pre { font-size: 0.75rem; line-height: 1.2; white-space: pre-wrap; }
+
+/* Botón flotante para mostrar/ocultar DevTools */
+.dev-toggle-btn {
+  position: fixed;
+  right: clamp(10px, 2vw, 18px);
+  bottom: clamp(10px, 2vw, 18px);
+  z-index: 1000000;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(31, 41, 55, 0.85);
+  color: #e5e7eb;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: transform 120ms ease, background 200ms ease, box-shadow 200ms ease;
+}
+.dev-toggle-btn:hover { background: rgba(55, 65, 81, 0.9); }
+.dev-toggle-btn:active { transform: translateY(1px) scale(0.98); }
+.dev-toggle-btn.active { background: rgba(37, 99, 235, 0.95); border-color: rgba(147, 197, 253, 0.35); box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35), 0 0 0 3px rgba(37, 99, 235, 0.25) inset; }
+
+/* IA Buttons: spinner y puntos animados */
+@keyframes ia_spin { to { transform: rotate(360deg); } }
+@keyframes ia_blink { 0%, 20% { opacity: .25 } 50% { opacity: 1 } 100% { opacity: .25 } }
+.ia-btn__spinner svg { animation: ia_spin .9s linear infinite; margin-right: 8px; display: inline-block; }
+.ia-btn__dots { display: inline-flex; gap: 1px; margin-left: 4px; }
+.ia-btn__dots span { animation: ia_blink 1.4s infinite; }
+.ia-btn__dots span:nth-child(2) { animation-delay: .2s; }
+.ia-btn__dots span:nth-child(3) { animation-delay: .4s; }
+.btn-primary.loading { opacity: .9; }

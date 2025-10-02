@@ -1,0 +1,24 @@
+/* Base variables y globales */
+:root {
+  --page-pad-x: 2rem;
+  --app-padding: 2rem;
+  --board-width-factor: 1;
+  --board-max: 48rem;
+  --play-card-pad: 16px;
+  --board-zoom: 1.25;
+}
+
+html, body { overflow-x: hidden; }
+
+#root {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding-left: var(--page-pad-x);
+  padding-right: var(--page-pad-x);
+  padding-top: var(--page-pad-x);
+  padding-bottom: var(--page-pad-x);
+  text-align: center;
+}
+
+.read-the-docs { color: #888; }

@@ -1,0 +1,68 @@
+/* Reglas responsivas y ajustes por breakpoint */
+
+/* Hasta 1023px: quitar gap extra del tablero */
+@media (max-width: 1023px) {
+  .board-wrapper { margin-top: 0 !important; }
+}
+
+/* Layout en una columna / ajustes intermedios */
+@media (max-width: 1200px) {
+  .main-area { grid-template-columns: 1fr; gap: 0.75rem; }
+  .devtools-panel { position: static; max-height: none; }
+  .play-area { min-width: 0; }
+  .play-ellipse { --token-base: clamp(48px, 10.5vw, 96px); }
+}
+
+/* Escritorio: ampliar tablero y posicionar paneles */
+@media (min-width: 1024px) {
+  :root { --board-max: 62rem; }
+  .main-area .iauser-panel { grid-column: 1; grid-row: 1; justify-self: start; }
+  .main-area .board-wrapper { grid-column: 1; grid-row: 2; }
+  .main-area .devtools-card { grid-column: 2; grid-row: 1 / span 2; }
+  .board-wrapper { margin-top: 100px; }
+}
+
+/* Escritorio grande */
+@media (min-width: 1366px) { :root { --board-max: 74rem; } }
+
+/* Tablet landscape / pantallas medianas */
+@media (max-width: 900px) {
+  .board-wrapper { margin-top: 0 !important; }
+  .main-area .iauser-panel { margin-bottom: 0; }
+  :root { --page-pad-x: 16px; }
+  :root { --app-padding: 16px; }
+  #root { padding: 1rem; }
+  .header-panel { flex-wrap: wrap; gap: 0.5rem; }
+  .play-ellipse { --token-base: clamp(44px, 12vw, 84px); background-size: auto, 150px 150px, 190px 190px, 170px 170px, 170px 170px, auto; }
+  .token-icon { width: calc(var(--token-size) * 0.6); height: calc(var(--token-size) * 0.6); }
+}
+
+/* Altura pequeña en landscape */
+@media (max-height: 520px) and (orientation: landscape) {
+  .play-ellipse { min-height: clamp(240px, 70vh, 420px); }
+  .token-top { border-width: 2px; }
+}
+
+/* Teléfonos / tablets pequeñas */
+@media (max-width: 600px) {
+  :root { --page-pad-x: 12px; --app-padding: 12px; }
+  #root { padding: 0.75rem; }
+  .players { gap: 0.5rem; }
+  .player-badge { padding: 0.2rem 0.45rem; font-size: 0.95rem; }
+  .play-area { --play-card-pad: clamp(8px, 2.8vw, 14px); padding: var(--play-card-pad); border-radius: 14px; }
+  .play-ellipse { --token-base: clamp(30px, 13.5vw, 60px); background-size: auto, 120px 120px, 160px 160px, 140px 140px, 140px 140px, auto; }
+  .play-field { inset: 0; }
+  body { padding-left: 0; padding-right: 0; }
+  .token-top { border-width: 2px; }
+  .foot-panel { flex-direction: column; align-items: stretch; text-align: left; gap: 0.5rem; }
+  .token-height { font-size: 0.68rem; top: -4px; right: -4px; }
+}
+
+/* Teléfonos muy pequeños */
+@media (max-width: 420px) {
+  #root { padding: 0.5rem; }
+  .header-panel .title { font-size: 1.1rem; }
+  .play-ellipse { --token-base: clamp(26px, 11.5vw, 52px); min-height: clamp(260px, 72vw, 480px); }
+  .token-icon { width: calc(var(--token-size) * 0.56); height: calc(var(--token-size) * 0.56); }
+  .token-height { font-size: 0.64rem; }
+}
