@@ -16,7 +16,7 @@ export default function HeaderPanel({ showIA = true, onToggleIA }: HeaderProps) 
             <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z"/>
             </svg>
-            <span className="sr-only">Nueva partida</span>
+            <span className="sr-only"></span>
           </button>
           {/* Alternar IAUserPanel (icono IA) */}
           <button

@@ -3,7 +3,9 @@
 /* Ajustes específicos del wrapper del tablero (sobrescribe layout) */
 .board-wrapper {
   position: relative;
-  overflow: visible; /* no recortar fichas al borde */
+  /* Permite que las fichas/halos sobresalgan verticalmente sin generar scroll horizontal */
+  overflow-x: hidden;
+  overflow-y: visible;
   /* Centrar horizontalmente el área jugable respecto a la pantalla */
   display: flex;
   justify-content: center;
@@ -80,6 +82,9 @@
   --merge-threshold-factor: 0.6;
   --icon-scaleY: 1.28;
   --free-move: 1;
+  /* Curved flight controls */
+  --flight-curve-enabled: 1; /* 1 on, 0 off */
+  --flight-curve-bend: 0.22; /* multiplier for path curvature */
   position: relative;
   width: 100%;
   min-height: 0;

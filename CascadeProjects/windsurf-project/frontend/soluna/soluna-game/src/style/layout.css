@@ -4,6 +4,9 @@
   grid-template-columns: 1fr; /* una sola columna */
   gap: var(--app-gap, 16px);
   padding: var(--app-padding, 16px);
+  width: 100%;
+  max-width: 100%; /* evita usar vw que cuenta el scrollbar */
+  overflow-x: hidden; /* evita scroll horizontal por halos/sombras */
   min-height: 100vh;
   align-content: start; /* compactar filas al inicio */
   background: transparent;
@@ -18,6 +21,8 @@
   --content-gap: clamp(16px, 2.5vw, 28px);
   gap: var(--content-gap);
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Layout de la app y paneles principales */
@@ -93,7 +98,7 @@
   min-width: 0;
   margin-left: auto;
   margin-right: auto;
-  overflow: visible;
+  overflow: hidden; /* evita que decoraciones/halos provoquen overflow */
   box-sizing: border-box;
   padding: var(--play-card-pad, clamp(10px, 2.2vw, 18px));
   border-radius: 16px;

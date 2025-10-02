@@ -175,14 +175,38 @@
 }
 
 .token-flight-body { will-change: transform, opacity; }
-
 @keyframes flight-move {
   from { transform: translate(0px, 0px); }
   to   { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 }
 
-.token-flight-body.running { animation: flight-move 1250ms cubic-bezier(.2,.8,.2,1) both; }
+.token-flight-body:not(.curve).running { animation: flight-move 1250ms cubic-bezier(.2,.8,.2,1) both; }
 
 .token-flight-body .token-inner {
   transition: transform 1250ms cubic-bezier(.2,.8,.2,1), opacity 600ms ease-out;
+}
+/* Curved motion path animation */
+@keyframes flight-curve {
+  from { offset-distance: 0%; }
+  to   { offset-distance: 100%; }
+}
+.token-flight-body.curve {
+  /* Path must be provided via inline style (offsetPath) or CSS var */
+  /* Example inline: style={{ offsetPath: 'path("M 0 0 Q 50 -80 200 120")' }} */
+  offset-anchor: 50% 50%; /* anchor center of the body to the path */
+  -webkit-offset-anchor: 50% 50%;
+  offset-rotate: 0deg; /* prevent auto-rotation along the path */
+  -webkit-offset-rotate: 0deg;
+  will-change: offset-distance, -webkit-offset-distance;
+}
+
+.token-flight-body.curve.running {
+  animation: flight-curve 1250ms cubic-bezier(.2,.8,.2,1) both,
+             flight-curve-webkit 1250ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* WebKit-prefixed offset-distance animation for Safari */
+@-webkit-keyframes flight-curve-webkit {
+  from { -webkit-offset-distance: 0%; }
+  to   { -webkit-offset-distance: 100%; }
 }

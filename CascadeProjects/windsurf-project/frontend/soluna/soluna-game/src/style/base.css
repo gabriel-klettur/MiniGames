@@ -18,6 +18,7 @@
 }
 
 html, body { overflow-x: hidden; }
+html, body { width: 100%; max-width: 100%; }
 
 /* Fondo global tipo Pylos: color base + imagen + viñeta/scrim para contraste */
 * { box-sizing: border-box; }
@@ -67,7 +68,9 @@ body { margin: 0; background: #0f172a; }
 
 #root {
   width: 100%;
-  max-width: 1600px;
+  /* Evitar que el scrollbar horizontal aparezca por el uso de vw */
+  max-width: 100%;
+  overflow-x: hidden;
   margin: 0 auto;
   padding-left: var(--page-pad-x);
   padding-right: var(--page-pad-x);
@@ -75,5 +78,8 @@ body { margin: 0; background: #0f172a; }
   padding-bottom: var(--page-pad-x);
   text-align: center;
 }
+
+/* Asegurar que medios no provoquen overflow */
+img, svg, canvas, video { max-width: 100%; height: auto; }
 
 .read-the-docs { color: #888; }

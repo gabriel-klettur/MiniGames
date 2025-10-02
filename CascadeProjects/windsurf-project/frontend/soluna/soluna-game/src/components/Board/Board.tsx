@@ -8,7 +8,7 @@ export default function Board() {
   const { state, dispatch } = useGame();
   const fieldRef = useRef<HTMLDivElement | null>(null);
   const ellipseRef = useRef<HTMLDivElement | null>(null);
-  const [sizes, setSizes] = useState<{ w: number; h: number; token: number; stackStep: number; maxDiscs: number; mergeFactor: number; dropHighlight: boolean; freeMove: boolean }>({ w: 0, h: 0, token: 0, stackStep: 18, maxDiscs: 10, mergeFactor: 0.6, dropHighlight: true, freeMove: true });
+  const [sizes, setSizes] = useState<{ w: number; h: number; token: number; stackStep: number; maxDiscs: number; mergeFactor: number; dropHighlight: boolean; freeMove: boolean; curveEnabled: boolean; curveBend: number }>({ w: 0, h: 0, token: 0, stackStep: 18, maxDiscs: 10, mergeFactor: 0.6, dropHighlight: true, freeMove: true, curveEnabled: true, curveBend: 0.22 });
   const [dragId, setDragId] = useState<string | null>(null);
   const dragStartRef = useRef<{ id: string; pos: { x: number; y: number } } | null>(null);
   const movedDuringDragRef = useRef(false);
@@ -38,7 +38,9 @@ export default function Board() {
       const mergeFactor = parseFloat(cs.getPropertyValue('--merge-threshold-factor').trim() || '0.6') || 0.6;
       const dropHighlight = (parseFloat(cs.getPropertyValue('--drop-highlight').trim() || '1') || 0) > 0;
       const freeMove = (parseFloat(cs.getPropertyValue('--free-move').trim() || '1') || 0) > 0;
-      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove });
+      const curveEnabled = (parseFloat(cs.getPropertyValue('--flight-curve-enabled').trim() || '1') || 0) > 0;
+      const curveBend = parseFloat(cs.getPropertyValue('--flight-curve-bend').trim() || '0.22') || 0.22;
+      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove, curveEnabled, curveBend });
     });
     ro.observe(el);
     ro.observe(ellipse);
@@ -124,6 +126,48 @@ export default function Board() {
       setFlightRunning(false);
     }
   }, [state.mergeFx]);
+
+  // Precompute a curved motion-path for the current flight (quadratic Bezier)
+  // This is used by CSS Motion Path when supported, with linear fallback otherwise.
+  const curvePath = (() => {
+    if (!flightPx) return undefined as string | undefined;
+    const dx = flightPx.end.x - flightPx.start.x;
+    const dy = flightPx.end.y - flightPx.start.y;
+    const dist = Math.hypot(dx, dy);
+    if (!isFinite(dist) || dist < 1) return undefined;
+    // Midpoint of segment
+    const mx = dx / 2;
+    const my = dy / 2;
+    // Perpendicular vector for outward bend
+    let nx = -dy;
+    let ny = dx;
+    const nlen = Math.hypot(nx, ny) || 1;
+    // Bend magnitude proportional to distance, clamped
+    const bend = Math.min(180, Math.max(40, dist * sizes.curveBend));
+    const cx = mx + (nx / nlen) * bend;
+    const cy = my + (ny / nlen) * bend;
+    // Offset path so that at offset-distance=0 the center lands exactly at container center
+    const half = Math.max(0, sizes.token / 2);
+    const sx = half;
+    const sy = half;
+    const ex = half + dx;
+    const ey = half + dy;
+    const c1x = half + cx;
+    const c1y = half + cy;
+    return `path("M ${sx} ${sy} Q ${c1x} ${c1y} ${ex} ${ey}")`;
+  })();
+
+  // Feature-detect CSS Motion Path support at runtime
+  const supportsMotionPath = (() => {
+    try {
+      // @ts-ignore - CSS.supports is available on modern browsers
+      if (typeof CSS === 'undefined' || typeof CSS.supports !== 'function') return false;
+      return CSS.supports('offset-path', 'path("M 0 0 Q 10 10 20 0")')
+        || CSS.supports('-webkit-offset-path', 'path("M 0 0 Q 10 10 20 0")');
+    } catch {
+      return false;
+    }
+  })();
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -427,9 +471,15 @@ export default function Board() {
                   style={{ left: flightPx.start.x, top: flightPx.start.y }}
                 >
                   <div
-                    className={`token-flight-body ${flightRunning ? 'running' : ''}`}
+                    className={`token-flight-body ${supportsMotionPath && sizes.curveEnabled && curvePath ? 'curve' : ''} ${flightRunning ? 'running' : ''}`}
                     ref={flightRef}
-                    style={{ ['--dx' as any]: `${flightPx.end.x - flightPx.start.x}px`, ['--dy' as any]: `${flightPx.end.y - flightPx.start.y}px`, ['--stack-count' as any]: state.mergeFx.sourceStack.length }}
+                    style={{
+                      ['--dx' as any]: `${flightPx.end.x - flightPx.start.x}px`,
+                      ['--dy' as any]: `${flightPx.end.y - flightPx.start.y}px`,
+                      ['--stack-count' as any]: state.mergeFx.sourceStack.length,
+                      ['offsetPath' as any]: supportsMotionPath && sizes.curveEnabled && curvePath ? curvePath : undefined,
+                      ['WebkitOffsetPath' as any]: supportsMotionPath && sizes.curveEnabled && curvePath ? curvePath : undefined,
+                    }}
                     onAnimationEnd={() => { dispatch({ type: 'clear-merge-fx' }); }}
                   >
                     <div className="token-inner">

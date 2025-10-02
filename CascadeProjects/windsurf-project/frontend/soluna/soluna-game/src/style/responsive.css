@@ -54,6 +54,10 @@
   .play-field { inset: 0; }
   body { padding-left: 0; padding-right: 0; }
   .token-top { border-width: 2px; }
+  /* Evitar que el halo/glow se salga en móviles estrechos */
+  .play-ellipse::before { inset: 0; }
+  /* Clip dentro de la elipse en pantallas muy pequeñas para eliminar overflow residual */
+  .play-ellipse { overflow: hidden; }
   .foot-panel { flex-direction: column; align-items: stretch; text-align: left; gap: 0.5rem; }
   .token-height { font-size: 0.68rem; top: -4px; right: -4px; }
 }

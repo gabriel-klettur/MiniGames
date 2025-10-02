@@ -10,6 +10,8 @@ type Cfg = {
   dropHighlight: boolean;
   freeMove: boolean;
   mergeThreshold: number; // 0.3..0.9
+  flightCurveEnabled: boolean; // 0/1
+  flightCurveBend: number; // 0..0.6 (recommended 0.1..0.35)
 };
 
 const LS_PREFIX = 'soluna:ui:';
@@ -36,6 +38,8 @@ function readComputedCfg(): Cfg {
     dropHighlight: num(cs.getPropertyValue('--drop-highlight') || '1', 1) > 0,
     freeMove: num(cs.getPropertyValue('--free-move') || '1', 1) > 0,
     mergeThreshold: num(cs.getPropertyValue('--merge-threshold-factor') || '0.6', 0.6),
+    flightCurveEnabled: num(cs.getPropertyValue('--flight-curve-enabled') || '1', 1) > 0,
+    flightCurveBend: num(cs.getPropertyValue('--flight-curve-bend') || '0.22', 0.22),
   };
 }
 
@@ -51,6 +55,8 @@ function applyCfg(cfg: Cfg) {
   el.style.setProperty('--drop-highlight', cfg.dropHighlight ? '1' : '0');
   el.style.setProperty('--free-move', cfg.freeMove ? '1' : '0');
   el.style.setProperty('--merge-threshold-factor', String(cfg.mergeThreshold));
+  el.style.setProperty('--flight-curve-enabled', cfg.flightCurveEnabled ? '1' : '0');
+  el.style.setProperty('--flight-curve-bend', String(cfg.flightCurveBend));
 }
 
 function loadFromLocalStorage(): Partial<Cfg> {
@@ -111,6 +117,8 @@ export default function UIUX() {
       el.style.removeProperty('--drop-highlight');
       el.style.removeProperty('--free-move');
       el.style.removeProperty('--merge-threshold-factor');
+      el.style.removeProperty('--flight-curve-enabled');
+      el.style.removeProperty('--flight-curve-bend');
     }
     try { window.localStorage.removeItem(LS_PREFIX + 'cfg'); } catch {}
   };
@@ -157,6 +165,16 @@ export default function UIUX() {
         <label style={{ display: 'grid', gap: 4 }}>
           <span>Umbral de colisión para apilar: {cfg.mergeThreshold.toFixed(2)}× diámetro</span>
           <input type="range" min={0.3} max={0.9} step={0.01} value={cfg.mergeThreshold} onChange={onNum('mergeThreshold')} />
+        </label>
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.12)', margin: '4px 0' }} />
+        <div style={{ fontWeight: 600 }}>Vuelo curvo</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <input type="checkbox" checked={cfg.flightCurveEnabled} onChange={onNum('flightCurveEnabled')} />
+          Activar vuelo curvo (fallback lineal si no hay soporte)
+        </label>
+        <label style={{ display: 'grid', gap: 4 }}>
+          <span>Curvatura: {(cfg.flightCurveBend).toFixed(2)}× distancia</span>
+          <input type="range" min={0.05} max={0.40} step={0.01} value={cfg.flightCurveBend} onChange={onNum('flightCurveBend')} />
         </label>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
