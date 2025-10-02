@@ -41,6 +41,7 @@ function initialState(): GameState {
     roundOver: false,
     gameOver: false,
     players: { 1: { stars: 0 }, 2: { stars: 0 } },
+    mergeFx: null,
   };
 }
 
@@ -120,7 +121,7 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'attempt-merge': {
       if (state.roundOver || state.gameOver) return state;
-      const sourceId = state.selectedId;
+      const sourceId = action.sourceId;
       if (!sourceId) return state;
       if (sourceId === action.targetId) return { ...state, selectedId: null };
 
@@ -212,6 +213,17 @@ function reducer(state: GameState, action: GameAction): GameState {
           roundOver: true,
           players,
           gameOver,
+          mergeFx: {
+            mergedId: merged.id,
+            fromId: source.id,
+            targetId: target.id,
+            at: Date.now(),
+            from: action.from ? { ...action.from } : { ...source.pos },
+            to: action.to ? { ...action.to } : { ...target.pos },
+            sourceStack: [...source.stack],
+            fromPx: action.fromPx ? { ...action.fromPx } : undefined,
+            toPx: action.toPx ? { ...action.toPx } : undefined,
+          },
         };
       }
 
@@ -220,7 +232,22 @@ function reducer(state: GameState, action: GameAction): GameState {
         towers,
         selectedId: null,
         currentPlayer: nextPlayer,
+        mergeFx: {
+          mergedId: merged.id,
+          fromId: source.id,
+          targetId: target.id,
+          at: Date.now(),
+          from: action.from ? { ...action.from } : { ...source.pos },
+          to: action.to ? { ...action.to } : { ...target.pos },
+          sourceStack: [...source.stack],
+          fromPx: action.fromPx ? { ...action.fromPx } : undefined,
+          toPx: action.toPx ? { ...action.toPx } : undefined,
+        },
       };
+    }
+    case 'clear-merge-fx': {
+      if (state.mergeFx == null) return state;
+      return { ...state, mergeFx: null };
     }
     case 'resolve-overlaps': {
       if (state.roundOver || state.gameOver) return state;

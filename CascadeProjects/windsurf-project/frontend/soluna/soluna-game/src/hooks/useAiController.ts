@@ -99,7 +99,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           const st = latestStateRef.current;
           if (mv && (mv as any).sourceId && (mv as any).targetId && !st.roundOver && !st.gameOver) {
             dispatch({ type: 'select', id: (mv as any).sourceId });
-            dispatch({ type: 'attempt-merge', targetId: (mv as any).targetId });
+            dispatch({ type: 'attempt-merge', sourceId: (mv as any).sourceId, targetId: (mv as any).targetId });
           }
         }
       };
@@ -165,7 +165,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           setAiBusyElapsedMs(res.elapsedMs ?? 0);
           if (res.move) {
             dispatch({ type: 'select', id: (res.move as any).sourceId });
-            dispatch({ type: 'attempt-merge', targetId: (res.move as any).targetId });
+            dispatch({ type: 'attempt-merge', sourceId: (res.move as any).sourceId, targetId: (res.move as any).targetId });
           }
         }
       }, 0);
@@ -185,7 +185,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     setAiBusyElapsedMs(res.elapsedMs ?? 0);
     if (res.move) {
       dispatch({ type: 'select', id: (res.move as any).sourceId });
-      dispatch({ type: 'attempt-merge', targetId: (res.move as any).targetId });
+      dispatch({ type: 'attempt-merge', sourceId: (res.move as any).sourceId, targetId: (res.move as any).targetId });
     }
   }, [aiBusy, aiDepth, aiTimeMode, aiTimeSeconds, dispatch]);
 

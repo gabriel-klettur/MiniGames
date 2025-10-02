@@ -14,10 +14,15 @@ export default function Board() {
   const movedDuringDragRef = useRef(false);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;
-  // Long-press to start dragging
-  const LONG_PRESS_MS = 220;
+  // Remember the exact DOM-measured center when a token becomes selected as origin
+  const lastSelectedRef = useRef<{ id: string; px: { x: number; y: number }; norm: { x: number; y: number } } | null>(null);
+  // Flight overlay UI state
+  const [flightRunning, setFlightRunning] = useState(false);
+  const [flightPx, setFlightPx] = useState<{ start: { x: number; y: number }; end: { x: number; y: number } } | null>(null);
+  const flightRef = useRef<HTMLDivElement | null>(null);
   const pressTimerRef = useRef<number | null>(null);
   const pressingRef = useRef<{ id: string } | null>(null);
+  const LONG_PRESS_MS = 220;
   useEffect(() => {
     const el = fieldRef.current;
     const ellipse = ellipseRef.current;
@@ -40,7 +45,101 @@ export default function Board() {
     return () => ro.disconnect();
   }, []);
 
+  // Keep lastSelectedRef in sync with current selection (covers cases where selection changes without our pointerDown path)
+  useEffect(() => {
+    const selId = state.selectedId;
+    const field = fieldRef.current;
+    if (!selId || !field) {
+      lastSelectedRef.current = null;
+      return;
+    }
+    const el = field.querySelector<HTMLButtonElement>(`.token[data-id="${selId}"]`);
+    if (!el) return;
+    const fieldRect = field.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const px = { x: r.left + r.width / 2 - fieldRect.left, y: r.top + r.height / 2 - fieldRect.top };
+    const norm = { x: clamp(px.x / Math.max(1, fieldRect.width), 0, 1), y: clamp(px.y / Math.max(1, fieldRect.height), 0, 1) };
+    lastSelectedRef.current = { id: selId, px, norm };
+  }, [state.selectedId]);
+
+  // Helpers to measure centers in px relative to play-field
+  const getTokenCenterPxById = (id: string): { x: number; y: number } | null => {
+    const field = fieldRef.current;
+    if (!field) return null;
+    const el = field.querySelector<HTMLButtonElement>(`.token[data-id="${id}"]`);
+    if (!el) return null;
+    const fieldRect = field.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2 - fieldRect.left, y: r.top + r.height / 2 - fieldRect.top };
+  };
+
+  // Prefer the center captured at selection time to avoid races; fallback to live measurement
+  const getOriginCenters = (sourceId: string, targetId: string) => {
+    const fromPxSel = lastSelectedRef.current && lastSelectedRef.current.id === sourceId ? lastSelectedRef.current.px : (getTokenCenterPxById(sourceId) || null);
+    const fromNormSel = lastSelectedRef.current && lastSelectedRef.current.id === sourceId ? lastSelectedRef.current.norm : (getTokenCenterNorm(sourceId) || null);
+    const toPx = getTokenCenterPxById(targetId) || null;
+    const toNorm = getTokenCenterNorm(targetId) || null;
+    return {
+      fromPx: fromPxSel || undefined,
+      toPx: toPx || undefined,
+      fromNorm: fromNormSel || undefined,
+      toNorm: toNorm || undefined,
+    };
+  };
+
+  // Compute and trigger flight animation when a merge occurs
+  useEffect(() => {
+    if (!state.mergeFx || !fieldRef.current) return;
+    const rect = fieldRef.current.getBoundingClientRect();
+    // Start from provided px when available; fallback to normalized
+    const start = state.mergeFx.fromPx
+      ? { x: state.mergeFx.fromPx.x, y: state.mergeFx.fromPx.y }
+      : { x: state.mergeFx.from.x * rect.width, y: state.mergeFx.from.y * rect.height };
+    // Try to use the actual merged token DOM position as destination (accounts for overlap resolution)
+    let end = state.mergeFx.toPx
+      ? { x: state.mergeFx.toPx.x, y: state.mergeFx.toPx.y }
+      : getTokenCenterPxById(state.mergeFx.mergedId);
+    if (!end) {
+      // Fallback to the provided normalized 'to'
+      end = { x: state.mergeFx.to.x * rect.width, y: state.mergeFx.to.y * rect.height };
+    }
+    setFlightPx({ start, end });
+    setFlightRunning(false);
+    const raf1 = requestAnimationFrame(() => {
+      const preciseEnd = getTokenCenterPxById(state.mergeFx!.mergedId) || end!;
+      setFlightPx({ start, end: preciseEnd });
+      try { void flightRef.current?.getBoundingClientRect(); } catch {}
+      const raf2 = requestAnimationFrame(() => {
+        setFlightRunning(true);
+      });
+      return () => cancelAnimationFrame(raf2);
+    });
+    return () => cancelAnimationFrame(raf1);
+  }, [state.mergeFx, sizes.w, sizes.h]);
+
+  // Reset local flight state when effect clears
+  useEffect(() => {
+    if (!state.mergeFx) {
+      setFlightPx(null);
+      setFlightRunning(false);
+    }
+  }, [state.mergeFx]);
+
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+  // Measure the visual center of a token by its id and return normalized coords [0..1]
+  const getTokenCenterNorm = (id: string): { x: number; y: number } | null => {
+    const field = fieldRef.current;
+    if (!field) return null;
+    const el = field.querySelector<HTMLButtonElement>(`.token[data-id="${id}"]`);
+    if (!el) return null;
+    const fieldRect = field.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2 - fieldRect.left;
+    const cy = r.top + r.height / 2 - fieldRect.top;
+    if (fieldRect.width <= 0 || fieldRect.height <= 0) return null;
+    return { x: clamp(cx / fieldRect.width, 0, 1), y: clamp(cy / fieldRect.height, 0, 1) };
+  };
 
   const onCellClick = (id: string) => {
     // ignore clicks when dragging or just dragged
@@ -59,7 +158,10 @@ export default function Board() {
     const target = state.towers.find(t => t.id === id);
     if (!source || !target) return;
     if (canMerge(source, target)) {
-      dispatch({ type: 'attempt-merge', targetId: id });
+      const { fromPx, toPx, fromNorm, toNorm } = getOriginCenters(source.id, target.id);
+      const fromC = fromNorm || { ...source.pos };
+      const toC = toNorm || { ...target.pos };
+      dispatch({ type: 'attempt-merge', sourceId: source.id, targetId: id, from: fromC, to: toC, fromPx, toPx });
     } else {
       dispatch({ type: 'select', id });
     }
@@ -82,6 +184,15 @@ export default function Board() {
     // If another token is selected, keep it for potential click-to-merge on click.
     if (!state.selectedId) {
       dispatch({ type: 'select', id });
+      // Capture precise origin position at the moment of selection
+      const field = fieldRef.current;
+      if (field) {
+        const fieldRect = field.getBoundingClientRect();
+        const r = (el as HTMLElement).getBoundingClientRect();
+        const px = { x: r.left + r.width / 2 - fieldRect.left, y: r.top + r.height / 2 - fieldRect.top };
+        const norm = { x: clamp(px.x / Math.max(1, fieldRect.width), 0, 1), y: clamp(px.y / Math.max(1, fieldRect.height), 0, 1) };
+        lastSelectedRef.current = { id, px, norm };
+      }
     }
     movedDuringDragRef.current = false;
     pressingRef.current = { id };
@@ -182,8 +293,10 @@ export default function Board() {
       const dst = state.towers.find(t => t.id === best!.id);
       if (dst) {
         if (canMerge(src, dst)) {
-          // attempt merge (source on top of target)
-          dispatch({ type: 'attempt-merge', targetId: dst.id });
+          const { fromPx, toPx, fromNorm, toNorm } = getOriginCenters(src.id, dst.id);
+          const fromC = fromNorm || { ...src.pos };
+          const toC = toNorm || { ...dst.pos };
+          dispatch({ type: 'attempt-merge', sourceId: src.id, targetId: dst.id, from: fromC, to: toC, fromPx, toPx });
           dragStartRef.current = null;
           setDropTargetId(null);
           // keep moved flag true briefly to suppress the click that follows pointerup
@@ -260,6 +373,7 @@ export default function Board() {
                 className={`token ${state.selectedId === t.id ? 'selected' : ''} ${dragId === t.id ? 'dragging' : ''} ${dropTargetId === t.id ? 'droppable-target' : ''} ${selectedTower && selectedTower.id !== t.id && t.height === selectedTower.height ? 'height-match' : ''}`}
                 data-symbol={t.top}
                 data-height={t.height}
+                data-id={t.id}
                 style={{
                   // Allow placing tokens anywhere within play-field bounds (center can reach edges)
                   left: sizes.w
@@ -280,32 +394,65 @@ export default function Board() {
                 onPointerCancel={(e) => handlePointerCancel(e, t.id)}
                 title={`h:${t.height} · top:${t.top}`}
               >
-                {/* Render stacked images for all discs below the top */}
-                <div className="token-stack" aria-hidden="true">
-                  {(() => {
-                    const below = t.stack.slice(0, Math.max(0, t.stack.length - 1)); // base -> one below top
-                    const count = below.length;
-                    // Render from just-below-top (i=1) downwards to base (i=count)
-                    return below.slice().reverse().map((sym, i) => (
-                      <div
-                        key={i}
-                        className="token-disc-img"
-                        style={{ ['--i' as any]: i + 1, zIndex: (count - i) }}
-                      >
-                        <SymbolIcon type={sym} />
-                      </div>
-                    ));
-                  })()}
+                <div className="token-inner">
+                  {/* Render stacked images for all discs below the top */}
+                  <div className="token-stack" aria-hidden="true">
+                    {(() => {
+                      const below = t.stack.slice(0, Math.max(0, t.stack.length - 1)); // base -> one below top
+                      const count = below.length;
+                      // Render from just-below-top (i=1) downwards to base (i=count)
+                      return below.slice().reverse().map((sym, i) => (
+                        <div
+                          key={i}
+                          className="token-disc-img"
+                          style={{ ['--i' as any]: i + 1, zIndex: (count - i) }}
+                        >
+                          <SymbolIcon type={sym} />
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                  {/* Top-most disc image */}
+                  <SymbolIcon type={t.top} />
+                  <div className="token-height">{t.height}</div>
                 </div>
-                {/* Top-most disc image */}
-                <SymbolIcon type={t.top} />
-                <div className="token-height">{t.height}</div>
               </button>
             ))}
+            {/* Flight overlay: render the moving source stack from A to B when mergeFx exists */}
+            {state.mergeFx && flightPx && (
+              <div className="merge-flight-layer" key={`flight-${state.mergeFx.at}`}>
+                <div
+                  className="token-flight"
+                  key={`flight-token-${state.mergeFx.mergedId}-${state.mergeFx.at}`}
+                  style={{ left: flightPx.start.x, top: flightPx.start.y }}
+                >
+                  <div
+                    className={`token-flight-body ${flightRunning ? 'running' : ''}`}
+                    ref={flightRef}
+                    style={{ ['--dx' as any]: `${flightPx.end.x - flightPx.start.x}px`, ['--dy' as any]: `${flightPx.end.y - flightPx.start.y}px`, ['--stack-count' as any]: state.mergeFx.sourceStack.length }}
+                    onAnimationEnd={() => { dispatch({ type: 'clear-merge-fx' }); }}
+                  >
+                    <div className="token-inner">
+                      <div className="token-stack" aria-hidden="true">
+                        {(() => {
+                          const below = state.mergeFx!.sourceStack.slice(0, Math.max(0, state.mergeFx!.sourceStack.length - 1));
+                          const count = below.length;
+                          return below.slice().reverse().map((sym, i) => (
+                            <div key={i} className="token-disc-img" style={{ ['--i' as any]: i + 1, zIndex: (count - i) }}>
+                              <SymbolIcon type={sym} />
+                            </div>
+                          ));
+                        })()}
+                      </div>
+                      <SymbolIcon type={state.mergeFx.sourceStack[state.mergeFx.sourceStack.length - 1]} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
       {state.roundOver && !state.gameOver && (
         <GameOverModal
           title="Ronda terminada"
@@ -314,7 +461,6 @@ export default function Board() {
           onConfirm={() => dispatch({ type: 'new-round' })}
         />
       )}
-
       {state.gameOver && (
         <GameOverModal
           title="Partida terminada"
@@ -326,4 +472,3 @@ export default function Board() {
     </div>
   );
 }
-

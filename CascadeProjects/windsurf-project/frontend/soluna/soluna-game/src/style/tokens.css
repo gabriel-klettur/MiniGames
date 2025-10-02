@@ -33,6 +33,18 @@
   z-index: 1; /* por encima de la pila visual */
 }
 
+/* Asegurar correcto layering cuando usamos .token-inner */
+.token-inner > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  position: relative;
+  z-index: 1; /* por encima de la pila visual */
+}
+
 /* Contenedor de la pila visual */
 .token-stack { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; }
 
@@ -107,4 +119,70 @@
 .play-field.has-selection.selected-fugaz .token[data-symbol="fugaz"]:not(.selected):not(.droppable-target) {
   box-shadow: inset 0 6px 12px rgba(255,255,255,0.08), inset 0 -6px 12px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.85), 0 6px 10px rgba(0,0,0,0.40);
   border-color: rgba(255,255,255,0.9);
+}
+
+/* --- Animación de fusión (merge) ---
+   Se aplica a la ficha resultante mediante la clase .merge-anim
+   Efecto: pequeño scale+pop con destello sutil
+*/
+.token-inner { position: relative; }
+
+@keyframes merge-pop {
+  0%   { transform: scale(0.85); filter: brightness(1); }
+  40%  { transform: scale(1.08); filter: brightness(1.15); }
+  70%  { transform: scale(0.98); filter: brightness(1.05); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.token.merge-anim .token-inner {
+  animation: merge-pop 420ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* Destello circular breve */
+.token.merge-anim::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10%;
+  height: 10%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,0.85), rgba(255,255,255,0) 60%);
+  animation: merge-flash 360ms ease-out both;
+}
+
+@keyframes merge-flash {
+  0%   { opacity: 0.0; transform: translate(-50%, -50%) scale(0.8); }
+  15%  { opacity: 0.9; transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0.0; transform: translate(-50%, -50%) scale(1.8); }
+}
+
+/* --- Capa y estilo de vuelo (flight) del stack fuente --- */
+.merge-flight-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000001; /* por encima de fichas y por debajo de overlays modales */
+}
+
+.token-flight {
+  position: absolute;
+  width: var(--token-size);
+  height: var(--token-size);
+  transform: translate(-50%, -50%);
+}
+
+.token-flight-body { will-change: transform, opacity; }
+
+@keyframes flight-move {
+  from { transform: translate(0px, 0px); }
+  to   { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+}
+
+.token-flight-body.running { animation: flight-move 320ms cubic-bezier(.2,.8,.2,1) both; }
+
+.token-flight-body .token-inner {
+  transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease-out;
 }
