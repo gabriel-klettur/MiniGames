@@ -20,8 +20,7 @@ export const VisibilitySection: React.FC<VisibilitySectionProps> = ({
   onToggleHideWoodBoard,
 }) => {
   return (
-    <div className="vsai-section" aria-label="Visibilidad del tablero">
-      <div className="vsai-title">Visibilidad</div>
+    <div className="vsai-section" aria-label="Visibilidad del tablero">      
       <div className={["vsai-options", styles.optionsGroup].join(' ')} role="group" aria-label="Alternar visibilidad fondo y madera">
         <ToggleButton
           onClick={onToggleHideBoardBg}

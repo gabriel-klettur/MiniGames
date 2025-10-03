@@ -15,8 +15,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   onApplyBoardImage,
 }) => {
   return (
-    <div className="vsai-section" aria-label="Seleccionar textura de fondo">
-      <div className="vsai-title">Fondos</div>
+    <div className="vsai-section" aria-label="Seleccionar textura de fondo">      
       <div role="listbox" aria-label="Catálogo de fondos" className={styles.gridBgThumbs}>
         {bgCatalog.map((bg) => (
           <BackgroundThumb

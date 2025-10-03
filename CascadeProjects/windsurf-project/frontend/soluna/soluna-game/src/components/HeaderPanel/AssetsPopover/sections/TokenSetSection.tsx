@@ -7,8 +7,7 @@ export const TokenSetSection: React.FC = () => {
   const { sets, selectedSet, selectSet } = useTokenSet();
 
   return (
-    <div className="vsai-section" aria-label="Seleccionar set de fichas">
-      <div className="vsai-title">Fichas</div>
+    <div className="vsai-section" aria-label="Seleccionar set de fichas">      
       <div role="listbox" aria-label="Catálogo de sets de fichas" className={styles.tokenSetGrid}>
         {sets.map((set) => (
           <TokenSetCard
