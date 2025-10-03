@@ -66,6 +66,7 @@
       #b7814f 32px 48px,
       #c89463 48px 64px);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 0; /* asegúrate de que el área de madera quede detrás de fichas */
 }
 
 .play-ellipse {
@@ -93,14 +94,17 @@
   aspect-ratio: 4 / 3;
   border-radius: 50% / 50%;
   overflow: visible; /* dejar ver fichas fuera del borde */
+  /* Primera capa opcional controlada por --board-bg-image (url(...) center/cover no-repeat) */
   background:
+    var(--board-bg-image, none),
     radial-gradient(100% 100% at 50% 50%, rgba(21, 44, 125, 0.85) 30%, rgba(10, 28, 86, 0.95) 70%, rgba(13, 20, 64, 0.98) 100%),
     radial-gradient(circle at 20% 30%, rgba(255,255,255,0.25) 1px, transparent 2px),
     radial-gradient(circle at 80% 60%, rgba(255,255,255,0.22) 1px, transparent 2px),
     radial-gradient(circle at 30% 75%, rgba(255,255,255,0.18) 1.2px, transparent 2.2px),
     radial-gradient(circle at 65% 25%, rgba(255,255,255,0.18) 1.2px, transparent 2.2px),
     linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.05));
-  background-size: auto, 160px 160px, 200px 200px, 180px 180px, 180px 180px, auto;
+  /* Tamaños por capa: imagen seleccionada -> cover, luego tamaños para los puntos/gradientes */
+  background-size: cover, auto, 160px 160px, 200px 200px, 180px 180px, 180px 180px, auto;
   box-shadow:
     inset 0 0 60px rgba(255,255,255,0.08),
     inset 0 0 140px rgba(0,0,0,0.5),
@@ -112,7 +116,7 @@
 .play-field {
   position: absolute;
   inset: 0; /* tablero usa todo elipse */
-  z-index: 1; /* por encima de decoraciones */
+  z-index: 10; /* por encima del área y decoraciones de fondo */
 }
 
 /* Mantener glow detrás de fichas */
@@ -135,4 +139,44 @@
   background: radial-gradient(60% 60% at 50% 50%, rgba(99, 165, 255, 0.25), rgba(99, 165, 255, 0.0) 60%);
   filter: blur(6px);
   pointer-events: none;
+}
+
+/* Ocultar fondo del tablero cuando se define el atributo global */
+:root[data-hide-board-bg] .play-ellipse {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-hide-board-bg] .play-ellipse::before {
+  display: none !important;
+}
+
+/* Ocultar solo el tablero de madera (sin afectar la elipse) */
+:root[data-hide-wood-board] .play-area {
+  background: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  overflow: visible !important; /* no recortar fichas */
+}
+
+:root[data-hide-wood-board] .play-ellipse {
+  overflow: visible !important; /* asegurar que fichas no se recorten por elipse en este modo */
+}
+
+/* Modo 'Solo fondo': el fondo ocupa todo el tablero (área rectangular) */
+:root[data-full-board-bg] .play-ellipse {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-full-board-bg] .play-ellipse::before {
+  display: none !important;
+}
+
+:root[data-full-board-bg] .play-area {
+  background: var(--board-bg-image, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }

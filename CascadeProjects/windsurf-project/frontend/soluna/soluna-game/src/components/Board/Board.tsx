@@ -7,7 +7,7 @@ import TokenButton from './TokenButton';
 import FlightLayer from './FlightLayer';
 import { clamp } from './utils';
 
-export default function BoardRefactored() {
+export default function Board() {
   const { state, dispatch } = useGame();
   const { fieldRef, ellipseRef, sizes } = useBoardSizes();
   const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;

@@ -10,8 +10,7 @@ export interface DevToolsPanelProps {
 }
 
 // DevToolsPanel — Acciones de desarrollo/diagnóstico (presentacional), estilo Quoridor
-export default function DevToolsPanel({
-  className,
+export default function DevToolsPanel({  
   showFases = false,
   onToggleFases = () => {},
   showUX = false,

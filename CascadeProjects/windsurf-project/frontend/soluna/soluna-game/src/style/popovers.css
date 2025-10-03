@@ -48,3 +48,11 @@
 }
 .vsai-diffs button:disabled { opacity: 0.6; cursor: not-allowed; }
 .vsai-hint { font-size: 11px; color: var(--muted, #9ca3af); }
+
+/* Fondo popover must appear above board overlays and dragging tokens */
+.popover.bg-popover {
+  z-index: 1000002; /* higher than .board-overlay (1000001) and .token.dragging (1000000) */
+  /* Expand to full width (left/right set inline) */
+  max-width: none;
+  width: auto;
+}
