@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useLocalStorageBoolean, useLocalStorageState } from './useLocalStorage';
 
 export interface UseBackgroundControls {
   bgHidden: boolean;
@@ -16,56 +17,55 @@ export interface UseBackgroundControls {
  * Encapsula la lectura inicial del DOM y las funciones de aplicar/toggle para mantener el estado fuente en el DOM.
  */
 export function useBackgroundControls(): UseBackgroundControls {
-  const [bgHidden, setBgHidden] = useState<boolean>(false);
-  const [woodHidden, setWoodHidden] = useState<boolean>(false);
-  const [fullBg, setFullBg] = useState<boolean>(false);
-  const [selectedBgUrl, setSelectedBgUrl] = useState<string | null>(null);
+  // Estado persistente en localStorage
+  const [bgHidden, setBgHidden] = useLocalStorageBoolean('soluna:bg:hidden', false);
+  const [woodHidden, setWoodHidden] = useLocalStorageBoolean('soluna:bg:woodHidden', false);
+  const [fullBg, setFullBg] = useLocalStorageBoolean('soluna:bg:full', false);
+  const [selectedBgUrl, setSelectedBgUrl] = useLocalStorageState<string | null>('soluna:bg:image', null);
 
-  // Inicializa desde el DOM al montar
+  // Sincroniza atributos/variables CSS con el DOM cuando cambian los estados persistidos
   useEffect(() => {
     const root = document.documentElement;
-    setBgHidden(root.hasAttribute('data-hide-board-bg'));
-    setWoodHidden(root.hasAttribute('data-hide-wood-board'));
-    setFullBg(root.hasAttribute('data-full-board-bg'));
-    const cssVar = getComputedStyle(root).getPropertyValue('--board-bg-image').trim();
-    if (cssVar && cssVar !== 'none') {
-      setSelectedBgUrl(cssVar);
-    }
-  }, []);
+    if (bgHidden) root.setAttribute('data-hide-board-bg', '1');
+    else root.removeAttribute('data-hide-board-bg');
+  }, [bgHidden]);
 
-  const applyBoardImage = (url: string | null) => {
+  useEffect(() => {
     const root = document.documentElement;
-    if (url) {
-      root.style.setProperty('--board-bg-image', `url('${url}') center / cover no-repeat`);
-      setSelectedBgUrl(url);
+    if (woodHidden) root.setAttribute('data-hide-wood-board', '1');
+    else root.removeAttribute('data-hide-wood-board');
+  }, [woodHidden]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (fullBg) root.setAttribute('data-full-board-bg', '1');
+    else root.removeAttribute('data-full-board-bg');
+  }, [fullBg]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (selectedBgUrl) {
+      root.style.setProperty('--board-bg-image', `url('${selectedBgUrl}') center / cover no-repeat`);
     } else {
       root.style.removeProperty('--board-bg-image');
-      setSelectedBgUrl(null);
     }
+  }, [selectedBgUrl]);
+
+  const applyBoardImage = (url: string | null) => {
+    // Actualiza estado persistido; el efecto sincroniza con el DOM
+    setSelectedBgUrl(url);
   };
 
   const toggleHideBoardBg = () => {
-    const root = document.documentElement;
-    const next = !bgHidden;
-    if (next) root.setAttribute('data-hide-board-bg', '1');
-    else root.removeAttribute('data-hide-board-bg');
-    setBgHidden(next);
+    setBgHidden((prev) => !prev);
   };
 
   const toggleHideWoodBoard = () => {
-    const root = document.documentElement;
-    const next = !woodHidden;
-    if (next) root.setAttribute('data-hide-wood-board', '1');
-    else root.removeAttribute('data-hide-wood-board');
-    setWoodHidden(next);
+    setWoodHidden((prev) => !prev);
   };
 
   const toggleFullBg = () => {
-    const root = document.documentElement;
-    const next = !fullBg;
-    if (next) root.setAttribute('data-full-board-bg', '1');
-    else root.removeAttribute('data-full-board-bg');
-    setFullBg(next);
+    setFullBg((prev) => !prev);
   };
 
   return {
