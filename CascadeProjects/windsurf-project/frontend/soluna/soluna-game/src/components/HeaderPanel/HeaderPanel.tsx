@@ -86,8 +86,7 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
           >
             <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M3 5h18v2H3zM3 17h18v2H3zM5 8h14v8H5z"/>
-            </svg>
-            <span className="header-btn__label">Fondo</span>
+            </svg>            
           </button>
 
           {/* Botón Partida Vs IA (estilo Pylos) */}

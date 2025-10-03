@@ -8,10 +8,10 @@ interface PlayerToggleButtonProps {
 }
 
 const PlayerToggleButton: React.FC<PlayerToggleButtonProps> = ({ label, active, onClick }) => {
-  const badgeClass = label === 'P1' ? 'p1' : 'p2';
+  const badgeClass = label === 'P1' ? 'J1' : 'J2';
   return (
     <button onClick={onClick} aria-pressed={active} aria-label={label} className="ia-toggle-btn">
-      <span className={`ia-badge ${badgeClass}`} aria-hidden="true">{label}</span>
+      <span aria-hidden="true">{badgeClass}</span>      
       <RobotIcon className={[
         'robot-icon',
         active ? 'active' : 'inactive',

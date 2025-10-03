@@ -1,5 +1,5 @@
 import './style/index.css';
-import IAUserPanel from './components/IAUserPanel';
+import IAUserPanel from './components/IAUserPanel/IAUserPanel';
 import HeaderPanel from './components/HeaderPanel/HeaderPanel';
 import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
