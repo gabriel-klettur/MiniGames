@@ -23,7 +23,12 @@ html, body { width: 100%; max-width: 100%; }
 /* Fondo global tipo Pylos: color base + imagen + viñeta/scrim para contraste */
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
-body { margin: 0; background: #0f172a; }
+body {
+  margin: 0;
+  background: #0f172a;
+  /* Tipografía global replicando Pylos */
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+}
 
 #root { position: relative; z-index: 0; }
 /* Imagen de fondo a pantalla completa.
