@@ -7,12 +7,16 @@ export interface BackgroundSectionProps {
   bgCatalog: BgItem[];
   selectedBgUrl: string | null;
   onApplyBoardImage: (url: string | null) => void;
+  bgHidden: boolean;
+  onToggleHideBoardBg: () => void;
 }
 
 export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
   bgCatalog,
   selectedBgUrl,
   onApplyBoardImage,
+  bgHidden,
+  onToggleHideBoardBg,
 }) => {
   return (
     <div className="vsai-section" aria-label="Seleccionar textura de fondo">      
@@ -27,18 +31,29 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
               key={bg.url}
               url={bg.url}
               name={bg.name}
-              selected={selectedBgUrl ? selectedBgUrl.includes(bg.url) : false}
-              onClick={() => onApplyBoardImage(bg.url)}
+              selected={!bgHidden && (selectedBgUrl ? selectedBgUrl.includes(bg.url) : false)}
+              onClick={() => { if (bgHidden) onToggleHideBoardBg(); onApplyBoardImage(bg.url); }}
             />
           ))
         )}
         <button
-          onClick={() => onApplyBoardImage(null)}
-          aria-selected={selectedBgUrl === null}
+          onClick={() => { if (bgHidden) onToggleHideBoardBg(); onApplyBoardImage(null); }}
+          aria-selected={!bgHidden && selectedBgUrl === null}
           title="Default"
-          className={[styles.defaultThumb, selectedBgUrl === null ? styles.defaultThumbSelected : ''].join(' ').trim()}
+          className={[
+            styles.defaultThumb,
+            !bgHidden && selectedBgUrl === null ? styles.defaultThumbSelected : ''
+          ].join(' ').trim()}
         >
           Default
+        </button>
+        <button
+          onClick={() => { if (!bgHidden) onToggleHideBoardBg(); }}
+          aria-pressed={bgHidden}
+          title={bgHidden ? 'Mostrar fondo' : 'Ocultar fondo'}
+          className={[styles.defaultThumb, bgHidden ? styles.defaultThumbSelected : ''].join(' ').trim()}
+        >
+          None
         </button>
       </div>
     </div>

@@ -56,25 +56,27 @@ export const AssetsPopover: React.FC<AssetsPopoverProps> = ({
       }}
     >
       <VisibilitySection
-        bgHidden={bgHidden}
         fullBg={fullBg}
-        woodHidden={woodHidden}
-        onToggleHideBoardBg={onToggleHideBoardBg}
         onToggleFullBg={onToggleFullBg}
-        onToggleHideWoodBoard={onToggleHideWoodBoard}
       />
 
       <BackgroundSection
         bgCatalog={bgCatalog}
         selectedBgUrl={selectedBgUrl}
         onApplyBoardImage={onApplyBoardImage}
+        bgHidden={bgHidden}
+        onToggleHideBoardBg={onToggleHideBoardBg}
       />
 
-      <BoardSection
-        boardCatalog={boardCatalog}
-        selectedBoardUrl={selectedBoardUrl}
-        onApplyBoardTexture={onApplyBoardTexture}
-      />
+      {!fullBg && (
+        <BoardSection
+          boardCatalog={boardCatalog}
+          selectedBoardUrl={selectedBoardUrl}
+          onApplyBoardTexture={onApplyBoardTexture}
+          woodHidden={woodHidden}
+          onToggleHideWoodBoard={onToggleHideWoodBoard}
+        />
+      )}
 
       <TokenSetSection />
     </div>

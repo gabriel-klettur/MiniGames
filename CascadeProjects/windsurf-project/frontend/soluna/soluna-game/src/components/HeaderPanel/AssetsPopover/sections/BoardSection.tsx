@@ -7,12 +7,16 @@ export interface BoardSectionProps {
   boardCatalog: BoardItem[];
   selectedBoardUrl: string | null;
   onApplyBoardTexture: (url: string | null) => void;
+  woodHidden: boolean;
+  onToggleHideWoodBoard: () => void;
 }
 
 export const BoardSection: React.FC<BoardSectionProps> = ({
   boardCatalog,
   selectedBoardUrl,
   onApplyBoardTexture,
+  woodHidden,
+  onToggleHideWoodBoard,
 }) => {
   return (
     <div className="vsai-section" aria-label="Seleccionar tipo de tablero">
@@ -27,18 +31,29 @@ export const BoardSection: React.FC<BoardSectionProps> = ({
               key={b.url}
               url={b.url}
               name={b.name}
-              selected={selectedBoardUrl ? selectedBoardUrl.includes(b.url) : false}
-              onClick={() => onApplyBoardTexture(b.url)}
+              selected={!woodHidden && (selectedBoardUrl ? selectedBoardUrl.includes(b.url) : false)}
+              onClick={() => { if (woodHidden) onToggleHideWoodBoard(); onApplyBoardTexture(b.url); }}
             />
           ))
         )}
         <button
-          onClick={() => onApplyBoardTexture(null)}
-          aria-selected={selectedBoardUrl === null}
+          onClick={() => { if (woodHidden) onToggleHideWoodBoard(); onApplyBoardTexture(null); }}
+          aria-selected={!woodHidden && selectedBoardUrl === null}
           title="Default"
-          className={[styles.defaultThumb, selectedBoardUrl === null ? styles.defaultThumbSelected : ''].join(' ').trim()}
+          className={[
+            styles.defaultThumb,
+            !woodHidden && selectedBoardUrl === null ? styles.defaultThumbSelected : ''
+          ].join(' ').trim()}
         >
           Default
+        </button>
+        <button
+          onClick={() => { if (!woodHidden) onToggleHideWoodBoard(); }}
+          aria-pressed={woodHidden}
+          title={woodHidden ? 'Mostrar tablero' : 'Ocultar tablero'}
+          className={[styles.defaultThumb, woodHidden ? styles.defaultThumbSelected : ''].join(' ').trim()}
+        >
+          None
         </button>
       </div>
     </div>
