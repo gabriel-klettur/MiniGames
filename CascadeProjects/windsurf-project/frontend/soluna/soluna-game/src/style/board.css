@@ -157,6 +157,7 @@
   box-shadow: none !important;
   border: none !important;
   padding: 0 !important;
+  border-radius: 0 !important;
   overflow: visible !important; /* no recortar fichas */
 }
 

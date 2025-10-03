@@ -1,4 +1,3 @@
-import React from 'react';
 import type { CSSProperties } from 'react';
 import type { Tower } from '../../game/types';
 import { SymbolIcon } from '../Icons';

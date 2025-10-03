@@ -1,4 +1,3 @@
-import React from 'react';
 import { SymbolIcon } from '../Icons';
 import type { SymbolType } from '../../game/types';
 
