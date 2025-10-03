@@ -45,6 +45,8 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
 
   // Cierre por click fuera SOLO para VS IA (el de Fondo permanece abierto hasta pulsar el botón)
   useClickOutside([btnRef, popRef], vsOpen, () => setVsOpen(false));
+  // Cierre por click fuera para el popover de Fondo
+  useClickOutside([bgBtnRef, bgPopRef], bgOpen, () => setBgOpen(false));
 
   const toggleVsOpen = () => {
     if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
