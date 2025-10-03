@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { BgItem } from '../../hooks/useBackgroundCatalog';
 import { useTokenSet } from '../../contexts/TokenSetContext';
 
-export interface BackgroundPopoverProps {
+export interface AssetsPopoverProps {
   anchorRect: DOMRect | null;
   popRef: RefObject<HTMLDivElement | null>;
   bgHidden: boolean;
@@ -17,7 +17,7 @@ export interface BackgroundPopoverProps {
   bgCatalog: BgItem[];
 }
 
-export const BackgroundPopover: React.FC<BackgroundPopoverProps> = ({
+export const AssetsPopover: React.FC<AssetsPopoverProps> = ({
   anchorRect,
   popRef,
   bgHidden,
@@ -173,4 +173,4 @@ export const BackgroundPopover: React.FC<BackgroundPopoverProps> = ({
   );
 };
 
-export default BackgroundPopover;
+export default AssetsPopover;

@@ -4,7 +4,7 @@ import useClickOutside from '../../hooks/useClickOutside';
 import useBackgroundCatalog from '../../hooks/useBackgroundCatalog';
 import useBackgroundControls from '../../hooks/useBackgroundControls';
 import VsAiPopover from './VsAiPopover';
-import BackgroundPopover from './BackgroundPopover';
+import AssetsPopover from './AssetsPopover';
 
 export interface HeaderProps {
   showIA?: boolean;
@@ -133,7 +133,7 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
 
       {/* Popover Fondo */}
       {bgOpen && (
-        <BackgroundPopover
+        <AssetsPopover
           anchorRect={bgAnchorRect}
           popRef={bgPopRef}
           bgHidden={bgHidden}
