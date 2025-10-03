@@ -1,6 +1,7 @@
 import React from 'react';
 import type { RefObject } from 'react';
 import type { BgItem } from '../../hooks/useBackgroundCatalog';
+import { useTokenSet } from '../../contexts/TokenSetContext';
 
 export interface BackgroundPopoverProps {
   anchorRect: DOMRect | null;
@@ -29,6 +30,7 @@ export const BackgroundPopover: React.FC<BackgroundPopoverProps> = ({
   onApplyBoardImage,
   bgCatalog,
 }) => {
+  const { sets, selectedSet, selectSet } = useTokenSet();
   return (
     <div
       id="bg-popover"
@@ -117,6 +119,54 @@ export const BackgroundPopover: React.FC<BackgroundPopoverProps> = ({
           >
             Default
           </button>
+        </div>
+      </div>
+
+      {/* Nueva sección: Sets de fichas */}
+      <div className="vsai-section" aria-label="Seleccionar set de fichas">
+        <div className="vsai-title">Fichas</div>
+        <div
+          role="listbox"
+          aria-label="Catálogo de sets de fichas"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}
+        >
+          {sets.map((set) => {
+            const isSel = set.name === selectedSet;
+            const imgStyle: React.CSSProperties = {
+              width: 24,
+              height: 24,
+              objectFit: 'contain',
+              display: 'block',
+            };
+            return (
+              <button
+                key={set.name}
+                onClick={() => selectSet(set.name)}
+                aria-selected={isSel}
+                title={set.name}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gridTemplateRows: 'repeat(2, 1fr)',
+                  gap: 4,
+                  alignItems: 'center',
+                  justifyItems: 'center',
+                  width: 90,
+                  height: 64,
+                  padding: 6,
+                  borderRadius: 8,
+                  background: 'rgba(17,24,39,0.55)',
+                  border: isSel ? '2px solid #22c55e' : '1px solid rgba(255,255,255,0.18)',
+                  color: '#e5e7eb',
+                }}
+              >
+                <img src={set.images.sol} alt={`Sol - ${set.name}`} style={imgStyle} />
+                <img src={set.images.luna} alt={`Luna - ${set.name}`} style={imgStyle} />
+                <img src={set.images.estrella} alt={`Estrella - ${set.name}`} style={imgStyle} />
+                <img src={set.images.fugaz} alt={`Fugaz - ${set.name}`} style={imgStyle} />
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
