@@ -1,7 +1,7 @@
 import './style/index.css';
 import IAUserPanel from './components/IAUserPanel';
 import HeaderPanel from './components/HeaderPanel';
-import Board from './components/Board/Board';
+import BoardRefactored from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FasesPanel from './components/DevTools/FasesPanel';
 import RulesPanel from './components/DevTools/RulesPanel';
@@ -68,7 +68,7 @@ function App() {
       <InfoPanel />
       {/* Contenido principal: siempre centrado */}
       <div className="content">
-        <Board />
+        <BoardRefactored />
       </div>
       {/* DevTools a ancho completo, fila independiente */}
       {showDev && (
