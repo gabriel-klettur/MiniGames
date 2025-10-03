@@ -6,7 +6,9 @@ export interface UseBackgroundControls {
   woodHidden: boolean;
   fullBg: boolean;
   selectedBgUrl: string | null;
+  selectedBoardUrl: string | null;
   applyBoardImage: (url: string | null) => void;
+  applyBoardTexture: (url: string | null) => void;
   toggleHideBoardBg: () => void;
   toggleHideWoodBoard: () => void;
   toggleFullBg: () => void;
@@ -22,6 +24,7 @@ export function useBackgroundControls(): UseBackgroundControls {
   const [woodHidden, setWoodHidden] = useLocalStorageBoolean('soluna:bg:woodHidden', false);
   const [fullBg, setFullBg] = useLocalStorageBoolean('soluna:bg:full', false);
   const [selectedBgUrl, setSelectedBgUrl] = useLocalStorageState<string | null>('soluna:bg:image', null);
+  const [selectedBoardUrl, setSelectedBoardUrl] = useLocalStorageState<string | null>('soluna:board:image', null);
 
   // Sincroniza atributos/variables CSS con el DOM cuando cambian los estados persistidos
   useEffect(() => {
@@ -51,9 +54,24 @@ export function useBackgroundControls(): UseBackgroundControls {
     }
   }, [selectedBgUrl]);
 
+  // Imagen/textura del tablero de madera (play-area)
+  useEffect(() => {
+    const root = document.documentElement;
+    if (selectedBoardUrl) {
+      root.style.setProperty('--board-wood-image', `url('${selectedBoardUrl}') center / cover no-repeat`);
+    } else {
+      root.style.removeProperty('--board-wood-image');
+    }
+  }, [selectedBoardUrl]);
+
   const applyBoardImage = (url: string | null) => {
     // Actualiza estado persistido; el efecto sincroniza con el DOM
     setSelectedBgUrl(url);
+  };
+
+  const applyBoardTexture = (url: string | null) => {
+    // Actualiza estado persistido de la textura del tablero
+    setSelectedBoardUrl(url);
   };
 
   const toggleHideBoardBg = () => {
@@ -73,7 +91,9 @@ export function useBackgroundControls(): UseBackgroundControls {
     woodHidden,
     fullBg,
     selectedBgUrl,
+    selectedBoardUrl,
     applyBoardImage,
+    applyBoardTexture,
     toggleHideBoardBg,
     toggleHideWoodBoard,
     toggleFullBg,

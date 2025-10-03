@@ -3,6 +3,7 @@ import { useGame } from '../../game/store';
 import useClickOutside from '../../hooks/useClickOutside';
 import useBackgroundCatalog from '../../hooks/useBackgroundCatalog';
 import useBackgroundControls from '../../hooks/useBackgroundControls';
+import useBoardCatalog from '../../hooks/useBoardCatalog';
 import VsAiPopover from './VsAiPopover/VsAiPopover';
 import AssetsPopover from './AssetsPopover/AssetsPopover';
 
@@ -34,7 +35,9 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
     woodHidden,
     fullBg,
     selectedBgUrl,
+    selectedBoardUrl,
     applyBoardImage,
+    applyBoardTexture,
     toggleHideBoardBg,
     toggleHideWoodBoard,
     toggleFullBg,
@@ -42,6 +45,8 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
 
   // Catálogo de fondos
   const bgCatalog = useBackgroundCatalog();
+  // Catálogo de tableros
+  const boardCatalog = useBoardCatalog();
 
   // Cierre por click fuera SOLO para VS IA (el de Fondo permanece abierto hasta pulsar el botón)
   useClickOutside([btnRef, popRef], vsOpen, () => setVsOpen(false));
@@ -140,11 +145,14 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
           woodHidden={woodHidden}
           fullBg={fullBg}
           selectedBgUrl={selectedBgUrl}
+          selectedBoardUrl={selectedBoardUrl}
           onToggleHideBoardBg={toggleHideBoardBg}
           onToggleFullBg={toggleFullBg}
           onToggleHideWoodBoard={toggleHideWoodBoard}
           onApplyBoardImage={applyBoardImage}
+          onApplyBoardTexture={applyBoardTexture}
           bgCatalog={bgCatalog}
+          boardCatalog={boardCatalog}
         />
       )}
 
