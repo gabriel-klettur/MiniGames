@@ -4,6 +4,10 @@ import type { GameState } from '../../../game/types';
 import type { BoardSizes } from './useBoardSizes';
 import { getTokenCenterPxById } from '../utils';
 
+// Small adjustable offset applied to the destination of the merge flight (in pixels)
+// Positive x moves the landing point to the right; positive y moves it down.
+const DEST_OFFSET_PX = { x: 8, y: 8};
+
 interface FlightPx {
   start: { x: number; y: number };
   end: { x: number; y: number };
@@ -44,10 +48,15 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
     if (!end) {
       end = { x: state.mergeFx.to.x * rect.width, y: state.mergeFx.to.y * rect.height };
     }
+    // Apply visual offset so the landing appears slightly to the right (and/or down)
+    end = { x: end.x + DEST_OFFSET_PX.x, y: end.y + DEST_OFFSET_PX.y };
     setFlightPx({ start, end });
     setFlightRunning(false);
     const raf1 = requestAnimationFrame(() => {
-      const preciseEnd = getTokenCenterPxById(fieldRef, state.mergeFx!.mergedId) || end!;
+      // Recompute the precise end using the actual DOM position of the merged token
+      const preciseEndRaw = getTokenCenterPxById(fieldRef, state.mergeFx!.mergedId)
+        || { x: state.mergeFx!.to.x * rect.width, y: state.mergeFx!.to.y * rect.height };
+      const preciseEnd = { x: preciseEndRaw.x + DEST_OFFSET_PX.x, y: preciseEndRaw.y + DEST_OFFSET_PX.y };
       setFlightPx({ start, end: preciseEnd });
       try { void flightRef.current?.getBoundingClientRect(); } catch {}
       const raf2 = requestAnimationFrame(() => setFlightRunning(true));
