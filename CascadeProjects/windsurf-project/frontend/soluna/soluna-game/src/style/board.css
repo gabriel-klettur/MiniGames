@@ -57,7 +57,7 @@
 .play-area {
   position: relative;
   padding: 1rem;
-  border-radius: 16px;
+  border-radius: var(--panel-radius);
   background:
     var(--board-wood-image, none),
     linear-gradient(0deg, rgba(0,0,0,0.08), rgba(0,0,0,0.08)),
@@ -160,7 +160,7 @@
   box-shadow: none !important;
   border: none !important;
   padding: 0 !important;
-  border-radius: 0 !important;
+  border-radius: var(--panel-radius) !important;
   overflow: visible !important; /* no recortar fichas */
 }
 
