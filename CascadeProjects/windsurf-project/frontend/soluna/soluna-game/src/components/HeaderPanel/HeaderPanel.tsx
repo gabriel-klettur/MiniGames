@@ -3,8 +3,8 @@ import { useGame } from '../../game/store';
 import useClickOutside from '../../hooks/useClickOutside';
 import useBackgroundCatalog from '../../hooks/useBackgroundCatalog';
 import useBackgroundControls from '../../hooks/useBackgroundControls';
-import VsAiPopover from './VsAiPopover';
-import AssetsPopover from './AssetsPopover';
+import VsAiPopover from './VsAiPopover/VsAiPopover';
+import AssetsPopover from './AssetsPopover/AssetsPopover';
 
 export interface HeaderProps {
   showIA?: boolean;

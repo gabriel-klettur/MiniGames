@@ -1,0 +1,92 @@
+/* Container-specific tweaks can live here if needed */
+.container {
+  box-sizing: border-box; /* benign, common default to avoid layout surprises */
+}
+
+/* Generic groups */
+.optionsGroup {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Background thumbnails grid */
+.gridBgThumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.bgThumb {
+  width: 56px;
+  height: 42px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.bgThumbSelected {
+  border: 2px solid #22c55e;
+}
+
+.defaultThumb {
+  width: 56px;
+  height: 42px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 24, 39, 0.55);
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 11px;
+}
+
+.defaultThumbSelected {
+  border: 2px solid #22c55e;
+}
+
+/* Toggle button (generic) */
+.toggleButton {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.55);
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+}
+
+/* Token set cards grid */
+.tokenSetGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tokenSetCard {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+  align-items: center;
+  justify-items: center;
+  width: 90px;
+  height: 64px;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e5e7eb;
+}
+
+.tokenSetCardSelected {
+  border: 2px solid #22c55e;
+}
+
+.tokenImg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
