@@ -1,6 +1,6 @@
 import './style/index.css';
 import IAUserPanel from './components/IAUserPanel';
-import HeaderPanel from './components/HeaderPanel';
+import HeaderPanel from './components/HeaderPanel/HeaderPanel';
 import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FasesPanel from './components/DevTools/FasesPanel';

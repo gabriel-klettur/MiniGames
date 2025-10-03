@@ -1,8 +1,8 @@
 import type { SymbolType } from '../game/types';
-import imgSol from '../assets/ficha_sol.png';
-import imgLuna from '../assets/ficha_luna.png';
-import imgEstrella from '../assets/ficha_estrella.png';
-import imgFugaz from '../assets/ficha_fugaz.png';
+import imgSol from '../assets/fichas/default/ficha_sol.png';
+import imgLuna from '../assets/fichas/default/ficha_luna.png';
+import imgEstrella from '../assets/fichas/default/ficha_estrella.png';
+import imgFugaz from '../assets/fichas/default/ficha_fugaz.png';
 
 /**
  * SymbolIcon — renders a token symbol image based on the symbol type.
