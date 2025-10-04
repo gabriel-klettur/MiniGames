@@ -50,31 +50,9 @@
 
 /* Cada disco apilado (imagen) */
 .token-disc-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
+/* (legacy) .token-base eliminado: render actual usa imágenes; mantener limpio */
 
-/* Base cilíndrica según altura total */
-.token-base {
-  position: absolute; left: 50%; top: 50%;
-  width: var(--token-size);
-  height: var(--stack-px);
-  transform: translate(-50%, calc(-50% + var(--stack-px) / 2));
-  background: linear-gradient(90deg, #0a2b55, #154579 40%, #0a2b55);
-  border: 2px solid #0b2344; border-top: none;
-  border-radius: 0 0 50% 50% / 0 0 32% 32%;
-  opacity: calc(var(--show-base, 1) * 0.85);
-  box-shadow: inset 0 -16px 22px rgba(0,0,0,0.38), 0 4px 8px rgba(0,0,0,0.25);
-  pointer-events: none; z-index: 0;
-}
-
-/* Discos aplanados para simular pila */
-.token-disc {
-  position: absolute; left: 50%; top: 50%;
-  width: var(--token-size); height: var(--token-size);
-  transform: translate(-50%, calc(-50% + (var(--stack-level, 0) - var(--i) + 1) * var(--stack-step, calc(var(--token-size) * 0.25)))) scaleY(var(--oval-scale, 0.78));
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #173f78, #0a2242 70%);
-  border: var(--disc-border-width, 2px) solid rgba(255,255,255,0.92);
-  box-shadow: inset 0 6px 12px rgba(255,255,255,0.06), inset 0 -6px 12px rgba(0,0,0,0.28), 0 4px 6px rgba(0,0,0,0.28);
-}
+/* (legacy) .token-disc eliminado: render actual usa .token-disc-img */
 
 /* Destino posible al arrastrar */
 .token.droppable-target {

@@ -5,12 +5,14 @@ import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FasesPanel from './components/DevTools/FasesPanel';
 import RulesPanel from './components/DevTools/RulesPanel';
-import UIUX from './components/DevTools/UIUX';
+import UIUX from './components/DevTools/UIUX/UIUX';
 import IAPanel from './components/IAPanel/IAPanel';
 import InfoPanel from './components/InfoPanel';
 import { useGame } from './game/store';
 import { useLocalStorageBoolean } from './hooks/useLocalStorage';
 import { useAiController } from './hooks/useAiController';
+import HistoryPanel from './components/HistoryPanel/HistoryPanel';
+import { useSolunaHistory } from './hooks/useSolunaHistory';
 
 function App() {
   const { state, dispatch } = useGame();
@@ -19,6 +21,7 @@ function App() {
   const [showRules, setShowRules] = useLocalStorageBoolean('soluna:dev:showRules', false);
   const [showUX, setShowUX] = useLocalStorageBoolean('soluna:dev:showUX', false);
   const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
+  const [showHistory, setShowHistory] = useLocalStorageBoolean('soluna:ui:showHistory', false);
   const [showIAPanel, setShowIAPanel] = useLocalStorageBoolean('soluna:dev:showIAPanel', false);
   const {
     aiDepth, setAiDepth,
@@ -31,6 +34,9 @@ function App() {
     aiEval, aiPV, aiRootMoves, aiNodes, aiElapsed, aiNps, aiDepthReached,
     doAIMove,
   } = useAiController(state, dispatch);
+
+  // Historial de Soluna (moves + archivadas) con export/clear
+  const { moves, finishedGames, downloadCurrentGame, clearHistory, clearMoves } = useSolunaHistory({ state, aiControlP1, aiControlP2 });
   return (
     <div className="app">
       <HeaderPanel
@@ -38,6 +44,7 @@ function App() {
         onToggleIA={() => setShowIA((v) => !v)}
         onStartVsAI={(enemy, depth) => {
           // Reinicia la partida y configura IA con el estilo "Vs IA"
+          clearMoves();
           dispatch({ type: 'reset-game' });
           setAiDepth(depth);
           setShowIA(true);
@@ -45,6 +52,13 @@ function App() {
           setAiControlP1(enemy === 1);
           setAiControlP2(enemy === 2);
         }}
+        onNewGame={() => {
+          // Limpieza explícita antes de iniciar nueva partida
+          clearMoves();
+          dispatch({ type: 'reset-game' });
+        }}
+        showHistory={showHistory}
+        onToggleHistory={() => setShowHistory((v) => !v)}
       />
       {/* Panel de usuario IA: centrado, estilo Pylos (toggleable desde header) */}
       {showIA && (
@@ -68,7 +82,23 @@ function App() {
       <InfoPanel />
       {/* Contenido principal: siempre centrado */}
       <div className="content">
-        <Board />
+        <Board
+          onNewGame={() => {
+            clearMoves();
+            dispatch({ type: 'reset-game' });
+          }}
+          onNewRound={() => {
+            clearMoves();
+            dispatch({ type: 'new-round' });
+          }}
+        />
+        <HistoryPanel
+          visible={showHistory}
+          moves={moves}
+          finishedGames={finishedGames}
+          onDownload={downloadCurrentGame}
+          onClear={clearHistory}
+        />
       </div>
       {/* DevTools a ancho completo, fila independiente */}
       {showDev && (
@@ -127,8 +157,7 @@ function App() {
               </section>
             )}
             {showUX && (
-              <section className="devtools-card-section">
-                <div className="section-title">UI/UX de fichas</div>
+              <section className="devtools-card-section">                
                 <UIUX />
               </section>
             )}

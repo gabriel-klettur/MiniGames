@@ -76,21 +76,15 @@
   --zoom: var(--board-zoom, 1);
   --token-base: clamp(48px, 6.8vw, 96px);
   --token-size: calc(var(--token-base) * var(--zoom));
-  --oval-scale: 0.78;
   /* Option A: stacking step proportional to token size (keeps visual ratio constant) */
   --stack-step: calc(var(--token-size) * 0.15);
-  --disc-border-width: 2px;
-  --show-base: 1;
   --drop-highlight: 1;
-  --max-discs: 10;
   --merge-threshold-factor: 0.6;
-  --icon-scaleY: 1.28;
   --free-move: 1;
   /* Curved flight controls */
   --flight-curve-enabled: 1; /* 1 on, 0 off */
   --flight-curve-bend: 0.22; /* multiplier for path curvature */
   /* Force the curve to arc upwards (screen-above). 1 = always up, 0 = default side */
-  --flight-curve-up: 1;
   position: relative;
   width: 100%;
   min-height: 0;

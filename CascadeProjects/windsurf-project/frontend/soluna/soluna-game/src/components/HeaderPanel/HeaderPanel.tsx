@@ -11,9 +11,14 @@ export interface HeaderProps {
   showIA?: boolean;
   onToggleIA?: () => void;
   onStartVsAI?: (enemy: 1 | 2, depth: number) => void;
+  // Historial: estado de visibilidad y alternador
+  showHistory?: boolean;
+  onToggleHistory?: () => void;
+  // Nueva partida: permite inyectar lógica (limpieza de historial) antes del reset
+  onNewGame?: () => void;
 }
 
-export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: HeaderProps) {
+export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, showHistory = false, onToggleHistory, onNewGame }: HeaderProps) {
   const { state, dispatch } = useGame();
 
   // Estado del popover Vs IA
@@ -75,7 +80,7 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
         <h2>Soluna</h2>
         <div className="header-actions">
           {/* Nueva partida (icono + chip) */}
-          <button onClick={() => dispatch({ type: 'reset-game' })} aria-label="Nueva partida" title="Nueva partida">
+          <button onClick={() => (onNewGame ? onNewGame() : dispatch({ type: 'reset-game' }))} aria-label="Nueva partida" title="Nueva partida">
             <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z"/>
             </svg>
@@ -131,6 +136,19 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
             <span className="header-btn__label">IA</span>
           </button>
 
+          {/* Botón Historial (mismo icono que Pylos) */}
+          <button
+            onClick={onToggleHistory}
+            aria-pressed={!!showHistory}
+            aria-label="Alternar historial"
+            title="Historial"
+          >
+            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
+            </svg>
+            <span className="header-btn__label"></span>
+          </button>
+
           {/* Nueva ronda como acción primaria visible solo cuando aplica */}
           {state.roundOver && !state.gameOver && (
             <button className="primary" onClick={() => dispatch({ type: 'new-round' })}>Nueva ronda</button>
@@ -171,5 +189,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI }: 
     </section>
   );
 }
+
 
 

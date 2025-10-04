@@ -4,9 +4,19 @@ import type { GameState } from '../../../game/types';
 import type { BoardSizes } from './useBoardSizes';
 import { getTokenCenterPxById } from '../utils';
 
-// Small adjustable offset applied to the destination of the merge flight (in pixels)
-// Positive x moves the landing point to the right; positive y moves it down.
-const DEST_OFFSET_PX = { x: 8, y: 8};
+// Destination offset for the merge flight, read from CSS custom properties (pixels).
+// UI/UX panel writes --flight-dest-offset-x / --flight-dest-offset-y on the play field element.
+function readDestOffsetPx(el: HTMLElement | null): { x: number; y: number } {
+  try {
+    if (!el) return { x: 0, y: 0 };
+    const cs = getComputedStyle(el);
+    const dx = parseFloat((cs.getPropertyValue('--flight-dest-offset-x') || '0').trim()) || 0;
+    const dy = parseFloat((cs.getPropertyValue('--flight-dest-offset-y') || '0').trim()) || 0;
+    return { x: dx, y: dy };
+  } catch {
+    return { x: 0, y: 0 };
+  }
+}
 
 interface FlightPx {
   start: { x: number; y: number };
@@ -39,24 +49,33 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
   useEffect(() => {
     if (!state.mergeFx || !fieldRef.current) return;
     const rect = fieldRef.current.getBoundingClientRect();
+    const destOffset = readDestOffsetPx(fieldRef.current);
     const start = state.mergeFx.fromPx
       ? { x: state.mergeFx.fromPx.x, y: state.mergeFx.fromPx.y }
       : { x: state.mergeFx.from.x * rect.width, y: state.mergeFx.from.y * rect.height };
+    // Prefer the explicit pixel center of the target at dispatch time (toPx).
+    // Otherwise, resolve to the current DOM center of the targetId (top of its stack),
+    // and finally fall back to normalized coordinates.
     let end = state.mergeFx.toPx
       ? { x: state.mergeFx.toPx.x, y: state.mergeFx.toPx.y }
-      : getTokenCenterPxById(fieldRef, state.mergeFx.mergedId);
+      : getTokenCenterPxById(fieldRef, state.mergeFx.targetId);
     if (!end) {
       end = { x: state.mergeFx.to.x * rect.width, y: state.mergeFx.to.y * rect.height };
     }
     // Apply visual offset so the landing appears slightly to the right (and/or down)
-    end = { x: end.x + DEST_OFFSET_PX.x, y: end.y + DEST_OFFSET_PX.y };
+    end = { x: end.x + destOffset.x, y: end.y + destOffset.y };
     setFlightPx({ start, end });
     setFlightRunning(false);
     const raf1 = requestAnimationFrame(() => {
       // Recompute the precise end using the actual DOM position of the merged token
-      const preciseEndRaw = getTokenCenterPxById(fieldRef, state.mergeFx!.mergedId)
+      // If we have toPx, keep using it to maintain exact center-to-center alignment.
+      // Otherwise, try to locate the targetId's DOM center; if it no longer exists (re-render),
+      // fall back to normalized target coordinates.
+      const preciseEndRaw = (state.mergeFx!.toPx
+        ? { x: state.mergeFx!.toPx.x, y: state.mergeFx!.toPx.y }
+        : getTokenCenterPxById(fieldRef, state.mergeFx!.targetId))
         || { x: state.mergeFx!.to.x * rect.width, y: state.mergeFx!.to.y * rect.height };
-      const preciseEnd = { x: preciseEndRaw.x + DEST_OFFSET_PX.x, y: preciseEndRaw.y + DEST_OFFSET_PX.y };
+      const preciseEnd = { x: preciseEndRaw.x + destOffset.x, y: preciseEndRaw.y + destOffset.y };
       setFlightPx({ start, end: preciseEnd });
       try { void flightRef.current?.getBoundingClientRect(); } catch {}
       const raf2 = requestAnimationFrame(() => setFlightRunning(true));

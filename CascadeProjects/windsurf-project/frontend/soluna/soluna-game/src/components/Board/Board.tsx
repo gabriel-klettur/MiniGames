@@ -7,7 +7,7 @@ import TokenButton from './TokenButton';
 import FlightLayer from './FlightLayer';
 import { clamp } from './utils';
 
-export default function Board() {
+export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => void; onNewRound?: () => void }) {
   const { state, dispatch } = useGame();
   const { fieldRef, ellipseRef, sizes } = useBoardSizes();
   const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;
@@ -71,7 +71,7 @@ export default function Board() {
           title="Ronda terminada"
           message={`Ronda terminada — Ganador: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: obtiene 1 estrella y espera a que el rival inicie la siguiente ronda • Perdedor: empieza la siguiente ronda.`}
           buttonLabel="Nueva ronda"
-          onConfirm={() => dispatch({ type: 'new-round' })}
+          onConfirm={() => (onNewRound ? onNewRound() : dispatch({ type: 'new-round' }))}
         />
       )}
       {state.gameOver && (
@@ -79,7 +79,7 @@ export default function Board() {
           title="Partida terminada"
           message={`Partida terminada — Campeón: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: Campeón de la partida • Perdedor: puedes reiniciar para comenzar una nueva partida.`}
           buttonLabel="Nueva partida"
-          onConfirm={() => dispatch({ type: 'reset-game' })}
+          onConfirm={() => (onNewGame ? onNewGame() : dispatch({ type: 'reset-game' }))}
         />
       )}
     </div>
