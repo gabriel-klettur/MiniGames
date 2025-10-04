@@ -42,6 +42,8 @@ function initialState(): GameState {
     gameOver: false,
     players: { 1: { stars: 0 }, 2: { stars: 0 } },
     mergeFx: null,
+    mode: 'normal',
+    pendingTurn: null,
   };
 }
 
@@ -115,12 +117,16 @@ function reducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'select': {
       if (state.roundOver || state.gameOver) return state;
+      // Block selection during merge flight in normal mode
+      if (state.mode !== 'simulation' && state.mergeFx) return state;
       const exists = !!findById(state.towers, action.id);
       if (!exists) return state;
       return { ...state, selectedId: action.id === state.selectedId ? null : action.id };
     }
     case 'attempt-merge': {
       if (state.roundOver || state.gameOver) return state;
+      // Block new merges during merge flight in normal mode
+      if (state.mode !== 'simulation' && state.mergeFx) return state;
       const sourceId = action.sourceId;
       if (!sourceId) return state;
       if (sourceId === action.targetId) return { ...state, selectedId: null };
@@ -205,6 +211,21 @@ function reducer(state: GameState, action: GameAction): GameState {
           [winner]: { stars: newStars },
         } as GameState['players'];
         const gameOver = newStars >= 4;
+        // In simulation mode, skip animation
+        if (state.mode === 'simulation') {
+          return {
+            ...state,
+            towers,
+            selectedId: null,
+            lastMover: winner,
+            roundOver: true,
+            players,
+            gameOver,
+            mergeFx: null,
+            pendingTurn: null,
+          };
+        }
+        // Normal mode: allow the final merge animation to play
         return {
           ...state,
           towers,
@@ -227,11 +248,24 @@ function reducer(state: GameState, action: GameAction): GameState {
         };
       }
 
+      // Next moves exist
+      if (state.mode === 'simulation') {
+        // Skip animation and switch turn immediately
+        return {
+          ...state,
+          towers,
+          selectedId: null,
+          currentPlayer: nextPlayer,
+          mergeFx: null,
+          pendingTurn: null,
+        };
+      }
+      // Normal mode: set pending turn and trigger animation
       return {
         ...state,
         towers,
         selectedId: null,
-        currentPlayer: nextPlayer,
+        pendingTurn: nextPlayer,
         mergeFx: {
           mergedId: merged.id,
           fromId: source.id,
@@ -247,10 +281,13 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'clear-merge-fx': {
       if (state.mergeFx == null) return state;
-      return { ...state, mergeFx: null };
+      // Apply pendingTurn (if any) when animation finishes (normal mode)
+      const newPlayer = state.pendingTurn ?? state.currentPlayer;
+      return { ...state, mergeFx: null, currentPlayer: newPlayer, pendingTurn: null };
     }
     case 'resolve-overlaps': {
       if (state.roundOver || state.gameOver) return state;
+      if (state.mode !== 'simulation' && state.mergeFx) return state;
       const tgt = findById(state.towers, action.id);
       if (!tgt) return state;
       const minD = action.minD != null ? action.minD : 0.06;
@@ -261,12 +298,14 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'resolve-all-overlaps': {
       if (state.roundOver || state.gameOver) return state;
+      if (state.mode !== 'simulation' && state.mergeFx) return state;
       const minD = action.minD != null ? action.minD : 0.06;
       const towers = resolveAllOverlaps(state.towers, minD);
       return { ...state, towers };
     }
     case 'move-tower': {
       if (state.roundOver || state.gameOver) return state;
+      if (state.mode !== 'simulation' && state.mergeFx) return state;
       const minD = action.minD;
       let desired = { x: action.pos.x, y: action.pos.y };
       if (typeof minD === 'number' && !Number.isNaN(minD)) {
@@ -287,10 +326,20 @@ function reducer(state: GameState, action: GameAction): GameState {
         currentPlayer: starter,
         lastMover: null,
         roundOver: false,
+        mergeFx: null,
+        pendingTurn: null,
       };
     }
     case 'reset-game': {
       return initialState();
+    }
+    case 'set-mode': {
+      // If switching to simulation while a flight is active, apply pending turn immediately and clear animation
+      if (action.mode === 'simulation' && state.mergeFx) {
+        const newPlayer = state.pendingTurn ?? state.currentPlayer;
+        return { ...state, mode: action.mode, mergeFx: null, pendingTurn: null, currentPlayer: newPlayer } as GameState;
+      }
+      return { ...state, mode: action.mode } as GameState;
     }
     default:
       return state;

@@ -7,6 +7,8 @@ export interface DevToolsPanelProps {
   onToggleRules?: () => void;
   showIAPanel?: boolean;
   onToggleIAPanel?: () => void;
+  showInfoIA?: boolean;
+  onToggleInfoIA?: () => void;
 }
 
 // DevToolsPanel — Acciones de desarrollo/diagnóstico (presentacional), estilo Quoridor
@@ -18,6 +20,8 @@ export default function DevToolsPanel({
   onToggleRules = () => {},
   showIAPanel = false,
   onToggleIAPanel = () => {},
+  showInfoIA = false,
+  onToggleInfoIA = () => {},
 }: DevToolsPanelProps) {
   return (       
     <>
@@ -42,6 +46,13 @@ export default function DevToolsPanel({
         onClick={onToggleIAPanel}
       >
         IAPanel
+      </button>
+      <button
+        className={`btn ${showInfoIA ? 'btn-primary' : 'btn-secondary'}`}
+        aria-pressed={showInfoIA}
+        onClick={onToggleInfoIA}
+      >
+        InfoIA
       </button>
     </>
   );

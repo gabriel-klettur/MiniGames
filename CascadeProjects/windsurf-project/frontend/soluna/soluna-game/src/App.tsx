@@ -3,6 +3,7 @@ import IAUserPanel from './components/IAUserPanel/IAUserPanel';
 import HeaderPanel from './components/HeaderPanel/HeaderPanel';
 import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
+import InfoIA from './components/DevTools/InfoIA';
 import FasesPanel from './components/DevTools/FasesPanel';
 import RulesPanel from './components/DevTools/RulesPanel';
 import UIUX from './components/DevTools/UIUX/UIUX';
@@ -23,6 +24,7 @@ function App() {
   const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
   const [showHistory, setShowHistory] = useLocalStorageBoolean('soluna:ui:showHistory', false);
   const [showIAPanel, setShowIAPanel] = useLocalStorageBoolean('soluna:dev:showIAPanel', false);
+  const [showInfoIA, setShowInfoIA] = useLocalStorageBoolean('soluna:dev:showInfoIA', false);
   const {
     aiDepth, setAiDepth,
     aiTimeMode, setAiTimeMode,
@@ -112,6 +114,8 @@ function App() {
               onToggleRules={() => setShowRules((v) => !v)}
               showIAPanel={showIAPanel}
               onToggleIAPanel={() => setShowIAPanel((v) => !v)}
+              showInfoIA={showInfoIA}
+              onToggleInfoIA={() => setShowInfoIA((v) => !v)}
             />
             {showIAPanel && (
               <section className="devtools-card-section">
@@ -141,6 +145,12 @@ function App() {
                   onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
                   busyElapsedMs={aiBusyElapsedMs}
                 />
+              </section>
+            )}
+            {showInfoIA && (
+              <section className="devtools-card-section">
+                <div className="section-title">InfoIA (Simulación)</div>
+                <InfoIA />
               </section>
             )}
             {/* Secciones bajo los toggles */}

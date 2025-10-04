@@ -79,6 +79,50 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const latestStateRef = useRef(state);
   useEffect(() => { latestStateRef.current = state; }, [state]);
 
+  // Pending timers for delayed AI merge after visual selection
+  const pendingMergeTimerRef = useRef<number | null>(null);
+  const pendingMergeRafRef = useRef<number | null>(null);
+
+  const clearPendingMergeTimers = () => {
+    if (pendingMergeTimerRef.current != null) {
+      clearTimeout(pendingMergeTimerRef.current);
+      pendingMergeTimerRef.current = null;
+    }
+    if (pendingMergeRafRef.current != null) {
+      cancelAnimationFrame(pendingMergeRafRef.current);
+      pendingMergeRafRef.current = null;
+    }
+  };
+
+  const scheduleAiAttemptMerge = (mv: AIMove) => {
+    const st = latestStateRef.current;
+    // Visual selection like a human
+    dispatch({ type: 'select', id: (mv as any).sourceId });
+    // Determine delay based on mode
+    const delayMs = st.mode !== 'simulation' ? 1000 : 0;
+    clearPendingMergeTimers();
+    const perform = () => {
+      const st2 = latestStateRef.current;
+      // Re-check guards right before merging
+      const animationBlocking = (!!st2.mergeFx) && (st2.mode !== 'simulation');
+      if (animationBlocking || st2.roundOver || st2.gameOver) {
+        // Give up this attempt; controller will naturally retry later via autoplay if applicable
+        setAiBusy(false);
+        return;
+      }
+      dispatch({ type: 'attempt-merge', sourceId: (mv as any).sourceId, targetId: (mv as any).targetId });
+      setAiBusy(false);
+    };
+    if (delayMs > 0) {
+      pendingMergeTimerRef.current = window.setTimeout(perform, delayMs);
+    } else {
+      // Ensure selection renders at least a frame before merging
+      pendingMergeRafRef.current = requestAnimationFrame(() => {
+        pendingMergeTimerRef.current = window.setTimeout(perform, 0);
+      });
+    }
+  };
+
   // Create worker once; use latestStateRef to avoid stale closures
   useEffect(() => {
     try {
@@ -101,13 +145,16 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           setAiElapsed(data.elapsedMs ?? 0);
           setAiNps(data.nps ?? 0);
           setAiProgress(null);
-          setAiBusy(false);
           if (typeof data.elapsedMs === 'number') setAiBusyElapsedMs(data.elapsedMs);
           const mv = data.bestMove as AIMove | undefined;
           const st = latestStateRef.current;
-          if (mv && (mv as any).sourceId && (mv as any).targetId && !st.roundOver && !st.gameOver) {
-            dispatch({ type: 'select', id: (mv as any).sourceId });
-            dispatch({ type: 'attempt-merge', sourceId: (mv as any).sourceId, targetId: (mv as any).targetId });
+          // If an animation is running in normal mode, skip applying the move now; autoplay will retry after animation clears
+          const animationBlocking = (!!st.mergeFx) && (st.mode !== 'simulation');
+          if (mv && (mv as any).sourceId && (mv as any).targetId && !st.roundOver && !st.gameOver && !animationBlocking) {
+            // Keep busy until the delayed merge is dispatched
+            scheduleAiAttemptMerge(mv);
+          } else {
+            setAiBusy(false);
           }
         }
       };
@@ -134,12 +181,16 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
 
   const cancel = useCallback(() => {
     try { workerRef.current?.postMessage({ type: 'CANCEL' }); } catch {}
+    clearPendingMergeTimers();
+    setAiBusy(false);
   }, []);
 
   const doAIMove = useCallback(() => {
     const st = latestStateRef.current;
     if (aiBusy) return;
     if (st.roundOver || st.gameOver) return;
+    // In normal mode, wait until merge animation finishes
+    if (st.mode !== 'simulation' && st.mergeFx) return;
     setAiBusy(true);
     setAiProgress(null);
     setAiDepthReached(null);
@@ -169,11 +220,13 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           setAiElapsed(res.elapsedMs ?? 0);
           setAiNps(res.nps ?? 0);
           setAiDepthReached(null);
-          setAiBusy(false);
           setAiBusyElapsedMs(res.elapsedMs ?? 0);
-          if (res.move) {
-            dispatch({ type: 'select', id: (res.move as any).sourceId });
-            dispatch({ type: 'attempt-merge', sourceId: (res.move as any).sourceId, targetId: (res.move as any).targetId });
+          const st2 = latestStateRef.current;
+          const animationBlocking = (!!st2.mergeFx) && (st2.mode !== 'simulation');
+          if (res.move && !animationBlocking && !st2.roundOver && !st2.gameOver) {
+            scheduleAiAttemptMerge(res.move);
+          } else {
+            setAiBusy(false);
           }
         }
       }, 0);
@@ -189,11 +242,13 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     setAiElapsed(res.elapsedMs ?? 0);
     setAiNps(res.nps ?? 0);
     setAiDepthReached(null);
-    setAiBusy(false);
     setAiBusyElapsedMs(res.elapsedMs ?? 0);
-    if (res.move) {
-      dispatch({ type: 'select', id: (res.move as any).sourceId });
-      dispatch({ type: 'attempt-merge', sourceId: (res.move as any).sourceId, targetId: (res.move as any).targetId });
+    const st3 = latestStateRef.current;
+    const animationBlocking = (!!st3.mergeFx) && (st3.mode !== 'simulation');
+    if (res.move && !animationBlocking && !st3.roundOver && !st3.gameOver) {
+      scheduleAiAttemptMerge(res.move);
+    } else {
+      setAiBusy(false);
     }
   }, [aiBusy, aiDepth, aiTimeMode, aiTimeSeconds, dispatch]);
 
@@ -204,9 +259,18 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     if (!shouldAuto) return;
     if (aiBusy) return;
     if (state.roundOver || state.gameOver) return;
+    // In normal mode, do not autoplay while merge animation is running
+    if (state.mode !== 'simulation' && state.mergeFx) return;
     const t = setTimeout(() => { doAIMove(); }, aiTimeMode === 'manual' ? Math.max(0, Math.floor(aiTimeSeconds * 1000)) : 0);
     return () => clearTimeout(t);
-  }, [aiAutoplay, aiControlP1, aiControlP2, aiBusy, aiTimeMode, aiTimeSeconds, state.roundOver, state.gameOver, state.currentPlayer, doAIMove]);
+  }, [aiAutoplay, aiControlP1, aiControlP2, aiBusy, aiTimeMode, aiTimeSeconds, state.roundOver, state.gameOver, state.currentPlayer, state.mergeFx, state.mode, doAIMove]);
+
+  // Cleanup on unmount: cancel timers
+  useEffect(() => {
+    return () => {
+      clearPendingMergeTimers();
+    };
+  }, []);
 
   return {
     aiDepth, setAiDepth,

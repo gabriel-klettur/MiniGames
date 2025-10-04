@@ -23,6 +23,11 @@ export interface GameState {
   players: { 1: PlayerState; 2: PlayerState };
   // Transient merge effect info to trigger UI animations
   mergeFx: MergeFx | null;
+  // Game mode: in 'normal' we wait for animations to end before switching turns.
+  // In 'simulation' we skip animations and change turns immediately.
+  mode?: 'normal' | 'simulation';
+  // When in 'normal' mode, store the next player to switch to once the merge animation ends
+  pendingTurn?: 1 | 2 | null;
 }
 
 export interface MergeFx {
@@ -46,4 +51,5 @@ export type GameAction =
   | { type: 'resolve-all-overlaps'; minD?: number }
   | { type: 'new-round' }
   | { type: 'reset-game' }
-  | { type: 'clear-merge-fx' };
+  | { type: 'clear-merge-fx' }
+  | { type: 'set-mode'; mode: 'normal' | 'simulation' };
