@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import InfoIAView, { type InfoIARecord, type TimeMode, type MoveDetail } from './InfoIAView';
+import InfoIAView from './InfoIAView';
+import type { InfoIARecord, TimeMode, MoveDetail } from './types';
 import { bestMove } from '../../../ia';
 import type { GameState } from '../../../game/types';
 import { useGame } from '../../../game/store';
