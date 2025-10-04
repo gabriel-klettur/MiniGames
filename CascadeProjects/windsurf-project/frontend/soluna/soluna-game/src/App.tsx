@@ -6,7 +6,7 @@ import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FasesPanel from './components/DevTools/FasesPanel';
 import RulesPanel from './components/DevTools/RulesPanel';
 import UIUX from './components/DevTools/UIUX/UIUX';
-import IAPanel from './components/IAPanel/IAPanel';
+import IAPanel from './components/DevTools/IAPanel/IAPanel';
 import InfoPanel from './components/InfoPanel';
 import { useGame } from './game/store';
 import { useLocalStorageBoolean } from './hooks/useLocalStorage';
