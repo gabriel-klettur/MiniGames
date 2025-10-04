@@ -19,10 +19,12 @@ const InfoIAContainer: React.FC = () => {
   // Visualización / dataset
   const [visualize, setVisualize] = useState<boolean>(true);
   const datasetLabel = 'Local';
+  const vizRef = useRef<boolean>(visualize);
+  useEffect(() => { vizRef.current = visualize; }, [visualize]);
 
   // Límites
   const [pliesLimit, setPliesLimit] = useState<number>(80);
-  const [gamesCount, setGamesCount] = useState<number>(10);
+  const [setsCount, setSetsCount] = useState<number>(10);
 
   // Per-player controles
   const [p1Depth, setP1Depth] = useState<number>(3);
@@ -77,6 +79,8 @@ const InfoIAContainer: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
+    // Evitar bloquear el hilo principal mientras la simulación corre
+    if (runningRef.current) return;
     try { localStorage.setItem(LS_KEY, JSON.stringify(records)); } catch {}
   }, [records]);
 
@@ -110,17 +114,45 @@ const InfoIAContainer: React.FC = () => {
   const runSimulations = useCallback(async () => {
     runningRef.current = true;
     setRunning(true);
-    setRecords([]);
+    // No limpiar los registros al iniciar: acumulamos resultados entre ejecuciones
     // Entrar en modo 'simulation' para evitar animaciones y bloqueos
     dispatch({ type: 'set-mode', mode: 'simulation' } as any);
-    for (let g = 0; g < gamesCount && runningRef.current; g++) {
+    let setsPlayed = 0;
+    for (let s = 0; setsPlayed < setsCount && runningRef.current; s++) {
+      // Reiniciar juego (resetea estrellas) para un nuevo set
       resetGame();
-      // Asegurar modo simulación tras cada reset
       dispatch({ type: 'set-mode', mode: 'simulation' } as any);
-      curDetailsRef.current = [];
-      const t0 = performance.now();
-      let moves = 0;
-      for (let p = 0; p < pliesLimit && runningRef.current; p++) {
+      // Esperar a que el estado refleje el reset (evita heredar gameOver del set previo)
+      const waitForReset = async (): Promise<boolean> => {
+        for (let tries = 0; tries < 60 && runningRef.current; tries++) {
+          await new Promise((r) => setTimeout(r, 0));
+          const sNow = stateRef.current as any;
+          const stars1 = sNow?.players?.[1]?.stars ?? 0;
+          const stars2 = sNow?.players?.[2]?.stars ?? 0;
+          if (!sNow.gameOver && !sNow.roundOver && stars1 === 0 && stars2 === 0) return true;
+        }
+        return false;
+      };
+      const ok = await waitForReset();
+      if (!ok) break;
+      let roundsInSet = 0;
+      while (runningRef.current && !stateRef.current.gameOver) {
+        curDetailsRef.current = [];
+        const startedAtWall = Date.now();
+        const t0 = performance.now();
+        let moves = 0;
+        // Helper: wait until turn flips or round ends to avoid stale-state duplicates
+        const waitTurnOrEnd = async (prevPlayer: 1 | 2): Promise<boolean> => {
+          for (let tries = 0; tries < 60 && runningRef.current; tries++) {
+            await new Promise((r) => setTimeout(r, 0));
+            const sNow = stateRef.current;
+            if (sNow.roundOver || sNow.gameOver) return true; // applied and finished
+            if (sNow.currentPlayer !== prevPlayer) return true; // applied and flipped
+          }
+          return false; // likely not applied (stale ids or rejected)
+        };
+
+        for (let p = 0; p < pliesLimit && runningRef.current; p++) {
         const stNow = stateRef.current;
         const cur = stNow.currentPlayer;
         const depth = cur === 1 ? p1Depth : p2Depth;
@@ -137,21 +169,24 @@ const InfoIAContainer: React.FC = () => {
         try {
           // Siempre mostramos tiempo transcurrido, tanto en AUTO (sin target) como MANUAL
           const startTs = performance.now();
-          const tick = () => {
-            const elapsed = performance.now() - startTs;
-            setMoveElapsedMs(elapsed);
-            // En manual, si se alcanza target se detiene aquí; en auto continúa hasta RESULT
-            if ((target === 0 || elapsed < target) && runningRef.current) {
-              moveRafRef.current = requestAnimationFrame(tick);
-            }
-          };
-          moveRafRef.current = requestAnimationFrame(tick);
+          if (vizRef.current) {
+            const tick = () => {
+              const elapsed = performance.now() - startTs;
+              setMoveElapsedMs(elapsed);
+              // En manual, si se alcanza target se detiene aquí; en auto continúa hasta RESULT
+              if ((target === 0 || elapsed < target) && runningRef.current) {
+                moveRafRef.current = requestAnimationFrame(tick);
+              }
+            };
+            moveRafRef.current = requestAnimationFrame(tick);
+          }
           let res = undefined as undefined | { bestMove?: any; elapsedMs?: number };
           if (runner) {
             try {
               res = await runner.startSearch(
                 { state: stateRef.current, depth, timeMs: target || undefined },
                 (p) => {
+                  if (!vizRef.current) return;
                   setProgDepth(p.depth || 0);
                   setProgNodes(p.nodes || 0);
                   setProgScore(typeof p.score === 'number' ? p.score : 0);
@@ -169,16 +204,26 @@ const InfoIAContainer: React.FC = () => {
             const mv: any = res.bestMove;
             dispatch({ type: 'select', id: mv.sourceId });
             dispatch({ type: 'attempt-merge', sourceId: mv.sourceId, targetId: mv.targetId });
-            // Guardar desglose de esta jugada
-            curDetailsRef.current.push({
-              index: p + 1,
-              elapsedMs: res?.elapsedMs ?? target ?? 0,
-              depthReached: (res as any)?.depthReached,
-              nodes: (res as any)?.nodes,
-              nps: (res as any)?.nps,
-              score: (res as any)?.score,
-              bestMove: mv,
-            });
+            // Esperar cambio de turno o fin de ronda para confirmar aplicación
+            const applied = await waitTurnOrEnd(cur);
+            if (applied) {
+              const idx = curDetailsRef.current.length + 1;
+              // Guardar desglose confirmado
+              curDetailsRef.current.push({
+                index: idx,
+                elapsedMs: res?.elapsedMs ?? target ?? 0,
+                depthReached: (res as any)?.depthReached,
+                nodes: (res as any)?.nodes,
+                nps: (res as any)?.nps,
+                score: (res as any)?.score,
+                bestMove: mv,
+                player: cur,
+                depthUsed: depth,
+                applied: true,
+                at: Date.now(),
+              });
+              moves++;
+            }
           } else {
             // Fallback hilo principal cuando no hay runner o fallo de worker
             const st = stateRef.current;
@@ -187,46 +232,64 @@ const InfoIAContainer: React.FC = () => {
               dispatch({ type: 'select', id: (fb.move as any).sourceId });
               dispatch({ type: 'attempt-merge', sourceId: (fb.move as any).sourceId, targetId: (fb.move as any).targetId });
             }
-            curDetailsRef.current.push({
-              index: p + 1,
-              elapsedMs: fb?.elapsedMs ?? target ?? 0,
-              depthReached: undefined,
-              nodes: fb?.nodes,
-              nps: fb?.nps,
-              score: fb?.score,
-              bestMove: fb?.move,
-            });
+            const applied = await waitTurnOrEnd(cur);
+            if (applied) {
+              const idx = curDetailsRef.current.length + 1;
+              curDetailsRef.current.push({
+                index: idx,
+                elapsedMs: fb?.elapsedMs ?? target ?? 0,
+                depthReached: undefined,
+                nodes: fb?.nodes,
+                nps: fb?.nps,
+                score: fb?.score,
+                bestMove: fb?.move,
+                player: cur,
+                depthUsed: depth,
+                applied: true,
+                at: Date.now(),
+              });
+              moves++;
+            }
           }
         } catch {}
-        moves++;
+          await new Promise((r) => setTimeout(r, 0));
+          const st = stateRef.current;
+          if (st.roundOver || st.gameOver) break;
+        }
+        const stEnd = stateRef.current;
+        const t1 = performance.now();
+        const rec: InfoIARecord = {
+          id: `${Date.now()}-${setsPlayed}-${roundsInSet}`,
+          startedAt: startedAtWall,
+          durationMs: t1 - t0,
+          moves,
+          winner: stEnd.roundOver ? (stEnd.lastMover as 1 | 2) : 0,
+          p1Depth,
+          p2Depth,
+          setId: `set-${setsPlayed}`,
+          details: curDetailsRef.current.slice(),
+        };
+        setRecords((prev) => [rec, ...prev]);
+        roundsInSet += 1;
+        // Si terminó la ronda pero no el set, iniciar nueva ronda
+        if (stEnd.roundOver && !stEnd.gameOver) {
+          dispatch({ type: 'new-round' });
+        }
+        // Pequeña espera para ceder control al UI/worker
         await new Promise((r) => setTimeout(r, 0));
-        const st = stateRef.current;
-        if (st.roundOver || st.gameOver) break;
+        // Salvaguarda: evitar sets infinitos por empates repetidos
+        if (roundsInSet > 50) break;
       }
-      const stEnd = stateRef.current;
-      const t1 = performance.now();
-      const rec: InfoIARecord = {
-        id: `${Date.now()}-${g}`,
-        startedAt: Date.now(),
-        durationMs: t1 - t0,
-        moves,
-        winner: stEnd.roundOver ? (stEnd.lastMover as 1 | 2) : 0,
-        p1Depth,
-        p2Depth,
-        details: curDetailsRef.current.slice(),
-      };
-      setRecords((prev) => [rec, ...prev]);
-      // Si no terminó la ronda, consideramos empate técnico; iniciar nueva ronda si aplica
-      if (stEnd.roundOver && !stEnd.gameOver) {
-        dispatch({ type: 'new-round' });
-      }
-      await new Promise((r) => setTimeout(r, 0));
+      // Contabilizar set solo si terminó con gameOver (alguien alcanzó 4 estrellas) o si salimos tras 50 rondas
+      setsPlayed += 1;
     }
     runningRef.current = false;
     setRunning(false);
     // Restaurar modo normal al finalizar
     dispatch({ type: 'set-mode', mode: 'normal' } as any);
-  }, [gamesCount, pliesLimit, p1Depth, p2Depth, resetGame, stepOnce, dispatch]);
+    // Persistir registros una vez al final para evitar bloqueos durante ejecución
+    try { localStorage.setItem(LS_KEY, JSON.stringify(records)); } catch {}
+  }, [setsCount, pliesLimit, p1Depth, p2Depth, resetGame, stepOnce, dispatch]);
 
   const onStart = useCallback(() => {
     if (runningRef.current) return;
@@ -244,7 +307,7 @@ const InfoIAContainer: React.FC = () => {
   const onDefaults = useCallback(() => {
     setVisualize(true);
     setPliesLimit(80);
-    setGamesCount(10);
+    setSetsCount(10);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
     setP1Secs(3); setP2Secs(3);
@@ -262,8 +325,8 @@ const InfoIAContainer: React.FC = () => {
 
   const onExportCSV = useCallback(() => {
     try {
-      const header = 'id,startedAt,durationMs,moves,winner,p1Depth,p2Depth\n';
-      const rows = records.map(r => `${r.id},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`).join('\n');
+      const header = 'id,setId,startedAt,durationMs,moves,winner,p1Depth,p2Depth\n';
+      const rows = records.map(r => `${r.id},${r.setId || ''},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`).join('\n');
       const blob = new Blob([header + rows], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -274,13 +337,13 @@ const InfoIAContainer: React.FC = () => {
 
   const onExportCSVDetails = useCallback(() => {
     try {
-      const header = 'id,startedAt,durationMs,moves,winner,p1Depth,p2Depth,moveIndex,moveElapsedMs,depthReached,nodes,nps,score\n';
+      const header = 'id,setId,startedAt,durationMs,moves,winner,p1Depth,p2Depth,moveIndex,moveElapsedMs,moveAt,depthReached,nodes,nps,score,player,depthUsed,applied\n';
       const lines: string[] = [];
       for (const r of records) {
-        const base = `${r.id},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`;
+        const base = `${r.id},${r.setId || ''},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`;
         const details = r.details && r.details.length ? r.details : [];
         if (details.length === 0) {
-          lines.push(`${base},,,, , ,`);
+          lines.push(`${base},,,,,,,,,`);
           continue;
         }
         for (const d of details) {
@@ -288,10 +351,14 @@ const InfoIAContainer: React.FC = () => {
             base,
             d.index ?? '',
             Math.round(d.elapsedMs ?? 0),
+            d.at ?? '',
             d.depthReached ?? '',
             d.nodes ?? '',
             d.nps ?? '',
             d.score ?? '',
+            d.player ?? '',
+            d.depthUsed ?? '',
+            d.applied ?? '',
           ].join(',');
           lines.push(line);
         }
@@ -373,9 +440,9 @@ const InfoIAContainer: React.FC = () => {
       datasetLabel={datasetLabel}
 
       pliesLimit={pliesLimit}
-      gamesCount={gamesCount}
+      setsCount={setsCount}
       onChangePliesLimit={setPliesLimit}
-      onChangeGamesCount={setGamesCount}
+      onChangeSetsCount={setSetsCount}
 
       p1={{
         title: 'Jugador 1',

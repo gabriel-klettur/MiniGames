@@ -26,6 +26,8 @@ export type InfoIARecord = {
   winner: 1 | 2 | 0; // 0 = empate/técnico
   p1Depth: number;
   p2Depth: number;
+  setId: string;
+  setIndex?: number;
   details?: MoveDetail[];
 };
 
@@ -37,6 +39,10 @@ export type MoveDetail = {
   nps?: number;
   score?: number;
   bestMove?: any;
+  player?: 1 | 2;
+  depthUsed?: number;
+  applied?: boolean;
+  at?: number;
 };
 
 export interface PlayerControlsProps {
@@ -77,16 +83,6 @@ export interface InfoIAViewProps {
   onToggleVisualize: () => void;
   datasetLabel: string;
 
-  // Limits
-  pliesLimit: number;
-  gamesCount: number;
-  onChangePliesLimit: (v: number) => void;
-  onChangeGamesCount: (v: number) => void;
-
-  // Per-player controls
-  p1: PlayerControlsProps;
-  p2: PlayerControlsProps;
-
   // Results
   records: InfoIARecord[];
 
@@ -99,6 +95,14 @@ export interface InfoIAViewProps {
   progNodes?: number;
   progNps?: number;
   progScore?: number;
+  // Limits
+  pliesLimit: number;
+  setsCount: number;
+  onChangePliesLimit: (v: number) => void;
+  onChangeSetsCount: (v: number) => void;
+  // Per-player controls
+  p1: PlayerControlsProps;
+  p2: PlayerControlsProps;
   // Table actions
   onViewRecord: (id: string) => void;
   onCopyRecord: (id: string) => void;
@@ -147,20 +151,25 @@ function PlayerCard({ title, depth, onChangeDepth, timeMode, onChangeTimeMode, t
 const AntiStallSettingsPlaceholder = AntiStallSettings;
 
 function Summary({ records }: { records: InfoIARecord[] }) {
-  const games = records.length;
+  const rounds = records.length;
   const w1 = records.filter(r => r.winner === 1).length;
   const w2 = records.filter(r => r.winner === 2).length;
   const ties = records.filter(r => r.winner === 0).length;
-  const wr1 = games ? (w1 / games) : 0;
-  const wr2 = games ? (w2 / games) : 0;
+  const wr1 = rounds ? (w1 / rounds) : 0;
+  const wr2 = rounds ? (w2 / rounds) : 0;
   const minMs = records.length ? Math.min(...records.map(r => r.durationMs)) : 0;
   const maxMs = records.length ? Math.max(...records.map(r => r.durationMs)) : 0;
   const totalMs = records.reduce((a, r) => a + r.durationMs, 0);
+  const setIds = Array.from(new Set(records.map(r => r.setId || 'set:unknown')));
+  const sets = setIds.length;
+  const roundsPerSet = sets ? (rounds / sets) : 0;
   return (
     <div className="summary row" style={{ justifyContent: 'space-between', marginTop: 10, alignItems: 'center' }}>
       <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
         <span className="kpi"><strong>Distintas vs Unlisted</strong> <span className="kpi kpi--muted">—</span></span>
-        <span className="kpi"><strong>Partidas</strong> {games}</span>
+        <span className="kpi"><strong>Rondas</strong> {rounds}</span>
+        <span className="kpi"><strong>Sets</strong> {sets}</span>
+        <span className="kpi"><strong>Rondas/Set</strong> {roundsPerSet.toFixed(2)}</span>
         <span className="kpi"><strong>WR (1)</strong> {(wr1*100).toFixed(1)}%</span>
         <span className="kpi"><strong>WR (2)</strong> {(wr2*100).toFixed(1)}%</span>
         <span className="kpi"><strong>Empates</strong> {ties}</span>
@@ -181,7 +190,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     activeTab, onChangeTab,
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     visualize, onToggleVisualize, datasetLabel,
-    pliesLimit, gamesCount, onChangePliesLimit, onChangeGamesCount,
+    pliesLimit, setsCount, onChangePliesLimit, onChangeSetsCount,
     p1, p2,
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
@@ -193,6 +202,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
   const [winnerFilter, setWinnerFilter] = useState<'all' | '1' | '2' | '0'>('all');
   const [minDur, setMinDur] = useState<string>('');
   const [maxDur, setMaxDur] = useState<string>('');
+  const [groupMode, setGroupMode] = useState<'set' | 'depth' | 'none'>('set');
   const filteredRecords = useMemo(() => {
     let arr = records;
     if (winnerFilter !== 'all') {
@@ -294,8 +304,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
             <SimulationLimits
               pliesLimit={pliesLimit}
               onPliesLimitChange={onChangePliesLimit}
-              gamesCount={gamesCount}
-              onGamesCountChange={onChangeGamesCount}
+              setsCount={setsCount}
+              onSetsCountChange={onChangeSetsCount}
             />
           </Card>
         </div>
@@ -355,6 +365,14 @@ export default function InfoIAView(props: InfoIAViewProps) {
           /
           <input placeholder="máx" value={maxDur} onChange={e => setMaxDur(e.target.value)} style={{ width: 64, background: 'transparent', color: 'inherit', border: 0 }} />
         </label>
+        <label className="kpi" style={{ gap: 6 }}>
+          <strong>Agrupar por</strong>
+          <select value={groupMode} onChange={(e) => setGroupMode(e.target.value as any)} style={{ background: 'transparent', color: 'inherit', border: 0 }}>
+            <option value="set">Set</option>
+            <option value="depth">Dificultad</option>
+            <option value="none">Ninguno</option>
+          </select>
+        </label>
       </div>
 
       <Summary records={filteredRecords} />
@@ -362,14 +380,17 @@ export default function InfoIAView(props: InfoIAViewProps) {
       <TablaIA
         records={filteredRecords.map(r => ({
           id: r.id,
+          startedAt: r.startedAt,
           durationMs: r.durationMs,
           moves: r.moves,
           winner: r.winner,
           p1Depth: r.p1Depth,
           p2Depth: r.p2Depth,
+          setId: r.setId,
           details: r.details || [],
         }))}
-        groupByDepth={true}
+        groupBySet={groupMode === 'set'}
+        groupByDepth={groupMode === 'depth'}
         loading={false}
         onViewRecord={onViewRecord}
         onCopyRecord={onCopyRecord}

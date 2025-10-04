@@ -5,13 +5,14 @@ export interface GameOverModalProps {
   message: string; // e.g., "Ganador: Claras (L) — razón"
   onConfirm: () => void; // acción del botón principal
   buttonLabel?: string; // por defecto "Nueva partida"
+  autoFocus?: boolean; // por defecto true (en simulación lo desactivamos)
 }
 
 /**
  * GameOverModal — Modal centrado para fin de ronda/partida (look & feel tipo Quoridor)
  * Implementado con las clases de estilo del proyecto (board-overlay, overlay-card, card, btn).
  */
-function GameOverModal({ title = 'Partida terminada', message, onConfirm, buttonLabel = 'Nueva partida' }: GameOverModalProps) {
+function GameOverModal({ title = 'Partida terminada', message, onConfirm, buttonLabel = 'Nueva partida', autoFocus = true }: GameOverModalProps) {
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === 'Escape') {
       e.preventDefault();
@@ -34,7 +35,7 @@ function GameOverModal({ title = 'Partida terminada', message, onConfirm, button
         <div id="winner-title" style={{ fontWeight: 600, marginBottom: 6 }}>{title}</div>
         <p id="winner-desc" style={{ margin: 0, opacity: 0.95 }}>{message}</p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
-          <button className="btn btn-success" autoFocus onClick={onConfirm} aria-label={buttonLabel}>
+          <button className="btn btn-success" autoFocus={autoFocus} onClick={onConfirm} aria-label={buttonLabel}>
             {buttonLabel}
           </button>
         </div>

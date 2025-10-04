@@ -71,6 +71,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
           title="Ronda terminada"
           message={`Ronda terminada — Ganador: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: obtiene 1 estrella y espera a que el rival inicie la siguiente ronda • Perdedor: empieza la siguiente ronda.`}
           buttonLabel="Nueva ronda"
+          autoFocus={state.mode !== 'simulation'}
           onConfirm={() => (onNewRound ? onNewRound() : dispatch({ type: 'new-round' }))}
         />
       )}
@@ -79,6 +80,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
           title="Partida terminada"
           message={`Partida terminada — Campeón: Jugador ${state.lastMover ?? ''}. Responsabilidades: Ganador: Campeón de la partida • Perdedor: puedes reiniciar para comenzar una nueva partida.`}
           buttonLabel="Nueva partida"
+          autoFocus={state.mode !== 'simulation'}
           onConfirm={() => (onNewGame ? onNewGame() : dispatch({ type: 'reset-game' }))}
         />
       )}
