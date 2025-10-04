@@ -1,0 +1,156 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { InfoIARecord } from '../types';
+
+const LS_KEY = 'soluna.infoia.records.v1';
+
+export interface UseRecordsOptions {
+  // If true, avoid persisting to LocalStorage to not block UI during long loops
+  suspendPersistence?: boolean;
+}
+
+export interface UseRecords {
+  records: InfoIARecord[];
+  setRecords: React.Dispatch<React.SetStateAction<InfoIARecord[]>>;
+  // CRUD
+  addRecord: (rec: InfoIARecord) => void;
+  deleteRecord: (id: string) => void;
+  clearAll: () => void;
+  // Exports
+  exportJSON: () => void;
+  exportCSV: () => void;
+  exportCSVDetails: () => void;
+  // Record actions
+  viewRecord: (id: string) => void;
+  copyRecord: (id: string) => Promise<void>;
+  downloadRecord: (id: string) => void;
+}
+
+export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
+  const { suspendPersistence = false } = opts;
+  const [records, setRecords] = useState<InfoIARecord[]>([]);
+
+  // Load once
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as InfoIARecord[];
+        if (Array.isArray(parsed)) setRecords(parsed);
+      }
+    } catch {}
+  }, []);
+
+  // Persist when not running
+  useEffect(() => {
+    if (suspendPersistence) return;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(records)); } catch {}
+  }, [records, suspendPersistence]);
+
+  const addRecord = useCallback((rec: InfoIARecord) => {
+    setRecords(prev => [rec, ...prev]);
+  }, []);
+
+  const deleteRecord = useCallback((id: string) => {
+    setRecords(prev => prev.filter(r => r.id !== id));
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setRecords([]);
+    try { localStorage.removeItem(LS_KEY); } catch {}
+  }, []);
+
+  const exportJSON = useCallback(() => {
+    try {
+      const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'soluna-infoia.json'; a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+  }, [records]);
+
+  const exportCSV = useCallback(() => {
+    try {
+      const header = 'id,setId,startedAt,durationMs,moves,winner,p1Depth,p2Depth\n';
+      const rows = records.map(r => `${r.id},${r.setId || ''},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`).join('\n');
+      const blob = new Blob([header + rows], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'soluna-infoia.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+  }, [records]);
+
+  const exportCSVDetails = useCallback(() => {
+    try {
+      const header = 'id,setId,startedAt,durationMs,moves,winner,p1Depth,p2Depth,moveIndex,moveElapsedMs,moveAt,depthReached,nodes,nps,score,player,depthUsed,applied\n';
+      const lines: string[] = [];
+      for (const r of records) {
+        const base = `${r.id},${r.setId || ''},${r.startedAt},${Math.round(r.durationMs)},${r.moves},${r.winner},${r.p1Depth},${r.p2Depth}`;
+        const details = r.details && r.details.length ? r.details : [];
+        if (details.length === 0) {
+          lines.push(`${base},,,,,,,,,`);
+          continue;
+        }
+        for (const d of details) {
+          const line = [
+            base,
+            d.index ?? '',
+            Math.round(d.elapsedMs ?? 0),
+            d.at ?? '',
+            d.depthReached ?? '',
+            d.nodes ?? '',
+            d.nps ?? '',
+            d.score ?? '',
+            d.player ?? '',
+            d.depthUsed ?? '',
+            d.applied ?? '',
+          ].join(',');
+          lines.push(line);
+        }
+      }
+      const blob = new Blob([header + lines.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'soluna-infoia-details.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+  }, [records]);
+
+  const viewRecord = useCallback((id: string) => {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    try { alert(`Partida ${id}\nWinner: ${rec.winner}\nMovs: ${rec.moves}\nDuración: ${(rec.durationMs/1000).toFixed(2)}s`); } catch {}
+  }, [records]);
+
+  const copyRecord = useCallback(async (id: string) => {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    try { await navigator.clipboard.writeText(JSON.stringify(rec)); } catch {}
+  }, [records]);
+
+  const downloadRecord = useCallback((id: string) => {
+    const rec = records.find(r => r.id === id);
+    if (!rec) return;
+    try {
+      const blob = new Blob([JSON.stringify(rec, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `soluna-infoia-${id}.json`; a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+  }, [records]);
+
+  return {
+    records,
+    setRecords,
+    addRecord,
+    deleteRecord,
+    clearAll,
+    exportJSON,
+    exportCSV,
+    exportCSVDetails,
+    viewRecord,
+    copyRecord,
+    downloadRecord,
+  };
+}
