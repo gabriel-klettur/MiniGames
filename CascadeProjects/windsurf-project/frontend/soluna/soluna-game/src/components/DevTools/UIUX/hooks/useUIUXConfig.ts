@@ -3,7 +3,7 @@ import { applyCfg, loadCfgLS, LOG_LS_KEY, readComputedCfg, resetInline, saveCfgL
 import type { Cfg } from '../model/config';
 
 export function useUIUXConfig() {
-  const initial = useMemo<Cfg>(() => ({ ...readComputedCfg(), ...loadCfgLS() } as Cfg), []);
+  const initial = useMemo<Cfg>(() => ({ ...readComputedCfg(), ...loadCfgLS(), flightCurveEnabled: true } as Cfg), []);
   const [cfg, setCfg] = useState<Cfg>(initial);
   const [logMerges, setLogMerges] = useState<boolean>(() => {
     try {
@@ -31,7 +31,7 @@ export function useUIUXConfig() {
 
   const reset = () => {
     const defaults = readComputedCfg();
-    setCfg(defaults);
+    setCfg({ ...defaults, flightCurveEnabled: true });
     resetInline();
     try { window.localStorage.removeItem('soluna:ui:cfg'); } catch {}
   };

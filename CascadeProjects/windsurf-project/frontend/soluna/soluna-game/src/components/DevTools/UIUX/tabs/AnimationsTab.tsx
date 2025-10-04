@@ -1,11 +1,10 @@
 import React from 'react';
 import type { Cfg } from '../model/config';
-import { CheckboxRow, SliderRow } from '../components/Rows';
+import { SliderRow } from '../components/Rows';
 
 export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
-      <CheckboxRow label="Activar vuelo curvo (fallback lineal si no hay soporte)" checked={cfg.flightCurveEnabled} onChange={onNum('flightCurveEnabled')} />
       <SliderRow
         label={`Curvatura: ${cfg.flightCurveBend.toFixed(2)}× distancia`}
         value={cfg.flightCurveBend}
