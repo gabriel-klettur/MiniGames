@@ -52,6 +52,9 @@ export function applyMove(state: GameState, mv: AIMove): GameState {
       selectedId: null,
       lastMover: winner,
       roundOver: true,
+      // Al finalizar la ronda, avanzamos el turno al oponente para que la evaluación
+      // terminal refleje correctamente que el rival no tiene movimientos.
+      currentPlayer: nextPlayer,
       players,
       gameOver,
     };

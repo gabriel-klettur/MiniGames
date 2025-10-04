@@ -22,6 +22,12 @@ function countMergePairs(state: GameState): number {
  *   más pares cuando es mi turno (opciones).
  */
 export function evaluate(state: GameState, me: Player): number {
+  // Refuerzo terminal: si la ronda ya terminó, el ganador es `lastMover`.
+  // Esto asegura consistencia incluso si `currentPlayer` no refleja el estado terminal.
+  if (state.roundOver) {
+    if (state.lastMover === me) return Number.POSITIVE_INFINITY / 2;
+    if (state.lastMover && state.lastMover !== me) return Number.NEGATIVE_INFINITY / 2;
+  }
   const noMoves = !anyValidMoves(state.towers);
   if (noMoves) {
     // Si no hay movimientos y es mi turno => pierdo; si es turno del rival => gano

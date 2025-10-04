@@ -75,6 +75,12 @@ export default function IAPanel(props: IAPanelProps) {
     return '—';
   }
 
+  const fmtScore = (v: number | null | undefined): string => {
+    if (v === null || v === undefined) return 'NO INFO';
+    if (!Number.isFinite(v)) return v > 0 ? 'WIN' : v < 0 ? 'LOSS' : '—';
+    return v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
+  };
+
   return (
     <section className="panel ia-panel" aria-label="Panel de IA">
       {/* Encabezado */}
@@ -221,7 +227,7 @@ export default function IAPanel(props: IAPanelProps) {
             <div className="eval">
               <div
                 className="eval-bar"
-                title={evalScore !== null && evalScore !== undefined ? `Eval para ${atRootLabel}: ${evalScore.toFixed(1)}` : 'Sin datos'}
+                title={evalScore !== null && evalScore !== undefined ? `Eval para ${atRootLabel}: ${fmtScore(evalScore)}` : 'Sin datos'}
               >
                 <div
                   className="eval-bar__fill"
@@ -229,7 +235,7 @@ export default function IAPanel(props: IAPanelProps) {
                 />
               </div>
               <span className="eval-value">
-                {evalScore !== null && evalScore !== undefined ? (evalScore > 0 ? `+${evalScore.toFixed(1)}` : evalScore.toFixed(1)) : 'NO INFO'}
+                {fmtScore(evalScore)}
               </span>
             </div>
             <div className="pv row info">PV {depthReached !== null ? `(d=${depthReached})` : ''}: {pv && pv.length ? pv.slice(0, 8).map(fmtMove).join(' → ') : 'NO INFO'}</div>
@@ -255,8 +261,12 @@ export default function IAPanel(props: IAPanelProps) {
                 <ol className="moves-list">
                   {filled.map((r, i) => {
                     const has = !!r;
-                    const label = has ? `${fmtMove(r!.move)} — ${r!.score > 0 ? `+${r!.score.toFixed(1)}` : r!.score.toFixed(1)}` : 'NO INFO';
-                    const ratio = has && maxAbs > 0 ? Math.min(1, Math.abs(r!.score) / maxAbs) : 0;
+                    const label = has ? `${fmtMove(r!.move)} — ${fmtScore(r!.score)}` : 'NO INFO';
+                    const ratio = has
+                      ? (!Number.isFinite(r!.score)
+                        ? 1
+                        : (maxAbs > 0 && Number.isFinite(maxAbs) ? Math.min(1, Math.abs(r!.score) / maxAbs) : 0))
+                      : 0;
                     return (
                       <li key={i} className="move-item">
                         <div className="mini-bar" aria-hidden="true">
