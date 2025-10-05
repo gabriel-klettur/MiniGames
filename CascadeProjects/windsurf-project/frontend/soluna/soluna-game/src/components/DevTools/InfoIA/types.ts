@@ -82,9 +82,7 @@ export interface InfoIAViewProps {
   progNps?: number;
   progScore?: number;
   // Limits
-  pliesLimit: number;
   setsCount: number;
-  onChangePliesLimit: (v: number) => void;
   onChangeSetsCount: (v: number) => void;
   // Per-player controls
   p1: PlayerControlsProps;

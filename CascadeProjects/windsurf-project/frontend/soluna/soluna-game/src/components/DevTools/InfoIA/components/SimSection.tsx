@@ -16,9 +16,7 @@ interface SimSectionProps {
   visualize: boolean;
   onToggleVisualize: () => void;
   datasetLabel: string;
-  pliesLimit: number;
   setsCount: number;
-  onChangePliesLimit: (v: number) => void;
   onChangeSetsCount: (v: number) => void;
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
@@ -41,9 +39,7 @@ const SimSection: FC<SimSectionProps> = ({
   visualize,
   onToggleVisualize,
   datasetLabel,
-  pliesLimit,
   setsCount,
-  onChangePliesLimit,
   onChangeSetsCount,
   p1,
   p2,
@@ -94,8 +90,6 @@ const SimSection: FC<SimSectionProps> = ({
 
           <Card title="Límites de simulación">
             <SimulationLimits
-              pliesLimit={pliesLimit}
-              onPliesLimitChange={onChangePliesLimit}
               setsCount={setsCount}
               onSetsCountChange={onChangeSetsCount}
             />

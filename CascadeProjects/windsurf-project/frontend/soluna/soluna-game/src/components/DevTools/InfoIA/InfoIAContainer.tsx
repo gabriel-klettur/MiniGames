@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, type ChangeEvent } from 'react';
+import React, { useEffect, useRef, type ChangeEvent, useState } from 'react';
 import InfoIAView from './InfoIAView';
 import type { GameState } from '../../../game/types';
 import { useGame } from '../../../game/store';
@@ -12,6 +12,8 @@ const InfoIAContainer: React.FC = () => {
   const stateRef = useRef<GameState>(state);
   useEffect(() => { stateRef.current = state; }, [state]);
   const settings = useInfoIASettings();
+  // Suspend localStorage persistence while long simulations are running to avoid UI jank.
+  const [suspendPersistence, setSuspendPersistence] = useState<boolean>(false);
   const { compareSets, addFilesFromFileList, removeSet, clearSets } = useCompareDatasets();
   const {
     records,
@@ -24,10 +26,10 @@ const InfoIAContainer: React.FC = () => {
     viewRecord,
     copyRecord,
     downloadRecord,
-  } = useRecords();
+    flushNow,
+  } = useRecords({ suspendPersistence });
   const sim = useSimulationRunner(
     {
-      pliesLimit: settings.pliesLimit,
       setsCount: settings.setsCount,
       p1Depth: settings.p1Depth,
       p2Depth: settings.p2Depth,
@@ -41,6 +43,27 @@ const InfoIAContainer: React.FC = () => {
     () => stateRef.current,
   );
 
+  // Ensure persistence resumes when the simulation finishes naturally.
+  useEffect(() => {
+    if (!sim.running) {
+      setSuspendPersistence(false);
+      // Force a flush to avoid losing data if user refreshes immediately after finish
+      flushNow();
+    }
+  }, [sim.running, flushNow]);
+
+  const handleStart = () => {
+    setSuspendPersistence(true);
+    sim.start();
+  };
+
+  const handleStop = () => {
+    sim.stop();
+    setSuspendPersistence(false);
+    // Ensure immediate persistence upon manual stop
+    flushNow();
+  };
+
   const onImportFiles = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -50,8 +73,8 @@ const InfoIAContainer: React.FC = () => {
   return (
     <InfoIAView
       running={sim.running}
-      onStart={sim.start}
-      onStop={sim.stop}
+      onStart={handleStart}
+      onStop={handleStop}
       onDefaults={settings.resetDefaults}
       onExportJSON={exportJSON}
       onExportCSV={exportCSV}
@@ -71,9 +94,7 @@ const InfoIAContainer: React.FC = () => {
       visualize={settings.visualize}
       onToggleVisualize={settings.toggleVisualize}
       datasetLabel={settings.datasetLabel}
-      pliesLimit={settings.pliesLimit}
       setsCount={settings.setsCount}
-      onChangePliesLimit={settings.setPliesLimit}
       onChangeSetsCount={settings.setSetsCount}
       p1={{
         title: 'Jugador 1',

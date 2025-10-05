@@ -4,9 +4,9 @@ import { bestMove } from '../../../../ia';
 import type { GameState } from '../../../../game/types';
 import type { MoveDetail, TimeMode, InfoIARecord } from '../types';
 import { createAIRunner } from '../services/aiRunner';
+const DRAFT_KEY = 'soluna.infoia.records.current.v1';
 
 export interface SimulationSettings {
-  pliesLimit: number;
   setsCount: number;
   p1Depth: number;
   p2Depth: number;
@@ -123,8 +123,11 @@ export function useSimulationRunner(
         const t0 = performance.now();
         let moves = 0;
         const curDetails: MoveDetail[] = [];
+        // Stable id for this round to match draft and final record
+        const recordId = `${startedAtWall}-${setsPlayed}-${roundsInSet}`;
 
-        for (let p = 0; p < settings.pliesLimit && runningRef.current; p++) {
+        // Iterate moves until the round/game ends (no fixed plies limit)
+        for (let p = 0; runningRef.current; p++) {
           const stNow = resolveState();
           const cur = stNow.currentPlayer as 1 | 2;
           const depth = cur === 1 ? settings.p1Depth : settings.p2Depth;
@@ -200,6 +203,21 @@ export function useSimulationRunner(
                   at: Date.now(),
                 });
                 moves++;
+                // Persist draft after each applied move
+                try {
+                  const draft: InfoIARecord = {
+                    id: recordId,
+                    startedAt: startedAtWall,
+                    durationMs: performance.now() - t0,
+                    moves,
+                    winner: 0,
+                    p1Depth: settings.p1Depth,
+                    p2Depth: settings.p2Depth,
+                    setId: `set-${setsPlayed}`,
+                    details: curDetails,
+                  };
+                  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                } catch {}
               }
             } else {
               // Fallback
@@ -223,6 +241,21 @@ export function useSimulationRunner(
                   at: Date.now(),
                 });
                 moves++;
+                // Persist draft after each applied move
+                try {
+                  const draft: InfoIARecord = {
+                    id: recordId,
+                    startedAt: startedAtWall,
+                    durationMs: performance.now() - t0,
+                    moves,
+                    winner: 0,
+                    p1Depth: settings.p1Depth,
+                    p2Depth: settings.p2Depth,
+                    setId: `set-${setsPlayed}`,
+                    details: curDetails,
+                  };
+                  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                } catch {}
               }
             }
           } catch {}
@@ -235,7 +268,7 @@ export function useSimulationRunner(
         const stEnd = resolveState();
         const t1 = performance.now();
         addRecord({
-          id: `${Date.now()}-${setsPlayed}-${roundsInSet}`,
+          id: recordId,
           startedAt: startedAtWall,
           durationMs: t1 - t0,
           moves,
@@ -245,6 +278,8 @@ export function useSimulationRunner(
           setId: `set-${setsPlayed}`,
           details: curDetails,
         });
+        // Clear draft once finalized
+        try { localStorage.removeItem(DRAFT_KEY); } catch {}
 
         roundsInSet += 1;
         if (stEnd.roundOver && !stEnd.gameOver) {

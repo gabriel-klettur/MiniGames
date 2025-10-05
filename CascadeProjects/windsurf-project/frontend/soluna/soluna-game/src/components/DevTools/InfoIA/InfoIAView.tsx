@@ -15,7 +15,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     activeTab, onChangeTab,
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     visualize, onToggleVisualize, datasetLabel,
-    pliesLimit, setsCount, onChangePliesLimit, onChangeSetsCount,
+    setsCount, onChangeSetsCount,
     p1, p2,
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
@@ -85,9 +85,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
           visualize={visualize}
           onToggleVisualize={onToggleVisualize}
           datasetLabel={datasetLabel}
-          pliesLimit={pliesLimit}
           setsCount={setsCount}
-          onChangePliesLimit={onChangePliesLimit}
           onChangeSetsCount={onChangeSetsCount}
           p1={p1}
           p2={p2}

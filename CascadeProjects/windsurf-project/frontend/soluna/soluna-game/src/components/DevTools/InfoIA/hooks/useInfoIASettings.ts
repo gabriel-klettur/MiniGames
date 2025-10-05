@@ -13,9 +13,7 @@ export interface InfoIASettings {
   vizRef: React.MutableRefObject<boolean>;
   datasetLabel: string;
   // Limits
-  pliesLimit: number;
   setsCount: number;
-  setPliesLimit: (n: number) => void;
   setSetsCount: (n: number) => void;
   // Per-player
   p1Depth: number;
@@ -46,7 +44,6 @@ export function useInfoIASettings(): InfoIASettings {
   const datasetLabel = 'Local';
 
   // Limits
-  const [pliesLimit, setPliesLimit] = useState<number>(80);
   const [setsCount, setSetsCount] = useState<number>(10);
 
   // Per-player controls
@@ -59,7 +56,6 @@ export function useInfoIASettings(): InfoIASettings {
 
   const resetDefaults = useCallback(() => {
     setVisualize(true);
-    setPliesLimit(80);
     setSetsCount(10);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
@@ -73,9 +69,7 @@ export function useInfoIASettings(): InfoIASettings {
     toggleVisualize,
     vizRef,
     datasetLabel,
-    pliesLimit,
     setsCount,
-    setPliesLimit,
     setSetsCount,
     p1Depth,
     p2Depth,

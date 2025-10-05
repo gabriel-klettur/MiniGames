@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InfoIARecord } from '../types';
 
 const LS_KEY = 'soluna.infoia.records.v1';
+const DRAFT_KEY = 'soluna.infoia.records.current.v1';
 
 export interface UseRecordsOptions {
   // If true, avoid persisting to LocalStorage to not block UI during long loops
@@ -23,20 +24,35 @@ export interface UseRecords {
   viewRecord: (id: string) => void;
   copyRecord: (id: string) => Promise<void>;
   downloadRecord: (id: string) => void;
+  // Force persist immediately
+  flushNow: () => void;
 }
 
 export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
   const { suspendPersistence = false } = opts;
   const [records, setRecords] = useState<InfoIARecord[]>([]);
+  // Keep a ref to the latest records to allow flush on unload/visibilitychange
+  const recordsRef = useRef<InfoIARecord[]>(records);
+  useEffect(() => { recordsRef.current = records; }, [records]);
+  // No throttle: we will persist immediately on record add to avoid data loss on refresh.
 
-  // Load once
+  // Load once (normal records + optional in-progress draft)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
+      const rawDraft = localStorage.getItem(DRAFT_KEY);
+      const list: InfoIARecord[] = [];
+      if (rawDraft) {
+        try {
+          const draft = JSON.parse(rawDraft) as InfoIARecord;
+          if (draft && typeof draft === 'object') list.push(draft);
+        } catch {}
+      }
       if (raw) {
         const parsed = JSON.parse(raw) as InfoIARecord[];
-        if (Array.isArray(parsed)) setRecords(parsed);
+        if (Array.isArray(parsed)) list.push(...parsed);
       }
+      if (list.length) setRecords(list);
     } catch {}
   }, []);
 
@@ -46,8 +62,40 @@ export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
     try { localStorage.setItem(LS_KEY, JSON.stringify(records)); } catch {}
   }, [records, suspendPersistence]);
 
+  // Ensure we don't lose data if the page is closed/reloaded while persistence is suspended
+  useEffect(() => {
+    const flush = () => {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(recordsRef.current)); } catch {}
+    };
+    // Flush on unload
+    window.addEventListener('beforeunload', flush);
+    // Flush on pagehide (mobile-friendly)
+    window.addEventListener('pagehide', flush);
+    // Flush when tab becomes hidden (e.g., user switches away)
+    const onVisibility = () => { if (document.hidden) flush(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  const flushNow = useCallback(() => {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(recordsRef.current)); } catch {}
+  }, []);
+
   const addRecord = useCallback((rec: InfoIARecord) => {
-    setRecords(prev => [rec, ...prev]);
+    // Build next state synchronously to allow immediate flush
+    const next = [rec, ...recordsRef.current];
+    recordsRef.current = next;
+    setRecords(next);
+    // Always attempt to persist immediately to avoid losing the latest record
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(next));
+    } catch (e) {
+      try { console.warn('[InfoIA] Persist failed (localStorage quota or blocked). Records may not survive refresh.', e); } catch {}
+    }
   }, []);
 
   const deleteRecord = useCallback((id: string) => {
@@ -152,5 +200,6 @@ export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
     viewRecord,
     copyRecord,
     downloadRecord,
+    flushNow,
   };
 }
