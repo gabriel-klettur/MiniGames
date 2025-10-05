@@ -32,8 +32,8 @@
 .dev-toggle-btn {
   position: fixed;
   right: clamp(10px, 2vw, 18px);
-  bottom: clamp(10px, 2vw, 18px);
-  z-index: 1000000;
+  bottom: calc(env(safe-area-inset-bottom) + clamp(10px, 2vw, 18px));
+  z-index: 1000006; /* Above board overlays (1000001) and popovers (1000002–1000005) */
   padding: 0.55rem 0.8rem;
   border-radius: 10px;
   background: rgba(31, 41, 55, 0.85);
@@ -42,6 +42,9 @@
   box-shadow: 0 10px 24px rgba(0,0,0,0.35);
   cursor: pointer;
   transition: transform 120ms ease, background 200ms ease, box-shadow 200ms ease;
+  /* Better touch behavior on iOS */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 .dev-toggle-btn:hover { background: rgba(55, 65, 81, 0.9); }
 .dev-toggle-btn:active { transform: translateY(1px) scale(0.98); }

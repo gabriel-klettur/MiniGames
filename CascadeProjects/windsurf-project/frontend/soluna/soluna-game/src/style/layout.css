@@ -110,12 +110,14 @@
 /* DevTools en fila independiente a ancho completo, sin afectar el tamaño de las columnas del grid */
 .devtools-row {
   width: 100%;
+  display: flex;
+  justify-content: center; /* centrar el panel respecto al viewport */
 }
 
 .devtools-row .devtools-card {
-  width: 100%;
+  width: min(100%, var(--board-max)); /* igualar ancho máximo al tablero */
   box-sizing: border-box;
-  /* opcional: pequeña separación respecto a la fila superior */
+  /* pequeña separación respecto al tablero */
   margin-top: 0.75rem;
 }
 

@@ -94,6 +94,78 @@ function App() {
             dispatch({ type: 'new-round' });
           }}
         />
+        {/* DevTools a ancho completo, inmediatamente debajo del tablero */}
+        {showDev && (
+          <div className="devtools-row">
+            <div className="devtools-card">
+              <DevToolsPanel
+                showFases={showFases}
+                onToggleFases={() => setShowFases((v) => !v)}
+                showUX={showUX}
+                onToggleUX={() => setShowUX((v) => !v)}
+                onToggleRules={() => setShowRules((v) => !v)}
+                showIAPanel={showIAPanel}
+                onToggleIAPanel={() => setShowIAPanel((v) => !v)}
+                showInfoIA={showInfoIA}
+                onToggleInfoIA={() => setShowInfoIA((v) => !v)}
+              />
+              {showIAPanel && (
+                <section className="devtools-card-section">
+                  <div className="section-title">IA</div>
+                  <IAPanel
+                    state={state}
+                    depth={aiDepth}
+                    onChangeDepth={setAiDepth}
+                    onAIMove={doAIMove}
+                    disabled={state.roundOver || state.gameOver}
+                    timeMode={aiTimeMode}
+                    timeSeconds={aiTimeSeconds}
+                    onChangeTimeMode={setAiTimeMode}
+                    onChangeTimeSeconds={setAiTimeSeconds}
+                    busy={aiBusy}
+                    progress={aiProgress}
+                    evalScore={aiEval}
+                    depthReached={aiDepthReached}
+                    pv={aiPV}
+                    rootMoves={aiRootMoves}
+                    nodes={aiNodes}
+                    elapsedMs={aiElapsed}
+                    nps={aiNps}
+                    rootPlayer={state.currentPlayer}
+                    moving={false}
+                    aiAutoplayActive={aiAutoplay}
+                    onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
+                    busyElapsedMs={aiBusyElapsedMs}
+                  />
+                </section>
+              )}
+              {showInfoIA && (
+                <section className="devtools-card-section">
+                  <div className="section-title">InfoIA (Simulación)</div>
+                  <InfoIA />
+                </section>
+              )}
+              {/* Secciones bajo los toggles */}
+              {showRules && (
+                <section className="devtools-card-section">
+                  <div className="section-title">Reglas</div>
+                  <RulesPanel />
+                </section>
+              )}
+              {showFases && (
+                <section className="devtools-card-section">
+                  <div className="section-title">Fases</div>
+                  <FasesPanel />
+                </section>
+              )}
+              {showUX && (
+                <section className="devtools-card-section">                
+                  <UIUX />
+                </section>
+              )}
+            </div>
+          </div>
+        )}
         <HistoryPanel
           visible={showHistory}
           moves={moves}
@@ -102,78 +174,6 @@ function App() {
           onClear={clearHistory}
         />
       </div>
-      {/* DevTools a ancho completo, fila independiente */}
-      {showDev && (
-        <div className="devtools-row">
-          <div className="devtools-card">
-            <DevToolsPanel
-              showFases={showFases}
-              onToggleFases={() => setShowFases((v) => !v)}
-              showUX={showUX}
-              onToggleUX={() => setShowUX((v) => !v)}
-              onToggleRules={() => setShowRules((v) => !v)}
-              showIAPanel={showIAPanel}
-              onToggleIAPanel={() => setShowIAPanel((v) => !v)}
-              showInfoIA={showInfoIA}
-              onToggleInfoIA={() => setShowInfoIA((v) => !v)}
-            />
-            {showIAPanel && (
-              <section className="devtools-card-section">
-                <div className="section-title">IA</div>
-                <IAPanel
-                  state={state}
-                  depth={aiDepth}
-                  onChangeDepth={setAiDepth}
-                  onAIMove={doAIMove}
-                  disabled={state.roundOver || state.gameOver}
-                  timeMode={aiTimeMode}
-                  timeSeconds={aiTimeSeconds}
-                  onChangeTimeMode={setAiTimeMode}
-                  onChangeTimeSeconds={setAiTimeSeconds}
-                  busy={aiBusy}
-                  progress={aiProgress}
-                  evalScore={aiEval}
-                  depthReached={aiDepthReached}
-                  pv={aiPV}
-                  rootMoves={aiRootMoves}
-                  nodes={aiNodes}
-                  elapsedMs={aiElapsed}
-                  nps={aiNps}
-                  rootPlayer={state.currentPlayer}
-                  moving={false}
-                  aiAutoplayActive={aiAutoplay}
-                  onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
-                  busyElapsedMs={aiBusyElapsedMs}
-                />
-              </section>
-            )}
-            {showInfoIA && (
-              <section className="devtools-card-section">
-                <div className="section-title">InfoIA (Simulación)</div>
-                <InfoIA />
-              </section>
-            )}
-            {/* Secciones bajo los toggles */}
-            {showRules && (
-              <section className="devtools-card-section">
-                <div className="section-title">Reglas</div>
-                <RulesPanel />
-              </section>
-            )}
-            {showFases && (
-              <section className="devtools-card-section">
-                <div className="section-title">Fases</div>
-                <FasesPanel />
-              </section>
-            )}
-            {showUX && (
-              <section className="devtools-card-section">                
-                <UIUX />
-              </section>
-            )}
-          </div>
-        </div>
-      )}
       <button className={`dev-toggle-btn ${showDev ? 'active' : ''}`} onClick={() => setShowDev((v) => !v)}>
         Dev
       </button>
@@ -181,5 +181,4 @@ function App() {
   );
 }
 
-export default App
-
+export default App;
