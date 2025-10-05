@@ -9,6 +9,7 @@ export type Cfg = {
   flightCurveBend: number;
   flightDestOffsetX: number;
   flightDestOffsetY: number;
+  flightLingerMs: number;
 };
 
 export const LS_PREFIX = 'soluna:ui:';
@@ -31,6 +32,7 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     flightCurveBend: asNumber(getVar('--flight-curve-bend', '0.22'), 0.22),
     flightDestOffsetX: asNumber(getVar('--flight-dest-offset-x', '0px'), 0),
     flightDestOffsetY: asNumber(getVar('--flight-dest-offset-y', '0px'), 0),
+    flightLingerMs: asNumber(getVar('--flight-linger-ms', '250'), 250),
   };
 }
 
@@ -44,6 +46,7 @@ export function applyCfg(cfg: Cfg, el: HTMLElement | null = getPlayEllipse()): v
   el.style.setProperty('--flight-curve-bend', String(cfg.flightCurveBend));
   el.style.setProperty('--flight-dest-offset-x', `${cfg.flightDestOffsetX}px`);
   el.style.setProperty('--flight-dest-offset-y', `${cfg.flightDestOffsetY}px`);
+  el.style.setProperty('--flight-linger-ms', String(cfg.flightLingerMs));
 }
 
 export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
@@ -56,6 +59,7 @@ export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
   el.style.removeProperty('--flight-curve-bend');
   el.style.removeProperty('--flight-dest-offset-x');
   el.style.removeProperty('--flight-dest-offset-y');
+  el.style.removeProperty('--flight-linger-ms');
 }
 
 export function loadCfgLS(): Partial<Cfg> {

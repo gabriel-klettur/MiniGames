@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import type { RefObject } from 'react';
 import { SymbolIcon } from '../Icons';
 import type { GameAction, MergeFx } from '../../game/types';
@@ -16,6 +16,7 @@ interface FlightLayerProps {
   supportsMotionPath: boolean;
   curvePath?: string;
   curveEnabled: boolean;
+  lingerMs?: number;
   dispatch: React.Dispatch<GameAction>;
 }
 
@@ -27,9 +28,11 @@ export default function FlightLayer({
   supportsMotionPath,
   curvePath,
   curveEnabled,
+  lingerMs,
   dispatch,
 }: FlightLayerProps) {
   if (!mergeFx || !flightPx) return null;
+  const endOnceRef = useRef(false);
   return (
     <div className="merge-flight-layer" key={`flight-${mergeFx.at}`}>
       <div
@@ -47,7 +50,24 @@ export default function FlightLayer({
             ['offsetPath' as any]: supportsMotionPath && curveEnabled && curvePath ? curvePath : undefined,
             ['WebkitOffsetPath' as any]: supportsMotionPath && curveEnabled && curvePath ? curvePath : undefined,
           }}
-          onAnimationEnd={() => { dispatch({ type: 'clear-merge-fx' }); }}
+          onAnimationEnd={() => {
+            if (endOnceRef.current) return;
+            endOnceRef.current = true;
+            // First, commit the deferred merge so the destination updates immediately
+            try {
+              const dt = Date.now() - (mergeFx.at || Date.now());
+              // eslint-disable-next-line no-console
+              console.log(`[Soluna] Flight animation ended (dt ${dt}ms) — committing merge`);
+            } catch {}
+            dispatch({ type: 'commit-merge' });
+            // Then, keep the flight overlay for 250ms to avoid flicker on some devices
+            const delay = typeof lingerMs === 'number' && isFinite(lingerMs) ? Math.max(0, Math.floor(lingerMs)) : 250;
+            try {
+              // eslint-disable-next-line no-console
+              console.log(`[Soluna] Scheduling overlay clear in ${delay}ms`);
+            } catch {}
+            setTimeout(() => { dispatch({ type: 'clear-merge-fx' }); }, delay);
+          }}
         >
           <div className="token-inner">
             <div className="token-stack" aria-hidden="true">

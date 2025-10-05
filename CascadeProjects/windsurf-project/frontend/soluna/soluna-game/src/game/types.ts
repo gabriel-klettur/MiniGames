@@ -44,7 +44,7 @@ export interface MergeFx {
   // Post-merge state to commit after the flight animation ends (normal mode)
   // These fields allow deferring the visual update until onAnimationEnd.
   towersAfter: Tower[];
-  playersAfter: GameState['players'];
+  playersAfter: { 1: PlayerState; 2: PlayerState };
   roundOverAfter: boolean;
   gameOverAfter: boolean;
   lastMoverAfter: 1 | 2 | null;
@@ -58,5 +58,6 @@ export type GameAction =
   | { type: 'resolve-all-overlaps'; minD?: number }
   | { type: 'new-round' }
   | { type: 'reset-game' }
+  | { type: 'commit-merge' }
   | { type: 'clear-merge-fx' }
   | { type: 'set-mode'; mode: 'normal' | 'simulation' };

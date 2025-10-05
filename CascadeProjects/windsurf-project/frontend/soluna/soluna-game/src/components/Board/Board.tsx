@@ -64,6 +64,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               supportsMotionPath={supportsMotionPath}
               curvePath={curvePath}
               curveEnabled={sizes.curveEnabled}
+              lingerMs={sizes.lingerMs}
               dispatch={dispatch}
             />
           </div>

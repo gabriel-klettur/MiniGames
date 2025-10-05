@@ -288,11 +288,19 @@ function reducer(state: GameState, action: GameAction): GameState {
         },
       };
     }
-    case 'clear-merge-fx': {
+    case 'commit-merge': {
       if (state.mergeFx == null) return state;
       const fx = state.mergeFx;
-      // Commit deferred state and then apply pending turn (if not round over)
-      const newPlayer = fx.roundOverAfter ? state.currentPlayer : (state.pendingTurn ?? state.currentPlayer);
+      // Commit deferred state but keep mergeFx so the flight can linger a bit longer
+      if (shouldLog()) {
+        try {
+          const dt = Date.now() - (fx.at || Date.now());
+          console.groupCollapsed?.(`[Soluna] COMMIT merge (dt ${dt}ms)`);
+          console.log('roundOverAfter:', fx.roundOverAfter, 'gameOverAfter:', fx.gameOverAfter);
+          console.log('lastMoverAfter:', fx.lastMoverAfter, 'towersAfter:', fx.towersAfter.length);
+          console.groupEnd?.();
+        } catch {}
+      }
       return {
         ...state,
         towers: fx.towersAfter,
@@ -300,11 +308,20 @@ function reducer(state: GameState, action: GameAction): GameState {
         roundOver: fx.roundOverAfter,
         gameOver: fx.gameOverAfter,
         lastMover: fx.lastMoverAfter,
-        mergeFx: null,
-        currentPlayer: newPlayer,
-        pendingTurn: null,
         selectedId: null,
       };
+    }
+    case 'clear-merge-fx': {
+      if (state.mergeFx == null) return state;
+      // Apply pendingTurn (if any) when animation finishes (normal mode)
+      const newPlayer = state.mergeFx.roundOverAfter ? state.currentPlayer : (state.pendingTurn ?? state.currentPlayer);
+      if (shouldLog()) {
+        try {
+          const dt = Date.now() - (state.mergeFx.at || Date.now());
+          console.log(`[Soluna] CLEAR overlay (dt ${dt}ms) — apply turn`, { prev: state.currentPlayer, next: newPlayer, pendingTurn: state.pendingTurn, roundOver: state.roundOver });
+        } catch {}
+      }
+      return { ...state, mergeFx: null, currentPlayer: newPlayer, pendingTurn: null };
     }
     case 'resolve-overlaps': {
       if (state.roundOver || state.gameOver) return state;

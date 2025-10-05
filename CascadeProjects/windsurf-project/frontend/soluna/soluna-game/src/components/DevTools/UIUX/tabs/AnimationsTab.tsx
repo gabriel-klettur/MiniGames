@@ -29,6 +29,14 @@ export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) 
         step={1}
         onChange={onNum('flightDestOffsetY')}
       />
+      <SliderRow
+        label={`Retardo overlay tras aterrizar: ${Math.round(cfg.flightLingerMs)}ms`}
+        value={cfg.flightLingerMs}
+        min={0}
+        max={1000}
+        step={10}
+        onChange={onNum('flightLingerMs')}
+      />
     </div>
   );
 }

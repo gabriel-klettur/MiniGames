@@ -12,6 +12,7 @@ export interface BoardSizes {
   curveEnabled: boolean;
   curveBend: number;
   curveUp: boolean;
+  lingerMs: number;
 }
 
 export function useBoardSizes() {
@@ -29,6 +30,7 @@ export function useBoardSizes() {
     curveEnabled: true,
     curveBend: 0.22,
     curveUp: false,
+    lingerMs: 250,
   });
 
   useEffect(() => {
@@ -49,7 +51,8 @@ export function useBoardSizes() {
       const curveEnabled = (parseFloat(cs.getPropertyValue('--flight-curve-enabled').trim() || '1') || 0) > 0;
       const curveBend = parseFloat(cs.getPropertyValue('--flight-curve-bend').trim() || '0.22') || 0.22;
       const curveUp = (parseFloat(cs.getPropertyValue('--flight-curve-up').trim() || '0') || 0) > 0;
-      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove, curveEnabled, curveBend, curveUp });
+      const lingerMs = parseFloat(cs.getPropertyValue('--flight-linger-ms').trim() || '250') || 250;
+      setSizes({ w: rect.width, h: rect.height, token, stackStep, maxDiscs, mergeFactor, dropHighlight, freeMove, curveEnabled, curveBend, curveUp, lingerMs });
     });
     ro.observe(el);
     ro.observe(ellipse);
