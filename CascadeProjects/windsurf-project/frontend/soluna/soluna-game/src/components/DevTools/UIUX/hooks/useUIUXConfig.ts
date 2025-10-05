@@ -34,6 +34,9 @@ export function useUIUXConfig() {
     setCfg({ ...defaults, flightCurveEnabled: true });
     resetInline();
     try { window.localStorage.removeItem('soluna:ui:cfg'); } catch {}
+    // Also reset Indicators-related toggle to defaults
+    setLogMerges(true);
+    try { window.localStorage.removeItem(LOG_LS_KEY); } catch {}
   };
 
   return { cfg, setCfg, onNum, reset, logMerges, setLogMerges } as const;

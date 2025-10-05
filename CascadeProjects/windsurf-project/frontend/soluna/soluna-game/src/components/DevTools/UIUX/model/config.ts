@@ -71,6 +71,10 @@ export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
   el.style.removeProperty('--flight-dest-offset-x');
   el.style.removeProperty('--flight-dest-offset-y');
   el.style.removeProperty('--flight-linger-ms');
+  // Also clear teleport FX flags
+  el.style.removeProperty('--teleport-random');
+  el.style.removeProperty('--teleport-manual-confirm');
+  el.style.removeProperty('--teleport-manual-pick');
 }
 
 export function loadCfgLS(): Partial<Cfg> {

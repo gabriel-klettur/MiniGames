@@ -26,6 +26,17 @@ export default function UIUX() {
       id: 'indicadores',
       label: 'Indicadores',
       render: () => <IndicatorsTab logMerges={logMerges} onToggleLog={setLogMerges} />,
+      rightAddon: (
+        <button
+          type="button"
+          className="btn btn-danger btn-sm"
+          onClick={reset}
+          title="Restablecer valores por defecto"
+          aria-label="Restablecer valores por defecto"
+        >
+          Default
+        </button>
+      ),
     },
   ];
 
