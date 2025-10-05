@@ -1,3 +1,4 @@
+import type { SearchOptions } from '../../../../ia/search';
 export type AIRunnerResult = {
   bestMove: any | null;
   score?: number;
@@ -47,7 +48,7 @@ export function createAIRunner() {
     };
   };
 
-  const startSearch = async (args: { state: any; depth: number; timeMs?: number }, onProgress?: (p: AIRunnerProgress) => void) => {
+  const startSearch = async (args: { state: any; depth: number; timeMs?: number; options?: SearchOptions }, onProgress?: (p: AIRunnerProgress) => void) => {
     ensureWorker();
     progressCb = onProgress || null;
     searchId += 1;
@@ -56,7 +57,7 @@ export function createAIRunner() {
     return await new Promise<AIRunnerResult>((resolve, reject) => {
       currentResolve = resolve;
       try {
-        worker!.postMessage({ type: 'SEARCH', state: args.state, depth: args.depth, timeMs: args.timeMs, searchId });
+        worker!.postMessage({ type: 'SEARCH', state: args.state, depth: args.depth, timeMs: args.timeMs, options: args.options, searchId });
       } catch (err) {
         reject(err);
       }

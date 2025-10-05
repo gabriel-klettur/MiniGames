@@ -68,6 +68,23 @@ export interface InfoIAViewProps {
   visualize: boolean;
   onToggleVisualize: () => void;
   datasetLabel: string;
+  // Engine flags (configurables)
+  enableTT: boolean;
+  failSoft: boolean;
+  preferHashMove: boolean;
+  onToggleEnableTT: () => void;
+  onToggleFailSoft: () => void;
+  onTogglePreferHashMove: () => void;
+  enableKillers: boolean;
+  enableHistory: boolean;
+  onToggleEnableKillers: () => void;
+  onToggleEnableHistory: () => void;
+  enablePVS: boolean;
+  onToggleEnablePVS: () => void;
+  enableAspiration: boolean;
+  onToggleEnableAspiration: () => void;
+  aspirationDelta: number;
+  onChangeAspirationDelta: (n: number) => void;
 
   // Results
   records: InfoIARecord[];

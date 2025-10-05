@@ -15,6 +15,15 @@ export interface SimulationSettings {
   p1Secs: number;
   p2Secs: number;
   vizRef: React.MutableRefObject<boolean>;
+  // Engine flags
+  enableTT: boolean;
+  failSoft: boolean;
+  preferHashMove: boolean;
+  enableKillers: boolean;
+  enableHistory: boolean;
+  enablePVS: boolean;
+  enableAspiration: boolean;
+  aspirationDelta: number;
 }
 
 export interface SimulationMetrics {
@@ -163,7 +172,21 @@ export function useSimulationRunner(
             if (runner) {
               try {
                 res = await runner.startSearch(
-                  { state: resolveState(), depth, timeMs: target || undefined },
+                  {
+                    state: resolveState(),
+                    depth,
+                    timeMs: target || undefined,
+                    options: {
+                      enableTT: settings.enableTT,
+                      failSoft: settings.failSoft,
+                      preferHashMove: settings.preferHashMove,
+                      enableKillers: settings.enableKillers,
+                      enableHistory: settings.enableHistory,
+                      enablePVS: settings.enablePVS,
+                      enableAspiration: settings.enableAspiration,
+                      aspirationDelta: settings.aspirationDelta,
+                    },
+                  },
                   (p) => {
                     if (!settings.vizRef.current) return;
                     setProgDepth(p.depth || 0);

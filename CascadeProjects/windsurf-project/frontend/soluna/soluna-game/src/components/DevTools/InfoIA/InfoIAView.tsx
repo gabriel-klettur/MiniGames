@@ -15,6 +15,10 @@ export default function InfoIAView(props: InfoIAViewProps) {
     activeTab, onChangeTab,
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     visualize, onToggleVisualize, datasetLabel,
+    enableTT, failSoft, preferHashMove, onToggleEnableTT, onToggleFailSoft, onTogglePreferHashMove,
+    enableKillers, enableHistory, onToggleEnableKillers, onToggleEnableHistory,
+    enablePVS, onToggleEnablePVS,
+    enableAspiration, onToggleEnableAspiration, aspirationDelta, onChangeAspirationDelta,
     setsCount, onChangeSetsCount,
     p1, p2,
     records,
@@ -85,6 +89,22 @@ export default function InfoIAView(props: InfoIAViewProps) {
           visualize={visualize}
           onToggleVisualize={onToggleVisualize}
           datasetLabel={datasetLabel}
+          enableTT={enableTT}
+          failSoft={failSoft}
+          preferHashMove={preferHashMove}
+          onToggleEnableTT={onToggleEnableTT}
+          onToggleFailSoft={onToggleFailSoft}
+          onTogglePreferHashMove={onTogglePreferHashMove}
+          enableKillers={enableKillers}
+          enableHistory={enableHistory}
+          onToggleEnableKillers={onToggleEnableKillers}
+          onToggleEnableHistory={onToggleEnableHistory}
+          enablePVS={enablePVS}
+          onToggleEnablePVS={onToggleEnablePVS}
+          enableAspiration={enableAspiration}
+          onToggleEnableAspiration={onToggleEnableAspiration}
+          aspirationDelta={aspirationDelta}
+          onChangeAspirationDelta={onChangeAspirationDelta}
           setsCount={setsCount}
           onChangeSetsCount={onChangeSetsCount}
           p1={p1}

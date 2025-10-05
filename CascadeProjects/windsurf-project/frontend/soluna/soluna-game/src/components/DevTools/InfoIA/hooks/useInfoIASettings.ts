@@ -28,6 +28,23 @@ export interface InfoIASettings {
   p2Secs: number;
   setP1Secs: (s: number) => void;
   setP2Secs: (s: number) => void;
+  // Engine feature flags
+  enableTT: boolean;
+  toggleEnableTT: () => void;
+  failSoft: boolean;
+  toggleFailSoft: () => void;
+  preferHashMove: boolean;
+  togglePreferHashMove: () => void;
+  enableKillers: boolean;
+  toggleEnableKillers: () => void;
+  enableHistory: boolean;
+  toggleEnableHistory: () => void;
+  enablePVS: boolean;
+  toggleEnablePVS: () => void;
+  enableAspiration: boolean;
+  toggleEnableAspiration: () => void;
+  aspirationDelta: number;
+  setAspirationDelta: (n: number) => void;
   // Helpers
   resetDefaults: () => void;
 }
@@ -54,12 +71,37 @@ export function useInfoIASettings(): InfoIASettings {
   const [p1Secs, setP1Secs] = useState<number>(3);
   const [p2Secs, setP2Secs] = useState<number>(3);
 
+  // Engine feature flags (default ON per optimization doc)
+  const [enableTT, setEnableTT] = useState<boolean>(true);
+  const [failSoft, setFailSoft] = useState<boolean>(true);
+  const [preferHashMove, setPreferHashMove] = useState<boolean>(true);
+  const [enableKillers, setEnableKillers] = useState<boolean>(false);
+  const [enableHistory, setEnableHistory] = useState<boolean>(false);
+  const [enablePVS, setEnablePVS] = useState<boolean>(false);
+  const [enableAspiration, setEnableAspiration] = useState<boolean>(false);
+  const [aspirationDelta, setAspirationDelta] = useState<number>(25);
+  const toggleEnableTT = useCallback(() => setEnableTT(v => !v), []);
+  const toggleFailSoft = useCallback(() => setFailSoft(v => !v), []);
+  const togglePreferHashMove = useCallback(() => setPreferHashMove(v => !v), []);
+  const toggleEnableKillers = useCallback(() => setEnableKillers(v => !v), []);
+  const toggleEnableHistory = useCallback(() => setEnableHistory(v => !v), []);
+  const toggleEnablePVS = useCallback(() => setEnablePVS(v => !v), []);
+  const toggleEnableAspiration = useCallback(() => setEnableAspiration(v => !v), []);
+
   const resetDefaults = useCallback(() => {
     setVisualize(true);
     setSetsCount(10);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
     setP1Secs(3); setP2Secs(3);
+    setEnableTT(true);
+    setFailSoft(true);
+    setPreferHashMove(true);
+    setEnableKillers(false);
+    setEnableHistory(false);
+    setEnablePVS(false);
+    setEnableAspiration(false);
+    setAspirationDelta(25);
   }, []);
 
   return {
@@ -83,6 +125,23 @@ export function useInfoIASettings(): InfoIASettings {
     p2Secs,
     setP1Secs,
     setP2Secs,
+    enableTT,
+    toggleEnableTT,
+    failSoft,
+    toggleFailSoft,
+    preferHashMove,
+    togglePreferHashMove,
+    enableKillers,
+    toggleEnableKillers,
+    enableHistory,
+    toggleEnableHistory,
+    enablePVS,
+    toggleEnablePVS,
+    enableAspiration,
+    toggleEnableAspiration,
+    aspirationDelta,
+    setAspirationDelta,
     resetDefaults,
   };
 }
+

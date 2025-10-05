@@ -38,6 +38,14 @@ const InfoIAContainer: React.FC = () => {
       p1Secs: settings.p1Secs,
       p2Secs: settings.p2Secs,
       vizRef: settings.vizRef,
+      enableTT: settings.enableTT,
+      failSoft: settings.failSoft,
+      preferHashMove: settings.preferHashMove,
+      enableKillers: settings.enableKillers,
+      enableHistory: settings.enableHistory,
+      enablePVS: settings.enablePVS,
+      enableAspiration: settings.enableAspiration,
+      aspirationDelta: settings.aspirationDelta,
     },
     addRecord,
     () => stateRef.current,
@@ -94,6 +102,22 @@ const InfoIAContainer: React.FC = () => {
       visualize={settings.visualize}
       onToggleVisualize={settings.toggleVisualize}
       datasetLabel={settings.datasetLabel}
+      enableTT={settings.enableTT}
+      failSoft={settings.failSoft}
+      preferHashMove={settings.preferHashMove}
+      onToggleEnableTT={settings.toggleEnableTT}
+      onToggleFailSoft={settings.toggleFailSoft}
+      onTogglePreferHashMove={settings.togglePreferHashMove}
+      enableKillers={settings.enableKillers}
+      enableHistory={settings.enableHistory}
+      onToggleEnableKillers={settings.toggleEnableKillers}
+      onToggleEnableHistory={settings.toggleEnableHistory}
+      enablePVS={settings.enablePVS}
+      onToggleEnablePVS={settings.toggleEnablePVS}
+      enableAspiration={settings.enableAspiration}
+      onToggleEnableAspiration={settings.toggleEnableAspiration}
+      aspirationDelta={settings.aspirationDelta}
+      onChangeAspirationDelta={settings.setAspirationDelta}
       setsCount={settings.setsCount}
       onChangeSetsCount={settings.setSetsCount}
       p1={{

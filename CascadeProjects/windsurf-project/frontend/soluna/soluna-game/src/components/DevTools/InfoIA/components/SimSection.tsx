@@ -16,6 +16,23 @@ interface SimSectionProps {
   visualize: boolean;
   onToggleVisualize: () => void;
   datasetLabel: string;
+  // Engine flags
+  enableTT: boolean;
+  failSoft: boolean;
+  preferHashMove: boolean;
+  onToggleEnableTT: () => void;
+  onToggleFailSoft: () => void;
+  onTogglePreferHashMove: () => void;
+  enableKillers: boolean;
+  enableHistory: boolean;
+  onToggleEnableKillers: () => void;
+  onToggleEnableHistory: () => void;
+  enablePVS: boolean;
+  onToggleEnablePVS: () => void;
+  enableAspiration: boolean;
+  onToggleEnableAspiration: () => void;
+  aspirationDelta: number;
+  onChangeAspirationDelta: (n: number) => void;
   setsCount: number;
   onChangeSetsCount: (v: number) => void;
   p1: PlayerControlsProps;
@@ -39,6 +56,22 @@ const SimSection: FC<SimSectionProps> = ({
   visualize,
   onToggleVisualize,
   datasetLabel,
+  enableTT,
+  failSoft,
+  preferHashMove,
+  onToggleEnableTT,
+  onToggleFailSoft,
+  onTogglePreferHashMove,
+  enableKillers,
+  enableHistory,
+  onToggleEnableKillers,
+  onToggleEnableHistory,
+  enablePVS,
+  onToggleEnablePVS,
+  enableAspiration,
+  onToggleEnableAspiration,
+  aspirationDelta,
+  onChangeAspirationDelta,
   setsCount,
   onChangeSetsCount,
   p1,
@@ -84,6 +117,51 @@ const SimSection: FC<SimSectionProps> = ({
             <Section title="Inicio (dataset)">
               <div className="row" style={{ gap: 8, alignItems: 'center' }}>
                 <span className="kpi">{datasetLabel}</span>
+              </div>
+            </Section>
+            <Section title="Motor IA (flags)">
+              <div className="row" style={{ gap: 10, flexDirection: 'column', alignItems: 'flex-start' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={enableTT} onChange={onToggleEnableTT} />
+                  Tabla de Transposiciones (TT)
+                </label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={failSoft} onChange={onToggleFailSoft} />
+                  Fail-soft αβ
+                </label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={preferHashMove} onChange={onTogglePreferHashMove} />
+                  Priorizar "hash move"
+                </label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={enablePVS} onChange={onToggleEnablePVS} />
+                  PVS (Principal Variation Search)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <input type="checkbox" checked={enableAspiration} onChange={onToggleEnableAspiration} />
+                    Aspiration Windows
+                  </label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Δ
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={aspirationDelta}
+                      onChange={(e) => onChangeAspirationDelta(Math.max(1, Number(e.target.value) || 1))}
+                      style={{ width: 64 }}
+                    />
+                  </label>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={enableKillers} onChange={onToggleEnableKillers} />
+                  Killers (2 por ply)
+                </label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <input type="checkbox" checked={enableHistory} onChange={onToggleEnableHistory} />
+                  History heuristic
+                </label>
               </div>
             </Section>
           </Card>
