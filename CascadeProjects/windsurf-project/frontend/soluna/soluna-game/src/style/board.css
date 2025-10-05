@@ -8,7 +8,58 @@
   overflow-y: visible;
   /* Centrar horizontalmente el área jugable respecto a la pantalla */
   display: flex;
+  flex-direction: column; /* stack children vertically: board then actions */
+  align-items: center;    /* center children horizontally */
+}
+
+/* -----------------------------
+   Custom setup (NO Aleatoreo)
+   ----------------------------- */
+.custom-setup-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1000001; /* above tokens */
+  pointer-events: none; /* allow internal controls to toggle pointer-events back on */
+}
+
+.custom-grid {
+  pointer-events: auto; /* enable clicks on cells */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: min(92%, 720px);
+  aspect-ratio: 4 / 3; /* keep 4x3 proportion */
+}
+
+.custom-cell {
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgba(255,255,255,0.9); /* white borders */
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.25);
+  color: #fff;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.custom-cell:hover { background: rgba(17, 24, 39, 0.38); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25); }
+.custom-cell:active { transform: translateY(1px); }
+.custom-cell .cell-text { pointer-events: none; }
+
+/* Selected symbol inside each custom cell: responsive, centered */
+.custom-cell .cell-figure {
+  width: clamp(36px, 50%, 72px);
+  height: clamp(36px, 50%, 72px);
+}
+
+.custom-setup-actions {
+  margin-top: 10px;
+  display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .board-grid {

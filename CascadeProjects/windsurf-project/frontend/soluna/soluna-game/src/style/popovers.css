@@ -56,3 +56,76 @@
   max-width: none;
   width: auto;
 }
+
+/* New Game popover should sit above any header menus/popovers */
+.popover.newgame-popover {
+  z-index: 1000003; /* above bg-popover and any menus */
+}
+
+/* Cell token picker should be at the very top of local UI layers */
+.popover.cell-picker-popover {
+  z-index: 1000004;
+  /* shrink-wrap around the 2x2 grid */
+  padding: 6px;
+  min-width: unset;
+  max-width: none;
+  width: auto;
+  display: inline-block;
+  pointer-events: auto; /* capture events to avoid click-through */
+}
+
+/* Symbol picker buttons (use token visuals instead of plain text) */
+.symbol-options {
+  display: grid;
+  grid-template-columns: repeat(2, 84px);
+  grid-template-rows: repeat(2, 84px);
+  gap: 8px;
+  justify-content: center;
+  justify-items: center;
+}
+.symbol-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  background: transparent; /* remove pill background to avoid extra visual padding */
+  border: none;
+  color: var(--text, #e5e7eb);
+}
+.symbol-btn:hover,
+.symbol-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px #facc15 inset; /* yellow border on hover/focus */
+  outline: none;
+}
+.symbol-figure { width: 64px; height: 64px; }
+
+/* Remove section spacing for a compact layout */
+.cell-picker-popover .vsai-section { gap: 0; margin: 0; padding: 0; border: 0; }
+.cell-picker-popover .vsai-section + .vsai-section { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* Override generic .vsai-options button pill styles inside the symbol picker */
+.cell-picker-popover .vsai-options button {
+  height: auto;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Screen-reader only text utility */
+.sr-only {
+  border: 0 !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  -webkit-clip-path: inset(50%) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  position: absolute !important;
+  width: 1px !important;
+  white-space: nowrap !important;
+}

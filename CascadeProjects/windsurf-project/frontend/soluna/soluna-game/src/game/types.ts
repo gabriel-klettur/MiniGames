@@ -28,6 +28,12 @@ export interface GameState {
   mode?: 'normal' | 'simulation';
   // When in 'normal' mode, store the next player to switch to once the merge animation ends
   pendingTurn?: 1 | 2 | null;
+  // Custom setup state (NO Aleatoreo): when open, board shows 4x3 empty grid for selecting symbols
+  customSetup?: {
+    open: boolean;
+    // 12 cells, row-major, values are selected symbol or null if empty
+    cells: (SymbolType | null)[];
+  };
 }
 
 export interface MergeFx {
@@ -60,4 +66,9 @@ export type GameAction =
   | { type: 'reset-game' }
   | { type: 'commit-merge' }
   | { type: 'clear-merge-fx' }
-  | { type: 'set-mode'; mode: 'normal' | 'simulation' };
+  | { type: 'set-mode'; mode: 'normal' | 'simulation' }
+  // Custom setup actions
+  | { type: 'enter-custom-setup' }
+  | { type: 'set-custom-cell'; index: number; symbol: SymbolType }
+  | { type: 'confirm-custom-setup' }
+  | { type: 'cancel-custom-setup' };

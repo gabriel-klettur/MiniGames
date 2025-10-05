@@ -6,6 +6,7 @@ import useBackgroundControls from '../../hooks/useBackgroundControls';
 import useBoardCatalog from '../../hooks/useBoardCatalog';
 import VsAiPopover from './VsAiPopover/VsAiPopover';
 import AssetsPopover from './AssetsPopover/AssetsPopover';
+import NewGamePopover from './NewGamePopover/NewGamePopover';
 
 export interface HeaderProps {
   showIA?: boolean;
@@ -27,6 +28,12 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popRef = useRef<HTMLDivElement | null>(null);
+
+  // Estado del popover Nueva partida
+  const [newOpen, setNewOpen] = useState(false);
+  const [newAnchorRect, setNewAnchorRect] = useState<DOMRect | null>(null);
+  const newBtnRef = useRef<HTMLButtonElement | null>(null);
+  const newPopRef = useRef<HTMLDivElement | null>(null);
 
   // Estado del popover Fondo
   const [bgOpen, setBgOpen] = useState(false);
@@ -57,6 +64,8 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   useClickOutside([btnRef, popRef], vsOpen, () => setVsOpen(false));
   // Cierre por click fuera para el popover de Fondo
   useClickOutside([bgBtnRef, bgPopRef], bgOpen, () => setBgOpen(false));
+  // Cierre por click fuera para Nueva partida
+  useClickOutside([newBtnRef, newPopRef], newOpen, () => setNewOpen(false));
 
   const toggleVsOpen = () => {
     if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
@@ -66,6 +75,11 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   const toggleBgOpen = () => {
     if (bgBtnRef.current) setBgAnchorRect(bgBtnRef.current.getBoundingClientRect());
     setBgOpen((v) => !v);
+  };
+
+  const toggleNewOpen = () => {
+    if (newBtnRef.current) setNewAnchorRect(newBtnRef.current.getBoundingClientRect());
+    setNewOpen((v) => !v);
   };
 
   const onPickDifficulty = (d: number) => {
@@ -80,7 +94,15 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
         <h2>Soluna</h2>
         <div className="header-actions">
           {/* Nueva partida (icono + chip) */}
-          <button onClick={() => (onNewGame ? onNewGame() : dispatch({ type: 'reset-game' }))} aria-label="Nueva partida" title="Nueva partida">
+          <button
+            ref={newBtnRef}
+            onClick={toggleNewOpen}
+            aria-expanded={newOpen}
+            aria-pressed={newOpen}
+            aria-controls="newgame-popover"
+            aria-label="Nueva partida"
+            title="Nueva partida"
+          >
             <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z"/>
             </svg>
@@ -155,6 +177,22 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
           )}
         </div>
       </div>
+
+      {/* Popover Nueva partida */}
+      {newOpen && (
+        <NewGamePopover
+          anchorRect={newAnchorRect}
+          popRef={newPopRef}
+          onPickRandom={() => {
+            (onNewGame ? onNewGame() : dispatch({ type: 'reset-game' }));
+            setNewOpen(false);
+          }}
+          onPickManual={() => {
+            dispatch({ type: 'enter-custom-setup' });
+            setNewOpen(false);
+          }}
+        />
+      )}
 
       {/* Popover Fondo */}
       {bgOpen && (

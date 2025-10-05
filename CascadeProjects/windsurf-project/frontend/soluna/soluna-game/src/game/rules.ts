@@ -6,6 +6,32 @@ function id(): string {
   return Math.random().toString(36).slice(2, 9);
 }
 
+/**
+ * Build 12 towers from a provided list of symbols, placing them at random positions
+ * inside the same ellipse and respecting the minimum separation used in randomInitialTowers.
+ */
+export function towersFromSymbols(symbols: SymbolType[]): Tower[] {
+  const towers: Tower[] = [];
+  const placed: { x: number; y: number }[] = [];
+  const minDist = 0.14;
+  for (let i = 0; i < symbols.length; i++) {
+    const top = symbols[i];
+    const stack: SymbolType[] = [top];
+    let p: { x: number; y: number } | null = null;
+    for (let tries = 0; tries < 2000; tries++) {
+      const cand = randomPointInEllipse();
+      if (placed.every((q) => dist(q, cand) > minDist)) {
+        p = cand;
+        break;
+      }
+    }
+    if (!p) p = randomPointInEllipse();
+    placed.push(p);
+    towers.push({ id: id(), stack, height: 1, top, pos: p });
+  }
+  return towers;
+}
+
 // Generate random points inside a centered ellipse within [0..1]x[0..1]
 // ellipse radii (relative): a (x-radius), b (y-radius)
 // Slightly larger radii so we have more area to spread tokens while keeping safe margins

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
-import { anyValidMoves, canMerge, mergeTowers, randomInitialTowers, findById, replaceAfterMerge } from './rules';
+import { anyValidMoves, canMerge, mergeTowers, randomInitialTowers, findById, replaceAfterMerge, towersFromSymbols } from './rules';
 import type { GameAction, GameState, Tower } from './types';
 
 // Debug logging helpers (toggle via localStorage key 'soluna:log:merges')
@@ -44,6 +44,7 @@ function initialState(): GameState {
     mergeFx: null,
     mode: 'normal',
     pendingTurn: null,
+    customSetup: { open: false, cells: Array(12).fill(null) },
   };
 }
 
@@ -370,6 +371,49 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'reset-game': {
       return initialState();
+    }
+    // -----------------------------
+    // Custom setup (NO Aleatoreo)
+    // -----------------------------
+    case 'enter-custom-setup': {
+      // Clear board visually and open a fresh 4x3 matrix
+      return {
+        ...state,
+        towers: [],
+        selectedId: null,
+        customSetup: { open: true, cells: Array(12).fill(null) },
+      } as GameState;
+    }
+    case 'set-custom-cell': {
+      if (!state.customSetup?.open) return state;
+      const idx = Math.max(0, Math.min(11, action.index | 0));
+      const cells = [...(state.customSetup?.cells ?? Array(12).fill(null))];
+      cells[idx] = action.symbol;
+      return { ...state, customSetup: { open: true, cells } } as GameState;
+    }
+    case 'confirm-custom-setup': {
+      if (!state.customSetup?.open) return state;
+      const cells = state.customSetup.cells;
+      if (!cells || cells.length !== 12 || cells.some((c) => c == null)) return state;
+      const symbols = cells as NonNullable<typeof cells[number]>[];
+      const MIN_D_DEFAULT = 0.06;
+      const towers = resolveAllOverlaps(towersFromSymbols(symbols), MIN_D_DEFAULT);
+      return {
+        ...state,
+        towers,
+        selectedId: null,
+        currentPlayer: 1,
+        lastMover: null,
+        roundOver: false,
+        gameOver: false,
+        mergeFx: null,
+        pendingTurn: null,
+        customSetup: { open: false, cells: Array(12).fill(null) },
+      } as GameState;
+    }
+    case 'cancel-custom-setup': {
+      // Leave state as-is but close setup. If board was cleared, keep it cleared.
+      return { ...state, customSetup: { open: false, cells: Array(12).fill(null) } } as GameState;
     }
     case 'set-mode': {
       // If switching to simulation while a flight is active, commit deferred state immediately
