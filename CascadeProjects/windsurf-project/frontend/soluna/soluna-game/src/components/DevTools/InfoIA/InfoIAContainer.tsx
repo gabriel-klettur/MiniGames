@@ -38,6 +38,7 @@ const InfoIAContainer: React.FC = () => {
       p1Secs: settings.p1Secs,
       p2Secs: settings.p2Secs,
       vizRef: settings.vizRef,
+      suspendPersistence,
       enableTT: settings.enableTT,
       failSoft: settings.failSoft,
       preferHashMove: settings.preferHashMove,

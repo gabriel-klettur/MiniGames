@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGame } from '../../../../game/store';
-import { bestMove } from '../../../../ia';
 import type { GameState } from '../../../../game/types';
 import type { MoveDetail, TimeMode, InfoIARecord } from '../types';
 import { createAIRunner } from '../services/aiRunner';
@@ -15,6 +14,8 @@ export interface SimulationSettings {
   p1Secs: number;
   p2Secs: number;
   vizRef: React.MutableRefObject<boolean>;
+  // When true, avoid synchronous persistence (e.g., drafts) during long runs
+  suspendPersistence: boolean;
   // Engine flags
   enableTT: boolean;
   failSoft: boolean;
@@ -226,58 +227,58 @@ export function useSimulationRunner(
                   at: Date.now(),
                 });
                 moves++;
-                // Persist draft after each applied move
+                // Persist draft after each applied move (skip if persistence is suspended)
                 try {
-                  const draft: InfoIARecord = {
-                    id: recordId,
-                    startedAt: startedAtWall,
-                    durationMs: performance.now() - t0,
-                    moves,
-                    winner: 0,
-                    p1Depth: settings.p1Depth,
-                    p2Depth: settings.p2Depth,
-                    setId: `set-${setsPlayed}`,
-                    details: curDetails,
-                  };
-                  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                  if (!settings.suspendPersistence) {
+                    const draft: InfoIARecord = {
+                      id: recordId,
+                      startedAt: startedAtWall,
+                      durationMs: performance.now() - t0,
+                      moves,
+                      winner: 0,
+                      p1Depth: settings.p1Depth,
+                      p2Depth: settings.p2Depth,
+                      setId: `set-${setsPlayed}`,
+                      details: curDetails,
+                    };
+                    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                  }
                 } catch {}
               }
             } else {
-              // Fallback
-              const fb: any = (bestMove as any)(resolveState(), depth);
-              if (fb?.move) {
-                dispatch({ type: 'select', id: fb.move.sourceId });
-                dispatch({ type: 'attempt-merge', sourceId: fb.move.sourceId, targetId: fb.move.targetId });
-              }
+              // No move from worker: likely terminal/round end. Avoid heavy main-thread fallback
+              // to prevent UI jank. Wait for state change/end and record a non-applied detail.
               const applied = await waitTurnOrEnd(cur);
               if (applied) {
                 curDetails.push({
                   index: curDetails.length + 1,
-                  elapsedMs: fb?.elapsedMs ?? target ?? 0,
-                  nodes: fb?.nodes,
-                  nps: fb?.nps,
-                  score: fb?.score,
-                  bestMove: fb?.move,
+                  elapsedMs: res?.elapsedMs ?? target ?? 0,
+                  nodes: res?.nodes,
+                  nps: res?.nps,
+                  score: res?.score,
+                  bestMove: undefined,
                   player: cur,
                   depthUsed: depth,
-                  applied: true,
+                  applied: false,
                   at: Date.now(),
                 });
-                moves++;
-                // Persist draft after each applied move
+                // Do not increment moves as no move was applied
+                // Optionally persist draft (skip if suspended)
                 try {
-                  const draft: InfoIARecord = {
-                    id: recordId,
-                    startedAt: startedAtWall,
-                    durationMs: performance.now() - t0,
-                    moves,
-                    winner: 0,
-                    p1Depth: settings.p1Depth,
-                    p2Depth: settings.p2Depth,
-                    setId: `set-${setsPlayed}`,
-                    details: curDetails,
-                  };
-                  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                  if (!settings.suspendPersistence) {
+                    const draft: InfoIARecord = {
+                      id: recordId,
+                      startedAt: startedAtWall,
+                      durationMs: performance.now() - t0,
+                      moves,
+                      winner: 0,
+                      p1Depth: settings.p1Depth,
+                      p2Depth: settings.p2Depth,
+                      setId: `set-${setsPlayed}`,
+                      details: curDetails,
+                    };
+                    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+                  }
                 } catch {}
               }
             }
@@ -285,24 +286,41 @@ export function useSimulationRunner(
 
           await new Promise((r) => setTimeout(r, 0));
           const stPost = resolveState();
-          if (stPost.roundOver || stPost.gameOver) break;
+          if (stPost.roundOver || stPost.gameOver) {
+            // Belt-and-suspenders: ensure ongoing search is canceled immediately
+            try { runnerRef.current?.cancel(); } catch {}
+            break;
+          }
         }
 
         const stEnd = resolveState();
         const t1 = performance.now();
-        addRecord({
-          id: recordId,
-          startedAt: startedAtWall,
-          durationMs: t1 - t0,
-          moves,
-          winner: stEnd.roundOver ? (stEnd.lastMover as 1 | 2) : 0,
-          p1Depth: settings.p1Depth,
-          p2Depth: settings.p2Depth,
-          setId: `set-${setsPlayed}`,
-          details: curDetails,
-        });
-        // Clear draft once finalized
-        try { localStorage.removeItem(DRAFT_KEY); } catch {}
+        // Defer persistence to idle or next tick to avoid blocking UI at the end of the round
+        const persistFinal = () => {
+          addRecord({
+            id: recordId,
+            startedAt: startedAtWall,
+            durationMs: t1 - t0,
+            moves,
+            winner: stEnd.roundOver ? (stEnd.lastMover as 1 | 2) : 0,
+            p1Depth: settings.p1Depth,
+            p2Depth: settings.p2Depth,
+            setId: `set-${setsPlayed}`,
+            details: curDetails,
+          });
+          // Clear draft once finalized (skip when persistence is suspended)
+          try { if (!settings.suspendPersistence) { localStorage.removeItem(DRAFT_KEY); } } catch {}
+        };
+        try {
+          if (typeof (window as any).requestIdleCallback === 'function') {
+            (window as any).requestIdleCallback(persistFinal);
+          } else {
+            setTimeout(persistFinal, 0);
+          }
+        } catch {
+          // Fallback if scheduling fails
+          persistFinal();
+        }
 
         roundsInSet += 1;
         if (stEnd.roundOver && !stEnd.gameOver) {

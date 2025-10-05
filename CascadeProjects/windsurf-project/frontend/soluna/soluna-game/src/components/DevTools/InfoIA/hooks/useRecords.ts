@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { InfoIARecord } from '../types';
+import { getAllRecords, saveRecord as persistRecord, deleteRecord as storageDelete, clearAllRecords } from '../services/storage';
 
 const LS_KEY = 'soluna.infoia.records.v1';
 const DRAFT_KEY = 'soluna.infoia.records.current.v1';
@@ -28,39 +29,35 @@ export interface UseRecords {
   flushNow: () => void;
 }
 
-export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
-  const { suspendPersistence = false } = opts;
+export function useRecords(_opts: UseRecordsOptions = {}): UseRecords {
   const [records, setRecords] = useState<InfoIARecord[]>([]);
   // Keep a ref to the latest records to allow flush on unload/visibilitychange
   const recordsRef = useRef<InfoIARecord[]>(records);
   useEffect(() => { recordsRef.current = records; }, [records]);
   // No throttle: we will persist immediately on record add to avoid data loss on refresh.
 
-  // Load once (normal records + optional in-progress draft)
+  // Load once (records from IndexedDB) + optional in-progress draft from localStorage for resilience
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      const rawDraft = localStorage.getItem(DRAFT_KEY);
-      const list: InfoIARecord[] = [];
-      if (rawDraft) {
-        try {
-          const draft = JSON.parse(rawDraft) as InfoIARecord;
-          if (draft && typeof draft === 'object') list.push(draft);
-        } catch {}
-      }
-      if (raw) {
-        const parsed = JSON.parse(raw) as InfoIARecord[];
-        if (Array.isArray(parsed)) list.push(...parsed);
-      }
-      if (list.length) setRecords(list);
-    } catch {}
+    let cancelled = false;
+    (async () => {
+      try {
+        const dbRecords = await getAllRecords();
+        const rawDraft = localStorage.getItem(DRAFT_KEY);
+        const list: InfoIARecord[] = [];
+        if (rawDraft) {
+          try {
+            const draft = JSON.parse(rawDraft) as InfoIARecord;
+            if (draft && typeof draft === 'object') list.push(draft);
+          } catch {}
+        }
+        if (Array.isArray(dbRecords) && dbRecords.length > 0) list.push(...dbRecords);
+        if (!cancelled && list.length) setRecords(list);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  // Persist when not running
-  useEffect(() => {
-    if (suspendPersistence) return;
-    try { localStorage.setItem(LS_KEY, JSON.stringify(records)); } catch {}
-  }, [records, suspendPersistence]);
+  // No periodic localStorage persistence: IndexedDB is used via saveRecord on add
 
   // Ensure we don't lose data if the page is closed/reloaded while persistence is suspended
   useEffect(() => {
@@ -82,7 +79,7 @@ export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
   }, []);
 
   const flushNow = useCallback(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(recordsRef.current)); } catch {}
+    // No-op: persistence happens per add via IndexedDB; drafts are small and ephemeral
   }, []);
 
   const addRecord = useCallback((rec: InfoIARecord) => {
@@ -90,21 +87,18 @@ export function useRecords(opts: UseRecordsOptions = {}): UseRecords {
     const next = [rec, ...recordsRef.current];
     recordsRef.current = next;
     setRecords(next);
-    // Always attempt to persist immediately to avoid losing the latest record
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(next));
-    } catch (e) {
-      try { console.warn('[InfoIA] Persist failed (localStorage quota or blocked). Records may not survive refresh.', e); } catch {}
-    }
+    // Persist asynchronously using IndexedDB; avoid main-thread blocking
+    try { void persistRecord(rec); } catch {}
   }, []);
 
   const deleteRecord = useCallback((id: string) => {
     setRecords(prev => prev.filter(r => r.id !== id));
+    try { void storageDelete(id); } catch {}
   }, []);
 
   const clearAll = useCallback(() => {
     setRecords([]);
-    try { localStorage.removeItem(LS_KEY); } catch {}
+    try { void clearAllRecords(); } catch {}
   }, []);
 
   const exportJSON = useCallback(() => {
