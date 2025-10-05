@@ -74,6 +74,36 @@
   pointer-events: auto; /* capture events to avoid click-through */
 }
 
+/* Number picker popover (0–6) for counts-based setup */
+.popover.number-picker-popover {
+  z-index: 1000005; /* above cell picker */
+  padding: 10px;
+  min-width: unset;
+  max-width: none;
+  width: auto;
+  pointer-events: auto; /* capture events inside overlay */
+}
+.number-options {
+  display: grid;
+  grid-template-columns: repeat(7, 40px);
+  gap: 8px;
+  justify-content: center;
+}
+.number-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color, rgba(255,255,255,0.12));
+  color: var(--text, #e5e7eb);
+  font-weight: 600;
+}
+.number-btn:hover,
+.number-btn:focus-visible {
+  background: rgba(255,255,255,0.08);
+  outline: none;
+}
+
 /* Symbol picker buttons (use token visuals instead of plain text) */
 .symbol-options {
   display: grid;

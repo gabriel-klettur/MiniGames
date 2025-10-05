@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo, useReducer } from 'react';
 import { anyValidMoves, canMerge, mergeTowers, randomInitialTowers, findById, replaceAfterMerge, towersFromSymbols } from './rules';
-import type { GameAction, GameState, Tower } from './types';
+import type { GameAction, GameState, Tower, SymbolType } from './types';
 
 // Debug logging helpers (toggle via localStorage key 'soluna:log:merges')
 const LOG_LS_KEY = 'soluna:log:merges';
@@ -393,12 +393,12 @@ function reducer(state: GameState, action: GameAction): GameState {
     // Custom setup (NO Aleatoreo)
     // -----------------------------
     case 'enter-custom-setup': {
-      // Clear board visually and open a fresh 4x3 matrix
+      // Clear board visually and open counts-based fast selection (still keep cells for fallback)
       return {
         ...state,
         towers: [],
         selectedId: null,
-        customSetup: { open: true, cells: Array(12).fill(null) },
+        customSetup: { open: true, cells: Array(12).fill(null), counts: {} },
       } as GameState;
     }
     case 'set-custom-cell': {
@@ -410,9 +410,21 @@ function reducer(state: GameState, action: GameAction): GameState {
     }
     case 'confirm-custom-setup': {
       if (!state.customSetup?.open) return state;
-      const cells = state.customSetup.cells;
-      if (!cells || cells.length !== 12 || cells.some((c) => c == null)) return state;
-      const symbols = cells as NonNullable<typeof cells[number]>[];
+      const counts = state.customSetup.counts ?? {};
+      const order: SymbolType[] = ['sol', 'luna', 'estrella', 'fugaz'];
+      const sum = order.reduce((acc, k) => acc + Math.max(0, (counts as Record<SymbolType, number>)[k] || 0), 0);
+      let symbols: SymbolType[] = [];
+      if (sum === 12) {
+        for (const k of order) {
+          const n = Math.max(0, (counts as Record<SymbolType, number>)[k] || 0);
+          for (let i = 0; i < n; i++) symbols.push(k);
+        }
+      } else {
+        const cells = state.customSetup.cells;
+        if (!cells || cells.length !== 12 || cells.some((c) => c == null)) return state;
+        symbols = cells as NonNullable<typeof cells[number]>[];
+      }
+      if (symbols.length !== 12) return state;
       const MIN_D_DEFAULT = 0.06;
       const towers = resolveAllOverlaps(towersFromSymbols(symbols), MIN_D_DEFAULT);
       return {
@@ -425,9 +437,20 @@ function reducer(state: GameState, action: GameAction): GameState {
         gameOver: false,
         mergeFx: null,
         pendingTurn: null,
-        customSetup: { open: false, cells: Array(12).fill(null) },
+        customSetup: { open: false, cells: Array(12).fill(null), counts: {} },
         spawnFx: { ids: towers.map(t => t.id), at: Date.now(), kind: 'manual-confirm' },
       } as GameState;
+    }
+    case 'set-custom-counts': {
+      if (!state.customSetup?.open) return state;
+      // Clamp each value to [0..6] and keep sum <= 12 (UI will enforce equality before confirm)
+      const src = state.customSetup.counts ?? {};
+      const next: any = { ...src, ...action.counts };
+      for (const k of Object.keys(next)) {
+        const v = Number(next[k]);
+        next[k] = Number.isFinite(v) ? Math.max(0, Math.min(6, v)) : 0;
+      }
+      return { ...state, customSetup: { ...state.customSetup, counts: next } } as GameState;
     }
     case 'clear-spawn-fx': {
       if (!state.spawnFx) return state;

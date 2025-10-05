@@ -33,6 +33,8 @@ export interface GameState {
     open: boolean;
     // 12 cells, row-major, values are selected symbol or null if empty
     cells: (SymbolType | null)[];
+    // Optional counts by symbol for the fast selection mode (sum should be 12)
+    counts?: Partial<Record<SymbolType, number>>;
   };
   // Spawn FX: mark towers that should play a one-time appear animation
   spawnFx?: { ids: string[]; at: number; kind: 'random' | 'manual-confirm' } | null;
@@ -72,6 +74,7 @@ export type GameAction =
   // Custom setup actions
   | { type: 'enter-custom-setup' }
   | { type: 'set-custom-cell'; index: number; symbol: SymbolType }
+  | { type: 'set-custom-counts'; counts: Record<SymbolType, number> }
   | { type: 'confirm-custom-setup' }
   | { type: 'cancel-custom-setup' }
   // FX helpers

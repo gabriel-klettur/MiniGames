@@ -8,18 +8,16 @@ import TokenButton from './TokenButton';
 import FlightLayer from './FlightLayer';
 import { clamp } from './utils';
 import useClickOutside from '../../hooks/useClickOutside';
-import CellTokenPicker from './CellTokenPicker';
 import { SymbolIcon } from '../Icons';
+import type { SymbolType } from '../../game/types';
+import CountPickerPopover from './CountPickerPopover';
 
 export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => void; onNewRound?: () => void }) {
   const { state, dispatch } = useGame();
-  // Local UI state for custom setup symbol picker
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
-  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
-  const pickerRef = useRef<HTMLDivElement | null>(null);
-  // FX: cell-level appear animation when user picks a symbol for a grid cell
-  const [cellFxIndex, setCellFxIndex] = useState<number | null>(null);
+  // Fast counts-based setup: number picker state
+  const [countPickerOpen, setCountPickerOpen] = useState(false);
+  const [countSymbol, setCountSymbol] = useState<SymbolType | null>(null);
+  const countPickerRef = useRef<HTMLDivElement | null>(null);
 
   const { fieldRef, ellipseRef, sizes } = useBoardSizes();
   const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;
@@ -40,8 +38,8 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
 
   const { flightRunning, flightPx, flightRef, supportsMotionPath, curvePath } = useMergeFlight({ state, sizes, fieldRef });
 
-  // Close symbol picker on outside click
-  useClickOutside([pickerRef], pickerOpen, () => setPickerOpen(false));
+  // Close number picker on outside click
+  useClickOutside([countPickerRef], countPickerOpen, () => setCountPickerOpen(false));
 
   // Clear spawn FX after animation completes
   useEffect(() => {
@@ -103,51 +101,56 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               dispatch={dispatch}
             />
 
-            {/* Custom setup overlay: 4x3 grid with white borders */}
+            {/* Custom setup overlay: fast 4-column counts UI */}
             {state.customSetup?.open && (
-              <div className="custom-setup-overlay" aria-label="Configurar tablero">
-                <div className="custom-grid" role="grid" aria-rowcount={3} aria-colcount={4}>
-                  {(state.customSetup.cells || []).map((sym, idx) => (
-                    <button
-                      key={idx}
-                      role="gridcell"
-                      className="custom-cell"
-                      title={sym ? `Celda ${idx + 1}: ${sym}` : `Elegir ficha (celda ${idx + 1})`}
-                      aria-label={sym ? `Celda ${idx + 1}: ${sym}` : `Elegir ficha en celda ${idx + 1}`}
-                      onClick={(e) => {
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        setPickerAnchor(rect);
-                        setPickerIndex(idx);
-                        setPickerOpen(true);
+              <div className="custom-setup-overlay" aria-label="Configurar tablero (rápido por cantidades)">
+                {(() => {
+                  const counts = state.customSetup?.counts || {};
+                  const order: SymbolType[] = ['sol', 'luna', 'estrella', 'fugaz'];
+                  const getCount = (k: SymbolType) => Math.max(0, counts[k] ?? 0);
+                  const total = order.reduce((acc, k) => acc + getCount(k), 0);
+                  const remaining = 12 - total;
+                  return (
+                    <div className="custom-counts-panel" role="group" aria-label="Selecciona cantidades por ficha">
+                      <div className="counts-header" aria-live="polite">
+                        <span>Total seleccionado: {total} / 12</span>
+                        {remaining !== 0 && <span className="counts-remaining">Restantes: {remaining}</span>}
+                      </div>
+                      <div className="counts-grid">
+                        {order.map((sym) => (
+                          <button
+                            key={sym}
+                            className="count-card"
+                            title={`Elegir cantidad de ${sym}`}
+                            aria-label={`Elegir cantidad de ${sym}`}
+                            onClick={() => { setCountSymbol(sym); setCountPickerOpen(true); }}
+                          >
+                            <div className="count-figure" aria-hidden="true">
+                              <SymbolIcon type={sym} />
+                            </div>
+                            <div className="count-value" aria-hidden="true">{getCount(sym)}</div>
+                          </button>
+                        ))}
+                      </div>
+                      {/* Fallback: keep cell picker accessible (optional). Hidden by default to reduce clicks. */}
+                    </div>
+                  );
+                })()}
+                {/* Centered popover for number picking 0–6 */}
+                {countPickerOpen && (
+                  <div ref={countPickerRef}>
+                    <CountPickerPopover
+                      onPick={(n) => {
+                        if (!countSymbol) return;
+                        const next: Partial<Record<SymbolType, number>> = { [countSymbol]: n } as any;
+                        dispatch({ type: 'set-custom-counts', counts: next as any });
+                        // Close and reset selection to reflect the updated counters immediately
+                        setCountPickerOpen(false);
+                        setCountSymbol(null);
                       }}
-                    >
-                      {sym ? (
-                        <div className={`cell-figure ${cellFxIndex === idx ? 'cell-teleport' : ''}`} aria-hidden="true">
-                          <SymbolIcon type={sym} />
-                        </div>
-                      ) : (
-                        <span className="cell-text"></span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                {/* Inline popover for symbol picking */}
-                {pickerOpen && pickerIndex != null && (
-                  <CellTokenPicker
-                    anchorRect={pickerAnchor}
-                    popRef={pickerRef}
-                    onPick={(symbol) => {
-                      dispatch({ type: 'set-custom-cell', index: pickerIndex, symbol });
-                      // trigger local FX on the cell just set if enabled via CSS var
-                      const el = ellipseRef.current as HTMLElement | null;
-                      const v = el ? getComputedStyle(el).getPropertyValue('--teleport-manual-pick').trim() : '1';
-                      const n = parseFloat(v);
-                      const enabled = (Number.isFinite(n) ? n > 0 : v === 'true' || v === '1');
-                      if (enabled) setCellFxIndex(pickerIndex);
-                      window.setTimeout(() => setCellFxIndex((i) => (i === pickerIndex ? null : i)), 1000);
-                      setPickerOpen(false);
-                    }}
-                  />
+                      onClose={() => setCountPickerOpen(false)}
+                    />
+                  </div>
                 )}
               </div>
             )}
@@ -155,8 +158,15 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
         </div>
       </div>
 
-      {/* Confirm button appears when all 12 cells are selected */}
-      {state.customSetup?.open && state.customSetup.cells.every((c) => c != null) && (
+      {/* Confirm button: enabled when counts sum to 12 OR all 12 cells picked (fallback) */}
+      {state.customSetup?.open && (() => {
+        const counts = state.customSetup?.counts || {};
+        const order: SymbolType[] = ['sol', 'luna', 'estrella', 'fugaz'];
+        const sum = order.reduce((acc, k) => acc + Math.max(0, counts[k] ?? 0), 0);
+        const readyByCounts = sum === 12;
+        const readyByCells = state.customSetup.cells.every((c) => c != null);
+        return readyByCounts || readyByCells;
+      })() && (
         <div className="custom-setup-actions">
           <button
             className="btn btn-success"
