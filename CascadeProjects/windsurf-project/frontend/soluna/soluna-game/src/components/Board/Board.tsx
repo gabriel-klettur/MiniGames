@@ -11,6 +11,10 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
   const { state, dispatch } = useGame();
   const { fieldRef, ellipseRef, sizes } = useBoardSizes();
   const selectedTower = state.selectedId ? state.towers.find(t => t.id === state.selectedId) : null;
+  // During merge flight (normal mode), hide the source token so it doesn't duplicate
+  const towersToRender = state.mergeFx
+    ? state.towers.filter(t => t.id !== state.mergeFx!.fromId)
+    : state.towers;
 
   const {
     dragId,
@@ -32,7 +36,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
             className={`play-field ${selectedTower ? `has-selection selected-${selectedTower.top}` : ''}`}
             ref={fieldRef}
           >
-            {state.towers.map((t) => (
+            {towersToRender.map((t) => (
               <TokenButton
                 key={t.id}
                 tower={t}

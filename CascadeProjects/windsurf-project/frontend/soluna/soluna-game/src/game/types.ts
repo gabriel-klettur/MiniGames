@@ -41,6 +41,13 @@ export interface MergeFx {
   // Optional absolute pixel positions relative to play-field at dispatch time
   fromPx?: { x: number; y: number };
   toPx?: { x: number; y: number };
+  // Post-merge state to commit after the flight animation ends (normal mode)
+  // These fields allow deferring the visual update until onAnimationEnd.
+  towersAfter: Tower[];
+  playersAfter: GameState['players'];
+  roundOverAfter: boolean;
+  gameOverAfter: boolean;
+  lastMoverAfter: 1 | 2 | null;
 }
 
 export type GameAction =

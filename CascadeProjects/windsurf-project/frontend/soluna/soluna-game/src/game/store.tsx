@@ -164,10 +164,10 @@ function reducer(state: GameState, action: GameAction): GameState {
       }
 
       const merged: Tower = mergeTowers(source, target);
-      let towers = replaceAfterMerge(state.towers, source.id, target.id, merged);
+      let towersAfter = replaceAfterMerge(state.towers, source.id, target.id, merged);
       // After merging, resolve overlaps globally to ensure no tokens remain overlapped
       const MIN_D_AFTER_MERGE = 0.08; // slightly larger spacing after merges
-      towers = resolveAllOverlaps(towers, MIN_D_AFTER_MERGE);
+      towersAfter = resolveAllOverlaps(towersAfter, MIN_D_AFTER_MERGE);
 
       // Debug/Telemetry: registrar cada fusión válida en consola
       if (shouldLog()) {
@@ -201,39 +201,36 @@ function reducer(state: GameState, action: GameAction): GameState {
 
       // Comprobamos si el siguiente jugador tiene jugadas válidas
       const nextPlayer: 1 | 2 = state.currentPlayer === 1 ? 2 : 1;
-      const nextHasMoves = anyValidMoves(towers);
+      const nextHasMoves = anyValidMoves(towersAfter);
 
       if (!nextHasMoves) {
         const winner = state.currentPlayer;
         const newStars = state.players[winner].stars + 1;
-        const players = {
+        const playersAfter = {
           ...state.players,
           [winner]: { stars: newStars },
         } as GameState['players'];
-        const gameOver = newStars >= 4;
-        // In simulation mode, skip animation
+        const gameOverAfter = newStars >= 4;
+        // In simulation mode, skip animation and commit immediately
         if (state.mode === 'simulation') {
           return {
             ...state,
-            towers,
+            towers: towersAfter,
             selectedId: null,
             lastMover: winner,
             roundOver: true,
-            players,
-            gameOver,
+            players: playersAfter,
+            gameOver: gameOverAfter,
             mergeFx: null,
             pendingTurn: null,
           };
         }
-        // Normal mode: allow the final merge animation to play
+        // Normal mode: defer commit until animation ends
         return {
           ...state,
-          towers,
           selectedId: null,
-          lastMover: winner,
-          roundOver: true,
-          players,
-          gameOver,
+          lastMover: state.lastMover, // will update on commit
+          // keep pre-merge towers visible until flight ends
           mergeFx: {
             mergedId: merged.id,
             fromId: source.id,
@@ -244,7 +241,14 @@ function reducer(state: GameState, action: GameAction): GameState {
             sourceStack: [...source.stack],
             fromPx: action.fromPx ? { ...action.fromPx } : undefined,
             toPx: action.toPx ? { ...action.toPx } : undefined,
+            // deferred state
+            towersAfter,
+            playersAfter,
+            roundOverAfter: true,
+            gameOverAfter,
+            lastMoverAfter: winner,
           },
+          pendingTurn: null,
         };
       }
 
@@ -253,17 +257,16 @@ function reducer(state: GameState, action: GameAction): GameState {
         // Skip animation and switch turn immediately
         return {
           ...state,
-          towers,
+          towers: towersAfter,
           selectedId: null,
           currentPlayer: nextPlayer,
           mergeFx: null,
           pendingTurn: null,
         };
       }
-      // Normal mode: set pending turn and trigger animation
+      // Normal mode: set pending turn and trigger animation, but defer commit
       return {
         ...state,
-        towers,
         selectedId: null,
         pendingTurn: nextPlayer,
         mergeFx: {
@@ -276,14 +279,32 @@ function reducer(state: GameState, action: GameAction): GameState {
           sourceStack: [...source.stack],
           fromPx: action.fromPx ? { ...action.fromPx } : undefined,
           toPx: action.toPx ? { ...action.toPx } : undefined,
+          // deferred state (no round end)
+          towersAfter,
+          playersAfter: state.players,
+          roundOverAfter: false,
+          gameOverAfter: state.gameOver,
+          lastMoverAfter: state.lastMover,
         },
       };
     }
     case 'clear-merge-fx': {
       if (state.mergeFx == null) return state;
-      // Apply pendingTurn (if any) when animation finishes (normal mode)
-      const newPlayer = state.pendingTurn ?? state.currentPlayer;
-      return { ...state, mergeFx: null, currentPlayer: newPlayer, pendingTurn: null };
+      const fx = state.mergeFx;
+      // Commit deferred state and then apply pending turn (if not round over)
+      const newPlayer = fx.roundOverAfter ? state.currentPlayer : (state.pendingTurn ?? state.currentPlayer);
+      return {
+        ...state,
+        towers: fx.towersAfter,
+        players: fx.playersAfter,
+        roundOver: fx.roundOverAfter,
+        gameOver: fx.gameOverAfter,
+        lastMover: fx.lastMoverAfter,
+        mergeFx: null,
+        currentPlayer: newPlayer,
+        pendingTurn: null,
+        selectedId: null,
+      };
     }
     case 'resolve-overlaps': {
       if (state.roundOver || state.gameOver) return state;
@@ -334,10 +355,23 @@ function reducer(state: GameState, action: GameAction): GameState {
       return initialState();
     }
     case 'set-mode': {
-      // If switching to simulation while a flight is active, apply pending turn immediately and clear animation
+      // If switching to simulation while a flight is active, commit deferred state immediately
       if (action.mode === 'simulation' && state.mergeFx) {
-        const newPlayer = state.pendingTurn ?? state.currentPlayer;
-        return { ...state, mode: action.mode, mergeFx: null, pendingTurn: null, currentPlayer: newPlayer } as GameState;
+        const fx = state.mergeFx;
+        const newPlayer = fx.roundOverAfter ? state.currentPlayer : (state.pendingTurn ?? state.currentPlayer);
+        return {
+          ...state,
+          mode: action.mode,
+          towers: fx.towersAfter,
+          players: fx.playersAfter,
+          roundOver: fx.roundOverAfter,
+          gameOver: fx.gameOverAfter,
+          lastMover: fx.lastMoverAfter,
+          mergeFx: null,
+          pendingTurn: null,
+          currentPlayer: newPlayer,
+          selectedId: null,
+        } as GameState;
       }
       return { ...state, mode: action.mode } as GameState;
     }
