@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Cfg } from '../model/config';
-import { SliderRow } from '../components/Rows';
+import { SliderRow, Section, CheckboxRow } from '../components/Rows';
 
 export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
@@ -37,6 +37,23 @@ export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) 
         step={10}
         onChange={onNum('flightLingerMs')}
       />
+      <Section title="Teleportación Fichas">
+        <CheckboxRow
+          label="Nueva partida Aleatorio"
+          checked={!!cfg.teleportRandom}
+          onChange={onNum('teleportRandom')}
+        />
+        <CheckboxRow
+          label="Confirmar tablero (No Aleatorio)"
+          checked={!!cfg.teleportManualConfirm}
+          onChange={onNum('teleportManualConfirm')}
+        />
+        <CheckboxRow
+          label="Colocar ficha en celda (No Aleatorio)"
+          checked={!!cfg.teleportManualPick}
+          onChange={onNum('teleportManualPick')}
+        />
+      </Section>
     </div>
   );
 }

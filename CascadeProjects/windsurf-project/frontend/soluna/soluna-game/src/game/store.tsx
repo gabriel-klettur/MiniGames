@@ -45,6 +45,7 @@ function initialState(): GameState {
     mode: 'normal',
     pendingTurn: null,
     customSetup: { open: false, cells: Array(12).fill(null) },
+    spawnFx: null,
   };
 }
 
@@ -370,7 +371,23 @@ function reducer(state: GameState, action: GameAction): GameState {
       };
     }
     case 'reset-game': {
-      return initialState();
+      const MIN_D_DEFAULT = 0.06;
+      const t0 = randomInitialTowers();
+      const towers = resolveAllOverlaps(t0, MIN_D_DEFAULT);
+      return {
+        towers,
+        selectedId: null,
+        currentPlayer: 1,
+        lastMover: null,
+        roundOver: false,
+        gameOver: false,
+        players: { 1: { stars: 0 }, 2: { stars: 0 } },
+        mergeFx: null,
+        mode: 'normal',
+        pendingTurn: null,
+        customSetup: { open: false, cells: Array(12).fill(null) },
+        spawnFx: { ids: towers.map(t => t.id), at: Date.now(), kind: 'random' },
+      } as GameState;
     }
     // -----------------------------
     // Custom setup (NO Aleatoreo)
@@ -409,7 +426,12 @@ function reducer(state: GameState, action: GameAction): GameState {
         mergeFx: null,
         pendingTurn: null,
         customSetup: { open: false, cells: Array(12).fill(null) },
+        spawnFx: { ids: towers.map(t => t.id), at: Date.now(), kind: 'manual-confirm' },
       } as GameState;
+    }
+    case 'clear-spawn-fx': {
+      if (!state.spawnFx) return state;
+      return { ...state, spawnFx: null } as GameState;
     }
     case 'cancel-custom-setup': {
       // Leave state as-is but close setup. If board was cleared, keep it cleared.

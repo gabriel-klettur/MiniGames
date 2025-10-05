@@ -34,6 +34,8 @@ export interface GameState {
     // 12 cells, row-major, values are selected symbol or null if empty
     cells: (SymbolType | null)[];
   };
+  // Spawn FX: mark towers that should play a one-time appear animation
+  spawnFx?: { ids: string[]; at: number; kind: 'random' | 'manual-confirm' } | null;
 }
 
 export interface MergeFx {
@@ -71,4 +73,6 @@ export type GameAction =
   | { type: 'enter-custom-setup' }
   | { type: 'set-custom-cell'; index: number; symbol: SymbolType }
   | { type: 'confirm-custom-setup' }
-  | { type: 'cancel-custom-setup' };
+  | { type: 'cancel-custom-setup' }
+  // FX helpers
+  | { type: 'clear-spawn-fx' };

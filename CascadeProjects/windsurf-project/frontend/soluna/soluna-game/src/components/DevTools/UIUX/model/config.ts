@@ -10,6 +10,10 @@ export type Cfg = {
   flightDestOffsetX: number;
   flightDestOffsetY: number;
   flightLingerMs: number;
+  // Teleport FX toggles
+  teleportRandom: boolean;         // Nueva partida Aleatorio
+  teleportManualConfirm: boolean;  // Confirmar tablero en No Aleatorio
+  teleportManualPick: boolean;     // Colocar ficha en celda en No Aleatorio
 };
 
 export const LS_PREFIX = 'soluna:ui:';
@@ -33,6 +37,9 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     flightDestOffsetX: asNumber(getVar('--flight-dest-offset-x', '0px'), 0),
     flightDestOffsetY: asNumber(getVar('--flight-dest-offset-y', '0px'), 0),
     flightLingerMs: asNumber(getVar('--flight-linger-ms', '250'), 250),
+    teleportRandom: asNumber(getVar('--teleport-random', '1'), 1) > 0,
+    teleportManualConfirm: asNumber(getVar('--teleport-manual-confirm', '1'), 1) > 0,
+    teleportManualPick: asNumber(getVar('--teleport-manual-pick', '1'), 1) > 0,
   };
 }
 
@@ -47,6 +54,10 @@ export function applyCfg(cfg: Cfg, el: HTMLElement | null = getPlayEllipse()): v
   el.style.setProperty('--flight-dest-offset-x', `${cfg.flightDestOffsetX}px`);
   el.style.setProperty('--flight-dest-offset-y', `${cfg.flightDestOffsetY}px`);
   el.style.setProperty('--flight-linger-ms', String(cfg.flightLingerMs));
+  // Teleport FX flags as CSS vars (read by Board)
+  el.style.setProperty('--teleport-random', cfg.teleportRandom ? '1' : '0');
+  el.style.setProperty('--teleport-manual-confirm', cfg.teleportManualConfirm ? '1' : '0');
+  el.style.setProperty('--teleport-manual-pick', cfg.teleportManualPick ? '1' : '0');
 }
 
 export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
