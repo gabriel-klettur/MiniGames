@@ -4,6 +4,8 @@ import { defaultOptions, IAPOWA_PRESET, IAPOWA_PERFORMANCE_PRESET, IAPOWA_DEFENS
 
 export interface PresetsTabProps {
   onApplyPresetCustom?: (options: SearchOptions, scope?: 'current' | 'both') => void;
+  onChangePresets?: (items: Array<{ id: string; name: string; options: SearchOptions }>) => void;
+  initialItems?: Array<{ id: string; name: string; options: SearchOptions }>;
 }
 
 type PresetItem = {
@@ -43,12 +45,16 @@ const numField = (label: string, key: keyof SearchOptions, value: any, onChange:
 );
 
 export default function PresetsTab(props: PresetsTabProps) {
-  const { onApplyPresetCustom } = props;
-  const [items, setItems] = useState<PresetItem[]>([]);
+  const { onApplyPresetCustom, onChangePresets, initialItems } = props;
+  const [items, setItems] = useState<PresetItem[]>(() => {
+    if (initialItems && initialItems.length) return initialItems as PresetItem[];
+    return [];
+  });
   const [selectedId, setSelectedId] = useState<string>('');
 
   // load from localStorage
   useEffect(() => {
+    if (items.length > 0) return; // if already initialized (from initialItems), skip LS
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
@@ -61,12 +67,13 @@ export default function PresetsTab(props: PresetsTabProps) {
     const def = makeDefaultPresets();
     setItems(def);
     setSelectedId(def[0].id);
-  }, []);
+  }, [items.length]);
 
   // persist
   useEffect(() => {
     try { localStorage.setItem(LS_KEY, JSON.stringify(items)); } catch {}
-  }, [items]);
+    try { onChangePresets && onChangePresets(items as Array<{ id: string; name: string; options: SearchOptions }>); } catch {}
+  }, [items, onChangePresets]);
 
   const selected = useMemo(() => items.find(it => it.id === selectedId) || null, [items, selectedId]);
 

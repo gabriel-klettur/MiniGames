@@ -7,6 +7,7 @@ import { useInfoIASettings } from './hooks/useInfoIASettings';
 import { useRecords } from './hooks/useRecords';
 import { useSimulationRunner } from './hooks/useSimulationRunner';
 import { IAPOWA_PRESET, IAPOWA_PERFORMANCE_PRESET, IAPOWA_DEFENSE_PRESET } from '../../../ia/search/options';
+import type { SearchOptions } from '../../../ia/search/types';
 const InfoIAContainer: React.FC = () => {
   const { state } = useGame();
 
@@ -61,13 +62,32 @@ const InfoIAContainer: React.FC = () => {
   // Preset selection state per player (key string, future-proof for more presets)
   const [p1PresetKey, setP1PresetKey] = useState<string>('');
   const [p2PresetKey, setP2PresetKey] = useState<string>('');
-  const presetOptions = [
-    { key: 'iapowa', label: 'IAPowa' },
-    { key: 'iapowa_perf', label: 'IAPowa+Rendimiento' },
-    { key: 'iapowa_def', label: 'IAPowa+Defensa' },
+  // Presets compartidos con IAPanel (localStorage)
+  const LS_PRESETS = 'soluna:ia:presets';
+  type PresetItem = { id: string; name: string; options: SearchOptions };
+  const defaultPresets: PresetItem[] = [
+    { id: 'iapowa', name: 'IAPowa', options: { ...IAPOWA_PRESET } },
+    { id: 'iapowa_perf', name: 'IAPowa+Rendimiento', options: { ...IAPOWA_PERFORMANCE_PRESET } },
+    { id: 'iapowa_def', name: 'IAPowa+Defensa', options: { ...IAPOWA_DEFENSE_PRESET } },
   ];
+  const [presetItems, setPresetItems] = useState<PresetItem[]>(() => {
+    try { const raw = localStorage.getItem(LS_PRESETS); if (raw) return JSON.parse(raw) as PresetItem[]; } catch {}
+    return defaultPresets;
+  });
+  useEffect(() => {
+    const onUpdate = () => {
+      try {
+        const raw = localStorage.getItem(LS_PRESETS);
+        if (raw) setPresetItems(JSON.parse(raw) as PresetItem[]);
+      } catch {}
+    };
+    window.addEventListener('soluna:presets:update', onUpdate);
+    return () => window.removeEventListener('soluna:presets:update', onUpdate);
+  }, []);
+  const presetOptions = presetItems.map(it => ({ key: it.id, label: it.name }));
   const applyPreset = (key: string, who: 1 | 2) => {
-    const pick = key === 'iapowa' ? IAPOWA_PRESET : key === 'iapowa_perf' ? IAPOWA_PERFORMANCE_PRESET : key === 'iapowa_def' ? IAPOWA_DEFENSE_PRESET : undefined;
+    const found = presetItems.find(p => p.id === key);
+    const pick = found?.options;
     if (!pick) return;
     if (who === 1) settings.setP1Engine({ ...pick }); else settings.setP2Engine({ ...pick });
   };
@@ -79,7 +99,7 @@ const InfoIAContainer: React.FC = () => {
       return sa === sb;
     } catch { return false; }
   };
-  const getPreset = (key: string) => (key === 'iapowa' ? IAPOWA_PRESET : key === 'iapowa_perf' ? IAPOWA_PERFORMANCE_PRESET : key === 'iapowa_def' ? IAPOWA_DEFENSE_PRESET : undefined);
+  const getPreset = (key: string) => presetItems.find(p => p.id === key)?.options;
   useEffect(() => {
     if (!p1PresetKey) return;
     const p = getPreset(p1PresetKey);

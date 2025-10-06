@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { IAPanelProps, TabKey } from './types';
 import ControlSection from './components/ControlSection';
 import AnalysisSection from './components/AnalysisSection';
@@ -7,6 +7,8 @@ import SearchSettings from './components/Advanced/SearchSettings';
 import WindowsSettings from './components/Advanced/WindowsSettings';
 import QuiescenceSettings from './components/Advanced/QuiescenceSettings';
 import PresetsTab from './components/Presets/PresetsTab';
+import { IAPOWA_PRESET, IAPOWA_PERFORMANCE_PRESET, IAPOWA_DEFENSE_PRESET } from '../../../ia/search/options';
+import type { SearchOptions } from '../../../ia/search/types';
 
  
 export default function IAPanel(props: IAPanelProps) {
@@ -30,6 +32,7 @@ export default function IAPanel(props: IAPanelProps) {
     aiEditTarget = 1, onChangeAiEditTarget,
     onApplyPresetIAPowaCurrent,
     onApplyPresetIAPowaBoth,
+    aiApplyPresetCustom,
   } = props;
 
   const current = state.currentPlayer === 1 ? 'Jugador 1' : 'Jugador 2';
@@ -37,6 +40,40 @@ export default function IAPanel(props: IAPanelProps) {
 
   // Pestañas principales
   const [activeTab, setActiveTab] = useState<TabKey>('control');
+  // Presets compartidos con el tab "Presets" (persistidos en localStorage)
+  const LS_KEY = 'soluna:ia:presets';
+  type PresetItem = { id: string; name: string; options: SearchOptions };
+  const defaultPresetItems: PresetItem[] = [
+    { id: 'iapowa', name: 'IAPowa', options: { ...IAPOWA_PRESET } },
+    { id: 'iapowa_perf', name: 'IAPowa+Rendimiento', options: { ...IAPOWA_PERFORMANCE_PRESET } },
+    { id: 'iapowa_def', name: 'IAPowa+Defensa', options: { ...IAPOWA_DEFENSE_PRESET } },
+  ];
+  const [presetItems, setPresetItems] = useState<PresetItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as PresetItem[];
+        if (Array.isArray(arr) && arr.length > 0) return arr;
+      }
+    } catch {}
+    try { localStorage.setItem(LS_KEY, JSON.stringify(defaultPresetItems)); } catch {}
+    return defaultPresetItems;
+  });
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string>('');
+
+  // Ensure defaults exist (restore if faltan o está vacío)
+  useEffect(() => {
+    const required = new Set(['iapowa', 'iapowa_perf', 'iapowa_def']);
+    const missing: string[] = [];
+    required.forEach(id => { if (!presetItems.some(p => p.id === id)) missing.push(id); });
+    if (presetItems.length === 0 || missing.length > 0) {
+      const merged: PresetItem[] = [...presetItems];
+      defaultPresetItems.forEach(p => { if (!merged.some(m => m.id === p.id)) merged.push(p); });
+      setPresetItems(merged);
+      try { localStorage.setItem(LS_KEY, JSON.stringify(merged)); } catch {}
+      try { window.dispatchEvent(new CustomEvent('soluna:presets:update')); } catch {}
+    }
+  }, []);
 
   return (
     <section className="panel ia-panel" aria-label="Panel de IA" style={{ width: '100%', maxWidth: 'none', flex: '1 1 auto' }}>
@@ -92,6 +129,35 @@ export default function IAPanel(props: IAPanelProps) {
       {/* Tab: Control */}
       {activeTab === 'control' && (
         <>
+          {/* Preset selector (estilo InfoIA) — usa la misma lista que el tab "Presets" */}
+          <div className="row" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+            <label title={'Selecciona y aplica un preset al jugador actual.'} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span className="kpi">Preset</span>
+              <select
+                value={selectedPresetKey}
+                onChange={(e) => {
+                  const key = e.target.value;
+                  setSelectedPresetKey(key);
+                  const opt = presetItems.find((o: PresetItem) => o.id === key);
+                  if (opt && aiApplyPresetCustom) aiApplyPresetCustom({ ...opt.options }, 'current');
+                }}
+                aria-label="Preset de IA por jugador"
+              >
+                <option value="">(ninguno)</option>
+                {presetItems.map((opt: PresetItem) => (
+                  <option key={opt.id} value={opt.id}>{opt.name}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              disabled={!selectedPresetKey}
+              onClick={() => {
+                const opt = presetItems.find((o: PresetItem) => o.id === selectedPresetKey);
+                if (opt && aiApplyPresetCustom) aiApplyPresetCustom({ ...opt.options }, 'both');
+              }}
+              title="Aplicar el preset seleccionado a ambos jugadores"
+            >Aplicar a ambos</button>
+          </div>
           {(typeof aiEditTarget === 'number' && typeof onChangeAiEditTarget === 'function') && (
             <div className="row" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
               <span className="kpi kpi--muted" title="Selecciona a qué jugador se aplican los toggles de motor del panel (TT, PVS, etc.).">Editando</span>
@@ -272,6 +338,12 @@ export default function IAPanel(props: IAPanelProps) {
       {activeTab === 'presets' && (
         <PresetsTab
           onApplyPresetCustom={props.aiApplyPresetCustom}
+          initialItems={presetItems}
+          onChangePresets={(items) => {
+            try { localStorage.setItem(LS_KEY, JSON.stringify(items)); } catch {}
+            setPresetItems(items as any);
+            try { window.dispatchEvent(new CustomEvent('soluna:presets:update')); } catch {}
+          }}
         />
       )}
     </section>
