@@ -1,5 +1,5 @@
-import type { AIMove } from '../../../ia/index';
-import type { GameState } from '../../../game/types';
+import type { AIMove } from '../../../../ia/index';
+import type { GameState } from '../../../../game/types';
 
 /**
  * Normaliza la evaluación a rango [-1, 1] usando tanh.
@@ -23,7 +23,7 @@ export function fmtScore(v: number | null | undefined): string {
  */
 export function idToLabelFactory(state: GameState) {
   return (id: string): string => {
-    const t = state.towers.find((tt) => tt.id === id);
+    const t = state.towers.find((tt: GameState['towers'][number]) => tt.id === id);
     if (!t) return id;
     return `#${id.slice(0, 3)} h${t.height}·${t.top}`;
   };
