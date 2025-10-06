@@ -65,6 +65,9 @@ export interface IAPanelProps {
   onChangeAiTimePerMoveMs?: (n: number) => void;
   aiTimeExponent?: number;
   onChangeAiTimeExponent?: (n: number) => void;
+  // Per-player edit target for engine flags
+  aiEditTarget?: 1 | 2;
+  onChangeAiEditTarget?: (p: 1 | 2) => void;
 }
 
 export type TabKey = 'control' | 'analysis';

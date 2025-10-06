@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TimeMode } from '../types';
+import type { SearchOptions } from '../../../../ia/search/types';
+import { defaultOptions } from '../../../../ia/search/options';
 
 export type ActiveTab = 'repeats' | 'sim' | 'charts' | 'books';
 
@@ -50,6 +52,11 @@ export interface InfoIASettings {
   toggleEnableQuiescence: () => void;
   quiescenceDepth: number;
   setQuiescenceDepth: (n: number) => void;
+  // Per-player engine options (full set)
+  p1Engine: SearchOptions;
+  setP1Engine: (next: Partial<SearchOptions> | ((prev: SearchOptions) => SearchOptions)) => void;
+  p2Engine: SearchOptions;
+  setP2Engine: (next: Partial<SearchOptions> | ((prev: SearchOptions) => SearchOptions)) => void;
   // Helpers
   resetDefaults: () => void;
 }
@@ -87,6 +94,15 @@ export function useInfoIASettings(): InfoIASettings {
   const [aspirationDelta, setAspirationDelta] = useState<number>(25);
   const [enableQuiescence, setEnableQuiescence] = useState<boolean>(false);
   const [quiescenceDepth, setQuiescenceDepth] = useState<number>(3);
+  // Per-player engine options (initialize from engine defaults)
+  const [p1Engine, setP1EngineState] = useState<SearchOptions>({ ...defaultOptions });
+  const [p2Engine, setP2EngineState] = useState<SearchOptions>({ ...defaultOptions });
+  const setP1Engine = useCallback((next: Partial<SearchOptions> | ((prev: SearchOptions) => SearchOptions)) => {
+    setP1EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
+  }, []);
+  const setP2Engine = useCallback((next: Partial<SearchOptions> | ((prev: SearchOptions) => SearchOptions)) => {
+    setP2EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
+  }, []);
   const toggleEnableTT = useCallback(() => setEnableTT(v => !v), []);
   const toggleFailSoft = useCallback(() => setFailSoft(v => !v), []);
   const togglePreferHashMove = useCallback(() => setPreferHashMove(v => !v), []);
@@ -112,6 +128,8 @@ export function useInfoIASettings(): InfoIASettings {
     setAspirationDelta(25);
     setEnableQuiescence(false);
     setQuiescenceDepth(3);
+    setP1EngineState({ ...defaultOptions });
+    setP2EngineState({ ...defaultOptions });
   }, []);
 
   return {
@@ -155,6 +173,10 @@ export function useInfoIASettings(): InfoIASettings {
     toggleEnableQuiescence,
     quiescenceDepth,
     setQuiescenceDepth,
+    p1Engine,
+    setP1Engine,
+    p2Engine,
+    setP2Engine,
     resetDefaults,
   };
 }

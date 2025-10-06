@@ -14,12 +14,6 @@ export default function InfoIAView(props: InfoIAViewProps) {
     onExportCSVDetails,
     activeTab, onChangeTab,
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
-    visualize, onToggleVisualize, datasetLabel,
-    enableTT, failSoft, preferHashMove, onToggleEnableTT, onToggleFailSoft, onTogglePreferHashMove,
-    enableKillers, enableHistory, onToggleEnableKillers, onToggleEnableHistory,
-    enablePVS, onToggleEnablePVS,
-    enableAspiration, onToggleEnableAspiration, aspirationDelta, onChangeAspirationDelta,
-    enableQuiescence, onToggleEnableQuiescence, quiescenceDepth, onChangeQuiescenceDepth,
     setsCount, onChangeSetsCount,
     p1, p2,
     records,
@@ -87,29 +81,6 @@ export default function InfoIAView(props: InfoIAViewProps) {
       {activeTab === 'sim' && (
         <SimSection
           running={running}
-          visualize={visualize}
-          onToggleVisualize={onToggleVisualize}
-          datasetLabel={datasetLabel}
-          enableTT={enableTT}
-          failSoft={failSoft}
-          preferHashMove={preferHashMove}
-          onToggleEnableTT={onToggleEnableTT}
-          onToggleFailSoft={onToggleFailSoft}
-          onTogglePreferHashMove={onTogglePreferHashMove}
-          enableKillers={enableKillers}
-          enableHistory={enableHistory}
-          onToggleEnableKillers={onToggleEnableKillers}
-          onToggleEnableHistory={onToggleEnableHistory}
-          enablePVS={enablePVS}
-          onToggleEnablePVS={onToggleEnablePVS}
-          enableAspiration={enableAspiration}
-          onToggleEnableAspiration={onToggleEnableAspiration}
-          aspirationDelta={aspirationDelta}
-          onChangeAspirationDelta={onChangeAspirationDelta}
-          enableQuiescence={enableQuiescence}
-          onToggleEnableQuiescence={onToggleEnableQuiescence}
-          quiescenceDepth={quiescenceDepth}
-          onChangeQuiescenceDepth={onChangeQuiescenceDepth}
           setsCount={setsCount}
           onChangeSetsCount={onChangeSetsCount}
           p1={p1}

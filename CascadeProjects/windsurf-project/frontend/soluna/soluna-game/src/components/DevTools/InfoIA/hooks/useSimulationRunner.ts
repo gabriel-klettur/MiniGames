@@ -3,6 +3,7 @@ import { useGame } from '../../../../game/store';
 import type { GameState } from '../../../../game/types';
 import type { MoveDetail, TimeMode, InfoIARecord } from '../types';
 import { createAIRunner } from '../services/aiRunner';
+import type { SearchOptions } from '../../../../ia/search/types';
 const DRAFT_KEY = 'soluna.infoia.records.current.v1';
 
 export interface SimulationSettings {
@@ -27,6 +28,9 @@ export interface SimulationSettings {
   aspirationDelta: number;
   enableQuiescence: boolean;
   quiescenceDepth: number;
+  // Optional per-player engine options (overrides the flags above when provided)
+  p1Options?: SearchOptions;
+  p2Options?: SearchOptions;
 }
 
 export interface SimulationMetrics {
@@ -168,6 +172,21 @@ export function useSimulationRunner(
             }
           } catch {}
 
+          // Build per-player options if provided, otherwise fallback to global flags
+          const perPlayerOptions: SearchOptions | undefined = (cur === 1 ? settings.p1Options : settings.p2Options);
+          const optionsToUse: SearchOptions | undefined = perPlayerOptions ?? {
+            enableTT: settings.enableTT,
+            failSoft: settings.failSoft,
+            preferHashMove: settings.preferHashMove,
+            enableKillers: settings.enableKillers,
+            enableHistory: settings.enableHistory,
+            enablePVS: settings.enablePVS,
+            enableAspiration: settings.enableAspiration,
+            aspirationDelta: settings.aspirationDelta,
+            enableQuiescence: settings.enableQuiescence,
+            quiescenceDepth: settings.quiescenceDepth,
+          };
+
           // Search via runner, with fallback to bestMove
           const runner = runnerRef.current;
           try {
@@ -179,18 +198,7 @@ export function useSimulationRunner(
                     state: resolveState(),
                     depth,
                     timeMs: target || undefined,
-                    options: {
-                      enableTT: settings.enableTT,
-                      failSoft: settings.failSoft,
-                      preferHashMove: settings.preferHashMove,
-                      enableKillers: settings.enableKillers,
-                      enableHistory: settings.enableHistory,
-                      enablePVS: settings.enablePVS,
-                      enableAspiration: settings.enableAspiration,
-                      aspirationDelta: settings.aspirationDelta,
-                      enableQuiescence: settings.enableQuiescence,
-                      quiescenceDepth: settings.quiescenceDepth,
-                    },
+                    options: optionsToUse,
                   },
                   (p) => {
                     if (!settings.vizRef.current) return;

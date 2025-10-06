@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch } from 'react';
 import { bestMove, type AIMove } from '../ia';
+import type { SearchOptions } from '../ia/search/types';
+import { defaultOptions } from '../ia/search/options';
 import type { GameAction, GameState } from '../game/types';
 import { createWorkerPool, WorkerPool } from '../ia/worker/pool';
 
@@ -27,6 +29,9 @@ export interface AiController {
   setAiControlP1: (next: boolean | ((v: boolean) => boolean)) => void;
   aiControlP2: boolean;
   setAiControlP2: (next: boolean | ((v: boolean) => boolean)) => void;
+  // Per-player engine edit target (for DevTools/IAPanel)
+  aiEditTarget: 1 | 2;
+  setAiEditTarget: (p: 1 | 2) => void;
   // Engine flags
   aiEnableTT: boolean;
   setAiEnableTT: (v: boolean | ((p: boolean) => boolean)) => void;
@@ -103,19 +108,38 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiControlP1, setAiControlP1] = useState(false);
   const [aiControlP2, setAiControlP2] = useState(false);
 
-  // Engine flags (defaults aligned with search defaultOptions)
-  const [aiEnableTT, setAiEnableTT] = useState(true);
-  const [aiFailSoft, setAiFailSoft] = useState(true);
-  const [aiPreferHashMove, setAiPreferHashMove] = useState(true);
-  const [aiEnableKillers, setAiEnableKillers] = useState(true);
-  const [aiEnableHistory, setAiEnableHistory] = useState(true);
-  const [aiEnablePVS, setAiEnablePVS] = useState(true);
-  const [aiEnableAspiration, setAiEnableAspiration] = useState(true);
-  const [aiAspirationDelta, setAiAspirationDelta] = useState(35);
-  const [aiEnableQuiescence, setAiEnableQuiescence] = useState(true);
-  const [aiQuiescenceDepth, setAiQuiescenceDepth] = useState(3);
-  // Quiescence: umbral de torre alta para considerar táctica
-  const [aiQuiescenceHighTowerThreshold, setAiQuiescenceHighTowerThreshold] = useState(5);
+  // Per-player engine options (aligned with search defaultOptions)
+  const [p1Engine, setP1Engine] = useState<SearchOptions>({ ...defaultOptions });
+  const [p2Engine, setP2Engine] = useState<SearchOptions>({ ...defaultOptions });
+  const [aiEditTarget, setAiEditTarget] = useState<1 | 2>(1);
+
+  // Map the editable flags to the selected player's engine (for IAPanel wiring)
+  const curEdit = aiEditTarget === 1 ? p1Engine : p2Engine;
+  const setCurEngine = (updater: (prev: SearchOptions) => SearchOptions) => {
+    if (aiEditTarget === 1) setP1Engine(prev => updater(prev)); else setP2Engine(prev => updater(prev));
+  };
+  const aiEnableTT = !!(curEdit.enableTT ?? defaultOptions.enableTT);
+  const setAiEnableTT = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableTT: typeof v === 'function' ? (v as any)(!!(prev.enableTT ?? defaultOptions.enableTT)) : v }));
+  const aiFailSoft = !!(curEdit.failSoft ?? defaultOptions.failSoft);
+  const setAiFailSoft = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, failSoft: typeof v === 'function' ? (v as any)(!!(prev.failSoft ?? defaultOptions.failSoft)) : v }));
+  const aiPreferHashMove = !!(curEdit.preferHashMove ?? defaultOptions.preferHashMove);
+  const setAiPreferHashMove = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, preferHashMove: typeof v === 'function' ? (v as any)(!!(prev.preferHashMove ?? defaultOptions.preferHashMove)) : v }));
+  const aiEnableKillers = !!(curEdit.enableKillers ?? defaultOptions.enableKillers);
+  const setAiEnableKillers = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableKillers: typeof v === 'function' ? (v as any)(!!(prev.enableKillers ?? defaultOptions.enableKillers)) : v }));
+  const aiEnableHistory = !!(curEdit.enableHistory ?? defaultOptions.enableHistory);
+  const setAiEnableHistory = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableHistory: typeof v === 'function' ? (v as any)(!!(prev.enableHistory ?? defaultOptions.enableHistory)) : v }));
+  const aiEnablePVS = !!(curEdit.enablePVS ?? defaultOptions.enablePVS);
+  const setAiEnablePVS = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enablePVS: typeof v === 'function' ? (v as any)(!!(prev.enablePVS ?? defaultOptions.enablePVS)) : v }));
+  const aiEnableAspiration = !!(curEdit.enableAspiration ?? defaultOptions.enableAspiration);
+  const setAiEnableAspiration = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableAspiration: typeof v === 'function' ? (v as any)(!!(prev.enableAspiration ?? defaultOptions.enableAspiration)) : v }));
+  const aiAspirationDelta = (curEdit.aspirationDelta ?? defaultOptions.aspirationDelta) as number;
+  const setAiAspirationDelta = (n: number) => setCurEngine(prev => ({ ...prev, aspirationDelta: n }));
+  const aiEnableQuiescence = !!(curEdit.enableQuiescence ?? defaultOptions.enableQuiescence);
+  const setAiEnableQuiescence = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableQuiescence: typeof v === 'function' ? (v as any)(!!(prev.enableQuiescence ?? defaultOptions.enableQuiescence)) : v }));
+  const aiQuiescenceDepth = (curEdit.quiescenceDepth ?? defaultOptions.quiescenceDepth) as number;
+  const setAiQuiescenceDepth = (n: number) => setCurEngine(prev => ({ ...prev, quiescenceDepth: n }));
+  const aiQuiescenceHighTowerThreshold = (curEdit.quiescenceHighTowerThreshold ?? defaultOptions.quiescenceHighTowerThreshold) as number;
+  const setAiQuiescenceHighTowerThreshold = (n: number) => setCurEngine(prev => ({ ...prev, quiescenceHighTowerThreshold: n }));
   // Adaptive time config (aplica en modo auto si el worker no recibe timeMs)
   const [aiTimeMinMs, setAiTimeMinMs] = useState(200);
   const [aiTimeMaxMs, setAiTimeMaxMs] = useState(4000);
@@ -287,23 +311,34 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     const searchId = searchIdRef.current;
 
     // Build search options once
-    const options = {
-      enableTT: aiEnableTT,
-      failSoft: aiFailSoft,
-      preferHashMove: aiPreferHashMove,
-      enableKillers: aiEnableKillers,
-      enableHistory: aiEnableHistory,
-      enablePVS: aiEnablePVS,
-      enableAspiration: aiEnableAspiration,
-      aspirationDelta: aiAspirationDelta,
-      enableQuiescence: aiEnableQuiescence,
-      quiescenceDepth: aiQuiescenceDepth,
-      quiescenceHighTowerThreshold: aiQuiescenceHighTowerThreshold,
-      enableLMR: true,
-      lmrMinDepth: 3,
-      lmrLateMoveIdx: 4,
-      lmrReduction: 1,
-    } as const;
+    // Build options from the current player's engine configuration
+    const which: 1 | 2 = st.currentPlayer as 1 | 2;
+    const eng = which === 1 ? p1Engine : p2Engine;
+    const options: SearchOptions = {
+      enableTT: eng.enableTT ?? defaultOptions.enableTT,
+      failSoft: eng.failSoft ?? defaultOptions.failSoft,
+      preferHashMove: eng.preferHashMove ?? defaultOptions.preferHashMove,
+      enableKillers: eng.enableKillers ?? defaultOptions.enableKillers,
+      enableHistory: eng.enableHistory ?? defaultOptions.enableHistory,
+      enablePVS: eng.enablePVS ?? defaultOptions.enablePVS,
+      enableAspiration: eng.enableAspiration ?? defaultOptions.enableAspiration,
+      aspirationDelta: eng.aspirationDelta ?? defaultOptions.aspirationDelta,
+      enableQuiescence: eng.enableQuiescence ?? defaultOptions.enableQuiescence,
+      quiescenceDepth: eng.quiescenceDepth ?? defaultOptions.quiescenceDepth,
+      quiescenceHighTowerThreshold: eng.quiescenceHighTowerThreshold ?? defaultOptions.quiescenceHighTowerThreshold,
+      enableLMR: eng.enableLMR ?? defaultOptions.enableLMR,
+      lmrMinDepth: eng.lmrMinDepth ?? defaultOptions.lmrMinDepth,
+      lmrLateMoveIdx: eng.lmrLateMoveIdx ?? defaultOptions.lmrLateMoveIdx,
+      lmrReduction: eng.lmrReduction ?? defaultOptions.lmrReduction,
+      enableFutility: eng.enableFutility ?? defaultOptions.enableFutility,
+      futilityMargin: eng.futilityMargin ?? defaultOptions.futilityMargin,
+      enableLMP: eng.enableLMP ?? defaultOptions.enableLMP,
+      lmpDepthThreshold: eng.lmpDepthThreshold ?? defaultOptions.lmpDepthThreshold,
+      lmpLateMoveIdx: eng.lmpLateMoveIdx ?? defaultOptions.lmpLateMoveIdx,
+      enableNullMove: eng.enableNullMove ?? defaultOptions.enableNullMove,
+      nullMoveReduction: eng.nullMoveReduction ?? defaultOptions.nullMoveReduction,
+      nullMoveMinDepth: eng.nullMoveMinDepth ?? defaultOptions.nullMoveMinDepth,
+    };
 
     // Precompute time/adaptive config to avoid control-flow narrowing issues
     const isManual = aiTimeMode === 'manual';
@@ -490,6 +525,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   }, []);
 
   return {
+    aiEditTarget, setAiEditTarget,
     aiDepth, setAiDepth,
     aiTimeMode, setAiTimeMode,
     aiTimeSeconds, setAiTimeSeconds,

@@ -39,6 +39,36 @@ export interface PlayerControlsProps {
   onChangeTimeMode: (m: TimeMode) => void;
   timeSeconds: number;
   onChangeTimeSeconds: (s: number) => void;
+  /** Per-player engine options (UI callbacks) */
+  // Core engine flags
+  enableTT?: boolean; onToggleEnableTT?: () => void;
+  failSoft?: boolean; onToggleFailSoft?: () => void;
+  preferHashMove?: boolean; onTogglePreferHashMove?: () => void;
+  enableKillers?: boolean; onToggleEnableKillers?: () => void;
+  enableHistory?: boolean; onToggleEnableHistory?: () => void;
+  enablePVS?: boolean; onToggleEnablePVS?: () => void;
+  enableAspiration?: boolean; onToggleEnableAspiration?: () => void;
+  aspirationDelta?: number; onChangeAspirationDelta?: (n: number) => void;
+  // Quiescence
+  enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
+  quiescenceDepth?: number; onChangeQuiescenceDepth?: (n: number) => void;
+  quiescenceHighTowerThreshold?: number; onChangeQuiescenceHighTowerThreshold?: (n: number) => void;
+  // LMR
+  enableLMR?: boolean; onToggleEnableLMR?: () => void;
+  lmrMinDepth?: number; onChangeLmrMinDepth?: (n: number) => void;
+  lmrLateMoveIdx?: number; onChangeLmrLateMoveIdx?: (n: number) => void;
+  lmrReduction?: number; onChangeLmrReduction?: (n: number) => void;
+  // Futility
+  enableFutility?: boolean; onToggleEnableFutility?: () => void;
+  futilityMargin?: number; onChangeFutilityMargin?: (n: number) => void;
+  // LMP
+  enableLMP?: boolean; onToggleEnableLMP?: () => void;
+  lmpDepthThreshold?: number; onChangeLmpDepthThreshold?: (n: number) => void;
+  lmpLateMoveIdx?: number; onChangeLmpLateMoveIdx?: (n: number) => void;
+  // Null-move
+  enableNullMove?: boolean; onToggleEnableNullMove?: () => void;
+  nullMoveReduction?: number; onChangeNullMoveReduction?: (n: number) => void;
+  nullMoveMinDepth?: number; onChangeNullMoveMinDepth?: (n: number) => void;
 }
 
 export interface InfoIAViewProps {
@@ -63,33 +93,6 @@ export interface InfoIAViewProps {
   onRemoveCompare: (id: string) => void;
   onClearCompare: () => void;
   chartDatasets: Dataset[];
-
-  // Left panel
-  visualize: boolean;
-  onToggleVisualize: () => void;
-  datasetLabel: string;
-  // Engine flags (configurables)
-  enableTT: boolean;
-  failSoft: boolean;
-  preferHashMove: boolean;
-  onToggleEnableTT: () => void;
-  onToggleFailSoft: () => void;
-  onTogglePreferHashMove: () => void;
-  enableKillers: boolean;
-  enableHistory: boolean;
-  onToggleEnableKillers: () => void;
-  onToggleEnableHistory: () => void;
-  enablePVS: boolean;
-  onToggleEnablePVS: () => void;
-  enableAspiration: boolean;
-  onToggleEnableAspiration: () => void;
-  aspirationDelta: number;
-  onChangeAspirationDelta: (n: number) => void;
-  // Quiescence controls
-  enableQuiescence: boolean;
-  onToggleEnableQuiescence: () => void;
-  quiescenceDepth: number;
-  onChangeQuiescenceDepth: (n: number) => void;
 
   // Results
   records: InfoIARecord[];

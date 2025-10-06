@@ -22,6 +22,7 @@ export default function IAPanel(props: IAPanelProps) {
     aiTimeBaseMs, onChangeAiTimeBaseMs,
     aiTimePerMoveMs, onChangeAiTimePerMoveMs,
     aiTimeExponent, onChangeAiTimeExponent,
+    aiEditTarget = 1, onChangeAiEditTarget,
   } = props;
 
   const current = state.currentPlayer === 1 ? 'Jugador 1' : 'Jugador 2';
@@ -65,7 +66,29 @@ export default function IAPanel(props: IAPanelProps) {
 
       {/* Tab: Control */}
       {activeTab === 'control' && (
-        <ControlSection
+        <>
+          {(typeof aiEditTarget === 'number' && typeof onChangeAiEditTarget === 'function') && (
+            <div className="row" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <span className="kpi kpi--muted" title="Selecciona a qué jugador se aplican los toggles de motor del panel (TT, PVS, etc.).">Editando</span>
+              <div className="segmented" role="tablist" aria-label="Jugador a editar">
+                <button
+                  className={aiEditTarget === 1 ? 'active' : ''}
+                  role="tab"
+                  aria-selected={aiEditTarget === 1}
+                  onClick={() => onChangeAiEditTarget(1)}
+                  title="Editar opciones del Jugador 1"
+                >J1</button>
+                <button
+                  className={aiEditTarget === 2 ? 'active' : ''}
+                  role="tab"
+                  aria-selected={aiEditTarget === 2}
+                  onClick={() => onChangeAiEditTarget(2)}
+                  title="Editar opciones del Jugador 2"
+                >J2</button>
+              </div>
+            </div>
+          )}
+          <ControlSection
           depth={depth}
           onChangeDepth={onChangeDepth}
           timeMode={timeMode}
@@ -111,6 +134,7 @@ export default function IAPanel(props: IAPanelProps) {
           aiTimeExponent={aiTimeExponent}
           onChangeAiTimeExponent={onChangeAiTimeExponent}
         />
+        </>
       )}
 
       {/* Tab: Análisis */}
