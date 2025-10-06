@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch } from 'react';
 import { bestMove, type AIMove } from '../ia';
 import type { SearchOptions } from '../ia/search/types';
-import { defaultOptions } from '../ia/search/options';
+import { defaultOptions, IAPOWA_PRESET } from '../ia/search/options';
 import type { GameAction, GameState } from '../game/types';
 import { createWorkerPool, WorkerPool } from '../ia/worker/pool';
 
@@ -32,6 +32,11 @@ export interface AiController {
   // Per-player engine edit target (for DevTools/IAPanel)
   aiEditTarget: 1 | 2;
   setAiEditTarget: (p: 1 | 2) => void;
+  // Presets
+  aiApplyPresetIAPowa: (scope?: 'current' | 'both') => void;
+  aiPresetIAPowaSelected: boolean;
+  setAiPresetIAPowaSelected: (enabled: boolean) => void;
+  aiApplyPresetCustom: (options: SearchOptions, scope?: 'current' | 'both') => void;
   // Engine flags
   aiEnableTT: boolean;
   setAiEnableTT: (v: boolean | ((p: boolean) => boolean)) => void;
@@ -108,38 +113,141 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiControlP1, setAiControlP1] = useState(false);
   const [aiControlP2, setAiControlP2] = useState(false);
 
-  // Per-player engine options (aligned with search defaultOptions)
-  const [p1Engine, setP1Engine] = useState<SearchOptions>({ ...defaultOptions });
-  const [p2Engine, setP2Engine] = useState<SearchOptions>({ ...defaultOptions });
+  // Per-player engine options (default to IAPowa preset in normal mode)
+  const [p1Engine, setP1Engine] = useState<SearchOptions>({ ...IAPOWA_PRESET });
+  const [p2Engine, setP2Engine] = useState<SearchOptions>({ ...IAPOWA_PRESET });
   const [aiEditTarget, setAiEditTarget] = useState<1 | 2>(1);
+  // Per-player preset selection (IAPowa)
+  const [p1PresetIAPowa, setP1PresetIAPowa] = useState(true);
+  const [p2PresetIAPowa, setP2PresetIAPowa] = useState(true);
+
+  // LocalStorage keys (normal mode persistence)
+  const LS_P1_ENGINE = 'soluna:ai:normal:p1_engine';
+  const LS_P2_ENGINE = 'soluna:ai:normal:p2_engine';
+  const LS_P1_PRESET = 'soluna:ai:normal:p1_preset';
+  const LS_P2_PRESET = 'soluna:ai:normal:p2_preset';
+
+  // Load saved engines/presets (if any). Defaults remain IAPOWA_PRESET when not present.
+  useEffect(() => {
+    try {
+      const e1 = localStorage.getItem(LS_P1_ENGINE);
+      if (e1) {
+        const parsed = JSON.parse(e1);
+        setP1Engine(prev => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+    try {
+      const e2 = localStorage.getItem(LS_P2_ENGINE);
+      if (e2) {
+        const parsed = JSON.parse(e2);
+        setP2Engine(prev => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+    try {
+      const k1 = localStorage.getItem(LS_P1_PRESET);
+      if (k1 != null) setP1PresetIAPowa(k1 === 'iapowa');
+    } catch {}
+    try {
+      const k2 = localStorage.getItem(LS_P2_PRESET);
+      if (k2 != null) setP2PresetIAPowa(k2 === 'iapowa');
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist engines/presets on change
+  useEffect(() => {
+    try { localStorage.setItem(LS_P1_ENGINE, JSON.stringify(p1Engine)); } catch {}
+  }, [p1Engine]);
+  useEffect(() => {
+    try { localStorage.setItem(LS_P2_ENGINE, JSON.stringify(p2Engine)); } catch {}
+  }, [p2Engine]);
+  useEffect(() => {
+    try { localStorage.setItem(LS_P1_PRESET, p1PresetIAPowa ? 'iapowa' : ''); } catch {}
+  }, [p1PresetIAPowa]);
+  useEffect(() => {
+    try { localStorage.setItem(LS_P2_PRESET, p2PresetIAPowa ? 'iapowa' : ''); } catch {}
+  }, [p2PresetIAPowa]);
 
   // Map the editable flags to the selected player's engine (for IAPanel wiring)
   const curEdit = aiEditTarget === 1 ? p1Engine : p2Engine;
   const setCurEngine = (updater: (prev: SearchOptions) => SearchOptions) => {
     if (aiEditTarget === 1) setP1Engine(prev => updater(prev)); else setP2Engine(prev => updater(prev));
   };
+
+  // Aplicar un preset arbitrario (por jugador o ambos)
+  const aiApplyPresetCustom = (options: SearchOptions, scope: 'current' | 'both' = 'current') => {
+    const equals = (a: SearchOptions, b: SearchOptions) => {
+      try {
+        const ka = Object.keys({ ...defaultOptions, ...a }).sort();
+        const kb = Object.keys({ ...defaultOptions, ...b }).sort();
+        if (ka.length !== kb.length) return false;
+        const sa = JSON.stringify(a, ka);
+        const sb = JSON.stringify(b, kb);
+        return sa === sb;
+      } catch { return false; }
+    };
+    if (scope === 'both') {
+      setP1Engine({ ...options });
+      setP2Engine({ ...options });
+      // Auto-marcar IAPowa si coincide exactamente
+      const isIapowa = equals(options, IAPOWA_PRESET);
+      setP1PresetIAPowa(isIapowa);
+      setP2PresetIAPowa(isIapowa);
+    } else {
+      if (aiEditTarget === 1) {
+        setP1Engine({ ...options });
+        setP1PresetIAPowa(equals(options, IAPOWA_PRESET));
+      } else {
+        setP2Engine({ ...options });
+        setP2PresetIAPowa(equals(options, IAPOWA_PRESET));
+      }
+    }
+  };
+  const clearPresetForCurrent = () => {
+    if (aiEditTarget === 1) setP1PresetIAPowa(false); else setP2PresetIAPowa(false);
+  };
   const aiEnableTT = !!(curEdit.enableTT ?? defaultOptions.enableTT);
-  const setAiEnableTT = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableTT: typeof v === 'function' ? (v as any)(!!(prev.enableTT ?? defaultOptions.enableTT)) : v }));
+  const setAiEnableTT = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enableTT: typeof v === 'function' ? (v as any)(!!(prev.enableTT ?? defaultOptions.enableTT)) : v })); clearPresetForCurrent(); };
   const aiFailSoft = !!(curEdit.failSoft ?? defaultOptions.failSoft);
-  const setAiFailSoft = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, failSoft: typeof v === 'function' ? (v as any)(!!(prev.failSoft ?? defaultOptions.failSoft)) : v }));
+  const setAiFailSoft = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, failSoft: typeof v === 'function' ? (v as any)(!!(prev.failSoft ?? defaultOptions.failSoft)) : v })); clearPresetForCurrent(); };
   const aiPreferHashMove = !!(curEdit.preferHashMove ?? defaultOptions.preferHashMove);
-  const setAiPreferHashMove = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, preferHashMove: typeof v === 'function' ? (v as any)(!!(prev.preferHashMove ?? defaultOptions.preferHashMove)) : v }));
+  const setAiPreferHashMove = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, preferHashMove: typeof v === 'function' ? (v as any)(!!(prev.preferHashMove ?? defaultOptions.preferHashMove)) : v })); clearPresetForCurrent(); };
   const aiEnableKillers = !!(curEdit.enableKillers ?? defaultOptions.enableKillers);
-  const setAiEnableKillers = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableKillers: typeof v === 'function' ? (v as any)(!!(prev.enableKillers ?? defaultOptions.enableKillers)) : v }));
+  const setAiEnableKillers = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enableKillers: typeof v === 'function' ? (v as any)(!!(prev.enableKillers ?? defaultOptions.enableKillers)) : v })); clearPresetForCurrent(); };
   const aiEnableHistory = !!(curEdit.enableHistory ?? defaultOptions.enableHistory);
-  const setAiEnableHistory = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableHistory: typeof v === 'function' ? (v as any)(!!(prev.enableHistory ?? defaultOptions.enableHistory)) : v }));
+  const setAiEnableHistory = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enableHistory: typeof v === 'function' ? (v as any)(!!(prev.enableHistory ?? defaultOptions.enableHistory)) : v })); clearPresetForCurrent(); };
   const aiEnablePVS = !!(curEdit.enablePVS ?? defaultOptions.enablePVS);
-  const setAiEnablePVS = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enablePVS: typeof v === 'function' ? (v as any)(!!(prev.enablePVS ?? defaultOptions.enablePVS)) : v }));
+  const setAiEnablePVS = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enablePVS: typeof v === 'function' ? (v as any)(!!(prev.enablePVS ?? defaultOptions.enablePVS)) : v })); clearPresetForCurrent(); };
   const aiEnableAspiration = !!(curEdit.enableAspiration ?? defaultOptions.enableAspiration);
-  const setAiEnableAspiration = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableAspiration: typeof v === 'function' ? (v as any)(!!(prev.enableAspiration ?? defaultOptions.enableAspiration)) : v }));
+  const setAiEnableAspiration = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enableAspiration: typeof v === 'function' ? (v as any)(!!(prev.enableAspiration ?? defaultOptions.enableAspiration)) : v })); clearPresetForCurrent(); };
   const aiAspirationDelta = (curEdit.aspirationDelta ?? defaultOptions.aspirationDelta) as number;
-  const setAiAspirationDelta = (n: number) => setCurEngine(prev => ({ ...prev, aspirationDelta: n }));
+  const setAiAspirationDelta = (n: number) => { setCurEngine(prev => ({ ...prev, aspirationDelta: n })); clearPresetForCurrent(); };
   const aiEnableQuiescence = !!(curEdit.enableQuiescence ?? defaultOptions.enableQuiescence);
-  const setAiEnableQuiescence = (v: boolean | ((p: boolean) => boolean)) => setCurEngine(prev => ({ ...prev, enableQuiescence: typeof v === 'function' ? (v as any)(!!(prev.enableQuiescence ?? defaultOptions.enableQuiescence)) : v }));
+  const setAiEnableQuiescence = (v: boolean | ((p: boolean) => boolean)) => { setCurEngine(prev => ({ ...prev, enableQuiescence: typeof v === 'function' ? (v as any)(!!(prev.enableQuiescence ?? defaultOptions.enableQuiescence)) : v })); clearPresetForCurrent(); };
   const aiQuiescenceDepth = (curEdit.quiescenceDepth ?? defaultOptions.quiescenceDepth) as number;
-  const setAiQuiescenceDepth = (n: number) => setCurEngine(prev => ({ ...prev, quiescenceDepth: n }));
+  const setAiQuiescenceDepth = (n: number) => { setCurEngine(prev => ({ ...prev, quiescenceDepth: n })); clearPresetForCurrent(); };
   const aiQuiescenceHighTowerThreshold = (curEdit.quiescenceHighTowerThreshold ?? defaultOptions.quiescenceHighTowerThreshold) as number;
-  const setAiQuiescenceHighTowerThreshold = (n: number) => setCurEngine(prev => ({ ...prev, quiescenceHighTowerThreshold: n }));
+  const setAiQuiescenceHighTowerThreshold = (n: number) => { setCurEngine(prev => ({ ...prev, quiescenceHighTowerThreshold: n })); clearPresetForCurrent(); };
+  // Presets: IAPowa importado desde opciones de búsqueda
+  const aiApplyPresetIAPowa = (scope: 'current' | 'both' = 'current') => {
+    if (scope === 'both') {
+      setP1Engine({ ...IAPOWA_PRESET });
+      setP2Engine({ ...IAPOWA_PRESET });
+      setP1PresetIAPowa(true); setP2PresetIAPowa(true);
+    } else {
+      if (aiEditTarget === 1) { setP1Engine({ ...IAPOWA_PRESET }); setP1PresetIAPowa(true); }
+      else { setP2Engine({ ...IAPOWA_PRESET }); setP2PresetIAPowa(true); }
+    }
+  };
+  const aiPresetIAPowaSelected = aiEditTarget === 1 ? p1PresetIAPowa : p2PresetIAPowa;
+  const setAiPresetIAPowaSelected = (enabled: boolean) => {
+    if (enabled) {
+      if (aiEditTarget === 1) { setP1Engine({ ...IAPOWA_PRESET }); setP1PresetIAPowa(true); }
+      else { setP2Engine({ ...IAPOWA_PRESET }); setP2PresetIAPowa(true); }
+    } else {
+      if (aiEditTarget === 1) setP1PresetIAPowa(false); else setP2PresetIAPowa(false);
+    }
+  };
   // Adaptive time config (aplica en modo auto si el worker no recibe timeMs)
   const [aiTimeMinMs, setAiTimeMinMs] = useState(200);
   const [aiTimeMaxMs, setAiTimeMaxMs] = useState(4000);
@@ -532,6 +640,9 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     aiAutoplay, setAiAutoplay,
     aiControlP1, setAiControlP1,
     aiControlP2, setAiControlP2,
+    aiApplyPresetIAPowa,
+    aiPresetIAPowaSelected, setAiPresetIAPowaSelected,
+    aiApplyPresetCustom,
     aiEnableTT, setAiEnableTT,
     aiFailSoft, setAiFailSoft,
     aiPreferHashMove, setAiPreferHashMove,

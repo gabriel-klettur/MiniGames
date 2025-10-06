@@ -31,6 +31,8 @@ export type InfoIARecord = {
   details?: MoveDetail[];
 };
 
+export type PresetOption = { key: string; label: string; description?: string };
+
 export interface PlayerControlsProps {
   title: string;
   depth: number;
@@ -39,6 +41,10 @@ export interface PlayerControlsProps {
   onChangeTimeMode: (m: TimeMode) => void;
   timeSeconds: number;
   onChangeTimeSeconds: (s: number) => void;
+  // Header preset dropdown (optional)
+  presetOptions?: PresetOption[];
+  presetSelectedKey?: string;
+  onChangePreset?: (key: string) => void;
   /** Per-player engine options (UI callbacks) */
   // Core engine flags
   enableTT?: boolean; onToggleEnableTT?: () => void;

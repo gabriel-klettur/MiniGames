@@ -7,7 +7,39 @@ import PlayerEngineOptions from '../views/Controls/PlayerEngineOptions';
 
 const PlayerCard: FC<PlayerControlsProps> = ({ title, depth, onChangeDepth, timeMode, onChangeTimeMode, timeSeconds, onChangeTimeSeconds, ...engine }) => {
   return (
-    <Card title={title}>
+    <Card
+      title={(
+        <>
+          <span>{title}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            {/* Presets dropdown — extensible para más presets en el futuro */}
+            {engine.presetOptions && engine.onChangePreset && (
+              <label
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title={(() => {
+                  const sel = engine.presetOptions?.find(o => o.key === (engine.presetSelectedKey || ''));
+                  if (!sel || !sel.description) return 'Selecciona una configuración por defecto para este jugador';
+                  return sel.description;
+                })()}
+              >
+                <span className="kpi kpi--muted">Preset</span>
+                <select
+                  value={engine.presetSelectedKey || ''}
+                  onChange={(e) => engine.onChangePreset && engine.onChangePreset(e.target.value)}
+                  aria-label="Preset de IA por jugador"
+                >
+                  <option value="">(ninguno)</option>
+                  {engine.presetOptions.map((opt) => (
+                    <option key={opt.key} value={opt.key} title={opt.description || ''}>{opt.label}</option>
+                  ))}
+                </select>
+                <span aria-hidden="true" style={{ opacity: 0.85 }}>ℹ️</span>
+              </label>
+            )}
+          </div>
+        </>
+      )}
+    >
       <Section title="Dificultad y tiempo">
         <DifficultyTime
           depth={depth}

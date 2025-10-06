@@ -6,6 +6,7 @@ import { useCompareDatasets } from './hooks/useCompareDatasets';
 import { useInfoIASettings } from './hooks/useInfoIASettings';
 import { useRecords } from './hooks/useRecords';
 import { useSimulationRunner } from './hooks/useSimulationRunner';
+import { IAPOWA_PRESET, IAPOWA_PERFORMANCE_PRESET, IAPOWA_DEFENSE_PRESET } from '../../../ia/search/options';
 const InfoIAContainer: React.FC = () => {
   const { state } = useGame();
 
@@ -56,6 +57,39 @@ const InfoIAContainer: React.FC = () => {
     addRecord,
     () => stateRef.current,
   );
+
+  // Preset selection state per player (key string, future-proof for more presets)
+  const [p1PresetKey, setP1PresetKey] = useState<string>('');
+  const [p2PresetKey, setP2PresetKey] = useState<string>('');
+  const presetOptions = [
+    { key: 'iapowa', label: 'IAPowa' },
+    { key: 'iapowa_perf', label: 'IAPowa+Rendimiento' },
+    { key: 'iapowa_def', label: 'IAPowa+Defensa' },
+  ];
+  const applyPreset = (key: string, who: 1 | 2) => {
+    const pick = key === 'iapowa' ? IAPOWA_PRESET : key === 'iapowa_perf' ? IAPOWA_PERFORMANCE_PRESET : key === 'iapowa_def' ? IAPOWA_DEFENSE_PRESET : undefined;
+    if (!pick) return;
+    if (who === 1) settings.setP1Engine({ ...pick }); else settings.setP2Engine({ ...pick });
+  };
+  // Helper: compare engine to preset; clear selection only when it deviates from the selected preset
+  const equalEngine = (a: any, b: any) => {
+    try {
+      const sa = JSON.stringify(a, Object.keys(a).sort());
+      const sb = JSON.stringify(b, Object.keys(b).sort());
+      return sa === sb;
+    } catch { return false; }
+  };
+  const getPreset = (key: string) => (key === 'iapowa' ? IAPOWA_PRESET : key === 'iapowa_perf' ? IAPOWA_PERFORMANCE_PRESET : key === 'iapowa_def' ? IAPOWA_DEFENSE_PRESET : undefined);
+  useEffect(() => {
+    if (!p1PresetKey) return;
+    const p = getPreset(p1PresetKey);
+    if (p && !equalEngine(settings.p1Engine, p)) setP1PresetKey('');
+  }, [settings.p1Engine, p1PresetKey]);
+  useEffect(() => {
+    if (!p2PresetKey) return;
+    const p = getPreset(p2PresetKey);
+    if (p && !equalEngine(settings.p2Engine, p)) setP2PresetKey('');
+  }, [settings.p2Engine, p2PresetKey]);
 
   // Ensure persistence resumes when the simulation finishes naturally.
   useEffect(() => {
@@ -108,13 +142,16 @@ const InfoIAContainer: React.FC = () => {
       setsCount={settings.setsCount}
       onChangeSetsCount={settings.setSetsCount}
       p1={{
-        title: 'Jugador 1',
+        title: 'Jugador 1 (ficha clara)',
         depth: settings.p1Depth,
         onChangeDepth: settings.setP1Depth,
         timeMode: settings.p1Mode,
         onChangeTimeMode: settings.setP1Mode,
         timeSeconds: settings.p1Secs,
         onChangeTimeSeconds: settings.setP1Secs,
+        presetOptions,
+        presetSelectedKey: p1PresetKey,
+        onChangePreset: (key: string) => { setP1PresetKey(key); if (key) applyPreset(key, 1); },
         // Engine options UI (per-player)
         enableTT: !!settings.p1Engine.enableTT,
         onToggleEnableTT: () => settings.setP1Engine(prev => ({ ...prev, enableTT: !prev.enableTT })),
@@ -164,13 +201,16 @@ const InfoIAContainer: React.FC = () => {
         onChangeNullMoveMinDepth: (n: number) => settings.setP1Engine(prev => ({ ...prev, nullMoveMinDepth: n })),
       }}
       p2={{
-        title: 'Jugador 2',
+        title: 'Jugador 2 (ficha oscura)',
         depth: settings.p2Depth,
         onChangeDepth: settings.setP2Depth,
         timeMode: settings.p2Mode,
         onChangeTimeMode: settings.setP2Mode,
         timeSeconds: settings.p2Secs,
         onChangeTimeSeconds: settings.setP2Secs,
+        presetOptions,
+        presetSelectedKey: p2PresetKey,
+        onChangePreset: (key: string) => { setP2PresetKey(key); if (key) applyPreset(key, 2); },
         // Engine options UI (per-player)
         enableTT: !!settings.p2Engine.enableTT,
         onToggleEnableTT: () => settings.setP2Engine(prev => ({ ...prev, enableTT: !prev.enableTT })),

@@ -1,5 +1,6 @@
 import type { GameState } from '../../../game/types';
 import type { AIMove } from '../../../ia/index';
+import type { SearchOptions } from '../../../ia/search/types';
 
 export interface IAPanelProps {
   state: GameState;
@@ -30,6 +31,8 @@ export interface IAPanelProps {
   // Tiempo en curso mientras está pensando
   busyElapsedMs?: number;
   // Engine flags (toggles + params)
+  aiPresetIAPowaSelected: boolean;
+  onChangeAiPresetIAPowaSelected: (enabled: boolean) => void;
   aiEnableTT: boolean;
   onToggleAiEnableTT: () => void;
   aiFailSoft: boolean;
@@ -68,6 +71,10 @@ export interface IAPanelProps {
   // Per-player edit target for engine flags
   aiEditTarget?: 1 | 2;
   onChangeAiEditTarget?: (p: 1 | 2) => void;
+  // Presets
+  onApplyPresetIAPowaCurrent?: () => void;
+  onApplyPresetIAPowaBoth?: () => void;
+  aiApplyPresetCustom?: (options: SearchOptions, scope?: 'current' | 'both') => void;
 }
 
-export type TabKey = 'control' | 'analysis';
+export type TabKey = 'control' | 'analysis' | 'advanced' | 'presets';

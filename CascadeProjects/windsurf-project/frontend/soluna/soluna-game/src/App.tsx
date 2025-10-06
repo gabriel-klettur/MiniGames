@@ -33,6 +33,9 @@ function App() {
     aiAutoplay, setAiAutoplay,
     aiControlP1, setAiControlP1,
     aiControlP2, setAiControlP2,
+    aiApplyPresetIAPowa,
+    aiPresetIAPowaSelected, setAiPresetIAPowaSelected,
+    aiApplyPresetCustom,
     aiBusy, aiProgress, aiBusyElapsedMs,
     aiEval, aiPV, aiRootMoves, aiNodes, aiElapsed, aiNps, aiDepthReached,
     doAIMove,
@@ -171,9 +174,13 @@ function App() {
                     elapsedMs={aiElapsed}
                     nps={aiNps}
                     rootPlayer={state.currentPlayer}
-                    moving={false}
                     aiAutoplayActive={aiAutoplay}
                     busyElapsedMs={aiBusyElapsedMs}
+                    aiPresetIAPowaSelected={aiPresetIAPowaSelected}
+                    onChangeAiPresetIAPowaSelected={setAiPresetIAPowaSelected}
+                    onApplyPresetIAPowaCurrent={() => aiApplyPresetIAPowa('current')}
+                    onApplyPresetIAPowaBoth={() => aiApplyPresetIAPowa('both')}
+                    aiApplyPresetCustom={aiApplyPresetCustom}
                     // Engine flags wiring
                     aiEnableTT={aiEnableTT}
                     onToggleAiEnableTT={() => setAiEnableTT(v => !v)}

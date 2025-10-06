@@ -14,7 +14,12 @@ export interface ControlSectionProps {
   onAIMove: () => void;
   elapsedMs: number;
   busyElapsedMs?: number;
+  // Visibility toggles
+  showEngine?: boolean;
+  showAutoTimeAdvanced?: boolean;
   // Engine flags & params
+  aiPresetIAPowaSelected: boolean;
+  onChangeAiPresetIAPowaSelected: (enabled: boolean) => void;
   aiEnableTT: boolean; onToggleAiEnableTT: () => void;
   aiFailSoft: boolean; onToggleAiFailSoft: () => void;
   aiPreferHashMove: boolean; onToggleAiPreferHashMove: () => void;
@@ -42,6 +47,9 @@ export default function ControlSection(props: ControlSectionProps) {
     timeMode, timeSeconds, onChangeTimeMode, onChangeTimeSeconds,
     busy, progress, disabled, onAIMove,
     elapsedMs, busyElapsedMs,
+    showEngine = true,
+    showAutoTimeAdvanced = true,
+    aiPresetIAPowaSelected, onChangeAiPresetIAPowaSelected,
     aiEnableTT, onToggleAiEnableTT,
     aiFailSoft, onToggleAiFailSoft,
     aiPreferHashMove, onToggleAiPreferHashMove,
@@ -130,7 +138,7 @@ export default function ControlSection(props: ControlSectionProps) {
       )}
 
       {/* Adaptive time (auto) advanced config, shown only if provided and in auto mode */}
-      {timeMode === 'auto' && typeof aiTimeMinMs === 'number' && (
+      {showAutoTimeAdvanced && timeMode === 'auto' && typeof aiTimeMinMs === 'number' && (
         <div className="ia-panel__advanced" style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
           <label title="Tiempo mínimo por jugada (ms)">
             min
@@ -195,7 +203,20 @@ export default function ControlSection(props: ControlSectionProps) {
       </div>
 
       {/* Ajustes del motor IA */}
-      <div className="ia-panel__engine" style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      {showEngine && (
+      <div className="ia-panel__engine" style={{ marginTop: 10 }}>
+        <div className="row" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <span className="kpi kpi--muted">Motor IA (por jugador)</span>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Preset estable recomendado para finales y zugzwang. Si cambias cualquier parámetro, se desactiva automáticamente.">
+            <input
+              type="checkbox"
+              checked={aiPresetIAPowaSelected}
+              onChange={(e) => onChangeAiPresetIAPowaSelected(e.target.checked)}
+            />
+            IAPowa
+          </label>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <label
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           title={`TT — Tabla de Transposiciones: cachea evaluaciones por hash del estado.\n+Beneficio: evita recalcular subárboles y mejora el orden de movimientos (hash move).\nEjemplo: posiciones alcanzadas por distinto orden de merges comparten resultado.`}
@@ -306,7 +327,9 @@ export default function ControlSection(props: ControlSectionProps) {
             />
           )}
         </div>
+        </div>
       </div>
+      )}
     </div>
   );
 }
