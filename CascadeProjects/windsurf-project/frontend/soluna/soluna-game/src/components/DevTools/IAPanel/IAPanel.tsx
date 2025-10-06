@@ -30,6 +30,27 @@ export interface IAPanelProps {
   onToggleAiAutoplay?: () => void;
   // Tiempo en curso mientras está pensando
   busyElapsedMs?: number;
+  // Engine flags (toggles + params)
+  aiEnableTT: boolean;
+  onToggleAiEnableTT: () => void;
+  aiFailSoft: boolean;
+  onToggleAiFailSoft: () => void;
+  aiPreferHashMove: boolean;
+  onToggleAiPreferHashMove: () => void;
+  aiEnablePVS: boolean;
+  onToggleAiEnablePVS: () => void;
+  aiEnableAspiration: boolean;
+  onToggleAiEnableAspiration: () => void;
+  aiAspirationDelta: number;
+  onChangeAiAspirationDelta: (n: number) => void;
+  aiEnableKillers: boolean;
+  onToggleAiEnableKillers: () => void;
+  aiEnableHistory: boolean;
+  onToggleAiEnableHistory: () => void;
+  aiEnableQuiescence: boolean;
+  onToggleAiEnableQuiescence: () => void;
+  aiQuiescenceDepth: number;
+  onChangeAiQuiescenceDepth: (n: number) => void;
 }
 
 function normEval(v: number): number {
@@ -40,6 +61,14 @@ function normEval(v: number): number {
 export default function IAPanel(props: IAPanelProps) {
   const { state, depth, onChangeDepth, onAIMove, disabled, timeMode, timeSeconds, onChangeTimeMode, onChangeTimeSeconds, busy = false, progress = null,
     evalScore = null, depthReached = null, pv = [], rootMoves = [], nodes = 0, elapsedMs = 0, nps = 0, rootPlayer, moving = false,
+    aiEnableTT, onToggleAiEnableTT,
+    aiFailSoft, onToggleAiFailSoft,
+    aiPreferHashMove, onToggleAiPreferHashMove,
+    aiEnablePVS, onToggleAiEnablePVS,
+    aiEnableAspiration, onToggleAiEnableAspiration, aiAspirationDelta, onChangeAiAspirationDelta,
+    aiEnableKillers, onToggleAiEnableKillers,
+    aiEnableHistory, onToggleAiEnableHistory,
+    aiEnableQuiescence, onToggleAiEnableQuiescence, aiQuiescenceDepth, onChangeAiQuiescenceDepth,
   } = props;
 
   const current = state.currentPlayer === 1 ? 'Jugador 1' : 'Jugador 2';
@@ -215,6 +244,56 @@ export default function IAPanel(props: IAPanelProps) {
               )}
             </button>
             {/* Botón de autoplay eliminado intencionalmente para DevTools */}
+          </div>
+
+          {/* Ajustes del motor IA (flags rápidos) */}
+          <div className="ia-panel__engine" style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiEnableTT} onChange={onToggleAiEnableTT} /> TT
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiFailSoft} onChange={onToggleAiFailSoft} /> Fail-soft
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiPreferHashMove} onChange={onToggleAiPreferHashMove} /> Hash move
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiEnablePVS} onChange={onToggleAiEnablePVS} /> PVS
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input type="checkbox" checked={aiEnableAspiration} onChange={onToggleAiEnableAspiration} /> Aspiration
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={aiAspirationDelta}
+                onChange={(e) => onChangeAiAspirationDelta(Math.max(1, Number(e.target.value) || 1))}
+                style={{ width: 58 }}
+                aria-label="Aspiration Δ"
+              />
+            </div>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiEnableKillers} onChange={onToggleAiEnableKillers} /> Killers
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <input type="checkbox" checked={aiEnableHistory} onChange={onToggleAiEnableHistory} /> History
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input type="checkbox" checked={aiEnableQuiescence} onChange={onToggleAiEnableQuiescence} /> Quiescence
+              </label>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={aiQuiescenceDepth}
+                onChange={(e) => onChangeAiQuiescenceDepth(Math.max(1, Number(e.target.value) || 1))}
+                style={{ width: 58 }}
+                aria-label="Profundidad quiescence"
+              />
+            </div>
           </div>
         </div>
       )}

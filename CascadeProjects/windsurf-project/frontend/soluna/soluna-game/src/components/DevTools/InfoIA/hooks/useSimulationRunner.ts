@@ -25,6 +25,8 @@ export interface SimulationSettings {
   enablePVS: boolean;
   enableAspiration: boolean;
   aspirationDelta: number;
+  enableQuiescence: boolean;
+  quiescenceDepth: number;
 }
 
 export interface SimulationMetrics {
@@ -186,6 +188,8 @@ export function useSimulationRunner(
                       enablePVS: settings.enablePVS,
                       enableAspiration: settings.enableAspiration,
                       aspirationDelta: settings.aspirationDelta,
+                      enableQuiescence: settings.enableQuiescence,
+                      quiescenceDepth: settings.quiescenceDepth,
                     },
                   },
                   (p) => {

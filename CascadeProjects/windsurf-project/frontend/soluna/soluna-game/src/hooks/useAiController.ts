@@ -26,6 +26,27 @@ export interface AiController {
   setAiControlP1: (next: boolean | ((v: boolean) => boolean)) => void;
   aiControlP2: boolean;
   setAiControlP2: (next: boolean | ((v: boolean) => boolean)) => void;
+  // Engine flags
+  aiEnableTT: boolean;
+  setAiEnableTT: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiFailSoft: boolean;
+  setAiFailSoft: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiPreferHashMove: boolean;
+  setAiPreferHashMove: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiEnableKillers: boolean;
+  setAiEnableKillers: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiEnableHistory: boolean;
+  setAiEnableHistory: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiEnablePVS: boolean;
+  setAiEnablePVS: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiEnableAspiration: boolean;
+  setAiEnableAspiration: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiAspirationDelta: number;
+  setAiAspirationDelta: (n: number) => void;
+  aiEnableQuiescence: boolean;
+  setAiEnableQuiescence: (v: boolean | ((p: boolean) => boolean)) => void;
+  aiQuiescenceDepth: number;
+  setAiQuiescenceDepth: (n: number) => void;
 
   // Status
   aiBusy: boolean;
@@ -60,6 +81,18 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   // Per-player control toggles: when on, the AI will move automatically for that player
   const [aiControlP1, setAiControlP1] = useState(false);
   const [aiControlP2, setAiControlP2] = useState(false);
+
+  // Engine flags (defaults aligned with search defaultOptions)
+  const [aiEnableTT, setAiEnableTT] = useState(true);
+  const [aiFailSoft, setAiFailSoft] = useState(true);
+  const [aiPreferHashMove, setAiPreferHashMove] = useState(true);
+  const [aiEnableKillers, setAiEnableKillers] = useState(false);
+  const [aiEnableHistory, setAiEnableHistory] = useState(false);
+  const [aiEnablePVS, setAiEnablePVS] = useState(false);
+  const [aiEnableAspiration, setAiEnableAspiration] = useState(false);
+  const [aiAspirationDelta, setAiAspirationDelta] = useState(25);
+  const [aiEnableQuiescence, setAiEnableQuiescence] = useState(false);
+  const [aiQuiescenceDepth, setAiQuiescenceDepth] = useState(3);
 
   // Status/metrics
   const [aiBusy, setAiBusy] = useState(false);
@@ -208,6 +241,18 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
             state: st,
             depth: aiDepth,
             timeMs: aiTimeMode === 'manual' ? Math.max(50, Math.floor(aiTimeSeconds * 1000)) : undefined,
+            options: {
+              enableTT: aiEnableTT,
+              failSoft: aiFailSoft,
+              preferHashMove: aiPreferHashMove,
+              enableKillers: aiEnableKillers,
+              enableHistory: aiEnableHistory,
+              enablePVS: aiEnablePVS,
+              enableAspiration: aiEnableAspiration,
+              aspirationDelta: aiAspirationDelta,
+              enableQuiescence: aiEnableQuiescence,
+              quiescenceDepth: aiQuiescenceDepth,
+            },
             searchId,
           });
         } catch (err) {
@@ -279,6 +324,16 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     aiAutoplay, setAiAutoplay,
     aiControlP1, setAiControlP1,
     aiControlP2, setAiControlP2,
+    aiEnableTT, setAiEnableTT,
+    aiFailSoft, setAiFailSoft,
+    aiPreferHashMove, setAiPreferHashMove,
+    aiEnableKillers, setAiEnableKillers,
+    aiEnableHistory, setAiEnableHistory,
+    aiEnablePVS, setAiEnablePVS,
+    aiEnableAspiration, setAiEnableAspiration,
+    aiAspirationDelta, setAiAspirationDelta,
+    aiEnableQuiescence, setAiEnableQuiescence,
+    aiQuiescenceDepth, setAiQuiescenceDepth,
 
     aiBusy, aiProgress, aiBusyElapsedMs,
 

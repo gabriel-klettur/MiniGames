@@ -45,6 +45,11 @@ export interface InfoIASettings {
   toggleEnableAspiration: () => void;
   aspirationDelta: number;
   setAspirationDelta: (n: number) => void;
+  // Quiescence
+  enableQuiescence: boolean;
+  toggleEnableQuiescence: () => void;
+  quiescenceDepth: number;
+  setQuiescenceDepth: (n: number) => void;
   // Helpers
   resetDefaults: () => void;
 }
@@ -80,6 +85,8 @@ export function useInfoIASettings(): InfoIASettings {
   const [enablePVS, setEnablePVS] = useState<boolean>(false);
   const [enableAspiration, setEnableAspiration] = useState<boolean>(false);
   const [aspirationDelta, setAspirationDelta] = useState<number>(25);
+  const [enableQuiescence, setEnableQuiescence] = useState<boolean>(false);
+  const [quiescenceDepth, setQuiescenceDepth] = useState<number>(3);
   const toggleEnableTT = useCallback(() => setEnableTT(v => !v), []);
   const toggleFailSoft = useCallback(() => setFailSoft(v => !v), []);
   const togglePreferHashMove = useCallback(() => setPreferHashMove(v => !v), []);
@@ -87,6 +94,7 @@ export function useInfoIASettings(): InfoIASettings {
   const toggleEnableHistory = useCallback(() => setEnableHistory(v => !v), []);
   const toggleEnablePVS = useCallback(() => setEnablePVS(v => !v), []);
   const toggleEnableAspiration = useCallback(() => setEnableAspiration(v => !v), []);
+  const toggleEnableQuiescence = useCallback(() => setEnableQuiescence(v => !v), []);
 
   const resetDefaults = useCallback(() => {
     setVisualize(true);
@@ -102,6 +110,8 @@ export function useInfoIASettings(): InfoIASettings {
     setEnablePVS(false);
     setEnableAspiration(false);
     setAspirationDelta(25);
+    setEnableQuiescence(false);
+    setQuiescenceDepth(3);
   }, []);
 
   return {
@@ -141,6 +151,10 @@ export function useInfoIASettings(): InfoIASettings {
     toggleEnableAspiration,
     aspirationDelta,
     setAspirationDelta,
+    enableQuiescence,
+    toggleEnableQuiescence,
+    quiescenceDepth,
+    setQuiescenceDepth,
     resetDefaults,
   };
 }

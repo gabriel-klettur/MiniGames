@@ -19,6 +19,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     enableKillers, enableHistory, onToggleEnableKillers, onToggleEnableHistory,
     enablePVS, onToggleEnablePVS,
     enableAspiration, onToggleEnableAspiration, aspirationDelta, onChangeAspirationDelta,
+    enableQuiescence, onToggleEnableQuiescence, quiescenceDepth, onChangeQuiescenceDepth,
     setsCount, onChangeSetsCount,
     p1, p2,
     records,
@@ -105,6 +106,10 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onToggleEnableAspiration={onToggleEnableAspiration}
           aspirationDelta={aspirationDelta}
           onChangeAspirationDelta={onChangeAspirationDelta}
+          enableQuiescence={enableQuiescence}
+          onToggleEnableQuiescence={onToggleEnableQuiescence}
+          quiescenceDepth={quiescenceDepth}
+          onChangeQuiescenceDepth={onChangeQuiescenceDepth}
           setsCount={setsCount}
           onChangeSetsCount={onChangeSetsCount}
           p1={p1}

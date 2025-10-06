@@ -227,6 +227,3 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
     </section>
   );
 }
-
-
-

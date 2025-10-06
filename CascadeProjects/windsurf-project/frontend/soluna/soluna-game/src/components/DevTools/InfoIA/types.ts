@@ -85,6 +85,11 @@ export interface InfoIAViewProps {
   onToggleEnableAspiration: () => void;
   aspirationDelta: number;
   onChangeAspirationDelta: (n: number) => void;
+  // Quiescence controls
+  enableQuiescence: boolean;
+  onToggleEnableQuiescence: () => void;
+  quiescenceDepth: number;
+  onChangeQuiescenceDepth: (n: number) => void;
 
   // Results
   records: InfoIARecord[];

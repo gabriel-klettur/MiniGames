@@ -47,6 +47,8 @@ const InfoIAContainer: React.FC = () => {
       enablePVS: settings.enablePVS,
       enableAspiration: settings.enableAspiration,
       aspirationDelta: settings.aspirationDelta,
+      enableQuiescence: settings.enableQuiescence,
+      quiescenceDepth: settings.quiescenceDepth,
     },
     addRecord,
     () => stateRef.current,
@@ -119,6 +121,10 @@ const InfoIAContainer: React.FC = () => {
       onToggleEnableAspiration={settings.toggleEnableAspiration}
       aspirationDelta={settings.aspirationDelta}
       onChangeAspirationDelta={settings.setAspirationDelta}
+      enableQuiescence={settings.enableQuiescence}
+      onToggleEnableQuiescence={settings.toggleEnableQuiescence}
+      quiescenceDepth={settings.quiescenceDepth}
+      onChangeQuiescenceDepth={settings.setQuiescenceDepth}
       setsCount={settings.setsCount}
       onChangeSetsCount={settings.setSetsCount}
       p1={{

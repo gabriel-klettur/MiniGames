@@ -33,6 +33,10 @@ interface SimSectionProps {
   onToggleEnableAspiration: () => void;
   aspirationDelta: number;
   onChangeAspirationDelta: (n: number) => void;
+  enableQuiescence: boolean;
+  onToggleEnableQuiescence: () => void;
+  quiescenceDepth: number;
+  onChangeQuiescenceDepth: (n: number) => void;
   setsCount: number;
   onChangeSetsCount: (v: number) => void;
   p1: PlayerControlsProps;
@@ -72,6 +76,10 @@ const SimSection: FC<SimSectionProps> = ({
   onToggleEnableAspiration,
   aspirationDelta,
   onChangeAspirationDelta,
+  enableQuiescence,
+  onToggleEnableQuiescence,
+  quiescenceDepth,
+  onChangeQuiescenceDepth,
   setsCount,
   onChangeSetsCount,
   p1,
@@ -150,6 +158,23 @@ const SimSection: FC<SimSectionProps> = ({
                       step={1}
                       value={aspirationDelta}
                       onChange={(e) => onChangeAspirationDelta(Math.max(1, Number(e.target.value) || 1))}
+                      style={{ width: 64 }}
+                    />
+                  </label>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <input type="checkbox" checked={enableQuiescence} onChange={onToggleEnableQuiescence} />
+                    Quiescence (solo jugadas tácticas)
+                  </label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    profundidad
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={quiescenceDepth}
+                      onChange={(e) => onChangeQuiescenceDepth(Math.max(1, Number(e.target.value) || 1))}
                       style={{ width: 64 }}
                     />
                   </label>

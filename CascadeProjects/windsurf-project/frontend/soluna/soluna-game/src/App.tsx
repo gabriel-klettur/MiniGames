@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import './style/index.css';
 import IAUserPanel from './components/IAUserPanel/IAUserPanel';
 import HeaderPanel from './components/HeaderPanel/HeaderPanel';
@@ -35,7 +36,38 @@ function App() {
     aiBusy, aiProgress, aiBusyElapsedMs,
     aiEval, aiPV, aiRootMoves, aiNodes, aiElapsed, aiNps, aiDepthReached,
     doAIMove,
+    // Engine flags
+    aiEnableTT, setAiEnableTT,
+    aiFailSoft, setAiFailSoft,
+    aiPreferHashMove, setAiPreferHashMove,
+    aiEnableKillers, setAiEnableKillers,
+    aiEnableHistory, setAiEnableHistory,
+    aiEnablePVS, setAiEnablePVS,
+    aiEnableAspiration, setAiEnableAspiration,
+    aiAspirationDelta, setAiAspirationDelta,
+    aiEnableQuiescence, setAiEnableQuiescence,
+    aiQuiescenceDepth, setAiQuiescenceDepth,
   } = useAiController(state, dispatch);
+
+  // Al abrir DevTools en móviles, hacer scroll al panel para que sea visible.
+  const devToolsRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (showDev && devToolsRef.current) {
+      // Esperar al próximo tick para asegurar que el DOM esté pintado
+      setTimeout(() => {
+        const el = devToolsRef.current;
+        if (!el) return;
+        try {
+          const rect = el.getBoundingClientRect();
+          const y = rect.top + window.scrollY - 12; // pequeño margen superior
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        } catch {
+          // Fallback para navegadores sin smooth/scrollTo
+          el.scrollIntoView();
+        }
+      }, 0);
+    }
+  }, [showDev]);
 
   // Historial de Soluna (moves + archivadas) con export/clear
   const { moves, finishedGames, downloadCurrentGame, clearHistory, clearMoves } = useSolunaHistory({ state, aiControlP1, aiControlP2 });
@@ -96,7 +128,7 @@ function App() {
         />
         {/* DevTools a ancho completo, inmediatamente debajo del tablero */}
         {showDev && (
-          <div className="devtools-row">
+          <div className="devtools-row" ref={devToolsRef}>
             <div className="devtools-card">
               <DevToolsPanel
                 showFases={showFases}
@@ -136,6 +168,27 @@ function App() {
                     aiAutoplayActive={aiAutoplay}
                     onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
                     busyElapsedMs={aiBusyElapsedMs}
+                    // Engine flags wiring
+                    aiEnableTT={aiEnableTT}
+                    onToggleAiEnableTT={() => setAiEnableTT(v => !v)}
+                    aiFailSoft={aiFailSoft}
+                    onToggleAiFailSoft={() => setAiFailSoft(v => !v)}
+                    aiPreferHashMove={aiPreferHashMove}
+                    onToggleAiPreferHashMove={() => setAiPreferHashMove(v => !v)}
+                    aiEnablePVS={aiEnablePVS}
+                    onToggleAiEnablePVS={() => setAiEnablePVS(v => !v)}
+                    aiEnableAspiration={aiEnableAspiration}
+                    onToggleAiEnableAspiration={() => setAiEnableAspiration(v => !v)}
+                    aiAspirationDelta={aiAspirationDelta}
+                    onChangeAiAspirationDelta={setAiAspirationDelta}
+                    aiEnableKillers={aiEnableKillers}
+                    onToggleAiEnableKillers={() => setAiEnableKillers(v => !v)}
+                    aiEnableHistory={aiEnableHistory}
+                    onToggleAiEnableHistory={() => setAiEnableHistory(v => !v)}
+                    aiEnableQuiescence={aiEnableQuiescence}
+                    onToggleAiEnableQuiescence={() => setAiEnableQuiescence(v => !v)}
+                    aiQuiescenceDepth={aiQuiescenceDepth}
+                    onChangeAiQuiescenceDepth={setAiQuiescenceDepth}
                   />
                 </section>
               )}
@@ -174,7 +227,10 @@ function App() {
           onClear={clearHistory}
         />
       </div>
-      <button className={`dev-toggle-btn ${showDev ? 'active' : ''}`} onClick={() => setShowDev((v) => !v)}>
+      <button
+        className={`dev-toggle-btn ${showDev ? 'active' : ''}`}
+        onClick={() => setShowDev((v) => !v)}
+      >
         Dev
       </button>
     </div>

@@ -112,6 +112,11 @@
   width: 100%;
   display: flex;
   justify-content: center; /* centrar el panel respecto al viewport */
+  /* Facilitar que scrollIntoView lo deje visible bajo el header en móviles */
+  scroll-margin-top: 12px;
+  /* Asegurar que no quede cubierto por overlays del tablero si se solapan */
+  position: relative;
+  z-index: 1000002;
 }
 
 .devtools-row .devtools-card {

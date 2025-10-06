@@ -17,6 +17,9 @@ export interface SearchOptions {
   enableAspiration?: boolean;
   aspirationDelta?: number; // window half-size around prev score
   prevScore?: number; // previous iteration score (for aspiration)
+  // Quiescence Search: extend leaves on tactical moves only
+  enableQuiescence?: boolean;
+  quiescenceDepth?: number; // max plies in quiescence
 }
 
 const defaultOptions: Required<SearchOptions> = {
@@ -29,6 +32,8 @@ const defaultOptions: Required<SearchOptions> = {
   enableAspiration: false,
   aspirationDelta: 25,
   prevScore: 0,
+  enableQuiescence: false,
+  quiescenceDepth: 3,
 };
 
 function moveKey(m: AIMove): string {
@@ -94,6 +99,78 @@ interface SearchContext {
   history: Map<string, number>;   // `${player}:${moveKey}` -> score
 }
 
+function isTactical(state: GameState, m: AIMove): boolean {
+  // Tactical if the move immediately ends the round (forces scoring)
+  const nxt = applyMove(state, m);
+  return !!nxt.roundOver;
+}
+
+function quiescence(
+  state: GameState,
+  alpha: number,
+  beta: number,
+  me: Player,
+  stats: SearchStats | undefined,
+  opts: Required<SearchOptions>,
+  ply: number,
+  ctx: SearchContext,
+  qdepth: number,
+): SearchResult {
+  if (stats) stats.nodes++;
+  const standPat = evaluate(state, me);
+  // Fail-soft boundaries
+  if (standPat >= beta) return { score: standPat, pv: [] };
+  let a = Math.max(alpha, standPat);
+
+  if (qdepth <= 0) return { score: a, pv: [] };
+
+  // Generate only tactical moves to extend
+  const all = generateAllMoves(state);
+  const tactical = all.filter((m) => isTactical(state, m));
+  if (tactical.length === 0) return { score: a, pv: [] };
+
+  const ordered = orderMoves(
+    state,
+    tactical,
+    undefined,
+    opts.preferHashMove,
+    null,
+    null,
+    undefined,
+  );
+
+  const maximizing = state.currentPlayer === me;
+  if (maximizing) {
+    let bestScore = -Infinity;
+    let bestPV: AIMove[] = [];
+    for (const m of ordered) {
+      const nxt = applyMove(state, m);
+      const child = quiescence(nxt, a, beta, me, stats, opts, ply + 1, ctx, qdepth - 1);
+      if (child.score > bestScore) {
+        bestScore = child.score;
+        bestPV = [m, ...child.pv];
+      }
+      a = Math.max(a, opts.failSoft ? child.score : bestScore);
+      if (a >= beta) break;
+    }
+    return { score: Math.max(standPat, bestScore), pv: bestPV };
+  } else {
+    let bestScore = +Infinity;
+    let bestPV: AIMove[] = [];
+    for (const m of ordered) {
+      const nxt = applyMove(state, m);
+      const child = quiescence(nxt, alpha, a, me, stats, opts, ply + 1, ctx, qdepth - 1);
+      if (child.score < bestScore) {
+        bestScore = child.score;
+        bestPV = [m, ...child.pv];
+      }
+      a = Math.min(beta, opts.failSoft ? child.score : bestScore);
+      if (alpha >= a) break;
+    }
+    return { score: Math.min(standPat, bestScore), pv: bestPV };
+  }
+}
+
 function alphabeta(
   state: GameState,
   depth: number,
@@ -108,6 +185,9 @@ function alphabeta(
   if (stats) stats.nodes++;
   const maximizing = state.currentPlayer === me;
   if (depth === 0) {
+    if (opts.enableQuiescence && opts.quiescenceDepth > 0) {
+      return quiescence(state, alpha, beta, me, stats, opts, ply, ctx, opts.quiescenceDepth);
+    }
     return { score: evaluate(state, me), pv: [] };
   }
 
