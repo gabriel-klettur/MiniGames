@@ -146,8 +146,23 @@ export default function IAPanel(props: IAPanelProps) {
       {/* Tab: Control */}
       {activeTab === 'control' && (
         <div className="ia-panel__controls" style={{ marginTop: 8 }}>
-          <label htmlFor="ia-depth" className="label">Profundidad</label>
-          <select id="ia-depth" value={depth} onChange={(e) => onChangeDepth(Number(e.target.value))}>
+          <label
+            htmlFor="ia-depth"
+            className="label"
+            title={
+              'Profundidad de búsqueda (minimax). Cada +1 aumenta el horizonte.\n+Ejemplo: d=2 mira mi jugada y la respuesta rival. d=3 añade mi réplica.\n+Trade-off: más profundidad = más nodos (más lento) pero decisiones más sólidas.'
+            }
+          >
+            Profundidad
+          </label>
+          <select
+            id="ia-depth"
+            value={depth}
+            onChange={(e) => onChangeDepth(Number(e.target.value))}
+            title={
+              'Selecciona d. Regla guía: d=2–3 rápido; d=4–5 medio; d>=6 pesado.\n+Consejo: usar TT/PVS/Aspiration para acelerar a d altos.'
+            }
+          >
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
@@ -155,8 +170,22 @@ export default function IAPanel(props: IAPanelProps) {
 
           <label className="label">Tiempo</label>
           <div className="segmented" role="group" aria-label="Modo de tiempo IA">
-            <button className={timeMode === 'auto' ? 'active' : ''} onClick={() => onChangeTimeMode('auto')} aria-pressed={timeMode === 'auto'}>Auto</button>
-            <button className={timeMode === 'manual' ? 'active' : ''} onClick={() => onChangeTimeMode('manual')} aria-pressed={timeMode === 'manual'}>Manual</button>
+            <button
+              className={timeMode === 'auto' ? 'active' : ''}
+              onClick={() => onChangeTimeMode('auto')}
+              aria-pressed={timeMode === 'auto'}
+              title={'Auto: usa sólo profundidad fija. Recomendado para comparabilidad de resultados.'}
+            >
+              Auto
+            </button>
+            <button
+              className={timeMode === 'manual' ? 'active' : ''}
+              onClick={() => onChangeTimeMode('manual')}
+              aria-pressed={timeMode === 'manual'}
+              title={'Manual: asigna un presupuesto de tiempo por jugada (ms). Ej.: 3.0 s.'}
+            >
+              Manual
+            </button>
           </div>
           {timeMode === 'manual' && (
             <div className="ia-panel__range" aria-label="Selector de tiempo manual">
@@ -170,6 +199,10 @@ export default function IAPanel(props: IAPanelProps) {
                 aria-valuemin={0}
                 aria-valuemax={30}
                 aria-valuenow={timeSeconds}
+                title={
+                  'Tiempo objetivo por jugada (segundos). Ej.: 2.5 s. '
+                  + 'Afecta iterative deepening: profundiza hasta agotar el presupuesto.'
+                }
               />
               <span className="range-value">{timeSeconds.toFixed(1)} s</span>
             </div>
@@ -248,21 +281,56 @@ export default function IAPanel(props: IAPanelProps) {
 
           {/* Ajustes del motor IA (flags rápidos) */}
           <div className="ia-panel__engine" style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <label
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              title={`TT — Tabla de Transposiciones: cachea evaluaciones por hash del estado.\n+Beneficio: evita recalcular subárboles y mejora el orden de movimientos (hash move).\nEjemplo: posiciones alcanzadas por distinto orden de merges comparten resultado.`}
+            >
               <input type="checkbox" checked={aiEnableTT} onChange={onToggleAiEnableTT} /> TT
             </label>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={aiFailSoft} onChange={onToggleAiFailSoft} /> Fail-soft
+              <input type="checkbox" checked={aiFailSoft} onChange={onToggleAiFailSoft} />
+              <span
+                title={
+                  'Fail-soft — En cortes devuelve el valor real del hijo (no sólo α/β).'
+                  + '\nBeneficio: mejores ventanas en iteraciones siguientes y ranking raíz.'
+                  + '\nEjemplo: si hijo=+37 supera β=+30, se guarda +37 (no +30).'
+                }
+              >
+                Fail-soft
+              </span>
             </label>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={aiPreferHashMove} onChange={onToggleAiPreferHashMove} /> Hash move
+              <input type="checkbox" checked={aiPreferHashMove} onChange={onToggleAiPreferHashMove} />
+              <span
+                title={`Hash move — Prioriza primero la mejor jugada almacenada en TT.\n+Beneficio: más podas β por mejor ordenación.\nEjemplo: si TT sugiere merge A+B, se explora antes que otras.`}
+              >
+                Hash move
+              </span>
             </label>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={aiEnablePVS} onChange={onToggleAiEnablePVS} /> PVS
+              <input type="checkbox" checked={aiEnablePVS} onChange={onToggleAiEnablePVS} />
+              <span
+                title={
+                  'PVS — Principal Variation Search: primer hijo ventana completa, resto ventana nula.'
+                  + '\nBeneficio: reduce nodos manteniendo exactitud.'
+                  + '\nEjemplo: tras buen ordering, muchos hijos fallan rápido con [α, α+1].'
+                }
+              >
+                PVS
+              </span>
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <input type="checkbox" checked={aiEnableAspiration} onChange={onToggleAiEnableAspiration} /> Aspiration
+                <input type="checkbox" checked={aiEnableAspiration} onChange={onToggleAiEnableAspiration} />
+                <span
+                  title={
+                    'Aspiration Windows — Busca alrededor del score previo y reintenta si falla.'
+                    + '\nBeneficio: ventanas estrechas aceleran la poda.'
+                    + '\nEjemplo: score previo +40 → ventana [+30,+50]. Si falla, amplía a completa.'
+                  }
+                >
+                  Aspiration
+                </span>
               </label>
               <input
                 type="number"
@@ -272,17 +340,45 @@ export default function IAPanel(props: IAPanelProps) {
                 onChange={(e) => onChangeAiAspirationDelta(Math.max(1, Number(e.target.value) || 1))}
                 style={{ width: 58 }}
                 aria-label="Aspiration Δ"
+                title={'Δ de aspiración (margen alrededor del score previo). Ej.: 25 → [S-25,S+25].'}
               />
             </div>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={aiEnableKillers} onChange={onToggleAiEnableKillers} /> Killers
+              <input type="checkbox" checked={aiEnableKillers} onChange={onToggleAiEnableKillers} />
+              <span
+                title={
+                  'Killers — Guarda hasta 2 jugadas por nivel que causaron corte β.'
+                  + '\nBeneficio: mejor ordering en ese ply.'
+                  + '\nEjemplo: si merge X causa β-cut frecuentemente, se prueba antes.'
+                }
+              >
+                Killers
+              </span>
             </label>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={aiEnableHistory} onChange={onToggleAiEnableHistory} /> History
+              <input type="checkbox" checked={aiEnableHistory} onChange={onToggleAiEnableHistory} />
+              <span
+                title={
+                  'History heuristic — Puntuación acumulada por jugada (por jugador).'
+                  + '\nBeneficio: prioriza jugadas que históricamente fueron buenas.'
+                  + '\nEjemplo: clave de history = jugador:moveKey (A+B), suma depth^2 en cortes.'
+                }
+              >
+                History
+              </span>
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <input type="checkbox" checked={aiEnableQuiescence} onChange={onToggleAiEnableQuiescence} /> Quiescence
+                <input type="checkbox" checked={aiEnableQuiescence} onChange={onToggleAiEnableQuiescence} />
+                <span
+                  title={
+                    'Quiescence — Extiende hojas sólo en posiciones tácticas (cierre de ronda).'
+                    + '\nBeneficio: reduce efecto horizonte sin perder exactitud.'
+                    + '\nEjemplo: en d=0, si una fusión termina la ronda, se profundiza q plies.'
+                  }
+                >
+                  Quiescence
+                </span>
               </label>
               <input
                 type="number"
@@ -292,6 +388,7 @@ export default function IAPanel(props: IAPanelProps) {
                 onChange={(e) => onChangeAiQuiescenceDepth(Math.max(1, Number(e.target.value) || 1))}
                 style={{ width: 58 }}
                 aria-label="Profundidad quiescence"
+                title={'Profundidad adicional q para quiescence. Regla guía: 2–3. Más alto = más nodos en hojas.'}
               />
             </div>
           </div>
@@ -302,7 +399,7 @@ export default function IAPanel(props: IAPanelProps) {
       {activeTab === 'analysis' && (
         <div className="ia-panel__analysis" aria-label="Evaluación y análisis" style={{ marginTop: 8 }}>
           {/* Evaluación y PV */}
-          <div className="ia-panel__evaluation" aria-label="Evaluación y PV">
+          <div className="ia-panel__evaluation" aria-label="Evaluación y PV" title={'Evaluación estática y PV (variación principal) de la última búsqueda.'}>
             <div className="eval">
               <div
                 className="eval-bar"
@@ -317,20 +414,25 @@ export default function IAPanel(props: IAPanelProps) {
                 {fmtScore(evalScore)}
               </span>
             </div>
-            <div className="pv row info">PV {depthReached !== null ? `(d=${depthReached})` : ''}: {pv && pv.length ? pv.slice(0, 8).map(fmtMove).join(' → ') : 'NO INFO'}</div>
+            <div
+              className="pv row info"
+              title={'PV — Secuencia de jugadas óptimas encontradas. Útil para depurar decisiones.\n+Ejemplo: merge #a→#b → #c→#d …'}
+            >
+              PV {depthReached !== null ? `(d=${depthReached})` : ''}: {pv && pv.length ? pv.slice(0, 8).map(fmtMove).join(' → ') : 'NO INFO'}
+            </div>
           </div>
 
           {/* KPIs */}
           <div className="ia-panel__kpis" aria-label="Métricas">
-            <span className="kpi"><strong>Nodos</strong> {(nodes || 0).toLocaleString()}</span>
-            <span className="kpi"><strong>Tiempo</strong> {((elapsedMs || 0) / 1000).toFixed(2)} s</span>
-            <span className="kpi"><strong>NPS</strong> {Math.round(nps || 0).toLocaleString()}</span>
-            <span className="kpi kpi--muted"><strong>Turno</strong> {current}</span>
+            <span className="kpi" title={'Nodos — Estados evaluados durante la última búsqueda. Ej.: 12,345 nodos.'}><strong>Nodos</strong> {(nodes || 0).toLocaleString()}</span>
+            <span className="kpi" title={'Tiempo — Duración de la última búsqueda. Ej.: 0.85 s.'}><strong>Tiempo</strong> {((elapsedMs || 0) / 1000).toFixed(2)} s</span>
+            <span className="kpi" title={'NPS — Nodes per second. Métrica de rendimiento. Ej.: 25,000 nps.'}><strong>NPS</strong> {Math.round(nps || 0).toLocaleString()}</span>
+            <span className="kpi kpi--muted" title={'Turno en la raíz de búsqueda. Afecta el signo de la evaluación.'}><strong>Turno</strong> {current}</span>
           </div>
 
           {/* Top jugadas */}
           <div className="ia-panel__moves" aria-label="Top movimientos">
-            <div className="section-title">Top jugadas (raíz)</div>
+            <div className="section-title" title={'Top jugadas en la raíz: ranking por score. La barra indica magnitud relativa.'}>Top jugadas (raíz)</div>
             {(() => {
               const sorted = rootSorted;
               const filled = [...sorted];
@@ -351,7 +453,7 @@ export default function IAPanel(props: IAPanelProps) {
                         <div className="mini-bar" aria-hidden="true">
                           <div className="mini-bar__fill" style={{ width: `${ratio * 100}%` }} />
                         </div>
-                        <span className="move-label">{label}</span>
+                        <span className="move-label" title={'Jugada y su evaluación para el jugador al turno en raíz.'}>{label}</span>
                       </li>
                     );
                   })}
