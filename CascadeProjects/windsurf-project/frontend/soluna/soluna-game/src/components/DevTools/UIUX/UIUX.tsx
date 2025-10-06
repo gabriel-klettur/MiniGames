@@ -41,8 +41,10 @@ export default function UIUX() {
   ];
 
   return (
-    <section style={{ display: 'grid', gap: 8 }}>      
-      <Tabs items={tabs} initialId="animaciones" />
+    <section style={{ display: 'grid', gap: 8, width: '100%', maxWidth: 'none', flex: '1 1 auto' }}>      
+      <div style={{ width: '100%' }}>
+        <Tabs items={tabs} initialId="animaciones" />
+      </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <button onClick={reset}>Restablecer</button>
       </div>

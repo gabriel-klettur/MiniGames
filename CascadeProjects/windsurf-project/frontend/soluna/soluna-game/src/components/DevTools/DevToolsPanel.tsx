@@ -24,7 +24,7 @@ export default function DevToolsPanel({
   onToggleInfoIA = () => {},
 }: DevToolsPanelProps) {
   return (       
-    <>
+    <div style={{ width: '100%', maxWidth: 'none', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       <button className="btn btn-secondary" onClick={onToggleRules}>Reglas</button>
       <button
         className={`btn ${showFases ? 'btn-primary' : 'btn-secondary'}`}
@@ -54,7 +54,7 @@ export default function DevToolsPanel({
       >
         InfoIA
       </button>
-    </>
+    </div>
   );
 }
 

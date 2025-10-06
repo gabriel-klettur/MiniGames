@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch } from 'react';
 import { bestMove, type AIMove } from '../ia';
 import type { GameAction, GameState } from '../game/types';
+import { createWorkerPool, WorkerPool } from '../ia/worker/pool';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -75,6 +76,12 @@ export interface AiController {
   aiElapsed: number;
   aiNps: number;
   aiDepthReached: number | null;
+  // Detailed metrics
+  aiTTProbes: number;
+  aiTTHits: number;
+  aiCutoffs: number;
+  aiPvsReSearches: number;
+  aiLmrReductions: number;
 
   // Controls
   doAIMove: () => void;
@@ -100,12 +107,12 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiEnableTT, setAiEnableTT] = useState(true);
   const [aiFailSoft, setAiFailSoft] = useState(true);
   const [aiPreferHashMove, setAiPreferHashMove] = useState(true);
-  const [aiEnableKillers, setAiEnableKillers] = useState(false);
-  const [aiEnableHistory, setAiEnableHistory] = useState(false);
-  const [aiEnablePVS, setAiEnablePVS] = useState(false);
-  const [aiEnableAspiration, setAiEnableAspiration] = useState(false);
-  const [aiAspirationDelta, setAiAspirationDelta] = useState(25);
-  const [aiEnableQuiescence, setAiEnableQuiescence] = useState(false);
+  const [aiEnableKillers, setAiEnableKillers] = useState(true);
+  const [aiEnableHistory, setAiEnableHistory] = useState(true);
+  const [aiEnablePVS, setAiEnablePVS] = useState(true);
+  const [aiEnableAspiration, setAiEnableAspiration] = useState(true);
+  const [aiAspirationDelta, setAiAspirationDelta] = useState(35);
+  const [aiEnableQuiescence, setAiEnableQuiescence] = useState(true);
   const [aiQuiescenceDepth, setAiQuiescenceDepth] = useState(3);
   // Quiescence: umbral de torre alta para considerar táctica
   const [aiQuiescenceHighTowerThreshold, setAiQuiescenceHighTowerThreshold] = useState(5);
@@ -127,12 +134,27 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiNps, setAiNps] = useState(0);
   const [aiDepthReached, setAiDepthReached] = useState<number | null>(null);
   const [aiBusyElapsedMs, setAiBusyElapsedMs] = useState(0);
+  const [aiTTProbes, setAiTTProbes] = useState(0);
+  const [aiTTHits, setAiTTHits] = useState(0);
+  const [aiCutoffs, setAiCutoffs] = useState(0);
+  const [aiPvsReSearches, setAiPvsReSearches] = useState(0);
+  const [aiLmrReductions, setAiLmrReductions] = useState(0);
 
   // Worker infra
   const workerRef = useRef<Worker | null>(null);
   const searchIdRef = useRef(0);
   const latestStateRef = useRef(state);
   useEffect(() => { latestStateRef.current = state; }, [state]);
+
+  // Worker pool for root-split parallelism (auto mode)
+  const poolRef = useRef<WorkerPool | null>(null);
+  useEffect(() => {
+    try { poolRef.current = createWorkerPool(); } catch {}
+    return () => {
+      try { poolRef.current?.dispose(); } catch {}
+      poolRef.current = null;
+    };
+  }, []);
 
   // Pending timers for delayed AI merge after visual selection
   const pendingMergeTimerRef = useRef<number | null>(null);
@@ -191,6 +213,11 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
         if (data.type === 'PROGRESS') {
           setAiProgress({ depth: data.depth ?? 0, score: data.score ?? 0 });
           if (typeof data.nodes === 'number') setAiNodes(data.nodes);
+          if (typeof data.ttProbes === 'number') setAiTTProbes(data.ttProbes);
+          if (typeof data.ttHits === 'number') setAiTTHits(data.ttHits);
+          if (typeof data.cutoffs === 'number') setAiCutoffs(data.cutoffs);
+          if (typeof data.pvsReSearches === 'number') setAiPvsReSearches(data.pvsReSearches);
+          if (typeof data.lmrReductions === 'number') setAiLmrReductions(data.lmrReductions);
         } else if (data.type === 'RESULT') {
           setAiEval(data.score ?? null);
           setAiDepthReached(data.depthReached ?? null);
@@ -199,6 +226,11 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           setAiNodes(data.nodes ?? 0);
           setAiElapsed(data.elapsedMs ?? 0);
           setAiNps(data.nps ?? 0);
+          if (typeof data.ttProbes === 'number') setAiTTProbes(data.ttProbes);
+          if (typeof data.ttHits === 'number') setAiTTHits(data.ttHits);
+          if (typeof data.cutoffs === 'number') setAiCutoffs(data.cutoffs);
+          if (typeof data.pvsReSearches === 'number') setAiPvsReSearches(data.pvsReSearches);
+          if (typeof data.lmrReductions === 'number') setAiLmrReductions(data.lmrReductions);
           setAiProgress(null);
           if (typeof data.elapsedMs === 'number') setAiBusyElapsedMs(data.elapsedMs);
           const mv = data.bestMove as AIMove | undefined;
@@ -236,6 +268,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
 
   const cancel = useCallback(() => {
     try { workerRef.current?.postMessage({ type: 'CANCEL' }); } catch {}
+    try { poolRef.current?.cancel(); } catch {}
     clearPendingMergeTimers();
     setAiBusy(false);
   }, []);
@@ -253,6 +286,133 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     searchIdRef.current += 1;
     const searchId = searchIdRef.current;
 
+    // Build search options once
+    const options = {
+      enableTT: aiEnableTT,
+      failSoft: aiFailSoft,
+      preferHashMove: aiPreferHashMove,
+      enableKillers: aiEnableKillers,
+      enableHistory: aiEnableHistory,
+      enablePVS: aiEnablePVS,
+      enableAspiration: aiEnableAspiration,
+      aspirationDelta: aiAspirationDelta,
+      enableQuiescence: aiEnableQuiescence,
+      quiescenceDepth: aiQuiescenceDepth,
+      quiescenceHighTowerThreshold: aiQuiescenceHighTowerThreshold,
+      enableLMR: true,
+      lmrMinDepth: 3,
+      lmrLateMoveIdx: 4,
+      lmrReduction: 1,
+    } as const;
+
+    // Precompute time/adaptive config to avoid control-flow narrowing issues
+    const isManual = aiTimeMode === 'manual';
+    const isAuto = aiTimeMode === 'auto';
+    const requestedTimeMs = isManual ? Math.max(50, Math.floor(aiTimeSeconds * 1000)) : undefined;
+    const adaptiveConfig = isAuto ? {
+      minMs: aiTimeMinMs,
+      maxMs: aiTimeMaxMs,
+      baseMs: aiTimeBaseMs,
+      perMoveMs: aiTimePerMoveMs,
+      exponent: aiTimeExponent,
+    } : undefined;
+
+    // Prefer parallel root search via pool in auto mode
+    const pool = poolRef.current;
+    if (pool && isAuto) {
+      try { pool.cancel(); } catch {}
+      setTimeout(() => {
+        pool
+          .searchRoot(st, aiDepth, options, undefined, (p) => {
+            if (typeof p.nodes === 'number') setAiNodes(p.nodes);
+            if (typeof p.ttProbes === 'number') setAiTTProbes(p.ttProbes);
+            if (typeof p.ttHits === 'number') setAiTTHits(p.ttHits);
+            if (typeof p.cutoffs === 'number') setAiCutoffs(p.cutoffs);
+            if (typeof p.pvsReSearches === 'number') setAiPvsReSearches(p.pvsReSearches);
+            if (typeof p.lmrReductions === 'number') setAiLmrReductions(p.lmrReductions);
+          })
+          .then((res) => {
+            setAiEval(res.score ?? null);
+            setAiDepthReached(res.depthReached ?? null);
+            setAiPV(res.pv ?? []);
+            setAiRootMoves(res.rootMoves ?? []);
+            setAiNodes(res.nodes ?? 0);
+            setAiElapsed(res.elapsedMs ?? 0);
+            setAiNps(res.nps ?? 0);
+            if (typeof res.ttProbes === 'number') setAiTTProbes(res.ttProbes);
+            if (typeof res.ttHits === 'number') setAiTTHits(res.ttHits);
+            if (typeof res.cutoffs === 'number') setAiCutoffs(res.cutoffs);
+            if (typeof res.pvsReSearches === 'number') setAiPvsReSearches(res.pvsReSearches);
+            if (typeof res.lmrReductions === 'number') setAiLmrReductions(res.lmrReductions);
+            setAiProgress(null);
+            if (typeof res.elapsedMs === 'number') setAiBusyElapsedMs(res.elapsedMs);
+            const mv = res.bestMove as AIMove | undefined;
+            const st2 = latestStateRef.current;
+            const animationBlocking = (!!st2.mergeFx) && (st2.mode !== 'simulation');
+            if (mv && (mv as any).sourceId && (mv as any).targetId && !st2.roundOver && !st2.gameOver && !animationBlocking) {
+              scheduleAiAttemptMerge(mv);
+            } else {
+              setAiBusy(false);
+            }
+          })
+          .catch((err) => {
+            console.warn('Pool search failed, falling back to worker.', err);
+            // Fallback to single-worker path below
+            const w2 = workerRef.current;
+            if (w2) {
+              try { w2.postMessage({ type: 'CANCEL' }); } catch {}
+              try {
+                w2.postMessage({
+                  type: 'SEARCH',
+                  state: st,
+                  depth: aiDepth,
+                  timeMs: requestedTimeMs,
+                  options,
+                  adaptiveTimeConfig: adaptiveConfig,
+                  searchId,
+                });
+              } catch (err2) {
+                console.warn('Fallo postMessage al worker. Fallback al hilo principal.', err2);
+                const res = bestMove(st, aiDepth);
+                setAiEval(res.score ?? null);
+                setAiPV(res.pv ?? []);
+                setAiRootMoves(res.rootMoves ?? []);
+                setAiNodes(res.nodes ?? 0);
+                setAiElapsed(res.elapsedMs ?? 0);
+                setAiNps(res.nps ?? 0);
+                setAiDepthReached(null);
+                setAiBusyElapsedMs(res.elapsedMs ?? 0);
+                const st3 = latestStateRef.current;
+                const animationBlocking = (!!st3.mergeFx) && (st3.mode !== 'simulation');
+                if (res.move && !animationBlocking && !st3.roundOver && !st3.gameOver) {
+                  scheduleAiAttemptMerge(res.move);
+                } else {
+                  setAiBusy(false);
+                }
+              }
+            } else {
+              const res = bestMove(st, aiDepth);
+              setAiEval(res.score ?? null);
+              setAiPV(res.pv ?? []);
+              setAiRootMoves(res.rootMoves ?? []);
+              setAiNodes(res.nodes ?? 0);
+              setAiElapsed(res.elapsedMs ?? 0);
+              setAiNps(res.nps ?? 0);
+              setAiDepthReached(null);
+              setAiBusyElapsedMs(res.elapsedMs ?? 0);
+              const st3 = latestStateRef.current;
+              const animationBlocking = (!!st3.mergeFx) && (st3.mode !== 'simulation');
+              if (res.move && !animationBlocking && !st3.roundOver && !st3.gameOver) {
+                scheduleAiAttemptMerge(res.move);
+              } else {
+                setAiBusy(false);
+              }
+            }
+          });
+      }, 0);
+      return;
+    }
+
     const w = workerRef.current;
     if (w) {
       try { w.postMessage({ type: 'CANCEL' }); } catch {}
@@ -262,27 +422,9 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
             type: 'SEARCH',
             state: st,
             depth: aiDepth,
-            timeMs: aiTimeMode === 'manual' ? Math.max(50, Math.floor(aiTimeSeconds * 1000)) : undefined,
-            options: {
-              enableTT: aiEnableTT,
-              failSoft: aiFailSoft,
-              preferHashMove: aiPreferHashMove,
-              enableKillers: aiEnableKillers,
-              enableHistory: aiEnableHistory,
-              enablePVS: aiEnablePVS,
-              enableAspiration: aiEnableAspiration,
-              aspirationDelta: aiAspirationDelta,
-              enableQuiescence: aiEnableQuiescence,
-              quiescenceDepth: aiQuiescenceDepth,
-              quiescenceHighTowerThreshold: aiQuiescenceHighTowerThreshold,
-            },
-            adaptiveTimeConfig: aiTimeMode === 'auto' ? {
-              minMs: aiTimeMinMs,
-              maxMs: aiTimeMaxMs,
-              baseMs: aiTimeBaseMs,
-              perMoveMs: aiTimePerMoveMs,
-              exponent: aiTimeExponent,
-            } : undefined,
+            timeMs: requestedTimeMs,
+            options,
+            adaptiveTimeConfig: adaptiveConfig,
             searchId,
           });
         } catch (err) {
@@ -375,6 +517,7 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     aiBusy, aiProgress, aiBusyElapsedMs,
 
     aiEval, aiPV, aiRootMoves, aiNodes, aiElapsed, aiNps, aiDepthReached,
+    aiTTProbes, aiTTHits, aiCutoffs, aiPvsReSearches, aiLmrReductions,
 
     doAIMove, cancel,
   };

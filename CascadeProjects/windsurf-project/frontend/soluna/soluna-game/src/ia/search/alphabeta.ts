@@ -46,7 +46,9 @@ export function alphabeta(
   const betaOrig = beta;
   let hashMove: AIMove | null = null;
   if (tt && tt.depth >= depth) {
+    if (stats) stats.ttProbes = (stats.ttProbes || 0) + 1;
     if (tt.flag === 'EXACT') {
+      if (stats) stats.ttHits = (stats.ttHits || 0) + 1;
       return { score: tt.value, pv: [] };
     } else if (tt.flag === 'LOWER') {
       alpha = Math.max(alpha, tt.value);
@@ -54,6 +56,10 @@ export function alphabeta(
       beta = Math.min(beta, tt.value);
     }
     if (alpha >= beta) {
+      if (stats) {
+        stats.ttHits = (stats.ttHits || 0) + 1;
+        stats.cutoffs = (stats.cutoffs || 0) + 1;
+      }
       return { score: tt.value, pv: [] };
     }
     if (tt.best) hashMove = tt.best;
@@ -75,19 +81,59 @@ export function alphabeta(
     return { score: evaluate(state, me), pv: [] };
   }
 
+  // Precompute static evaluation for futility pruning near the frontier
+  const staticEval = evaluate(state, me);
+  const canFutilityHere = opts.enableFutility && depth === 1;
+
   if (maximizing) {
+    // Null-move pruning: try a virtual pass to quickly detect fail-high
+    if (opts.enableNullMove && depth >= (opts.nullMoveMinDepth || 0) + 1 && moves.length > 0) {
+      const R = Math.max(1, opts.nullMoveReduction || 2);
+      const rDepth = depth - 1 - R;
+      if (rDepth >= 1) {
+        const nullState = { ...state, currentPlayer: (state.currentPlayer === 1 ? 2 : 1) as Player } as any;
+        const nm = alphabeta(nullState as any, rDepth, alpha, beta, me, stats, opts, ply + 1, ctx);
+        if (nm.score >= beta) {
+          if (stats) stats.nullMovePrunes = (stats.nullMovePrunes || 0) + 1;
+          return { score: nm.score, pv: [] };
+        }
+      }
+    }
     let bestScore = -Infinity;
     let bestPV: AIMove[] = [];
     let bestMv: AIMove | undefined = undefined;
     for (let i = 0; i < moves.length; i++) {
       const m = moves[i];
       const nxt = applyMove(state, m);
+      // Pruning: LMP (late move pruning) on shallow depths for non-tactical/non-killer late moves
+      if (opts.enableLMP && depth <= (opts.lmpDepthThreshold || 0) && i >= (opts.lmpLateMoveIdx || 0)) {
+        const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+        const killersAtPly = ctx.killers.get(ply) || [];
+        const isKiller = killersAtPly.includes(moveKey(m));
+        if (!tactical && !isKiller) {
+          if (stats) stats.lmpPrunes = (stats.lmpPrunes || 0) + 1;
+          continue;
+        }
+      }
+      // Pruning: Futility at depth==1 if static eval cannot reach alpha
+      if (canFutilityHere) {
+        const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+        const killersAtPly = ctx.killers.get(ply) || [];
+        const isKiller = killersAtPly.includes(moveKey(m));
+        if (!tactical && !isKiller) {
+          if ((staticEval + (opts.futilityMargin || 0)) <= alpha) {
+            if (stats) stats.futilityPrunes = (stats.futilityPrunes || 0) + 1;
+            continue;
+          }
+        }
+      }
       let child: SearchResult;
       if (opts.enablePVS && i > 0 && depth > 1) {
         // Null-window search first
         child = alphabeta(nxt, depth - 1, alpha, alpha + 1, me, stats, opts, ply + 1, ctx);
         // Re-search full window if inside
         if (child.score > alpha && child.score < beta) {
+          if (stats) stats.pvsReSearches = (stats.pvsReSearches || 0) + 1;
           child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
         }
       } else {
@@ -98,6 +144,7 @@ export function alphabeta(
           const killersAtPly = ctx.killers.get(ply) || [];
           const isKiller = killersAtPly.includes(moveKey(m));
           if (!tactical && !isKiller) {
+            if (stats) stats.lmrReductions = (stats.lmrReductions || 0) + 1;
             const reduced = Math.max(1, (depth - 1) - (opts.lmrReduction || 1));
             child = alphabeta(nxt, reduced, alpha, beta, me, stats, opts, ply + 1, ctx);
             if (child.score > alpha) {
@@ -118,6 +165,7 @@ export function alphabeta(
       // Fail-soft window update
       alpha = Math.max(alpha, opts.failSoft ? child.score : bestScore);
       if (alpha >= beta) {
+        if (stats) stats.cutoffs = (stats.cutoffs || 0) + 1;
         // Killer and History updates on cutoff
         if (opts.enableKillers && bestMv) {
           const mk = moveKey(bestMv);
@@ -148,17 +196,53 @@ export function alphabeta(
     }
     return { score: bestScore, pv: bestPV };
   } else {
+    // Null-move pruning for minimizing: virtual pass to detect fail-low quickly
+    if (opts.enableNullMove && depth >= (opts.nullMoveMinDepth || 0) + 1 && moves.length > 0) {
+      const R = Math.max(1, opts.nullMoveReduction || 2);
+      const rDepth = depth - 1 - R;
+      if (rDepth >= 1) {
+        const nullState = { ...state, currentPlayer: (state.currentPlayer === 1 ? 2 : 1) as Player } as any;
+        const nm = alphabeta(nullState as any, rDepth, alpha, beta, me, stats, opts, ply + 1, ctx);
+        if (nm.score <= alpha) {
+          if (stats) stats.nullMovePrunes = (stats.nullMovePrunes || 0) + 1;
+          return { score: nm.score, pv: [] };
+        }
+      }
+    }
     let bestScore = +Infinity;
     let bestPV: AIMove[] = [];
     let bestMv: AIMove | undefined = undefined;
     for (let i = 0; i < moves.length; i++) {
       const m = moves[i];
       const nxt = applyMove(state, m);
+      // LMP pruning for minimizing side
+      if (opts.enableLMP && depth <= (opts.lmpDepthThreshold || 0) && i >= (opts.lmpLateMoveIdx || 0)) {
+        const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+        const killersAtPly = ctx.killers.get(ply) || [];
+        const isKiller = killersAtPly.includes(moveKey(m));
+        if (!tactical && !isKiller) {
+          if (stats) stats.lmpPrunes = (stats.lmpPrunes || 0) + 1;
+          continue;
+        }
+      }
+      // Futility for minimizing side: if static eval is already high (bad for us), cannot go below beta
+      if (canFutilityHere) {
+        const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+        const killersAtPly = ctx.killers.get(ply) || [];
+        const isKiller = killersAtPly.includes(moveKey(m));
+        if (!tactical && !isKiller) {
+          if ((staticEval - (opts.futilityMargin || 0)) >= beta) {
+            if (stats) stats.futilityPrunes = (stats.futilityPrunes || 0) + 1;
+            continue;
+          }
+        }
+      }
       let child: SearchResult;
       if (opts.enablePVS && i > 0 && depth > 1) {
         // Null-window for minimizing side: [beta-1, beta]
         child = alphabeta(nxt, depth - 1, beta - 1, beta, me, stats, opts, ply + 1, ctx);
         if (child.score < beta && child.score > alpha) {
+          if (stats) stats.pvsReSearches = (stats.pvsReSearches || 0) + 1;
           child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
         }
       } else {
@@ -168,6 +252,7 @@ export function alphabeta(
           const killersAtPly = ctx.killers.get(ply) || [];
           const isKiller = killersAtPly.includes(moveKey(m));
           if (!tactical && !isKiller) {
+            if (stats) stats.lmrReductions = (stats.lmrReductions || 0) + 1;
             const reduced = Math.max(1, (depth - 1) - (opts.lmrReduction || 1));
             child = alphabeta(nxt, reduced, alpha, beta, me, stats, opts, ply + 1, ctx);
             if (child.score < beta) {
@@ -187,6 +272,7 @@ export function alphabeta(
       }
       beta = Math.min(beta, opts.failSoft ? child.score : bestScore);
       if (alpha >= beta) {
+        if (stats) stats.cutoffs = (stats.cutoffs || 0) + 1;
         if (opts.enableKillers && bestMv) {
           const mk = moveKey(bestMv);
           const arr = ctx.killers.get(ply) || [];

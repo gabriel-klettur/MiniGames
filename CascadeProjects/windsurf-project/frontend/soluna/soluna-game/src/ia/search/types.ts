@@ -59,10 +59,55 @@ export interface SearchOptions {
   lmrLateMoveIdx?: number;   // apply to moves with index >= this (0-based)
   /** Plies a reducir (típicamente 1). */
   lmrReduction?: number;     // plies to reduce (typically 1)
+
+  // Futility pruning (cerca de la hoja, descarta movimientos incapaces de superar alpha/beta)
+  /** Habilitar futility pruning en profundidad baja. */
+  enableFutility?: boolean;
+  /** Margen de futilidad para el score estático. */
+  futilityMargin?: number;
+
+  // Late Move Pruning (LMP): descarta movimientos muy tardíos en profundidad baja
+  /** Habilitar LMP (pruning de movimientos tardíos no tácticos ni killers). */
+  enableLMP?: boolean;
+  /** Profundidad máxima para aplicar LMP (p.ej., <= 2). */
+  lmpDepthThreshold?: number;
+  /** Índice desde el cual considerar "late moves" para LMP. */
+  lmpLateMoveIdx?: number;
+
+  // Null-move pruning (pase virtual para detectar fail-high rápido)
+  /** Habilitar null-move pruning. */
+  enableNullMove?: boolean;
+  /** Reducción de profundidad para null-move (típicamente 2). */
+  nullMoveReduction?: number;
+  /** Profundidad mínima para aplicar null-move. */
+  nullMoveMinDepth?: number;
 }
 
-/** Contador de nodos explorados. Útil para medir rendimiento. */
-export interface SearchStats { nodes: number }
+/**
+ * SearchStats — Métricas de rendimiento de la búsqueda.
+ *
+ * Campos adicionales son opcionales para mantener compatibilidad.
+ */
+export interface SearchStats {
+  /** Nodos explorados (incluye quiescence). */
+  nodes: number;
+  /** Probes a la TT. */
+  ttProbes?: number;
+  /** Hits efectivos de TT (EXACT o cutoff por bound). */
+  ttHits?: number;
+  /** Cortes alfa/beta realizados. */
+  cutoffs?: number;
+  /** Re-búsquedas realizadas por PVS al entrar en ventana. */
+  pvsReSearches?: number;
+  /** Reducciones aplicadas por LMR. */
+  lmrReductions?: number;
+  /** Prunes aplicados por futility. */
+  futilityPrunes?: number;
+  /** Prunes aplicados por LMP. */
+  lmpPrunes?: number;
+  /** Cortes por null-move. */
+  nullMovePrunes?: number;
+}
 
 /** Resultado de un nodo: valor y principal variation parcial. */
 export interface SearchResult { score: number; pv: AIMove[] }

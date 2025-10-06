@@ -110,6 +110,8 @@
 /* DevTools en fila independiente a ancho completo, sin afectar el tamaño de las columnas del grid */
 .devtools-row {
   width: 100%;
+  /* Forzar que el hijo en columna flex (.content) estire a todo el ancho */
+  align-self: stretch;
   display: flex;
   justify-content: center; /* centrar el panel respecto al viewport */
   /* Facilitar que scrollIntoView lo deje visible bajo el header en móviles */
@@ -120,10 +122,19 @@
 }
 
 .devtools-row .devtools-card {
-  width: min(100%, var(--board-max)); /* igualar ancho máximo al tablero */
+  /* Usar todo el ancho disponible del contenedor .content */
+  width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   /* pequeña separación respecto al tablero */
   margin-top: 0.75rem;
+}
+
+/* Cada sección de tarjetas de devtools debe ocupar todo el ancho del contenedor */
+.devtools-card-section {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .foot-panel {

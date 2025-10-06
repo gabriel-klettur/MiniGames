@@ -1,5 +1,6 @@
 import type { GameState, Tower } from '../game/types';
 import { anyValidMoves, canMerge, findById, mergeTowers, replaceAfterMerge } from '../game/rules';
+import { computeStateKey, towerZKey, playerZKey, flagsZKey, lastMoverZKey } from './hash';
 
 export type Player = 1 | 2;
 
@@ -38,6 +39,17 @@ export function applyMove(state: GameState, mv: AIMove): GameState {
   const nextPlayer: Player = state.currentPlayer === 1 ? 2 : 1;
   const nextHasMoves = anyValidMoves(towers);
 
+  // Compute incremental Zobrist-like key
+  const prevZ = (state as any).zKey as bigint | undefined;
+  let z = typeof prevZ === 'bigint' ? prevZ : computeStateKey(state);
+  // Toggle player
+  z ^= playerZKey(state.currentPlayer);
+  z ^= playerZKey(nextPlayer);
+  // Remove old towers and add merged tower
+  z ^= towerZKey(source);
+  z ^= towerZKey(target);
+  z ^= towerZKey(merged);
+
   if (!nextHasMoves) {
     const winner = state.currentPlayer as Player;
     const newStars = state.players[winner].stars + 1;
@@ -46,7 +58,12 @@ export function applyMove(state: GameState, mv: AIMove): GameState {
       [winner]: { stars: newStars },
     } as GameState['players'];
     const gameOver = newStars >= 4;
-    return {
+    // Update flags and last mover in zKey
+    z ^= flagsZKey(state.roundOver, state.gameOver);
+    z ^= flagsZKey(true, gameOver);
+    z ^= lastMoverZKey(state.lastMover ?? 0);
+    z ^= lastMoverZKey(winner);
+    const nextState: GameState = {
       ...state,
       towers,
       selectedId: null,
@@ -58,12 +75,16 @@ export function applyMove(state: GameState, mv: AIMove): GameState {
       players,
       gameOver,
     };
+    (nextState as any).zKey = z;
+    return nextState;
   }
 
-  return {
+  const nextState: GameState = {
     ...state,
     towers,
     selectedId: null,
     currentPlayer: nextPlayer,
   };
+  (nextState as any).zKey = z;
+  return nextState;
 }

@@ -29,7 +29,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
   } = props;
 
   return (
-    <section className="panel infoia-panel" aria-label="InfoIA">
+    <section className="panel infoia-panel" aria-label="InfoIA" style={{ width: '100%', maxWidth: 'none', flex: '1 1 auto' }}>
       {/* Header: title + tabs + status */}
       <div className="infoia__header" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
         <h3 className="ia-panel__title" style={{ margin: 0, marginRight: 'auto' }}>InfoIA</h3>

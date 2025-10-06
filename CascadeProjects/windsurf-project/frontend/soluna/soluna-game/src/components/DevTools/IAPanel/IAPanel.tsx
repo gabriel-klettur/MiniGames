@@ -31,7 +31,7 @@ export default function IAPanel(props: IAPanelProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('control');
 
   return (
-    <section className="panel ia-panel" aria-label="Panel de IA">
+    <section className="panel ia-panel" aria-label="Panel de IA" style={{ width: '100%', maxWidth: 'none', flex: '1 1 auto' }}>
       {/* Encabezado */}
       <div className="ia-panel__header">        
         <div className="ia-panel__status">
