@@ -1,8 +1,9 @@
 /* eslint-disable no-restricted-globals */
 import type { GameState } from '../../game/types';
-import { bestMove, type SearchOptions } from '../search';
-import type { SearchStats } from '../search';
+import { bestMove, type SearchOptions } from '../search/search';
+import type { SearchStats } from '../search/search';
 import { clearGlobalTT } from '../tt';
+import { computeAdaptiveTimeBudget } from '../time';
 
 // Messages from main thread
 // { type: 'SEARCH', state, depth?: number, timeMs?: number, options?: SearchOptions }
@@ -27,11 +28,15 @@ self.onmessage = (e: MessageEvent) => {
   const timeMs: number | undefined = typeof data.timeMs === 'number' ? Math.max(50, data.timeMs) : undefined;
   const searchId: number | undefined = typeof data.searchId === 'number' ? data.searchId : undefined;
   const options: SearchOptions | undefined = data.options;
+  const adaptiveTimeConfig: any | undefined = (data && typeof data.adaptiveTimeConfig === 'object') ? data.adaptiveTimeConfig : undefined;
 
   const start = performance.now();
   let best: { move: any; score: number; pv: any[]; rootMoves: Array<{ move: any; score: number }> } = { move: null, score: -Infinity, pv: [], rootMoves: [] };
   let reached = 0;
   let nodes = 0;
+  // If time not provided (auto mode), compute adaptive budget from root branching factor
+  const effectiveTimeMs: number | undefined =
+    timeMs !== undefined ? timeMs : computeAdaptiveTimeBudget(state, adaptiveTimeConfig);
 
   let prevScore: number | undefined = undefined;
   for (let d = 1; d <= depthMax; d++) {
@@ -54,9 +59,9 @@ self.onmessage = (e: MessageEvent) => {
       // @ts-ignore
       self.postMessage({ type: 'PROGRESS', searchId, depth: d, score: cur.score, nodes });
     }
-    if (timeMs !== undefined) {
+    if (effectiveTimeMs !== undefined) {
       const elapsed = performance.now() - start;
-      if (elapsed >= timeMs) break;
+      if (elapsed >= effectiveTimeMs) break;
     }
   }
 

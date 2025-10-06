@@ -1,9 +1,9 @@
-import type { GameState } from '../game/types';
-import type { AIMove } from './moves';
-import { generateAllMoves, applyMove } from './moves';
-import { evaluate } from './evaluate';
-import { computeStateKey } from './hash';
-import { GlobalTT, type TTEntry } from './tt';
+import type { GameState } from '../../game/types';
+import type { AIMove } from '../moves';
+import { generateAllMoves, applyMove } from '../moves';
+import { evaluate } from '../evaluate';
+import { computeStateKey } from '../hash';
+import { GlobalTT, type TTEntry } from '../tt';
 
 export type Player = 1 | 2;
 
@@ -20,6 +20,12 @@ export interface SearchOptions {
   // Quiescence Search: extend leaves on tactical moves only
   enableQuiescence?: boolean;
   quiescenceDepth?: number; // max plies in quiescence
+  quiescenceHighTowerThreshold?: number; // consider merges creating >= height as tactical
+  // Late Move Reductions (LMR)
+  enableLMR?: boolean;
+  lmrMinDepth?: number;      // apply only at depth >= this
+  lmrLateMoveIdx?: number;   // apply to moves with index >= this (0-based)
+  lmrReduction?: number;     // plies to reduce (typically 1)
 }
 
 const defaultOptions: Required<SearchOptions> = {
@@ -34,6 +40,11 @@ const defaultOptions: Required<SearchOptions> = {
   prevScore: 0,
   enableQuiescence: false,
   quiescenceDepth: 3,
+  quiescenceHighTowerThreshold: 5,
+  enableLMR: false,
+  lmrMinDepth: 3,
+  lmrLateMoveIdx: 4,
+  lmrReduction: 1,
 };
 
 function moveKey(m: AIMove): string {
@@ -99,10 +110,23 @@ interface SearchContext {
   history: Map<string, number>;   // `${player}:${moveKey}` -> score
 }
 
-function isTactical(state: GameState, m: AIMove): boolean {
+function isTactical(state: GameState, m: AIMove, highTowerThreshold: number): boolean {
   // Tactical if the move immediately ends the round (forces scoring)
   const nxt = applyMove(state, m);
-  return !!nxt.roundOver;
+  if (nxt.roundOver) return true;
+  // Or if the merge produces a very high tower (source.height + target.height >= threshold)
+  if (m.kind === 'merge') {
+    let srcH = 0;
+    let tgtH = 0;
+    for (let i = 0; i < state.towers.length; i++) {
+      const t = state.towers[i];
+      if (t.id === m.sourceId) srcH = t.height;
+      else if (t.id === m.targetId) tgtH = t.height;
+      if (srcH && tgtH) break;
+    }
+    if (srcH + tgtH >= highTowerThreshold) return true;
+  }
+  return false;
 }
 
 function quiescence(
@@ -126,7 +150,7 @@ function quiescence(
 
   // Generate only tactical moves to extend
   const all = generateAllMoves(state);
-  const tactical = all.filter((m) => isTactical(state, m));
+  const tactical = all.filter((m) => isTactical(state, m, opts.quiescenceHighTowerThreshold));
   if (tactical.length === 0) return { score: a, pv: [] };
 
   const ordered = orderMoves(
@@ -242,7 +266,26 @@ function alphabeta(
           child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
         }
       } else {
-        child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+        // LMR: reduce depth on late, non-tactical, non-killer moves
+        const canLMR =
+          opts.enableLMR && depth >= (opts.lmrMinDepth) && i >= (opts.lmrLateMoveIdx || 0);
+        if (canLMR) {
+          const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+          const killersAtPly = ctx.killers.get(ply) || [];
+          const isKiller = killersAtPly.includes(moveKey(m));
+          if (!tactical && !isKiller) {
+            const reduced = Math.max(1, (depth - 1) - (opts.lmrReduction || 1));
+            child = alphabeta(nxt, reduced, alpha, beta, me, stats, opts, ply + 1, ctx);
+            // If it improves over alpha (fail-high), re-search at full depth for exactness
+            if (child.score > alpha) {
+              child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+            }
+          } else {
+            child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+          }
+        } else {
+          child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+        }
       }
       if (child.score > bestScore) {
         bestScore = child.score;
@@ -296,7 +339,25 @@ function alphabeta(
           child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
         }
       } else {
-        child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+        const canLMR =
+          opts.enableLMR && depth >= (opts.lmrMinDepth) && i >= (opts.lmrLateMoveIdx || 0);
+        if (canLMR) {
+          const tactical = isTactical(state, m, opts.quiescenceHighTowerThreshold);
+          const killersAtPly = ctx.killers.get(ply) || [];
+          const isKiller = killersAtPly.includes(moveKey(m));
+          if (!tactical && !isKiller) {
+            const reduced = Math.max(1, (depth - 1) - (opts.lmrReduction || 1));
+            child = alphabeta(nxt, reduced, alpha, beta, me, stats, opts, ply + 1, ctx);
+            // If it reduces below beta (fail-low), re-search at full depth for exactness
+            if (child.score < beta) {
+              child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+            }
+          } else {
+            child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+          }
+        } else {
+          child = alphabeta(nxt, depth - 1, alpha, beta, me, stats, opts, ply + 1, ctx);
+        }
       }
       if (child.score < bestScore) {
         bestScore = child.score;

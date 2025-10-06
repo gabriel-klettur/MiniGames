@@ -1,4 +1,4 @@
-import type { SearchOptions } from '../../../../ia/search';
+import type { SearchOptions } from '../../../../ia/search/search';
 export type AIRunnerResult = {
   bestMove: any | null;
   score?: number;

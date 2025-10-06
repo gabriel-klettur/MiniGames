@@ -16,6 +16,12 @@ export default function IAPanel(props: IAPanelProps) {
     aiEnableKillers, onToggleAiEnableKillers,
     aiEnableHistory, onToggleAiEnableHistory,
     aiEnableQuiescence, onToggleAiEnableQuiescence, aiQuiescenceDepth, onChangeAiQuiescenceDepth,
+    aiQuiescenceHighTowerThreshold, onChangeAiQuiescenceHighTowerThreshold,
+    aiTimeMinMs, onChangeAiTimeMinMs,
+    aiTimeMaxMs, onChangeAiTimeMaxMs,
+    aiTimeBaseMs, onChangeAiTimeBaseMs,
+    aiTimePerMoveMs, onChangeAiTimePerMoveMs,
+    aiTimeExponent, onChangeAiTimeExponent,
   } = props;
 
   const current = state.currentPlayer === 1 ? 'Jugador 1' : 'Jugador 2';
@@ -92,6 +98,18 @@ export default function IAPanel(props: IAPanelProps) {
           onToggleAiEnableQuiescence={onToggleAiEnableQuiescence}
           aiQuiescenceDepth={aiQuiescenceDepth}
           onChangeAiQuiescenceDepth={onChangeAiQuiescenceDepth}
+          aiQuiescenceHighTowerThreshold={aiQuiescenceHighTowerThreshold}
+          onChangeAiQuiescenceHighTowerThreshold={onChangeAiQuiescenceHighTowerThreshold}
+          aiTimeMinMs={aiTimeMinMs}
+          onChangeAiTimeMinMs={onChangeAiTimeMinMs}
+          aiTimeMaxMs={aiTimeMaxMs}
+          onChangeAiTimeMaxMs={onChangeAiTimeMaxMs}
+          aiTimeBaseMs={aiTimeBaseMs}
+          onChangeAiTimeBaseMs={onChangeAiTimeBaseMs}
+          aiTimePerMoveMs={aiTimePerMoveMs}
+          onChangeAiTimePerMoveMs={onChangeAiTimePerMoveMs}
+          aiTimeExponent={aiTimeExponent}
+          onChangeAiTimeExponent={onChangeAiTimeExponent}
         />
       )}
 

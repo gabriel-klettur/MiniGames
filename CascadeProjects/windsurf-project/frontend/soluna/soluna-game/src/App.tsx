@@ -47,6 +47,13 @@ function App() {
     aiAspirationDelta, setAiAspirationDelta,
     aiEnableQuiescence, setAiEnableQuiescence,
     aiQuiescenceDepth, setAiQuiescenceDepth,
+    aiQuiescenceHighTowerThreshold, setAiQuiescenceHighTowerThreshold,
+    // Adaptive time config (auto mode)
+    aiTimeMinMs, setAiTimeMinMs,
+    aiTimeMaxMs, setAiTimeMaxMs,
+    aiTimeBaseMs, setAiTimeBaseMs,
+    aiTimePerMoveMs, setAiTimePerMoveMs,
+    aiTimeExponent, setAiTimeExponent,
   } = useAiController(state, dispatch);
 
   // Al abrir DevTools en móviles, hacer scroll al panel para que sea visible.
@@ -166,7 +173,6 @@ function App() {
                     rootPlayer={state.currentPlayer}
                     moving={false}
                     aiAutoplayActive={aiAutoplay}
-                    onToggleAiAutoplay={() => setAiAutoplay((v) => !v)}
                     busyElapsedMs={aiBusyElapsedMs}
                     // Engine flags wiring
                     aiEnableTT={aiEnableTT}
@@ -189,6 +195,18 @@ function App() {
                     onToggleAiEnableQuiescence={() => setAiEnableQuiescence(v => !v)}
                     aiQuiescenceDepth={aiQuiescenceDepth}
                     onChangeAiQuiescenceDepth={setAiQuiescenceDepth}
+                    aiQuiescenceHighTowerThreshold={aiQuiescenceHighTowerThreshold}
+                    onChangeAiQuiescenceHighTowerThreshold={setAiQuiescenceHighTowerThreshold}
+                    aiTimeMinMs={aiTimeMinMs}
+                    onChangeAiTimeMinMs={setAiTimeMinMs}
+                    aiTimeMaxMs={aiTimeMaxMs}
+                    onChangeAiTimeMaxMs={setAiTimeMaxMs}
+                    aiTimeBaseMs={aiTimeBaseMs}
+                    onChangeAiTimeBaseMs={setAiTimeBaseMs}
+                    aiTimePerMoveMs={aiTimePerMoveMs}
+                    onChangeAiTimePerMoveMs={setAiTimePerMoveMs}
+                    aiTimeExponent={aiTimeExponent}
+                    onChangeAiTimeExponent={setAiTimeExponent}
                   />
                 </section>
               )}

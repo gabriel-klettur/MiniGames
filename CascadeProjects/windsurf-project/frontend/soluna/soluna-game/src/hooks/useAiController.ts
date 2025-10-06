@@ -47,6 +47,20 @@ export interface AiController {
   setAiEnableQuiescence: (v: boolean | ((p: boolean) => boolean)) => void;
   aiQuiescenceDepth: number;
   setAiQuiescenceDepth: (n: number) => void;
+  aiQuiescenceHighTowerThreshold: number;
+  setAiQuiescenceHighTowerThreshold: (n: number) => void;
+
+  // Adaptive time (auto mode) configuration
+  aiTimeMinMs: number;
+  setAiTimeMinMs: (n: number) => void;
+  aiTimeMaxMs: number;
+  setAiTimeMaxMs: (n: number) => void;
+  aiTimeBaseMs: number;
+  setAiTimeBaseMs: (n: number) => void;
+  aiTimePerMoveMs: number;
+  setAiTimePerMoveMs: (n: number) => void;
+  aiTimeExponent: number;
+  setAiTimeExponent: (n: number) => void;
 
   // Status
   aiBusy: boolean;
@@ -93,6 +107,14 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
   const [aiAspirationDelta, setAiAspirationDelta] = useState(25);
   const [aiEnableQuiescence, setAiEnableQuiescence] = useState(false);
   const [aiQuiescenceDepth, setAiQuiescenceDepth] = useState(3);
+  // Quiescence: umbral de torre alta para considerar táctica
+  const [aiQuiescenceHighTowerThreshold, setAiQuiescenceHighTowerThreshold] = useState(5);
+  // Adaptive time config (aplica en modo auto si el worker no recibe timeMs)
+  const [aiTimeMinMs, setAiTimeMinMs] = useState(200);
+  const [aiTimeMaxMs, setAiTimeMaxMs] = useState(4000);
+  const [aiTimeBaseMs, setAiTimeBaseMs] = useState(150);
+  const [aiTimePerMoveMs, setAiTimePerMoveMs] = useState(35);
+  const [aiTimeExponent, setAiTimeExponent] = useState(1.0);
 
   // Status/metrics
   const [aiBusy, setAiBusy] = useState(false);
@@ -252,7 +274,15 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
               aspirationDelta: aiAspirationDelta,
               enableQuiescence: aiEnableQuiescence,
               quiescenceDepth: aiQuiescenceDepth,
+              quiescenceHighTowerThreshold: aiQuiescenceHighTowerThreshold,
             },
+            adaptiveTimeConfig: aiTimeMode === 'auto' ? {
+              minMs: aiTimeMinMs,
+              maxMs: aiTimeMaxMs,
+              baseMs: aiTimeBaseMs,
+              perMoveMs: aiTimePerMoveMs,
+              exponent: aiTimeExponent,
+            } : undefined,
             searchId,
           });
         } catch (err) {
@@ -334,6 +364,13 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
     aiAspirationDelta, setAiAspirationDelta,
     aiEnableQuiescence, setAiEnableQuiescence,
     aiQuiescenceDepth, setAiQuiescenceDepth,
+    aiQuiescenceHighTowerThreshold, setAiQuiescenceHighTowerThreshold,
+
+    aiTimeMinMs, setAiTimeMinMs,
+    aiTimeMaxMs, setAiTimeMaxMs,
+    aiTimeBaseMs, setAiTimeBaseMs,
+    aiTimePerMoveMs, setAiTimePerMoveMs,
+    aiTimeExponent, setAiTimeExponent,
 
     aiBusy, aiProgress, aiBusyElapsedMs,
 

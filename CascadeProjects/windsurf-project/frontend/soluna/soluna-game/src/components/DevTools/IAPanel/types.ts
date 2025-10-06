@@ -50,6 +50,21 @@ export interface IAPanelProps {
   onToggleAiEnableQuiescence: () => void;
   aiQuiescenceDepth: number;
   onChangeAiQuiescenceDepth: (n: number) => void;
+  // Optional: quiescence high tower threshold
+  aiQuiescenceHighTowerThreshold?: number;
+  onChangeAiQuiescenceHighTowerThreshold?: (n: number) => void;
+
+  // Optional: adaptive time (auto mode) configuration
+  aiTimeMinMs?: number;
+  onChangeAiTimeMinMs?: (n: number) => void;
+  aiTimeMaxMs?: number;
+  onChangeAiTimeMaxMs?: (n: number) => void;
+  aiTimeBaseMs?: number;
+  onChangeAiTimeBaseMs?: (n: number) => void;
+  aiTimePerMoveMs?: number;
+  onChangeAiTimePerMoveMs?: (n: number) => void;
+  aiTimeExponent?: number;
+  onChangeAiTimeExponent?: (n: number) => void;
 }
 
 export type TabKey = 'control' | 'analysis';

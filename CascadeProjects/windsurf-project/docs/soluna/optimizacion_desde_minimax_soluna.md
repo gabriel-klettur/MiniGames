@@ -85,6 +85,7 @@ La búsqueda en UI se gestiona en un Worker (`src/ia/worker/aiWorker.ts`):
 - Recibe `{ type: 'SEARCH', state, depth: depthMax, timeMs? }`.
 - Ejecuta **iterative deepening** de `d=1..depthMax` acumulando `nodes` y publicando `PROGRESS { depth, score, nodes }`.
 - Si `timeMs` viene definido, corta cuando se agota el presupuesto.
+- Si `timeMs` viene indefinido (modo auto), usa un presupuesto adaptativo según el branching factor de la raíz mediante `computeAdaptiveTimeBudget(state)` en `frontend/soluna/soluna-game/src/ia/time.ts`.
 - Devuelve `RESULT { bestMove, score, depthReached, pv, rootMoves, nodes, elapsedMs, nps }`.
 
 `createAIRunner()` (`InfoIA/services/aiRunner.ts`) abstrae el Worker para la UI y soporta cancelación.
@@ -171,8 +172,8 @@ Recomendadas: tests de ordenación raíz y de estabilidad de PV entre iteracione
 - [X] Transposition Table + Zobrist.
 - [X] PVS y Aspiration Windows.
 - [X] Killers/History heuristic.
-- [ ] Quiescence Search (acotada a tácticas claras).
-- [ ] Presupuesto de tiempo adaptativo por branching factor.
+- [X] Quiescence Search (acotada a tácticas claras).
+- [X] Presupuesto de tiempo adaptativo por branching factor.
 
 ---
 
@@ -185,7 +186,7 @@ Recomendadas: tests de ordenación raíz y de estabilidad de PV entre iteracione
 - **Iterative deepening (iterative deepening)** — Profundidades crecientes con timebox — `aiWorker.ts`.
 - **NPS (nodes per second)** — Nodos/segundo — Métrica de rendimiento — `ia/index.ts` y Worker.
 - **Tabla de transposiciones (transposition table)** — Cache por hash de posición — Reutiliza resultados — A implementar.
-- **Búsqueda quiescente (quiescence search)** — Extiende en tácticas para evitar horizonte — A implementar.
+- **Búsqueda quiescente (quiescence search)** — Extiende en tácticas para evitar horizonte — Implementada (flags `enableQuiescence`, `quiescenceDepth`).
 
 
 ---

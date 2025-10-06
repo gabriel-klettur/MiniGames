@@ -25,6 +25,15 @@ export interface ControlSectionProps {
   aiEnableHistory: boolean; onToggleAiEnableHistory: () => void;
   aiEnableQuiescence: boolean; onToggleAiEnableQuiescence: () => void;
   aiQuiescenceDepth: number; onChangeAiQuiescenceDepth: (n: number) => void;
+  // Optional: quiescence high-tower threshold control
+  aiQuiescenceHighTowerThreshold?: number;
+  onChangeAiQuiescenceHighTowerThreshold?: (n: number) => void;
+  // Optional: adaptive time config (auto mode)
+  aiTimeMinMs?: number; onChangeAiTimeMinMs?: (n: number) => void;
+  aiTimeMaxMs?: number; onChangeAiTimeMaxMs?: (n: number) => void;
+  aiTimeBaseMs?: number; onChangeAiTimeBaseMs?: (n: number) => void;
+  aiTimePerMoveMs?: number; onChangeAiTimePerMoveMs?: (n: number) => void;
+  aiTimeExponent?: number; onChangeAiTimeExponent?: (n: number) => void;
 }
 
 export default function ControlSection(props: ControlSectionProps) {
@@ -41,6 +50,12 @@ export default function ControlSection(props: ControlSectionProps) {
     aiEnableKillers, onToggleAiEnableKillers,
     aiEnableHistory, onToggleAiEnableHistory,
     aiEnableQuiescence, onToggleAiEnableQuiescence, aiQuiescenceDepth, onChangeAiQuiescenceDepth,
+    aiQuiescenceHighTowerThreshold, onChangeAiQuiescenceHighTowerThreshold,
+    aiTimeMinMs, onChangeAiTimeMinMs,
+    aiTimeMaxMs, onChangeAiTimeMaxMs,
+    aiTimeBaseMs, onChangeAiTimeBaseMs,
+    aiTimePerMoveMs, onChangeAiTimePerMoveMs,
+    aiTimeExponent, onChangeAiTimeExponent,
   } = props;
 
   const { limitMs, shownElapsedMs, ratio, isOver } = useTimeBudget({
@@ -112,6 +127,32 @@ export default function ControlSection(props: ControlSectionProps) {
       {/* Barra de tiempo visual */}
       {timeMode === 'manual' && (
         <TimeBar limitMs={limitMs} shownElapsedMs={shownElapsedMs} ratio={ratio} isOver={isOver} />
+      )}
+
+      {/* Adaptive time (auto) advanced config, shown only if provided and in auto mode */}
+      {timeMode === 'auto' && typeof aiTimeMinMs === 'number' && (
+        <div className="ia-panel__advanced" style={{ marginTop: 8, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+          <label title="Tiempo mínimo por jugada (ms)">
+            min
+            <input type="number" value={aiTimeMinMs} onChange={(e) => onChangeAiTimeMinMs && onChangeAiTimeMinMs(Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%' }} />
+          </label>
+          <label title="Tiempo máximo por jugada (ms)">
+            max
+            <input type="number" value={aiTimeMaxMs} onChange={(e) => onChangeAiTimeMaxMs && onChangeAiTimeMaxMs(Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%' }} />
+          </label>
+          <label title="Tiempo base independiente del branching (ms)">
+            base
+            <input type="number" value={aiTimeBaseMs} onChange={(e) => onChangeAiTimeBaseMs && onChangeAiTimeBaseMs(Math.max(0, Number(e.target.value) || 0))} style={{ width: '100%' }} />
+          </label>
+          <label title="Multiplicador por movimiento raíz (ms)">
+            perMove
+            <input type="number" value={aiTimePerMoveMs} onChange={(e) => onChangeAiTimePerMoveMs && onChangeAiTimePerMoveMs(Number(e.target.value) || 0)} style={{ width: '100%' }} />
+          </label>
+          <label title="Exponente aplicado al branching factor">
+            exp
+            <input type="number" step={0.1} value={aiTimeExponent ?? 1} onChange={(e) => onChangeAiTimeExponent && onChangeAiTimeExponent(Number(e.target.value) || 1)} style={{ width: '100%' }} />
+          </label>
+        </div>
       )}
 
       <div className="ia-panel__actions" style={{ marginTop: 8 }}>
@@ -252,6 +293,18 @@ export default function ControlSection(props: ControlSectionProps) {
             aria-label="Profundidad quiescence"
             title={'Profundidad adicional q para quiescence. Regla guía: 2–3. Más alto = más nodos en hojas.'}
           />
+          {typeof aiQuiescenceHighTowerThreshold === 'number' && (
+            <input
+              type="number"
+              min={2}
+              step={1}
+              value={aiQuiescenceHighTowerThreshold}
+              onChange={(e) => onChangeAiQuiescenceHighTowerThreshold && onChangeAiQuiescenceHighTowerThreshold(Math.max(2, Number(e.target.value) || 2))}
+              style={{ width: 58 }}
+              aria-label="Umbral torre alta (quiescence)"
+              title={'Umbral de altura para considerar táctica una fusión que genera torre alta. Ej.: >=5.'}
+            />
+          )}
         </div>
       </div>
     </div>

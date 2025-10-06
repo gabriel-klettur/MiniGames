@@ -1,6 +1,6 @@
 import type { GameState } from '../game/types';
 import type { AIMove } from './moves';
-import { bestMove as searchBestMove, type SearchStats } from './search';
+import { bestMove as searchBestMove, type SearchStats } from './search/search';
 
 export type { AIMove } from './moves';
 
