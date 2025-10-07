@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Cfg } from '../model/config';
-import { CheckboxRow, SliderRow } from '../components/Rows';
+import { SliderRow } from '../components/Rows';
 
 export function PiecesTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
@@ -12,9 +12,10 @@ export function PiecesTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (
         max={30}
         step={1}
         onChange={onNum('stackStep')}
+        tooltip="Distancia vertical entre fichas apiladas en píxeles. Afecta la legibilidad de la pila."
       />
-      <CheckboxRow label="Resaltar destino con borde amarillo al arrastrar" checked={cfg.dropHighlight} onChange={onNum('dropHighlight')} />
-      <CheckboxRow label="Permitir mover libremente si no hay fusión" checked={cfg.freeMove} onChange={onNum('freeMove')} />
+      {/* Resaltar destino con borde amarillo al arrastrar - removido */}
+      {/* Permitir mover libremente si no hay fusión - removido */}
       <SliderRow
         label={`Umbral de colisión para apilar: ${cfg.mergeThreshold.toFixed(2)}× diámetro`}
         value={cfg.mergeThreshold}
@@ -22,6 +23,7 @@ export function PiecesTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (
         max={0.9}
         step={0.01}
         onChange={onNum('mergeThreshold')}
+        tooltip="Factor del diámetro que define cuándo dos fichas se consideran colisionadas para apilar."
       />
     </div>
   );

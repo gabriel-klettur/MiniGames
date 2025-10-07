@@ -16,7 +16,6 @@ export type Cfg = {
 };
 
 export const LS_PREFIX = 'soluna:ui:';
-export const LOG_LS_KEY = 'soluna:log:merges';
 
 const asNumber = (v: string | null | undefined, def: number): number => {
   const x = parseFloat((v || '').trim());

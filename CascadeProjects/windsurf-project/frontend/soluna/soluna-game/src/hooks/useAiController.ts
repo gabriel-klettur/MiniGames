@@ -377,8 +377,8 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
           }
         }
       };
-    } catch (err) {
-      console.warn('AI Worker no disponible. Fallback al hilo principal.', err);
+    } catch {
+      // Worker no disponible: fallback al hilo principal sin log a consola
     }
     return () => {
       try {
@@ -498,8 +498,8 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
               setAiBusy(false);
             }
           })
-          .catch((err) => {
-            console.warn('Pool search failed, falling back to worker.', err);
+          .catch(() => {
+            // Pool search failed: fallback al worker sin log a consola
             // Fallback to single-worker path below
             const w2 = workerRef.current;
             if (w2) {
@@ -514,8 +514,8 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
                   adaptiveTimeConfig: adaptiveConfig,
                   searchId,
                 });
-              } catch (err2) {
-                console.warn('Fallo postMessage al worker. Fallback al hilo principal.', err2);
+              } catch {
+                // Fallback al hilo principal sin log a consola
                 const res = bestMove(st, aiDepth);
                 setAiEval(res.score ?? null);
                 setAiPV(res.pv ?? []);
@@ -570,8 +570,8 @@ export function useAiController(state: GameState, dispatch: Dispatch<GameAction>
             adaptiveTimeConfig: adaptiveConfig,
             searchId,
           });
-        } catch (err) {
-          console.warn('Fallo postMessage al worker. Fallback al hilo principal.', err);
+        } catch {
+          // Fallback al hilo principal sin log a consola
           const res = bestMove(st, aiDepth);
           setAiEval(res.score ?? null);
           setAiPV(res.pv ?? []);

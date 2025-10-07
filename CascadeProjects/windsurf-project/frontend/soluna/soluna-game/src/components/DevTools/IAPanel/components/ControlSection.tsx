@@ -115,20 +115,50 @@ export default function ControlSection(props: ControlSectionProps) {
       </div>
       {timeMode === 'manual' && (
         <div className="ia-panel__range" aria-label="Selector de tiempo manual">
-          <input
-            type="range"
-            min={0}
-            max={30}
-            step={0.5}
-            value={timeSeconds}
-            onChange={(e) => onChangeTimeSeconds(Number(e.target.value))}
-            aria-valuemin={0}
-            aria-valuemax={30}
-            aria-valuenow={timeSeconds}
-            title={'Tiempo objetivo por jugada (segundos). Ej.: 2.5 s. ' +
-              'Afecta iterative deepening: profundiza hasta agotar el presupuesto.'}
-          />
-          <span className="range-value">{timeSeconds.toFixed(1)} s</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto auto', alignItems: 'center', gap: 8, width: '100%' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              aria-label="Decrementar tiempo (0.5s)"
+              title="- 0.5s"
+              onClick={() => {
+                const next = Math.max(0, Math.min(30, Math.round(((timeSeconds - 0.5) / 0.5)) * 0.5));
+                onChangeTimeSeconds(next);
+              }}
+              disabled={timeSeconds <= 0}
+              style={{ minWidth: 28 }}
+            >
+              −
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={30}
+              step={0.5}
+              value={timeSeconds}
+              onChange={(e) => onChangeTimeSeconds(Number(e.target.value))}
+              aria-valuemin={0}
+              aria-valuemax={30}
+              aria-valuenow={timeSeconds}
+              title={'Tiempo objetivo por jugada (segundos). Ej.: 2.5 s. ' +
+                'Afecta iterative deepening: profundiza hasta agotar el presupuesto.'}
+            />
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              aria-label="Incrementar tiempo (0.5s)"
+              title="+ 0.5s"
+              onClick={() => {
+                const next = Math.max(0, Math.min(30, Math.round(((timeSeconds + 0.5) / 0.5)) * 0.5));
+                onChangeTimeSeconds(next);
+              }}
+              disabled={timeSeconds >= 30}
+              style={{ minWidth: 28 }}
+            >
+              +
+            </button>
+            <span className="range-value" style={{ minWidth: 62, textAlign: 'right' }}>{timeSeconds.toFixed(1)} s</span>
+          </div>
         </div>
       )}
 

@@ -256,8 +256,8 @@ export function createWorkerPool(maxPool?: number): WorkerPool | null {
     const hc = (typeof navigator !== 'undefined' && (navigator as any).hardwareConcurrency) ? (navigator as any).hardwareConcurrency : 2;
     const desired = Math.max(1, Math.min((hc - 1) | 0, maxPool ?? 4));
     return new WorkerPool(desired);
-  } catch (err) {
-    console.warn('WorkerPool unavailable, falling back to single worker.', err);
+  } catch {
+    // WorkerPool unavailable, fall back to single worker silently
     return null;
   }
 }

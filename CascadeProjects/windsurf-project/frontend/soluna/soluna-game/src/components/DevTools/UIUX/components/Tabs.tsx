@@ -6,6 +6,8 @@ export type TabItem = {
   render: () => React.ReactNode;
   /** Optional content rendered immediately to the right of this tab's button */
   rightAddon?: React.ReactNode | ((isActive: boolean) => React.ReactNode);
+  /** Optional tooltip for the tab button */
+  tooltip?: string;
 };
 
 export function Tabs({ items, initialId, rightActions }: { items: TabItem[]; initialId?: string; rightActions?: React.ReactNode }) {
@@ -25,6 +27,7 @@ export function Tabs({ items, initialId, rightActions }: { items: TabItem[]; ini
                   aria-controls={`panel-${t.id}`}
                   id={`tab-${t.id}`}
                   onClick={() => setActive(t.id)}
+                  title={t.tooltip ?? undefined}
                   style={{
                     padding: '6px 10px',
                     borderRadius: 6,

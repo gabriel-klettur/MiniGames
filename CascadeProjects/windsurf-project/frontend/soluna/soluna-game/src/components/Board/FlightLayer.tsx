@@ -122,17 +122,12 @@ export default function FlightLayer({
             } catch {}
             // First, commit the deferred merge so the destination updates immediately
             try {
-              const dt = Date.now() - (mergeFx.at || Date.now());
-              // eslint-disable-next-line no-console
-              console.log(`[Soluna] Flight animation ended (dt ${dt}ms) — committing merge`);
+              // commit merge without logging
             } catch {}
             dispatch({ type: 'commit-merge' });
             // Then, keep the flight overlay for 250ms to avoid flicker on some devices
             const delay = typeof lingerMs === 'number' && isFinite(lingerMs) ? Math.max(0, Math.floor(lingerMs)) : 250;
-            try {
-              // eslint-disable-next-line no-console
-              console.log(`[Soluna] Scheduling overlay clear in ${delay}ms`);
-            } catch {}
+            try { /* no console output */ } catch {}
             setTimeout(() => { dispatch({ type: 'clear-merge-fx' }); }, delay);
           }}
         >

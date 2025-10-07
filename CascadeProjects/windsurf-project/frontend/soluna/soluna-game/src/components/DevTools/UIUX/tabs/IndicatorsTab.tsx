@@ -7,6 +7,7 @@ export function IndicatorsTab({ logMerges, onToggleLog }: { logMerges: boolean; 
         label="Registrar fusiones en consola"
         checked={logMerges}
         onChange={(e) => onToggleLog(e.target.checked)}
+        tooltip="Escribe en la consola del navegador cada evento de fusión para depurar el sistema de apilado."
       />
     </div>
   );

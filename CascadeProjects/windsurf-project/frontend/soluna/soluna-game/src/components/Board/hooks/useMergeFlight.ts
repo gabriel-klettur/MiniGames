@@ -4,16 +4,7 @@ import type { GameState } from '../../../game/types';
 import type { BoardSizes } from './useBoardSizes';
 import { getTokenCenterPxById } from '../utils';
 
-// Logging toggle aligned with store.tsx (localStorage key)
-const LOG_LS_KEY = 'soluna:log:merges';
-function shouldLog(): boolean {
-  try {
-    const raw = window.localStorage.getItem(LOG_LS_KEY);
-    return raw == null ? true : raw !== '0';
-  } catch {
-    return true;
-  }
-}
+// Logging removed — keep console clean
 
 // Destination offset for the merge flight (pixels).
 // We only honor Y; X is deprecated and treated as 0 to ensure center landing.
@@ -84,15 +75,6 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
     end = { x: end.x + destOffset.x, y: end.y + destOffset.y - liftPx };
     setFlightPx({ start, end });
     setFlightRunning(false);
-    if (shouldLog()) {
-      try {
-        const dt = Date.now() - (state.mergeFx.at || Date.now());
-        console.groupCollapsed?.(`[Soluna] Flight prepared (dt ${dt}ms)`);
-        console.log('fromPx?', !!state.mergeFx.fromPx, 'toPx?', !!state.mergeFx.toPx, 'destOffset:', destOffset);
-        console.log('start(px):', start, 'end(px):', end);
-        console.groupEnd?.();
-      } catch {}
-    }
     const raf1 = requestAnimationFrame(() => {
       // Recompute the precise end using the actual DOM position of the merged token
       // If we have toPx, keep using it to maintain exact center-to-center alignment.
@@ -112,12 +94,7 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
       setFlightPx({ start, end: preciseEnd });
       try { void flightRef.current?.getBoundingClientRect(); } catch {}
       const raf2 = requestAnimationFrame(() => setFlightRunning(true));
-      if (shouldLog()) {
-        try {
-          const dt2 = Date.now() - (state.mergeFx!.at || Date.now());
-          console.log(`[Soluna] Flight running start (dt ${dt2}ms)`);
-        } catch {}
-      }
+      // no console output
       return () => cancelAnimationFrame(raf2);
     });
     return () => cancelAnimationFrame(raf1);
@@ -126,9 +103,6 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
   // Reset local flight state when effect clears
   useEffect(() => {
     if (!state.mergeFx) {
-      if (shouldLog()) {
-        try { console.log('[Soluna] Flight cleared'); } catch {}
-      }
       setFlightPx(null);
       setFlightRunning(false);
     }

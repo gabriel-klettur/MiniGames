@@ -5,8 +5,6 @@ import HeaderPanel from './components/HeaderPanel/HeaderPanel';
 import Board from './components/Board/Board';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import InfoIA from './components/DevTools/InfoIA';
-import FasesPanel from './components/DevTools/FasesPanel';
-import RulesPanel from './components/DevTools/RulesPanel';
 import UIUX from './components/DevTools/UIUX/UIUX';
 import IAPanel from './components/DevTools/IAPanel/IAPanel';
 import InfoPanel from './components/InfoPanel';
@@ -19,8 +17,7 @@ import { useSolunaHistory } from './hooks/useSolunaHistory';
 function App() {
   const { state, dispatch } = useGame();
   const [showDev, setShowDev] = useLocalStorageBoolean('soluna:dev:show', false);
-  const [showFases, setShowFases] = useLocalStorageBoolean('soluna:dev:showFases', false);
-  const [showRules, setShowRules] = useLocalStorageBoolean('soluna:dev:showRules', false);
+  // Tabs "Fases" y "Reglas" eliminados
   const [showUX, setShowUX] = useLocalStorageBoolean('soluna:dev:showUX', false);
   const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
   const [showHistory, setShowHistory] = useLocalStorageBoolean('soluna:ui:showHistory', false);
@@ -58,6 +55,26 @@ function App() {
     aiTimePerMoveMs, setAiTimePerMoveMs,
     aiTimeExponent, setAiTimeExponent,
   } = useAiController(state, dispatch);
+
+  // Asegurar exclusividad también en carga/estado inicial (localStorage) y cambios externos
+  useEffect(() => {
+    const openCount = (showUX ? 1 : 0) + (showIAPanel ? 1 : 0) + (showInfoIA ? 1 : 0);
+    if (openCount <= 1) return;
+    // Precedencia: IAPanel > InfoIA > UI/UX
+    if (showIAPanel) {
+      if (showUX) setShowUX(false);
+      if (showInfoIA) setShowInfoIA(false);
+      return;
+    }
+    if (showInfoIA) {
+      if (showUX) setShowUX(false);
+      return;
+    }
+    if (showUX) {
+      if (showIAPanel) setShowIAPanel(false);
+      if (showInfoIA) setShowInfoIA(false);
+    }
+  }, [showUX, showIAPanel, showInfoIA]);
 
   // Al abrir DevTools en móviles, hacer scroll al panel para que sea visible.
   const devToolsRef = useRef<HTMLDivElement | null>(null);
@@ -141,15 +158,30 @@ function App() {
           <div className="devtools-row" ref={devToolsRef}>
             <div className="devtools-card">
               <DevToolsPanel
-                showFases={showFases}
-                onToggleFases={() => setShowFases((v) => !v)}
                 showUX={showUX}
-                onToggleUX={() => setShowUX((v) => !v)}
-                onToggleRules={() => setShowRules((v) => !v)}
+                onToggleUX={() => {
+                  setShowUX((prev) => {
+                    const next = !prev;
+                    if (next) { setShowIAPanel(false); setShowInfoIA(false); }
+                    return next;
+                  });
+                }}
                 showIAPanel={showIAPanel}
-                onToggleIAPanel={() => setShowIAPanel((v) => !v)}
+                onToggleIAPanel={() => {
+                  setShowIAPanel((prev) => {
+                    const next = !prev;
+                    if (next) { setShowUX(false); setShowInfoIA(false); }
+                    return next;
+                  });
+                }}
                 showInfoIA={showInfoIA}
-                onToggleInfoIA={() => setShowInfoIA((v) => !v)}
+                onToggleInfoIA={() => {
+                  setShowInfoIA((prev) => {
+                    const next = !prev;
+                    if (next) { setShowUX(false); setShowIAPanel(false); }
+                    return next;
+                  });
+                }}
               />
               {showIAPanel && (
                 <section className="devtools-card-section">
@@ -223,19 +255,7 @@ function App() {
                   <InfoIA />
                 </section>
               )}
-              {/* Secciones bajo los toggles */}
-              {showRules && (
-                <section className="devtools-card-section">
-                  <div className="section-title">Reglas</div>
-                  <RulesPanel />
-                </section>
-              )}
-              {showFases && (
-                <section className="devtools-card-section">
-                  <div className="section-title">Fases</div>
-                  <FasesPanel />
-                </section>
-              )}
+              {/* Secciones bajo los toggles — 'Reglas' y 'Fases' eliminadas */}
               {showUX && (
                 <section className="devtools-card-section">                
                   <UIUX />

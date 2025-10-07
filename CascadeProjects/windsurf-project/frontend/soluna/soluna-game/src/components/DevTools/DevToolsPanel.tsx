@@ -1,10 +1,7 @@
 export interface DevToolsPanelProps {
   className?: string;
-  showFases?: boolean;
-  onToggleFases?: () => void;
   showUX?: boolean;
   onToggleUX?: () => void;
-  onToggleRules?: () => void;
   showIAPanel?: boolean;
   onToggleIAPanel?: () => void;
   showInfoIA?: boolean;
@@ -13,11 +10,8 @@ export interface DevToolsPanelProps {
 
 // DevToolsPanel — Acciones de desarrollo/diagnóstico (presentacional), estilo Quoridor
 export default function DevToolsPanel({  
-  showFases = false,
-  onToggleFases = () => {},
   showUX = false,
   onToggleUX = () => {},
-  onToggleRules = () => {},
   showIAPanel = false,
   onToggleIAPanel = () => {},
   showInfoIA = false,
@@ -25,14 +19,6 @@ export default function DevToolsPanel({
 }: DevToolsPanelProps) {
   return (       
     <div style={{ width: '100%', maxWidth: 'none', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      <button className="btn btn-secondary" onClick={onToggleRules}>Reglas</button>
-      <button
-        className={`btn ${showFases ? 'btn-primary' : 'btn-secondary'}`}
-        aria-pressed={showFases}
-        onClick={onToggleFases}
-      >
-        Fases
-      </button>
       <button
         className={`btn ${showUX ? 'btn-primary' : 'btn-secondary'}`}
         aria-pressed={showUX}
