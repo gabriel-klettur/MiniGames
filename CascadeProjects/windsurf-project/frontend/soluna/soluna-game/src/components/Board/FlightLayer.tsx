@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { SymbolIcon } from '../Icons';
 import type { GameAction, MergeFx } from '../../game/types';
@@ -35,6 +35,11 @@ export default function FlightLayer({
 }: FlightLayerProps) {
   if (!mergeFx || !flightPx) return null;
   const endOnceRef = useRef(false);
+  // Reset the end-once guard whenever a new flight is prepared
+  // This ensures that each merge animation will trigger commit/clear exactly once
+  useEffect(() => {
+    endOnceRef.current = false;
+  }, [mergeFx?.mergedId, mergeFx?.at]);
   const useMP = supportsMotionPath && !!curvePath;
   const half = Math.max(0, (tokenSize ?? 0) / 2);
   return (

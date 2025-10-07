@@ -92,6 +92,16 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, lastTrace,
               <div>curve: {String(sizes.curveEnabled)} bend: {sizes.curveBend.toFixed(2)}</div>
               <div>linger: {sizes.lingerMs}ms</div>
               {stackCount != null && <div>stack count (origen): {stackCount}</div>}
+              <div style={{ marginTop: 6, display: 'flex', gap: 12 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 10, height: 10, background: '#fb8c00', borderRadius: '50%' }} />
+                  Origen
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 10, height: 10, background: '#8bc34a', borderRadius: '50%' }} />
+                  Fin
+                </span>
+              </div>
             </div>
           </foreignObject>
         </g>
@@ -115,19 +125,19 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, lastTrace,
             )}
 
             {/* Puntos de inicio/fin */}
-            <circle cx={start.x} cy={start.y} r={6} fill={live ? '#e53935' : '#ef9a9a'} />
+            <circle cx={start.x} cy={start.y} r={6} fill={live ? '#fb8c00' : '#ffcc80'} />
             <text x={start.x + 8} y={start.y - 8} fontSize={12} fill="#fff">start{live ? '' : ' (prev)'}</text>
             {/* Centro persistente en start cuando no hay vuelo activo */}
             {!live && (
-              <circle cx={start.x} cy={start.y} r={5} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+              <circle cx={start.x} cy={start.y} r={5} fill="#ffa726" stroke="#ffffff" strokeWidth={1} />
             )}
 
             {/* Contorno de la ficha fuente (cómo la entiende el sistema) */}
             <g opacity={0.95}>
               {/* Cara del token (círculo de radio token/2) */}
-              <circle cx={start.x} cy={start.y} r={half} fill="none" stroke="#ab47bc" strokeWidth={2} />
+              <circle cx={start.x} cy={start.y} r={half} fill="none" stroke="#fb8c00" strokeWidth={2} />
               {/* Bounding box (cuadro que encierra al token) */}
-              <rect x={start.x - half} y={start.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#ab47bc" strokeWidth={1.5} strokeDasharray="4,4" />
+              <rect x={start.x - half} y={start.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#fb8c00" strokeWidth={1.5} strokeDasharray="4,4" />
             </g>
 
             {/* Ghost persistente del símbolo también en el punto de inicio */}
@@ -145,11 +155,11 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, lastTrace,
               </foreignObject>
             )}
 
-            <circle cx={end.x} cy={end.y} r={6} fill={live ? '#43a047' : '#c5e1a5'} />
+            <circle cx={end.x} cy={end.y} r={6} fill={live ? '#8bc34a' : '#c5e1a5'} />
             <text x={end.x + 8} y={end.y - 8} fontSize={12} fill="#fff">end{live ? '' : ' (prev)'}</text>
             {/* Centro persistente en end cuando no hay vuelo activo */}
             {!live && (
-              <circle cx={end.x} cy={end.y} r={5} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+              <circle cx={end.x} cy={end.y} r={5} fill="#a5d6a7" stroke="#ffffff" strokeWidth={1} />
             )}
 
             {/* Punto de control */}
@@ -160,13 +170,13 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, lastTrace,
               </g>
             )}
 
-            {/* Punto púrpura de desaparición al final de la trayectoria previa */}
+            {/* Marca persistente al final de la trayectoria previa (verde claro) */}
             {!live && (
               <g>
-                <circle cx={end.x} cy={end.y} r={7} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+                <circle cx={end.x} cy={end.y} r={7} fill="#8bc34a" stroke="#ffffff" strokeWidth={1} />
                 {/* Circunferencia persistente en el punto final para ver el cuerpo al desaparecer */}
-                <circle cx={end.x} cy={end.y} r={half} fill="none" stroke="#9c27b0" strokeWidth={2} strokeDasharray="6,4" opacity={0.95} />
-                <rect x={end.x - half} y={end.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#9c27b0" strokeWidth={1.5} strokeDasharray="4,4" opacity={0.85} />
+                <circle cx={end.x} cy={end.y} r={half} fill="none" stroke="#8bc34a" strokeWidth={2} strokeDasharray="6,4" opacity={0.95} />
+                <rect x={end.x - half} y={end.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#8bc34a" strokeWidth={1.5} strokeDasharray="4,4" opacity={0.85} />
               </g>
             )}
 
