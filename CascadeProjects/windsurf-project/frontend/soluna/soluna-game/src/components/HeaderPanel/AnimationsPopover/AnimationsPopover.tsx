@@ -45,6 +45,10 @@ export const AnimationsPopover: React.FC<AnimationsPopoverProps> = ({
     setDebug((d) => {
       const next = !d;
       try { window.localStorage.setItem('soluna:ui:anim-debug', next ? '1' : '0'); } catch {}
+      try {
+        const ev = new CustomEvent('soluna:ui:anim-debug-changed', { detail: { value: next } });
+        window.dispatchEvent(ev);
+      } catch {}
       return next;
     });
   };

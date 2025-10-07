@@ -11,6 +11,7 @@ import useClickOutside from '../../hooks/useClickOutside';
 import { SymbolIcon } from '../Icons';
 import type { SymbolType } from '../../game/types';
 import CountPickerPopover from './CountPickerPopover';
+import DebugOverlay from './DebugOverlay';
 
 export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => void; onNewRound?: () => void }) {
   const { state, dispatch } = useGame();
@@ -37,6 +38,22 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
   } = useDragAndClick({ state, dispatch, sizes, fieldRef });
 
   const { flightRunning, flightPx, flightRef, supportsMotionPath, curvePath } = useMergeFlight({ state, sizes, fieldRef });
+
+  // Debug flag: read from localStorage and listen to UI events
+  const [debug, setDebug] = useState<boolean>(() => {
+    try { return window.localStorage.getItem('soluna:ui:anim-debug') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as { value?: boolean } | undefined;
+        if (detail && typeof detail.value === 'boolean') { setDebug(detail.value); return; }
+      } catch {}
+      try { setDebug(window.localStorage.getItem('soluna:ui:anim-debug') === '1'); } catch {}
+    };
+    window.addEventListener('soluna:ui:anim-debug-changed', onChange as any);
+    return () => window.removeEventListener('soluna:ui:anim-debug-changed', onChange as any);
+  }, []);
 
   // Close number picker on outside click
   useClickOutside([countPickerRef], countPickerOpen, () => setCountPickerOpen(false));
@@ -100,6 +117,16 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               lingerMs={sizes.lingerMs}
               dispatch={dispatch}
             />
+
+            {/* Debug overlay: muestra trayectorias y puntos clave */}
+            {debug && (
+              <DebugOverlay
+                sizes={sizes}
+                flightPx={flightPx}
+                mergeFx={state.mergeFx}
+                fieldRef={fieldRef}
+              />
+            )}
 
             {/* Custom setup overlay: fast 4-column counts UI */}
             {state.customSetup?.open && (
