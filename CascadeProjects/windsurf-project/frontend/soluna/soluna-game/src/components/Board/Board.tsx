@@ -9,9 +9,10 @@ import FlightLayer from './FlightLayer';
 import { clamp } from './utils';
 import useClickOutside from '../../hooks/useClickOutside';
 import { SymbolIcon } from '../Icons';
-import type { SymbolType } from '../../game/types';
+import type { SymbolType, MergeFx } from '../../game/types';
 import CountPickerPopover from './CountPickerPopover';
 import DebugOverlay from './DebugOverlay';
+import StackDebugOverlay from './StackDebugOverlay';
 
 export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => void; onNewRound?: () => void }) {
   const { state, dispatch } = useGame();
@@ -52,6 +53,12 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
       setLastTrace({ start: flightPx.start, end: flightPx.end, stackCount: state.mergeFx.sourceStack.length, symbol });
     }
   }, [flightPx, state.mergeFx]);
+
+  // Snapshot persistente del último mergeFx para mantener stacking overlays tras CLEAR
+  const [lastMergeFx, setLastMergeFx] = useState<MergeFx | null>(null);
+  useEffect(() => {
+    if (state.mergeFx) setLastMergeFx(state.mergeFx);
+  }, [state.mergeFx]);
 
   // Debug flag: read from localStorage and listen to UI events
   const [debug, setDebug] = useState<boolean>(() => {
@@ -134,6 +141,17 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
             />
 
             {/* Debug overlay: muestra trayectorias y puntos clave */}
+            {debug && (
+              <StackDebugOverlay
+                sizes={sizes}
+                mergeFx={state.mergeFx}
+                lastMergeFx={lastMergeFx}
+                fieldRef={fieldRef}
+                tokenSize={sizes.token}
+              />
+            )}
+            
+            {/* Debug overlay: trayectorias (curva) y panel */}
             {debug && (
               <DebugOverlay
                 sizes={sizes}

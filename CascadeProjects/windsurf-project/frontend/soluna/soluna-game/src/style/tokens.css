@@ -145,6 +145,10 @@
 
 /* Cada disco apilado (imagen) */
 .token-disc-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
+/* Upward stacking variant (used by debug overlays/growth to show incoming above base) */
+.token-disc-img.stack-up { transform: translate(-50%, calc(-50% - (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
+/* Top disc (head): position at highest level so tower grows upward */
+.token-top-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% - ((var(--i, 1) - 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
 /* (legacy) .token-base eliminado: render actual usa imágenes; mantener limpio */
 
 /* (legacy) .token-disc eliminado: render actual usa .token-disc-img */

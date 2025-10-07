@@ -191,9 +191,9 @@ export default function FlightLayer({
                     {arrivingSyms.map((sym, j) => (
                       <div
                         key={`arr-${j}`}
-                        className="token-disc-img"
+                        className="token-disc-img stack-up"
                         style={{
-                          ['--i' as any]: baseH + j + 1,
+                          ['--i' as any]: j + 1,
                           zIndex: (totalBelowCount - (baseH + j)),
                           opacity: 0.9,
                           filter: 'drop-shadow(0 2px 6px rgba(255,165,0,0.35))',
