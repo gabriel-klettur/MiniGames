@@ -108,16 +108,16 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
 
   // Presets por defecto (coinciden con la propuesta)
   const DEFAULT_ANIM_PRESETS: AnimPreset[] = useMemo(() => ([
-    { id: 'classic-curve', name: 'Clásico curvo', description: 'Curva equilibrada con leve offset a la derecha', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 8, flightDestOffsetY: 0, flightLingerMs: 250 } },
-    { id: 'straight-fast', name: 'Recto rápido', description: 'Trayectoria directa sin curva y overlay mínimo', overrides: { stackStep: 16, flightCurveEnabled: false, flightCurveBend: 0.0, flightDestOffsetX: 0, flightDestOffsetY: 0, flightLingerMs: 120 } },
-    { id: 'high-arc', name: 'Arco alto', description: 'Curva pronunciada, sensación cinemática', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.45, flightDestOffsetX: 6, flightDestOffsetY: -4, flightLingerMs: 320 } },
-    { id: 'soft-arc', name: 'Arco suave', description: 'Curva ligera y limpia', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.12, flightDestOffsetX: 8, flightDestOffsetY: 2, flightLingerMs: 220 } },
-    { id: 'right-landing', name: 'Aterrizaje a la derecha', description: 'Desplaza el aterrizaje hacia la derecha', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 24, flightDestOffsetY: 0, flightLingerMs: 240 } },
-    { id: 'down-right', name: 'Abajo-derecha', description: 'Offset para enfatizar el apilado', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetX: 14, flightDestOffsetY: 10, flightLingerMs: 260 } },
-    { id: 'stick-center', name: 'Pegado al centro', description: 'Sin desplazamiento y linger muy breve', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.18, flightDestOffsetX: 0, flightDestOffsetY: 0, flightLingerMs: 100 } },
-    { id: 'stack-compact', name: 'Stack compacto', description: 'Pilas apretadas; lectura de altura sutil', overrides: { stackStep: 12, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetX: 6, flightDestOffsetY: 0, flightLingerMs: 220 } },
-    { id: 'stack-open', name: 'Stack desplegado', description: 'Pilas abiertas para enfatizar composición', overrides: { stackStep: 26, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 10, flightDestOffsetY: 4, flightLingerMs: 280 } },
-    { id: 'cinematic', name: 'Cinemático', description: 'Curva marcada y linger más largo', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.35, flightDestOffsetX: 8, flightDestOffsetY: -2, flightLingerMs: 400 } },
+    { id: 'classic-curve', name: 'Clásico curvo', description: 'Curva equilibrada', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetY: 0, flightLingerMs: 250 } },
+    { id: 'straight-fast', name: 'Recto rápido', description: 'Trayectoria directa sin curva y overlay mínimo', overrides: { stackStep: 16, flightCurveEnabled: false, flightCurveBend: 0.0, flightDestOffsetY: 0, flightLingerMs: 120 } },
+    { id: 'high-arc', name: 'Arco alto', description: 'Curva pronunciada, sensación cinemática', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.45, flightDestOffsetY: -4, flightLingerMs: 320 } },
+    { id: 'soft-arc', name: 'Arco suave', description: 'Curva ligera y limpia', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.12, flightDestOffsetY: 2, flightLingerMs: 220 } },
+    { id: 'right-landing', name: 'Aterrizaje centrado', description: 'Aterrizaje centrado sin desplazamiento horizontal', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetY: 0, flightLingerMs: 240 } },
+    { id: 'down-right', name: 'Abajo', description: 'Offset vertical para enfatizar el apilado', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetY: 10, flightLingerMs: 260 } },
+    { id: 'stick-center', name: 'Pegado al centro', description: 'Sin desplazamiento y linger muy breve', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.18, flightDestOffsetY: 0, flightLingerMs: 100 } },
+    { id: 'stack-compact', name: 'Stack compacto', description: 'Pilas apretadas; lectura de altura sutil', overrides: { stackStep: 12, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetY: 0, flightLingerMs: 220 } },
+    { id: 'stack-open', name: 'Stack desplegado', description: 'Pilas abiertas para enfatizar composición', overrides: { stackStep: 26, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetY: 4, flightLingerMs: 280 } },
+    { id: 'cinematic', name: 'Cinemático', description: 'Curva marcada y linger más largo', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.35, flightDestOffsetY: -2, flightLingerMs: 400 } },
   ]), []);
 
   // Permitir sobrescribir lista desde localStorage (futuro CRUD)
@@ -136,7 +136,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
     (p.overrides.stackStep == null || eq(p.overrides.stackStep, currentCfg.stackStep)) &&
     (p.overrides.flightCurveEnabled == null || eq(p.overrides.flightCurveEnabled, currentCfg.flightCurveEnabled)) &&
     (p.overrides.flightCurveBend == null || eq(p.overrides.flightCurveBend, currentCfg.flightCurveBend)) &&
-    (p.overrides.flightDestOffsetX == null || eq(p.overrides.flightDestOffsetX, currentCfg.flightDestOffsetX)) &&
     (p.overrides.flightDestOffsetY == null || eq(p.overrides.flightDestOffsetY, currentCfg.flightDestOffsetY)) &&
     (p.overrides.flightLingerMs == null || eq(p.overrides.flightLingerMs, currentCfg.flightLingerMs))
   );
@@ -149,7 +148,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
       stackStep: currentCfg.stackStep,
       flightCurveEnabled: currentCfg.flightCurveEnabled,
       flightCurveBend: currentCfg.flightCurveBend,
-      flightDestOffsetX: currentCfg.flightDestOffsetX,
       flightDestOffsetY: currentCfg.flightDestOffsetY,
       flightLingerMs: currentCfg.flightLingerMs,
     },

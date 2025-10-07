@@ -14,14 +14,6 @@ export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) 
         onChange={onNum('flightCurveBend')}
       />
       <SliderRow
-        label={`Desplazamiento X destino: ${Math.round(cfg.flightDestOffsetX)}px`}
-        value={cfg.flightDestOffsetX}
-        min={-60}
-        max={60}
-        step={1}
-        onChange={onNum('flightDestOffsetX')}
-      />
-      <SliderRow
         label={`Desplazamiento Y destino: ${Math.round(cfg.flightDestOffsetY)}px`}
         value={cfg.flightDestOffsetY}
         min={-60}

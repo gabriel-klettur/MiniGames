@@ -7,7 +7,6 @@ export type Cfg = {
   mergeThreshold: number;
   flightCurveEnabled: boolean;
   flightCurveBend: number;
-  flightDestOffsetX: number;
   flightDestOffsetY: number;
   flightLingerMs: number;
   // Teleport FX toggles
@@ -34,7 +33,6 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     mergeThreshold: asNumber(getVar('--merge-threshold-factor', '0.6'), 0.6),
     flightCurveEnabled: asNumber(getVar('--flight-curve-enabled', '1'), 1) > 0,
     flightCurveBend: asNumber(getVar('--flight-curve-bend', '0.22'), 0.22),
-    flightDestOffsetX: asNumber(getVar('--flight-dest-offset-x', '0px'), 0),
     flightDestOffsetY: asNumber(getVar('--flight-dest-offset-y', '0px'), 0),
     flightLingerMs: asNumber(getVar('--flight-linger-ms', '250'), 250),
     teleportRandom: asNumber(getVar('--teleport-random', '1'), 1) > 0,
@@ -51,7 +49,6 @@ export function applyCfg(cfg: Cfg, el: HTMLElement | null = getPlayEllipse()): v
   el.style.setProperty('--merge-threshold-factor', String(cfg.mergeThreshold));
   el.style.setProperty('--flight-curve-enabled', cfg.flightCurveEnabled ? '1' : '0');
   el.style.setProperty('--flight-curve-bend', String(cfg.flightCurveBend));
-  el.style.setProperty('--flight-dest-offset-x', `${cfg.flightDestOffsetX}px`);
   el.style.setProperty('--flight-dest-offset-y', `${cfg.flightDestOffsetY}px`);
   el.style.setProperty('--flight-linger-ms', String(cfg.flightLingerMs));
   // Teleport FX flags as CSS vars (read by Board)
@@ -68,7 +65,6 @@ export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
   el.style.removeProperty('--merge-threshold-factor');
   el.style.removeProperty('--flight-curve-enabled');
   el.style.removeProperty('--flight-curve-bend');
-  el.style.removeProperty('--flight-dest-offset-x');
   el.style.removeProperty('--flight-dest-offset-y');
   el.style.removeProperty('--flight-linger-ms');
   // Also clear teleport FX flags

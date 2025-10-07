@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { RefObject } from 'react';
 import type { Cfg } from '../../DevTools/UIUX/model/config';
 
@@ -41,17 +41,16 @@ export const AnimationsPopover: React.FC<AnimationsPopoverProps> = ({
       return raw === '1';
     } catch { return false; }
   });
-  const toggleDebug = () => {
-    setDebug((d) => {
-      const next = !d;
-      try { window.localStorage.setItem('soluna:ui:anim-debug', next ? '1' : '0'); } catch {}
-      try {
-        const ev = new CustomEvent('soluna:ui:anim-debug-changed', { detail: { value: next } });
-        window.dispatchEvent(ev);
-      } catch {}
-      return next;
-    });
-  };
+  const toggleDebug = () => { setDebug((d) => !d); };
+
+  // Efecto post-render: persistir y notificar cambio de Debug (evita setState cross-render warnings)
+  useEffect(() => {
+    try { window.localStorage.setItem('soluna:ui:anim-debug', debug ? '1' : '0'); } catch {}
+    try {
+      const ev = new CustomEvent('soluna:ui:anim-debug-changed', { detail: { value: debug } });
+      window.dispatchEvent(ev);
+    } catch {}
+  }, [debug]);
 
   const apply = () => {
     if (!active) return;
@@ -143,7 +142,6 @@ export const AnimationsPopover: React.FC<AnimationsPopoverProps> = ({
               {typeof p.overrides.stackStep === 'number' && (<code>stackStep={p.overrides.stackStep}</code>)}
               {typeof p.overrides.flightCurveEnabled === 'boolean' && (<code>curve={String(p.overrides.flightCurveEnabled)}</code>)}
               {typeof p.overrides.flightCurveBend === 'number' && (<code>bend={p.overrides.flightCurveBend}</code>)}
-              {typeof p.overrides.flightDestOffsetX === 'number' && (<code>dx={p.overrides.flightDestOffsetX}</code>)}
               {typeof p.overrides.flightDestOffsetY === 'number' && (<code>dy={p.overrides.flightDestOffsetY}</code>)}
               {typeof p.overrides.flightLingerMs === 'number' && (<code>linger={p.overrides.flightLingerMs}ms</code>)}
             </div>
@@ -158,5 +156,4 @@ export const AnimationsPopover: React.FC<AnimationsPopoverProps> = ({
     </div>
   );
 };
-
 export default AnimationsPopover;

@@ -1,13 +1,17 @@
 import React from 'react';
 import type { RefObject } from 'react';
-import type { MergeFx } from '../../game/types';
+import type { MergeFx, SymbolType } from '../../game/types';
+import { SymbolIcon } from '../Icons';
 import type { BoardSizes } from './hooks/useBoardSizes';
 
 export interface DebugOverlayProps {
   sizes: BoardSizes;
   flightPx: { start: { x: number; y: number }; end: { x: number; y: number } } | null;
+  /** Optional persisted last trace when no active flight. */
+  lastTrace?: { start: { x: number; y: number }; end: { x: number; y: number }; stackCount?: number; symbol?: SymbolType } | null;
   mergeFx: MergeFx | null;
   fieldRef: RefObject<HTMLDivElement | null>;
+  motionPath?: string;
 }
 
 /**
@@ -15,7 +19,7 @@ export interface DebugOverlayProps {
  * y trayectoria de las animaciones de vuelo y puntos de fusión/apilado.
  * No intercepta eventos (pointer-events: none).
  */
-const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, mergeFx }) => {
+const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, lastTrace, mergeFx, motionPath }) => {
   if (!sizes.w || !sizes.h) return null;
 
   // Recalcula una curva cuadrática aproximada como la usada en useMergeFlight
@@ -37,11 +41,31 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, mergeFx })
     return { c: { x: cx, y: cy } };
   }
 
-  const start = flightPx?.start || null;
-  const end = flightPx?.end || null;
+  // Prefer live flight; fallback to last persisted trace
+  const live = !!flightPx;
+  const start = (flightPx?.start || lastTrace?.start) || null;
+  const end = (flightPx?.end || lastTrace?.end) || null;
   const curve = (start && end && sizes.curveEnabled) ? computeCurve(start, end) : null;
 
-  const stackCount = mergeFx?.sourceStack?.length ?? null;
+  // Extract raw SVG path data from CSS path("...") if provided
+  function extractSvgD(cssPath?: string): string | null {
+    if (!cssPath) return null;
+    const s = String(cssPath);
+    const firstQuote = s.indexOf('"');
+    const lastQuote = s.lastIndexOf('"');
+    if (firstQuote >= 0 && lastQuote > firstQuote) return s.slice(firstQuote + 1, lastQuote);
+    const firstSingle = s.indexOf("'");
+    const lastSingle = s.lastIndexOf("'");
+    if (firstSingle >= 0 && lastSingle > firstSingle) return s.slice(firstSingle + 1, lastSingle);
+    const paren = s.indexOf('(');
+    const parenEnd = s.lastIndexOf(')');
+    if (paren >= 0 && parenEnd > paren) return s.slice(paren + 1, parenEnd);
+    return null;
+  }
+  const livePathD = live ? extractSvgD(motionPath) : null;
+
+  const stackCount = (live ? (mergeFx?.sourceStack?.length ?? null) : (lastTrace?.stackCount ?? null));
+  const half = Math.max(0, sizes.token / 2);
 
   const panelBg = 'rgba(0,0,0,0.5)';
   const panelBorder = 'rgba(255,255,255,0.2)';
@@ -75,20 +99,58 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, mergeFx })
         {/* Dibujo de trayectoria y puntos */}
         {start && end && (
           <g>
-            {/* Recta con flecha */}
-            <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#4dd0e1" strokeWidth={2} markerEnd="url(#arrow)" opacity={0.7} />
+            {/* Recta solo si no tenemos motionPath/curva */}
+            {!livePathD && !curve && (
+              <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={live ? '#4dd0e1' : '#90caf9'} strokeWidth={2} markerEnd="url(#arrow)" opacity={live ? 0.9 : 0.6} />
+            )}
 
-            {/* Curva aproximada */}
-            {curve && (
-              <path d={`M ${start.x} ${start.y} Q ${curve.c.x} ${curve.c.y} ${end.x} ${end.y}`} fill="none" stroke="#81c784" strokeDasharray="6,6" strokeWidth={2} opacity={0.9} />
+            {/* Curva exacta (si hay motionPath) o aproximada */}
+            {live && livePathD && (
+              <g transform={`translate(${(start.x - half).toFixed(2)} ${(start.y - half).toFixed(2)})`}>
+                <path d={livePathD.replace(/M\s*/,'M ').replace(/Q\s*/,'Q ')} fill="none" stroke="#81c784" strokeDasharray="6,6" strokeWidth={2} opacity={0.95} />
+              </g>
+            )}
+            {!live && curve && (
+              <path d={`M ${start.x} ${start.y} Q ${curve.c.x} ${curve.c.y} ${end.x} ${end.y}`} fill="none" stroke="#a5d6a7" strokeDasharray="6,6" strokeWidth={2} opacity={0.7} />
             )}
 
             {/* Puntos de inicio/fin */}
-            <circle cx={start.x} cy={start.y} r={6} fill="#e53935" />
-            <text x={start.x + 8} y={start.y - 8} fontSize={12} fill="#fff">start</text>
+            <circle cx={start.x} cy={start.y} r={6} fill={live ? '#e53935' : '#ef9a9a'} />
+            <text x={start.x + 8} y={start.y - 8} fontSize={12} fill="#fff">start{live ? '' : ' (prev)'}</text>
+            {/* Centro persistente en start cuando no hay vuelo activo */}
+            {!live && (
+              <circle cx={start.x} cy={start.y} r={5} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+            )}
 
-            <circle cx={end.x} cy={end.y} r={6} fill="#43a047" />
-            <text x={end.x + 8} y={end.y - 8} fontSize={12} fill="#fff">end</text>
+            {/* Contorno de la ficha fuente (cómo la entiende el sistema) */}
+            <g opacity={0.95}>
+              {/* Cara del token (círculo de radio token/2) */}
+              <circle cx={start.x} cy={start.y} r={half} fill="none" stroke="#ab47bc" strokeWidth={2} />
+              {/* Bounding box (cuadro que encierra al token) */}
+              <rect x={start.x - half} y={start.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#ab47bc" strokeWidth={1.5} strokeDasharray="4,4" />
+            </g>
+
+            {/* Ghost persistente del símbolo también en el punto de inicio */}
+            {!live && lastTrace?.symbol && (
+              <foreignObject
+                x={start.x - half}
+                y={start.y - half}
+                width={sizes.token}
+                height={sizes.token}
+                style={{ pointerEvents: 'none', opacity: 0.45, filter: 'drop-shadow(0 0 8px rgba(244,67,54,0.55)) sepia(1) saturate(6) hue-rotate(-10deg) brightness(0.95)' }}
+              >
+                <div className="token-inner debug-ghost" style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                  <SymbolIcon type={lastTrace.symbol} />
+                </div>
+              </foreignObject>
+            )}
+
+            <circle cx={end.x} cy={end.y} r={6} fill={live ? '#43a047' : '#c5e1a5'} />
+            <text x={end.x + 8} y={end.y - 8} fontSize={12} fill="#fff">end{live ? '' : ' (prev)'}</text>
+            {/* Centro persistente en end cuando no hay vuelo activo */}
+            {!live && (
+              <circle cx={end.x} cy={end.y} r={5} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+            )}
 
             {/* Punto de control */}
             {curve && (
@@ -96,6 +158,31 @@ const DebugOverlay: React.FC<DebugOverlayProps> = ({ sizes, flightPx, mergeFx })
                 <circle cx={curve.c.x} cy={curve.c.y} r={5} fill="#ffb300" />
                 <text x={curve.c.x + 8} y={curve.c.y - 8} fontSize={12} fill="#fff">ctrl</text>
               </g>
+            )}
+
+            {/* Punto púrpura de desaparición al final de la trayectoria previa */}
+            {!live && (
+              <g>
+                <circle cx={end.x} cy={end.y} r={7} fill="#9c27b0" stroke="#ffffff" strokeWidth={1} />
+                {/* Circunferencia persistente en el punto final para ver el cuerpo al desaparecer */}
+                <circle cx={end.x} cy={end.y} r={half} fill="none" stroke="#9c27b0" strokeWidth={2} strokeDasharray="6,4" opacity={0.95} />
+                <rect x={end.x - half} y={end.y - half} width={sizes.token} height={sizes.token} fill="none" stroke="#9c27b0" strokeWidth={1.5} strokeDasharray="4,4" opacity={0.85} />
+              </g>
+            )}
+
+            {/* Ghost persistente con el símbolo de la ficha fuente en el punto final */}
+            {!live && lastTrace?.symbol && (
+              <foreignObject
+                x={end.x - half}
+                y={end.y - half}
+                width={sizes.token}
+                height={sizes.token}
+                style={{ pointerEvents: 'none', opacity: 0.6, filter: 'drop-shadow(0 0 10px rgba(244,67,54,0.6)) sepia(1) saturate(6) hue-rotate(-10deg) brightness(0.95)' }}
+              >
+                <div className="token-inner debug-ghost" style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                  <SymbolIcon type={lastTrace.symbol} />
+                </div>
+              </foreignObject>
             )}
           </g>
         )}

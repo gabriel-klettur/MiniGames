@@ -15,15 +15,14 @@ function shouldLog(): boolean {
   }
 }
 
-// Destination offset for the merge flight, read from CSS custom properties (pixels).
-// UI/UX panel writes --flight-dest-offset-x / --flight-dest-offset-y on the play field element.
+// Destination offset for the merge flight (pixels).
+// We only honor Y; X is deprecated and treated as 0 to ensure center landing.
 function readDestOffsetPx(el: HTMLElement | null): { x: number; y: number } {
   try {
     if (!el) return { x: 0, y: 0 };
     const cs = getComputedStyle(el);
-    const dx = parseFloat((cs.getPropertyValue('--flight-dest-offset-x') || '0').trim()) || 0;
     const dy = parseFloat((cs.getPropertyValue('--flight-dest-offset-y') || '0').trim()) || 0;
-    return { x: dx, y: dy };
+    return { x: 0, y: dy };
   } catch {
     return { x: 0, y: 0 };
   }
@@ -121,13 +120,24 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
     }
   }, [state.mergeFx]);
 
-  // Precompute a curved motion-path for the current flight (quadratic Bezier)
+  // Precompute a motion-path for the current flight.
+  // If curve is enabled, use quadratic Bezier; otherwise, a straight line.
   const curvePath = useMemo(() => {
     if (!flightPx) return undefined as string | undefined;
     const dx = flightPx.end.x - flightPx.start.x;
     const dy = flightPx.end.y - flightPx.start.y;
     const dist = Math.hypot(dx, dy);
     if (!isFinite(dist) || dist < 1) return undefined;
+    // Path en coords del contenedor del body (top-left del elemento es 0,0),
+    // desplazado por half para que el CENTRO del elemento siga el path.
+    const half = Math.max(0, sizes.token / 2);
+    const sx = half;
+    const sy = half;
+    const ex = half + dx;
+    const ey = half + dy;
+    if (!sizes.curveEnabled) {
+      return `path("M ${sx} ${sy} L ${ex} ${ey}")`;
+    }
     const mx = dx / 2;
     const my = dy / 2;
     let nx = -dy;
@@ -137,15 +147,10 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
     const bend = Math.min(180, Math.max(40, dist * sizes.curveBend));
     const cx = mx + (nx / nlen) * bend;
     const cy = my + (ny / nlen) * bend;
-    const half = Math.max(0, sizes.token / 2);
-    const sx = half;
-    const sy = half;
-    const ex = half + dx;
-    const ey = half + dy;
     const c1x = half + cx;
     const c1y = half + cy;
     return `path("M ${sx} ${sy} Q ${c1x} ${c1y} ${ex} ${ey}")`;
-  }, [flightPx, sizes.token, sizes.curveBend]);
+  }, [flightPx, sizes.token, sizes.curveBend, sizes.curveEnabled]);
 
   return { flightRunning, flightPx, flightRef, supportsMotionPath, curvePath } as const;
 }

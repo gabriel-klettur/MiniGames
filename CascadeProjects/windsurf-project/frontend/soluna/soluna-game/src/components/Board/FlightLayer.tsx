@@ -15,9 +15,10 @@ interface FlightLayerProps {
   flightRef: RefObject<HTMLDivElement | null>;
   supportsMotionPath: boolean;
   curvePath?: string;
-  curveEnabled: boolean;
   lingerMs?: number;
   dispatch: React.Dispatch<GameAction>;
+  debug?: boolean;
+  tokenSize?: number;
 }
 
 export default function FlightLayer({
@@ -27,28 +28,31 @@ export default function FlightLayer({
   flightRef,
   supportsMotionPath,
   curvePath,
-  curveEnabled,
   lingerMs,
   dispatch,
+  debug,
+  tokenSize,
 }: FlightLayerProps) {
   if (!mergeFx || !flightPx) return null;
   const endOnceRef = useRef(false);
+  const useMP = supportsMotionPath && !!curvePath;
+  const half = Math.max(0, (tokenSize ?? 0) / 2);
   return (
     <div className="merge-flight-layer" key={`flight-${mergeFx.at}`}>
       <div
-        className="token-flight"
+        className={`token-flight ${useMP ? 'mp' : ''}`}
         key={`flight-token-${mergeFx.mergedId}-${mergeFx.at}`}
-        style={{ left: flightPx.start.x, top: flightPx.start.y }}
+        style={{ left: useMP ? (flightPx.start.x - half) : flightPx.start.x, top: useMP ? (flightPx.start.y - half) : flightPx.start.y }}
       >
         <div
-          className={`token-flight-body ${supportsMotionPath && curveEnabled && curvePath ? 'curve' : ''} ${flightRunning ? 'running' : ''}`}
+          className={`token-flight-body ${useMP ? 'curve' : ''} ${flightRunning ? 'running' : ''}`}
           ref={flightRef}
           style={{
             ['--dx' as any]: `${flightPx.end.x - flightPx.start.x}px`,
             ['--dy' as any]: `${flightPx.end.y - flightPx.start.y}px`,
             ['--stack-count' as any]: mergeFx.sourceStack.length,
-            ['offsetPath' as any]: supportsMotionPath && curveEnabled && curvePath ? curvePath : undefined,
-            ['WebkitOffsetPath' as any]: supportsMotionPath && curveEnabled && curvePath ? curvePath : undefined,
+            ['offsetPath' as any]: useMP ? curvePath : undefined,
+            ['WebkitOffsetPath' as any]: useMP ? curvePath : undefined,
           }}
           onAnimationEnd={() => {
             if (endOnceRef.current) return;
@@ -69,6 +73,12 @@ export default function FlightLayer({
             setTimeout(() => { dispatch({ type: 'clear-merge-fx' }); }, delay);
           }}
         >
+          {debug && (
+            <>
+              <div className="flight-debug-outline" aria-hidden="true" />
+              <div className="flight-debug-center" aria-hidden="true" />
+            </>
+          )}
           <div className="token-inner">
             <div className="token-stack" aria-hidden="true">
               {(() => {

@@ -39,6 +39,20 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
 
   const { flightRunning, flightPx, flightRef, supportsMotionPath, curvePath } = useMergeFlight({ state, sizes, fieldRef });
 
+  // Última traza persistida (hasta el próximo movimiento)
+  const [lastTrace, setLastTrace] = useState<{
+    start: { x: number; y: number };
+    end: { x: number; y: number };
+    stackCount?: number;
+    symbol?: SymbolType;
+  } | null>(null);
+  useEffect(() => {
+    if (flightPx && state.mergeFx) {
+      const symbol = state.mergeFx.sourceStack[state.mergeFx.sourceStack.length - 1];
+      setLastTrace({ start: flightPx.start, end: flightPx.end, stackCount: state.mergeFx.sourceStack.length, symbol });
+    }
+  }, [flightPx, state.mergeFx]);
+
   // Debug flag: read from localStorage and listen to UI events
   const [debug, setDebug] = useState<boolean>(() => {
     try { return window.localStorage.getItem('soluna:ui:anim-debug') === '1'; } catch { return false; }
@@ -70,7 +84,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
       <div className="play-area">
         <div className="play-ellipse" ref={ellipseRef}>
           <div
-            className={`play-field ${selectedTower ? `has-selection selected-${selectedTower.top}` : ''}`}
+            className={`play-field ${selectedTower ? `has-selection selected-${selectedTower.top}` : ''} ${debug ? 'debug-flight-slow' : ''}`}
             ref={fieldRef}
           >
             {towersToRender.map((t) => {
@@ -113,9 +127,10 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               flightRef={flightRef}
               supportsMotionPath={supportsMotionPath}
               curvePath={curvePath}
-              curveEnabled={sizes.curveEnabled}
               lingerMs={sizes.lingerMs}
               dispatch={dispatch}
+              debug={debug}
+              tokenSize={sizes.token}
             />
 
             {/* Debug overlay: muestra trayectorias y puntos clave */}
@@ -123,8 +138,10 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               <DebugOverlay
                 sizes={sizes}
                 flightPx={flightPx}
+                lastTrace={lastTrace}
                 mergeFx={state.mergeFx}
                 fieldRef={fieldRef}
+                motionPath={curvePath}
               />
             )}
 

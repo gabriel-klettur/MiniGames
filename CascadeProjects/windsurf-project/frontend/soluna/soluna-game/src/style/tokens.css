@@ -19,6 +19,35 @@
   z-index: 1002; /* por encima de madera y elipse */
 }
 
+/* Debug ghost containers inside SVG foreignObject should scale the icon to full token size */
+.debug-ghost {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.debug-ghost > svg,
+.debug-ghost > img { /* SymbolIcon may render svg or img */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.flight-debug-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #e91e63; /* magenta para distinguir del púrpura persistente */
+  box-shadow: 0 0 0 1px #ffffff;
+  pointer-events: none;
+  z-index: 4;
+}
+
 /* --- Star Trek-like teleport appear effect (for newly spawned tokens) --- */
 .token.spawn-teleport { overflow: visible; }
 .token.spawn-teleport .token-inner {
@@ -218,16 +247,37 @@
   transform: translate(-50%, -50%);
 }
 
+/* When using motion-path, we position the container by top-left and let offset-path drive the center.
+   So we must NOT pre-center with translate(-50%,-50%). */
+.token-flight.mp {
+  transform: none;
+}
+
 .token-flight-body { will-change: transform, opacity; }
+/* Moving debug outline that travels with the flight (rendered by FlightLayer when debug) */
+.flight-debug-outline {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--token-size);
+  height: var(--token-size);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px dashed #ab47bc;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.35) inset;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.95;
+}
 @keyframes flight-move {
   from { transform: translate(0px, 0px); }
   to   { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 }
 
-.token-flight-body:not(.curve).running { animation: flight-move 1250ms cubic-bezier(.2,.8,.2,1) both; }
+.token-flight-body:not(.curve).running { animation: flight-move var(--flight-duration, 1250ms) cubic-bezier(.2,.8,.2,1) both; }
 
 .token-flight-body .token-inner {
-  transition: transform 1250ms cubic-bezier(.2,.8,.2,1), opacity 600ms ease-out;
+  transition: transform var(--flight-duration, 1250ms) cubic-bezier(.2,.8,.2,1), opacity 600ms ease-out;
 }
 /* Curved motion path animation */
 @keyframes flight-curve {
@@ -245,8 +295,8 @@
 }
 
 .token-flight-body.curve.running {
-  animation: flight-curve 1250ms cubic-bezier(.2,.8,.2,1) both,
-             flight-curve-webkit 1250ms cubic-bezier(.2,.8,.2,1) both;
+  animation: flight-curve var(--flight-duration, 1250ms) cubic-bezier(.2,.8,.2,1) both,
+             flight-curve-webkit var(--flight-duration, 1250ms) cubic-bezier(.2,.8,.2,1) both;
 }
 
 /* WebKit-prefixed offset-distance animation for Safari */
@@ -259,4 +309,9 @@
 @keyframes flight-curve-webkit {
   from { offset-distance: 0%; }
   to   { offset-distance: 100%; }
+}
+
+/* Debug: slow down flight animations to 1/4 speed when enabled */
+.play-field.debug-flight-slow {
+  --flight-duration: 5000ms; /* 4x slower than 1250ms */
 }
