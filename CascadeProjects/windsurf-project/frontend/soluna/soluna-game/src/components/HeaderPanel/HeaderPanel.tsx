@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGame } from '../../game/store';
 import useClickOutside from '../../hooks/useClickOutside';
 import useBackgroundCatalog from '../../hooks/useBackgroundCatalog';
@@ -7,6 +7,8 @@ import useBoardCatalog from '../../hooks/useBoardCatalog';
 import VsAiPopover from './VsAiPopover/VsAiPopover';
 import AssetsPopover from './AssetsPopover/AssetsPopover';
 import NewGamePopover from './NewGamePopover/NewGamePopover';
+import AnimationsPopover, { type AnimPreset } from './AnimationsPopover/AnimationsPopover';
+import { applyCfg, readComputedCfg } from '../DevTools/UIUX/model/config';
 
 export interface HeaderProps {
   showIA?: boolean;
@@ -34,6 +36,15 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   const [newAnchorRect, setNewAnchorRect] = useState<DOMRect | null>(null);
   const newBtnRef = useRef<HTMLButtonElement | null>(null);
   const newPopRef = useRef<HTMLDivElement | null>(null);
+
+  // Estado del popover Animaciones (presets de aterrizaje y apilado)
+  const [animOpen, setAnimOpen] = useState(false);
+  const [animAnchorRect, setAnimAnchorRect] = useState<DOMRect | null>(null);
+  const animBtnRef = useRef<HTMLButtonElement | null>(null);
+  const animPopRef = useRef<HTMLDivElement | null>(null);
+  const [animSelectedId, setAnimSelectedId] = useState<string | null>(() => {
+    try { return window.localStorage.getItem('soluna:ui:anim-selected'); } catch { return null; }
+  });
 
   // Estado del popover Fondo
   const [bgOpen, setBgOpen] = useState(false);
@@ -66,6 +77,8 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   useClickOutside([bgBtnRef, bgPopRef], bgOpen, () => setBgOpen(false));
   // Cierre por click fuera para Nueva partida
   useClickOutside([newBtnRef, newPopRef], newOpen, () => setNewOpen(false));
+  // Cierre por click fuera para Animaciones
+  useClickOutside([animBtnRef, animPopRef], animOpen, () => setAnimOpen(false));
 
   const toggleVsOpen = () => {
     if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
@@ -82,17 +95,110 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
     setNewOpen((v) => !v);
   };
 
+  const toggleAnimOpen = () => {
+    if (animBtnRef.current) setAnimAnchorRect(animBtnRef.current.getBoundingClientRect());
+    setAnimOpen((v) => !v);
+  };
+
   const onPickDifficulty = (d: number) => {
     if (!selectedSide) return;
     onStartVsAI?.(selectedSide, d);
     setVsOpen(false);
   };
 
+  // Presets por defecto (coinciden con la propuesta)
+  const DEFAULT_ANIM_PRESETS: AnimPreset[] = useMemo(() => ([
+    { id: 'classic-curve', name: 'Clásico curvo', description: 'Curva equilibrada con leve offset a la derecha', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 8, flightDestOffsetY: 0, flightLingerMs: 250 } },
+    { id: 'straight-fast', name: 'Recto rápido', description: 'Trayectoria directa sin curva y overlay mínimo', overrides: { stackStep: 16, flightCurveEnabled: false, flightCurveBend: 0.0, flightDestOffsetX: 0, flightDestOffsetY: 0, flightLingerMs: 120 } },
+    { id: 'high-arc', name: 'Arco alto', description: 'Curva pronunciada, sensación cinemática', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.45, flightDestOffsetX: 6, flightDestOffsetY: -4, flightLingerMs: 320 } },
+    { id: 'soft-arc', name: 'Arco suave', description: 'Curva ligera y limpia', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.12, flightDestOffsetX: 8, flightDestOffsetY: 2, flightLingerMs: 220 } },
+    { id: 'right-landing', name: 'Aterrizaje a la derecha', description: 'Desplaza el aterrizaje hacia la derecha', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 24, flightDestOffsetY: 0, flightLingerMs: 240 } },
+    { id: 'down-right', name: 'Abajo-derecha', description: 'Offset para enfatizar el apilado', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetX: 14, flightDestOffsetY: 10, flightLingerMs: 260 } },
+    { id: 'stick-center', name: 'Pegado al centro', description: 'Sin desplazamiento y linger muy breve', overrides: { stackStep: 18, flightCurveEnabled: true, flightCurveBend: 0.18, flightDestOffsetX: 0, flightDestOffsetY: 0, flightLingerMs: 100 } },
+    { id: 'stack-compact', name: 'Stack compacto', description: 'Pilas apretadas; lectura de altura sutil', overrides: { stackStep: 12, flightCurveEnabled: true, flightCurveBend: 0.20, flightDestOffsetX: 6, flightDestOffsetY: 0, flightLingerMs: 220 } },
+    { id: 'stack-open', name: 'Stack desplegado', description: 'Pilas abiertas para enfatizar composición', overrides: { stackStep: 26, flightCurveEnabled: true, flightCurveBend: 0.22, flightDestOffsetX: 10, flightDestOffsetY: 4, flightLingerMs: 280 } },
+    { id: 'cinematic', name: 'Cinemático', description: 'Curva marcada y linger más largo', overrides: { stackStep: 20, flightCurveEnabled: true, flightCurveBend: 0.35, flightDestOffsetX: 8, flightDestOffsetY: -2, flightLingerMs: 400 } },
+  ]), []);
+
+  // Permitir sobrescribir lista desde localStorage (futuro CRUD)
+  const animPresets: AnimPreset[] = useMemo(() => {
+    try {
+      const raw = window.localStorage.getItem('soluna:ui:anim-presets');
+      if (raw) return JSON.parse(raw) as AnimPreset[];
+    } catch {}
+    return DEFAULT_ANIM_PRESETS;
+  }, [DEFAULT_ANIM_PRESETS]);
+
+  // Derivar preset "Configuración actual" y selección por defecto del popover
+  const currentCfg = readComputedCfg();
+  const eq = (a: any, b: any) => a === b;
+  const matches = (p: AnimPreset) => (
+    (p.overrides.stackStep == null || eq(p.overrides.stackStep, currentCfg.stackStep)) &&
+    (p.overrides.flightCurveEnabled == null || eq(p.overrides.flightCurveEnabled, currentCfg.flightCurveEnabled)) &&
+    (p.overrides.flightCurveBend == null || eq(p.overrides.flightCurveBend, currentCfg.flightCurveBend)) &&
+    (p.overrides.flightDestOffsetX == null || eq(p.overrides.flightDestOffsetX, currentCfg.flightDestOffsetX)) &&
+    (p.overrides.flightDestOffsetY == null || eq(p.overrides.flightDestOffsetY, currentCfg.flightDestOffsetY)) &&
+    (p.overrides.flightLingerMs == null || eq(p.overrides.flightLingerMs, currentCfg.flightLingerMs))
+  );
+  const matched = animPresets.find(matches) || null;
+  const currentPreset: AnimPreset = {
+    id: 'current-config',
+    name: 'Configuración actual',
+    description: 'Valores actualmente activos en el tablero',
+    overrides: {
+      stackStep: currentCfg.stackStep,
+      flightCurveEnabled: currentCfg.flightCurveEnabled,
+      flightCurveBend: currentCfg.flightCurveBend,
+      flightDestOffsetX: currentCfg.flightDestOffsetX,
+      flightDestOffsetY: currentCfg.flightDestOffsetY,
+      flightLingerMs: currentCfg.flightLingerMs,
+    },
+  };
+  const presetsForPopover: AnimPreset[] = useMemo(() => [currentPreset, ...animPresets], [currentPreset, animPresets]);
+  const selectedForPopover: string | null = matched ? matched.id : currentPreset.id;
+
+  const onApplyAnimPreset = (p: AnimPreset) => {
+    const current = readComputedCfg();
+    const next = { ...current, ...p.overrides };
+    applyCfg(next);
+    try { window.localStorage.setItem('soluna:ui:anim-selected', p.id); } catch {}
+    setAnimSelectedId(p.id);
+    // Mantener abierto si se aplica el preset que ya es el seleccionado del popover (caso Default)
+    if (p.id === 'current-config') return; // no cerrar al aplicar Default (Configuración actual)
+    if (p.id !== selectedForPopover) setAnimOpen(false);
+  };
+
+  // Aplicar automáticamente el preset guardado si existe
+  useEffect(() => {
+    if (!animSelectedId) return;
+    const p = animPresets.find(x => x.id === animSelectedId);
+    if (!p) return;
+    const current = readComputedCfg();
+    const next = { ...current, ...p.overrides };
+    applyCfg(next);
+    // No cerramos popovers aquí; esto solo sincroniza estilos al cargar
+  }, [animSelectedId, animPresets]);
+
   return (
     <section className="header-bar" aria-label="Encabezado">
       <div className="row header">
         <h2>Soluna</h2>
         <div className="header-actions">
+          {/* Animaciones (presets de aterrizaje/apilado) */}
+          <button
+            ref={animBtnRef}
+            onClick={toggleAnimOpen}
+            aria-expanded={animOpen}
+            aria-pressed={animOpen}
+            aria-controls="anim-popover"
+            aria-label="Animaciones"
+            title="Animaciones"
+          >
+            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M12 3l6 18h-2.2l-1.5-4.6H9.7L8.2 21H6L12 3zm0 5.8L10.1 14h3.8L12 8.8z"/>
+            </svg>
+            <span className="header-btn__label">A</span>
+          </button>
           {/* Nueva partida (icono + chip) */}
           <button
             ref={newBtnRef}
@@ -191,6 +297,18 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
             dispatch({ type: 'enter-custom-setup' });
             setNewOpen(false);
           }}
+        />
+      )}
+
+      {/* Popover Animaciones */}
+      {animOpen && (
+        <AnimationsPopover
+          anchorRect={animAnchorRect}
+          popRef={animPopRef}
+          presets={presetsForPopover}
+          selectedId={selectedForPopover}
+          onApply={onApplyAnimPreset}
+          onClose={() => setAnimOpen(false)}
         />
       )}
 
