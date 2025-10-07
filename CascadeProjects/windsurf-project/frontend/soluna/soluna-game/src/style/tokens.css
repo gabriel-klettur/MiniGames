@@ -143,11 +143,11 @@
 /* Contenedor de la pila visual */
 .token-stack { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; }
 
-/* Cada disco apilado (imagen) */
+/* Cada disco apilado (imagen): por defecto apilar hacia ABAJO (final tokens estables) */
 .token-disc-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% + (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
-/* Upward stacking variant (used by debug overlays/growth to show incoming above base) */
+/* Variante de apilado hacia ARRIBA (solo overlays/crecimiento) */
 .token-disc-img.stack-up { transform: translate(-50%, calc(-50% - (var(--i, 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
-/* Top disc (head): position at highest level so tower grows upward */
+/* Top disc opcional (no se usa actualmente) */
 .token-top-img { position: absolute; left: 50%; top: 50%; width: var(--token-size); height: var(--token-size); transform: translate(-50%, calc(-50% - ((var(--i, 1) - 1) * var(--stack-step, calc(var(--token-size) * 0.25))))); }
 /* (legacy) .token-base eliminado: render actual usa imágenes; mantener limpio */
 

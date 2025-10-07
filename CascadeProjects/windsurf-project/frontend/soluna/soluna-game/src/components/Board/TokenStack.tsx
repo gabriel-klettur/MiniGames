@@ -6,15 +6,15 @@ interface TokenStackProps {
 }
 
 /**
- * TokenStack — Renderiza los discos por debajo del tope, con z-index y variable CSS --i.
+ * TokenStack — Renderiza TODA la pila anclada a la base (nivel 0 en el centro) y crece hacia ARRIBA.
+ * Base (stack[0]) se mantiene quieta en el centro; niveles superiores se apilan arriba.
  */
 export default function TokenStack({ stack }: TokenStackProps) {
-  const below = stack.slice(0, Math.max(0, stack.length - 1));
-  const count = below.length;
+  const full = stack; // base -> top
   return (
     <div className="token-stack" aria-hidden="true">
-      {below.slice().reverse().map((sym, i) => (
-        <div key={i} className="token-disc-img" style={{ ['--i' as any]: i + 1, zIndex: (count - i) }}>
+      {full.map((sym, i) => (
+        <div key={i} className="token-disc-img stack-up" style={{ ['--i' as any]: i, zIndex: i + 1 }}>
           <SymbolIcon type={sym} />
         </div>
       ))}

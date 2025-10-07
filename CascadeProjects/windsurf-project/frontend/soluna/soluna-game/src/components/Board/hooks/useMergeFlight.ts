@@ -72,13 +72,16 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
     if (!end) {
       end = { x: state.mergeFx.to.x * rect.width, y: state.mergeFx.to.y * rect.height };
     }
-    // Compute base height (pre-merge) to place the arriving head above the destination stack.
+    // Compute lift so the flying HEAD lands at the final top level.
+    // Levels to lift = baseH + sourceBelowCount.
     const mergedFinal = state.mergeFx.towersAfter.find(t => t.id === state.mergeFx!.mergedId) || null;
     const finalH = mergedFinal?.height ?? state.mergeFx.sourceStack.length;
     const baseH = Math.max(0, finalH - state.mergeFx.sourceStack.length);
-    const liftBase = Math.max(0, sizes.stackStep * baseH);
-    // Apply visual offset and the base lift so the head lands on top of the destination stack.
-    end = { x: end.x + destOffset.x, y: end.y + destOffset.y - liftBase };
+    const sourceBelowCount = Math.max(0, state.mergeFx.sourceStack.length - 1);
+    const liftLevels = baseH + sourceBelowCount;
+    const liftPx = Math.max(0, sizes.stackStep * liftLevels);
+    // Apply visual offset and the lift so the head lands at the final top level.
+    end = { x: end.x + destOffset.x, y: end.y + destOffset.y - liftPx };
     setFlightPx({ start, end });
     setFlightRunning(false);
     if (shouldLog()) {
@@ -102,8 +105,10 @@ export function useMergeFlight({ state, sizes, fieldRef }: UseMergeFlightArgs) {
       const mergedFinal2 = state.mergeFx!.towersAfter.find(t => t.id === state.mergeFx!.mergedId) || null;
       const finalH2 = mergedFinal2?.height ?? state.mergeFx!.sourceStack.length;
       const baseH2 = Math.max(0, finalH2 - state.mergeFx!.sourceStack.length);
-      const liftBase2 = Math.max(0, sizes.stackStep * baseH2);
-      const preciseEnd = { x: preciseEndRaw.x + destOffset.x, y: preciseEndRaw.y + destOffset.y - liftBase2 };
+      const sourceBelowCount2 = Math.max(0, state.mergeFx!.sourceStack.length - 1);
+      const liftLevels2 = baseH2 + sourceBelowCount2;
+      const liftPx2 = Math.max(0, sizes.stackStep * liftLevels2);
+      const preciseEnd = { x: preciseEndRaw.x + destOffset.x, y: preciseEndRaw.y + destOffset.y - liftPx2 };
       setFlightPx({ start, end: preciseEnd });
       try { void flightRef.current?.getBoundingClientRect(); } catch {}
       const raf2 = requestAnimationFrame(() => setFlightRunning(true));

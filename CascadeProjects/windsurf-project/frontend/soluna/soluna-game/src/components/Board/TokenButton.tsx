@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import type { Tower } from '../../game/types';
-import { SymbolIcon } from '../Icons';
 import TokenStack from './TokenStack';
 
 interface TokenButtonProps {
@@ -40,7 +39,6 @@ export default function TokenButton({
     >
       <div className="token-inner">
         <TokenStack stack={t.stack} />
-        <SymbolIcon type={t.top} />
         <div className="token-height">{t.height}</div>
       </div>
     </button>

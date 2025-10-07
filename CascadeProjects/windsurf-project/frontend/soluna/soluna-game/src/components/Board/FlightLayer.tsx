@@ -45,6 +45,11 @@ export default function FlightLayer({
   const rafIdRef = useRef<number | null>(null);
   const startTsRef = useRef<number | null>(null);
   const durationMsRef = useRef<number>(1250);
+  // Read stack step (px) from CSS, fallback to tokenSize * 0.25
+  const [stackStepPx, setStackStepPx] = useState<number>(() => {
+    const ts = tokenSize ?? 0;
+    return Math.max(0, ts * 0.25);
+  });
   // Initialize progress tracking when the flight starts running
   useEffect(() => {
     if (!debug) return; // Only in debug mode
@@ -65,8 +70,17 @@ export default function FlightLayer({
       else if (raw) ms = parseFloat(raw) || 1250;
       durationMsRef.current = Number.isFinite(ms) ? Math.max(200, ms) : 1250;
     } catch { durationMsRef.current = 1250; }
+    // Read --stack-step if available; fallback remains tokenSize*0.25
+    try {
+      const cs2 = getComputedStyle(flightRef.current);
+      const raw2 = (cs2.getPropertyValue('--stack-step') || '').trim();
+      let px = stackStepPx;
+      if (raw2.endsWith('px')) px = parseFloat(raw2);
+      else if (raw2) px = parseFloat(raw2) || stackStepPx;
+      setStackStepPx(Number.isFinite(px) ? Math.max(0, px) : stackStepPx);
+    } catch {}
     startTsRef.current = performance.now();
-    const total = mergeFx.sourceStack.length;
+    const total = Math.max(0, mergeFx.sourceStack.length - 1); // only below discs arrive progressively; head is flying
     const tick = () => {
       const t0 = startTsRef.current ?? performance.now();
       const p = Math.max(0, Math.min(1, (performance.now() - t0) / Math.max(1, durationMsRef.current)));
@@ -144,70 +158,71 @@ export default function FlightLayer({
           </div>
         </div>
         {/* Debug-only: stack growth visualization at destination */}
-        {debug && (
-          <div
-            className="stack-growth-overlay"
-            style={{
-              position: 'absolute',
-              left: useMP ? (flightPx.end.x - half) : flightPx.end.x,
-              top: useMP ? (flightPx.end.y - half) : flightPx.end.y,
-              width: tokenSize,
-              height: tokenSize,
-              transform: useMP ? undefined : 'translate(-50%, -50%)',
-              pointerEvents: 'none',
-              zIndex: 4,
-            }}
-          >
-            {(() => {
-              // Compute target base (pre-merge) and progressive arriving (excluding the top disc which is the flying head)
-              const merged = mergeFx.towersAfter.find(t => t.id === mergeFx.mergedId);
-              const finalH = merged?.height ?? mergeFx.sourceStack.length; // fallback
-              const finalStack = merged?.stack ?? mergeFx.sourceStack; // fallback
-              const sourceBelowCount = Math.max(0, mergeFx.sourceStack.length - 1);
-              const baseH = Math.max(0, finalH - mergeFx.sourceStack.length);
-              const baseSyms = finalStack.slice(0, baseH);
-              const n = Math.max(0, Math.min(arrivedCount, sourceBelowCount));
-              const arrivingSyms = mergeFx.sourceStack.slice(0, n); // bottom-first (no top)
-              const totalBelowCount = baseH + Math.max(0, (finalH - 1));
-              return (
-                <>
-                  {/* Base stack (pre-merge target), tinted and under arriving discs */}
-                  <div className="token-stack" aria-hidden="true" style={{ opacity: 0.7, filter: 'grayscale(0.85) brightness(0.95)' }}>
-                    {baseSyms.slice().reverse().map((sym, i) => (
-                      <div
-                        key={`base-${i}`}
-                        className="token-disc-img"
-                        style={{
-                          ['--i' as any]: i + 1,
-                          zIndex: (baseH - i),
-                        }}
-                      >
-                        <SymbolIcon type={sym} />
-                      </div>
-                    ))}
+        {debug && (() => {
+          // Compute target base (pre-merge) and progressive arriving (excluding the top disc which is the flying head)
+          const merged = mergeFx.towersAfter.find(t => t.id === mergeFx.mergedId);
+          const finalH = merged?.height ?? mergeFx.sourceStack.length; // fallback
+          const finalStack = merged?.stack ?? mergeFx.sourceStack; // fallback
+          const sourceBelowCount = Math.max(0, mergeFx.sourceStack.length - 1);
+          const baseH = Math.max(0, finalH - mergeFx.sourceStack.length);
+          const baseSyms = finalStack.slice(0, baseH);
+          // arrivedCount is computed against sourceBelowCount; clamp just in case
+          const n = Math.max(0, Math.min(arrivedCount, sourceBelowCount));
+          const arrivingSyms = mergeFx.sourceStack.slice(0, n); // bottom-first (no top)
+          // Anchor overlay at destination base center: undo the lift applied to flight end
+          // Flight end was lifted by (baseH + sourceBelowCount) * stackStepPx, so move wrapper down by that amount
+          const wrapperLeft = useMP ? (flightPx.end.x - half) : flightPx.end.x;
+          const wrapperTop = useMP ? (flightPx.end.y - half) : flightPx.end.y;
+          const translate = useMP ? undefined : `translate(-50%, calc(-50% + ${(baseH + sourceBelowCount) * stackStepPx}px))`;
+          return (
+            <div
+              className="stack-growth-overlay"
+              style={{
+                position: 'absolute',
+                left: wrapperLeft,
+                top: wrapperTop,
+                width: tokenSize,
+                height: tokenSize,
+                transform: translate,
+                pointerEvents: 'none',
+                zIndex: 4,
+              }}
+            >
+              {/* Base stack (pre-merge target), tinted and under arriving discs */}
+              <div className="token-stack" aria-hidden="true" style={{ opacity: 0.7, filter: 'grayscale(0.85) brightness(0.95)' }}>
+                {baseSyms.map((sym, i) => (
+                  <div
+                    key={`base-${i}`}
+                    className="token-disc-img stack-up"
+                    style={{
+                      ['--i' as any]: i,
+                      zIndex: i + 1,
+                    }}
+                  >
+                    <SymbolIcon type={sym} />
                   </div>
-                  {/* Arriving discs (source without head), stacked on top of base */}
-                  <div className="token-stack" aria-hidden="true" style={{ opacity: 0.9 }}>
-                    {arrivingSyms.map((sym, j) => (
-                      <div
-                        key={`arr-${j}`}
-                        className="token-disc-img stack-up"
-                        style={{
-                          ['--i' as any]: j + 1,
-                          zIndex: (totalBelowCount - (baseH + j)),
-                          opacity: 0.9,
-                          filter: 'drop-shadow(0 2px 6px rgba(255,165,0,0.35))',
-                        }}
-                      >
-                        <SymbolIcon type={sym} />
-                      </div>
-                    ))}
+                ))}
+              </div>
+              {/* Arriving discs (source without head), stacked on top of base */}
+              <div className="token-stack" aria-hidden="true" style={{ opacity: 0.9 }}>
+                {arrivingSyms.map((sym, j) => (
+                  <div
+                    key={`arr-${j}`}
+                    className="token-disc-img stack-up"
+                    style={{
+                      ['--i' as any]: baseH + j,
+                      zIndex: baseH + j + 1,
+                      opacity: 0.9,
+                      filter: 'drop-shadow(0 2px 6px rgba(255,165,0,0.35))',
+                    }}
+                  >
+                    <SymbolIcon type={sym} />
                   </div>
-                </>
-              );
-            })()}
-          </div>
-        )}
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
