@@ -33,6 +33,10 @@ export function createInitialState(): GameState {
       pieceHeight: 44, // default height in px
       pieceScale: 0.7, // default sprite scale relative to pitch basis
       orientation: 'classic',
+      showPieces: true,
+      pieceAnimMs: 200,
+      pieceWidthScaleLight: 1,
+      pieceWidthScaleDark: 1,
       showCoordsOverlay: false,
       showPipIndicators: false,
       calibration: {

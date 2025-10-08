@@ -46,8 +46,18 @@ export type Orientation = 'classic' | 'bga';
 export interface UISettings {
   pieceWidth: number; // px width of the prism-shaped piece
   pieceHeight: number; // px height of the prism-shaped piece
+  // Optional per-owner visual height overrides (sprite length)
+  pieceHeightLight?: number; // px for Light pieces (amarillas)
+  pieceHeightDark?: number;  // px for Dark pieces (rojas)
+  // Optional per-owner width factors (sprite thickness), 1.0 = base
+  pieceWidthScaleLight?: number; // 0.5..2.0 factor for Light
+  pieceWidthScaleDark?: number;  // 0.5..2.0 factor for Dark
   pieceScale?: number; // 0..1 factor to scale sprite size relative to pitch (default ~0.7)
   orientation: Orientation; // board rendering orientation
+  // Visibility toggles
+  showPieces?: boolean;      // if false, do not render piece sprites (visual only)
+  // Animation control for absolute-layer movement
+  pieceAnimMs?: number;      // duration in ms for left/top transition; 0 disables animation
   // Overlay calibration parameters to align sprites with board artwork
   calibration?: {
     originX: number;       // px offset added to computed origin.x

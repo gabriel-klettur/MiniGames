@@ -48,9 +48,33 @@ const gameSlice = createSlice({
       const v = Math.max(24, Math.min(120, Math.round(action.payload)));
       state.ui.pieceHeight = v;
     },
+    setPieceHeightLight(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(24, Math.min(120, Math.round(action.payload)));
+      state.ui.pieceHeightLight = v;
+    },
+    setPieceHeightDark(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(24, Math.min(120, Math.round(action.payload)));
+      state.ui.pieceHeightDark = v;
+    },
     setPieceScale(state: GameState, action: PayloadAction<number>) {
       const v = Math.max(0.3, Math.min(2.0, Number(action.payload)));
       state.ui.pieceScale = v;
+    },
+    setPieceWidthScaleLight(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(0.5, Math.min(2.0, Number(action.payload)));
+      state.ui.pieceWidthScaleLight = v;
+    },
+    setPieceWidthScaleDark(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(0.5, Math.min(2.0, Number(action.payload)));
+      state.ui.pieceWidthScaleDark = v;
+    },
+    // Piece visibility & movement animation
+    setShowPieces(state: GameState, action: PayloadAction<boolean>) {
+      state.ui.showPieces = !!action.payload;
+    },
+    setPieceAnimMs(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(0, Math.min(2000, Math.round(action.payload)));
+      state.ui.pieceAnimMs = v;
     },
     // Debug overlays
     setShowCoordsOverlay(state: GameState, action: PayloadAction<boolean>) {
@@ -177,5 +201,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
 export default gameSlice.reducer;

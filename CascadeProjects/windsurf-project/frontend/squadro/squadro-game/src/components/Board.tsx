@@ -467,7 +467,13 @@ export default function Board() {
   const pitchX = Math.max(4, basePitch * (Number.isFinite(cal.pitchScaleX) ? cal.pitchScaleX : 1));
   const pitchY = Math.max(4, basePitch * (Number.isFinite(cal.pitchScaleY) ? cal.pitchScaleY : 1));
   const origin = { x: baseOrigin.x + (cal.originX || 0), y: baseOrigin.y + (cal.originY || 0) };
-  const pieceElements = USE_ABSOLUTE_LAYER
+  const showPieces = ui?.showPieces !== false;
+  const animMs = Math.max(0, Math.min(2000, ui?.pieceAnimMs ?? 200));
+  // Rotate sprites to match start direction: BGA = 0°, classic = 180°
+  const rotationDeg = orientation === 'classic' ? 180 : 0;
+  // Baseline long side for sprites (affects scaleY mapping)
+  const heightBaseline = 44;
+  const pieceElements = (USE_ABSOLUTE_LAYER && showPieces)
     ? pieces.filter((p) => p.state !== 'retirada').map((p) => {
         const { row, col } = coordOfPiece(p);
         const { row: dRow, col: dCol } = mapRowCol(row, col);
@@ -485,8 +491,16 @@ export default function Board() {
           if (typeof s === 'number' && isFinite(s)) return Math.max(0.3, Math.min(2.0, s));
           return 0.7; // default
         })();
-        const w = Math.max(minW, Math.min(Math.round(basis * scale), maxW));
+        const baseW = basis * scale;
+        const wScale = isLight ? (ui?.pieceWidthScaleLight ?? 1) : (ui?.pieceWidthScaleDark ?? 1);
+        const safeWScale = Math.max(0.5, Math.min(2.0, Number.isFinite(wScale) ? (wScale as number) : 1));
+        const w = Math.max(minW, Math.min(Math.round(baseW * safeWScale), maxW));
         const src = isLight ? fichaAmarilla : fichaRoja;
+        // Owner-specific vertical stretch
+        const rawH = isLight
+          ? (ui?.pieceHeightLight ?? ui?.pieceHeight ?? heightBaseline)
+          : (ui?.pieceHeightDark ?? ui?.pieceHeight ?? heightBaseline);
+        const pieceStretchY = Math.max(0.5, Math.min(2.0, (rawH || heightBaseline) / heightBaseline));
         return (
           <div
             key={p.id}
@@ -496,9 +510,10 @@ export default function Board() {
               left: cx,
               top: cy,
               width: w,
-              transform: 'translate(-50%, -50%)',
+              transform: `translate(-50%, -50%)${rotationDeg ? ` rotate(${rotationDeg}deg)` : ''}${pieceStretchY !== 1 ? ` scaleY(${pieceStretchY})` : ''}`,
               willChange: 'left, top',
               zIndex: 3,
+              transition: animMs <= 0 ? 'none' : `left ${animMs}ms ease, top ${animMs}ms ease`,
             }}
           >
             <button

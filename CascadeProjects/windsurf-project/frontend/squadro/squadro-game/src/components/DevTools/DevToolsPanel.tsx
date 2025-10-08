@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
-import UIUX from './UIUX';
+import UIUX from './UIUX/UIUX';
 import Button from '../ui/Button';
 import AIDiagnosticsPanel from './IAPanel';
 
