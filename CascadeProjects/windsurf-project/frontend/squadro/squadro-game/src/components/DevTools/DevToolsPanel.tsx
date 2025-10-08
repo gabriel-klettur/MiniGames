@@ -3,7 +3,7 @@ import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import UIUX from './UIUX/UIUX';
 import Button from '../ui/Button';
-import AIDiagnosticsPanel from '../IA/IAPanel';
+import AIDiagnosticsPanel from './IAPanel/IAPanel';
 
 export default function DevToolsPanel() {
   const { winner } = useAppSelector((s: RootState) => s.game);

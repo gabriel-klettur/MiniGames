@@ -1,0 +1,103 @@
+/* IAUserPanel: estilos alineados con Soluna */
+
+.robot-icon { color: #ffffff; transition: opacity 0.2s ease, filter 0.2s ease, color 0.2s ease; }
+.robot-icon.inactive { color: #ffffff; }
+.robot-icon.active { color: #22c55e; animation: blink-green 1s steps(1, end) infinite; }
+@keyframes blink-green {
+  0% { opacity: 1; filter: none; }
+  50% { opacity: 0.6; filter: brightness(1.25); }
+  100% { opacity: 1; filter: none; }
+}
+
+/* Botones compactos estilo pill con badge P1/P2 */
+.ia-toggle-btn { padding: 4px 8px; height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 9999px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); transition: background 0.15s ease; }
+.ia-toggle-btn:hover { background: rgba(255,255,255,0.06); }
+.ia-badge { width: 16px; height: 16px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff; line-height: 1; }
+.ia-badge.p1 { background: #f97316; }
+.ia-badge.p2 { background: #7f1d1d; }
+
+/* Contenedor derecho con fondo y sombra */
+.iauser-right { background: linear-gradient(180deg, #141a23 0%, #0f151e 100%); padding: 6px; border-radius: 12px; box-shadow: inset 0 1px 2px rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.35); display: inline-flex; align-items: center; gap: 8px; }
+
+/* Layout utilitario para el panel */
+.iauser-inline { display: flex; align-items: center; gap: 8px; }
+.iauser-left { display: inline-flex; align-items: center; gap: 8px; }
+
+/* Botón 'Mover IA' */
+.ia-move-btn {
+  background: linear-gradient(180deg, #2ddc72 0%, #22c55e 60%, #19b354 100%);
+  color: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  height: 36px;
+  width: 52px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  transition: filter 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease, background 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.ia-move-btn::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.12) 25%, rgba(255,255,255,0.04) 46%, rgba(255,255,255,0) 60%); pointer-events: none; }
+.ia-move-btn:hover { filter: brightness(1.05); }
+.ia-move-btn:active { transform: translateY(0.5px); box-shadow: 0 1px 4px rgba(0,0,0,0.35), inset 0 2px 6px rgba(0,0,0,0.22); }
+.ia-move-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(34,197,94,0.35), 0 2px 6px rgba(0,0,0,0.35); }
+.ia-move-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.ia-move-btn svg { color: inherit; }
+.ia-move-btn.is-busy { background: linear-gradient(180deg, #26c766 0%, #1faa56 60%, #199e4e 100%); box-shadow: inset 0 3px 9px rgba(0,0,0,0.38), 0 1px 3px rgba(0,0,0,0.25); filter: none; }
+
+/* --- Base panel styles (mirroring Soluna panels.css) --- */
+.iauser-panel {
+  /* Local fallbacks for CSS variables so panel looks the same without global theme vars */
+  --panel-alpha: 0.75;
+  --panel-border-color: rgba(255,255,255,0.12);
+  --panel-radius: 12px;
+  --panel-shadow: 0 10px 24px rgba(0,0,0,0.45);
+  --panel-blur: 8px;
+  --text: #e5e7eb;
+  --accent: #10b981;
+}
+.panel {
+  background: rgba(17, 24, 39, var(--panel-alpha));
+  border: 1px solid var(--panel-border-color);
+  border-radius: var(--panel-radius);
+  padding: 12px;
+  align-self: start;
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
+}
+.panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.panel .row + .row { margin-top: 6px; }
+.panel.small { padding: 10px; border-radius: calc(var(--panel-radius) - 2px); }
+.panel .row.actions button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 9999px;
+  transition: background-color 150ms ease, filter 150ms ease, transform 120ms ease;
+}
+.panel .row.actions button:not(.primary) {
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur) * 0.75));
+}
+.panel .row.actions button[aria-pressed="true"]:not(.primary) {
+  background: rgba(17, 24, 39, 0.72);
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.panel .row.actions button:not(.primary):hover { filter: brightness(1.07); }
+.panel .row.actions button:not(.primary):active { transform: translateY(0.5px); filter: brightness(0.98); }
+.panel .row.actions button:disabled { opacity: 0.65; cursor: not-allowed; filter: none; transform: none; }
+
+/* Depth pills active state (to highlight selected difficulty) */
+.vsai-diffs button.active {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.30);
+}

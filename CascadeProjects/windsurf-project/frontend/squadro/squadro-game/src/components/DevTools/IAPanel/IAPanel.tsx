@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import type { RootState } from '../../store';
-import Button from '../ui/Button';
-import ToggleSwitch from '../ui/ToggleSwitch';
-import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers } from '../../store/gameSlice';
-import { store } from '../../store';
-import { findBestMove } from '../../ia/search';
+import { useAppDispatch, useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store';
+import Button from '../../ui/Button';
+import ToggleSwitch from '../../ui/ToggleSwitch';
+import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers } from '../../../store/gameSlice';
+import { store } from '../../../store';
+import { findBestMove } from '../../../ia/search';
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (

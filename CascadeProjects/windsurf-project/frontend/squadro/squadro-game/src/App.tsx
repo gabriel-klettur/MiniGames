@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Board from './components/Board/Board';
 import HeaderPanel from './components/HeaderPanel/HeaderPanel';
+import IAUserPanel from './components/IAUserPanel/IAUserPanel';
 import InfoPanel from './components/InfoPanel';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FootPanel from './components/FootPanel';
@@ -19,6 +20,7 @@ function App() {
   const timerRef = useRef<number | null>(null);
   const workersRef = useRef<Worker[] | null>(null);
   const [showDev, setShowDev] = useState<boolean>(false);
+  const [showIA, setShowIA] = useState<boolean>(false);
 
   // Advanced autoplay for AI side using time-bounded search
   useEffect(() => {
@@ -238,7 +240,7 @@ function App() {
   return (
     <div className="min-h-screen bg-transparent text-gray-100 overflow-x-hidden">
       <div className="w-full px-[10px]">
-        <HeaderPanel />
+        <HeaderPanel showIA={showIA} onToggleIA={() => setShowIA((v) => !v)} />
       </div>
       {/* Full-width play area with exact 10px side margins (no horizontal overflow) */}
       <div className="w-full px-[10px] flex flex-col gap-4 overflow-x-hidden">
@@ -246,6 +248,12 @@ function App() {
         <div className=" p-4">
           <InfoPanel />
         </div>
+        {/* IA user panel (toggleable from header) */}
+        {showIA && (
+          <div className="w-full px-[10px]">
+            <IAUserPanel />
+          </div>
+        )}
         <main className="w-full overflow-x-hidden">
           <Board />
         </main>
