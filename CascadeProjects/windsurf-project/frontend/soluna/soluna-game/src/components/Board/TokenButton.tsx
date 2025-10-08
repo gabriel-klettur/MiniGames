@@ -6,6 +6,7 @@ interface TokenButtonProps {
   tower: Tower;
   className: string;
   style: CSSProperties;
+  showHeight?: boolean;
   onClick: () => void;
   onPointerDown: (e: React.PointerEvent) => void;
   onPointerMove: (e: React.PointerEvent) => void;
@@ -17,6 +18,7 @@ export default function TokenButton({
   tower: t,
   className,
   style,
+  showHeight = true,
   onClick,
   onPointerDown,
   onPointerMove,
@@ -39,7 +41,9 @@ export default function TokenButton({
     >
       <div className="token-inner">
         <TokenStack stack={t.stack} />
-        <div className="token-height">{t.height}</div>
+        {showHeight && (
+          <div className="token-height">{t.height}</div>
+        )}
       </div>
     </button>
   );

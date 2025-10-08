@@ -33,7 +33,7 @@ export default function FlightLayer({
   debug,
   tokenSize,
 }: FlightLayerProps) {
-  if (!mergeFx || !flightPx) return null;
+  const noFlight = !mergeFx || !flightPx;
   const endOnceRef = useRef(false);
   // Reset the end-once guard whenever a new flight is prepared
   // This ensures that each merge animation will trigger commit/clear exactly once
@@ -53,6 +53,13 @@ export default function FlightLayer({
   // Initialize progress tracking when the flight starts running
   useEffect(() => {
     if (!debug) return; // Only in debug mode
+    if (!mergeFx) {
+      // No merge active: reset and stop tracking
+      setArrivedCount(0);
+      if (rafIdRef.current != null) { cancelAnimationFrame(rafIdRef.current); rafIdRef.current = null; }
+      startTsRef.current = null;
+      return;
+    }
     if (!flightRunning || !flightRef.current) {
       // Reset when flight not running
       setArrivedCount(0);
@@ -93,6 +100,7 @@ export default function FlightLayer({
   }, [debug, flightRunning, flightRef, mergeFx?.sourceStack.length]);
   const useMP = supportsMotionPath && !!curvePath;
   const half = Math.max(0, (tokenSize ?? 0) / 2);
+  if (noFlight) return null;
   return (
     <div className="merge-flight-layer" key={`flight-${mergeFx.at}`}>
       <div

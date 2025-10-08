@@ -5,6 +5,7 @@ export type Cfg = {
   dropHighlight: boolean;
   freeMove: boolean;
   mergeThreshold: number;
+  stackIndicatorVisible: boolean;
   flightCurveEnabled: boolean;
   flightCurveBend: number;
   flightDestOffsetY: number;
@@ -30,6 +31,7 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     dropHighlight: asNumber(getVar('--drop-highlight', '1'), 1) > 0,
     freeMove: asNumber(getVar('--free-move', '1'), 1) > 0,
     mergeThreshold: asNumber(getVar('--merge-threshold-factor', '0.6'), 0.6),
+    stackIndicatorVisible: asNumber(getVar('--stack-indicator-visible', '1'), 1) > 0,
     flightCurveEnabled: asNumber(getVar('--flight-curve-enabled', '1'), 1) > 0,
     flightCurveBend: asNumber(getVar('--flight-curve-bend', '0.22'), 0.22),
     flightDestOffsetY: asNumber(getVar('--flight-dest-offset-y', '0px'), 0),
@@ -46,6 +48,7 @@ export function applyCfg(cfg: Cfg, el: HTMLElement | null = getPlayEllipse()): v
   el.style.setProperty('--drop-highlight', cfg.dropHighlight ? '1' : '0');
   el.style.setProperty('--free-move', cfg.freeMove ? '1' : '0');
   el.style.setProperty('--merge-threshold-factor', String(cfg.mergeThreshold));
+  el.style.setProperty('--stack-indicator-visible', cfg.stackIndicatorVisible ? '1' : '0');
   el.style.setProperty('--flight-curve-enabled', cfg.flightCurveEnabled ? '1' : '0');
   el.style.setProperty('--flight-curve-bend', String(cfg.flightCurveBend));
   el.style.setProperty('--flight-dest-offset-y', `${cfg.flightDestOffsetY}px`);
@@ -62,6 +65,7 @@ export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
   el.style.removeProperty('--drop-highlight');
   el.style.removeProperty('--free-move');
   el.style.removeProperty('--merge-threshold-factor');
+  el.style.removeProperty('--stack-indicator-visible');
   el.style.removeProperty('--flight-curve-enabled');
   el.style.removeProperty('--flight-curve-bend');
   el.style.removeProperty('--flight-dest-offset-y');

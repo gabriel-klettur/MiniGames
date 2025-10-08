@@ -86,6 +86,14 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
     return () => window.clearTimeout(id);
   }, [state.spawnFx, dispatch]);
 
+  // Re-render when UI/UX config changes (so we re-read CSS vars like --stack-indicator-visible)
+  const [, forceRender] = useState({});
+  useEffect(() => {
+    const onCfg = () => forceRender({});
+    window.addEventListener('soluna:ui:cfg-updated', onCfg as any);
+    return () => window.removeEventListener('soluna:ui:cfg-updated', onCfg as any);
+  }, []);
+
   return (
     <div className="board-wrapper">
       <div className="play-area">
@@ -104,6 +112,17 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
               };
               const teleportRandom = cssBool('--teleport-random');
               const teleportManualConfirm = cssBool('--teleport-manual-confirm');
+              const stackIndicatorVisible = (() => {
+                const fromCss = cssBool('--stack-indicator-visible');
+                try {
+                  const raw = window.localStorage.getItem('soluna:ui:cfg');
+                  if (raw) {
+                    const cfgAny = JSON.parse(raw) as any;
+                    if (typeof cfgAny?.stackIndicatorVisible === 'boolean') return cfgAny.stackIndicatorVisible;
+                  }
+                } catch {}
+                return fromCss;
+              })();
               const spawn = !!state.spawnFx && state.spawnFx.ids.includes(t.id);
               const spawnKindOk = !state.spawnFx ? false : (state.spawnFx.kind === 'random' ? teleportRandom : teleportManualConfirm);
               return (
@@ -118,6 +137,7 @@ export default function Board({ onNewGame, onNewRound }: { onNewGame?: () => voi
                   ['--stack-level' as any]: Math.min(10, t.height - 1),
                   ['--stack-count' as any]: t.height,
                 }}
+                showHeight={stackIndicatorVisible}
                 onClick={() => onCellClick(t.id)}
                 onPointerDown={(e) => handlePointerDown(e, t.id)}
                 onPointerMove={(e) => handlePointerMove(e, t.id)}

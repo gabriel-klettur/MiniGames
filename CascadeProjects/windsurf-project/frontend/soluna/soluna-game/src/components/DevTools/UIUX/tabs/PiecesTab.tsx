@@ -1,10 +1,16 @@
 import React from 'react';
 import type { Cfg } from '../model/config';
-import { SliderRow } from '../components/Rows';
+import { SliderRow, CheckboxRow } from '../components/Rows';
 
 export function PiecesTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
+      <CheckboxRow
+        label={cfg.stackIndicatorVisible ? 'Indicador de altura: visible' : 'Indicador de altura: oculto'}
+        checked={cfg.stackIndicatorVisible}
+        onChange={onNum('stackIndicatorVisible')}
+        tooltip="Muestra/Oculta el número de altura de la pila en cada ficha."
+      />
       <SliderRow
         label={`Separación entre discos: ${Math.round(cfg.stackStep)}px`}
         value={cfg.stackStep}

@@ -9,6 +9,10 @@ export function useUIUXConfig() {
   useEffect(() => {
     applyCfg(cfg);
     saveCfgLS(cfg);
+    try {
+      const ev = new CustomEvent('soluna:ui:cfg-updated', { detail: cfg });
+      window.dispatchEvent(ev);
+    } catch {}
   }, [cfg]);
 
   const onNum = (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => {
