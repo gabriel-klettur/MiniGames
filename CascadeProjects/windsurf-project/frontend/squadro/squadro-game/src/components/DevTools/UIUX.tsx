@@ -14,6 +14,17 @@ export default function UIUX() {
   const MIN_SCALE = 0.8;
   const MAX_SCALE = 1.2;
 
+  // Helpers to keep slider math precise and bounded
+  const decimalsOf = (n: number): number => {
+    const s = n.toString();
+    const i = s.indexOf('.');
+    return i === -1 ? 0 : s.length - i - 1;
+  };
+  const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
+  const roundByStep = (v: number, step: number): number => Number(v.toFixed(decimalsOf(step)));
+  const nextVal = (current: number, step: number, min: number, max: number, dir: 1 | -1): number =>
+    clamp(roundByStep(current + dir * step, step), min, max);
+
   return (
     <div className="mt-3 w-full rounded-lg border border-neutral-800 bg-neutral-900/70 p-3 overflow-hidden">
       <h3 className="text-xs font-semibold text-neutral-300 mb-2">Calibración de Tablero</h3>
@@ -53,8 +64,17 @@ export default function UIUX() {
       </div>
 
       {/* Origin X */}
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 w-full">
+      <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-2 w-full">
         <label className="text-xs text-neutral-400 whitespace-nowrap">Origen X</label>
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationOriginX(nextVal(cal.originX, 1, MIN_ORIGIN, MAX_ORIGIN, -1)))}
+          aria-label="Decrementar Origen X"
+          title="-1 px"
+        >
+          −
+        </Button>
         <input
           type="range"
           min={MIN_ORIGIN}
@@ -65,6 +85,15 @@ export default function UIUX() {
           className="min-w-0 w-full accent-blue-400"
           aria-label="Origen X (slider)"
         />
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationOriginX(nextVal(cal.originX, 1, MIN_ORIGIN, MAX_ORIGIN, +1)))}
+          aria-label="Incrementar Origen X"
+          title="+1 px"
+        >
+          +
+        </Button>
         <input
           type="number"
           min={MIN_ORIGIN}
@@ -80,8 +109,17 @@ export default function UIUX() {
       <div className="text-[11px] text-neutral-500 mt-2">Offset X: {cal.originX}px (rango {MIN_ORIGIN}..{MAX_ORIGIN})</div>
 
       {/* Origin Y */}
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 w-full mt-4">
+      <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-2 w-full mt-4">
         <label className="text-xs text-neutral-400 whitespace-nowrap">Origen Y</label>
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationOriginY(nextVal(cal.originY, 1, MIN_ORIGIN, MAX_ORIGIN, -1)))}
+          aria-label="Decrementar Origen Y"
+          title="-1 px"
+        >
+          −
+        </Button>
         <input
           type="range"
           min={MIN_ORIGIN}
@@ -92,6 +130,15 @@ export default function UIUX() {
           className="min-w-0 w-full accent-blue-400"
           aria-label="Origen Y (slider)"
         />
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationOriginY(nextVal(cal.originY, 1, MIN_ORIGIN, MAX_ORIGIN, +1)))}
+          aria-label="Incrementar Origen Y"
+          title="+1 px"
+        >
+          +
+        </Button>
         <input
           type="number"
           min={MIN_ORIGIN}
@@ -107,8 +154,17 @@ export default function UIUX() {
       <div className="text-[11px] text-neutral-500 mt-2">Offset Y: {cal.originY}px (rango {MIN_ORIGIN}..{MAX_ORIGIN})</div>
 
       {/* Pitch scale X */}
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 w-full mt-4">
+      <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-2 w-full mt-4">
         <label className="text-xs text-neutral-400 whitespace-nowrap">Escala de Pitch X</label>
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationPitchScaleX(nextVal(cal.pitchScaleX, 0.005, MIN_SCALE, MAX_SCALE, -1)))}
+          aria-label="Decrementar Pitch X"
+          title="-0.005"
+        >
+          −
+        </Button>
         <input
           type="range"
           min={MIN_SCALE}
@@ -119,6 +175,15 @@ export default function UIUX() {
           className="min-w-0 w-full accent-blue-400"
           aria-label="Escala de pitch X (slider)"
         />
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationPitchScaleX(nextVal(cal.pitchScaleX, 0.005, MIN_SCALE, MAX_SCALE, +1)))}
+          aria-label="Incrementar Pitch X"
+          title="+0.005"
+        >
+          +
+        </Button>
         <input
           type="number"
           min={MIN_SCALE}
@@ -134,8 +199,17 @@ export default function UIUX() {
       <div className="text-[11px] text-neutral-500 mt-2">Pitch X = base × {cal.pitchScaleX.toFixed(3)} (rango {MIN_SCALE}..{MAX_SCALE})</div>
 
       {/* Pitch scale Y */}
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 w-full mt-4">
+      <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-2 w-full mt-4">
         <label className="text-xs text-neutral-400 whitespace-nowrap">Escala de Pitch Y</label>
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationPitchScaleY(nextVal(cal.pitchScaleY, 0.005, MIN_SCALE, MAX_SCALE, -1)))}
+          aria-label="Decrementar Pitch Y"
+          title="-0.005"
+        >
+          −
+        </Button>
         <input
           type="range"
           min={MIN_SCALE}
@@ -146,6 +220,15 @@ export default function UIUX() {
           className="min-w-0 w-full accent-blue-400"
           aria-label="Escala de pitch Y (slider)"
         />
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setCalibrationPitchScaleY(nextVal(cal.pitchScaleY, 0.005, MIN_SCALE, MAX_SCALE, +1)))}
+          aria-label="Incrementar Pitch Y"
+          title="+0.005"
+        >
+          +
+        </Button>
         <input
           type="number"
           min={MIN_SCALE}
@@ -161,8 +244,17 @@ export default function UIUX() {
       <div className="text-[11px] text-neutral-500 mt-2">Pitch Y = base × {cal.pitchScaleY.toFixed(3)} (rango {MIN_SCALE}..{MAX_SCALE})</div>
 
       {/* Piece Scale */}
-      <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-2 w-full mt-5">
+      <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-2 w-full mt-5">
         <label className="text-xs text-neutral-400 whitespace-nowrap">Tamaño de ficha</label>
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setPieceScale(nextVal(pieceScale, 0.01, 0.3, 2.0, -1)))}
+          aria-label="Decrementar tamaño de ficha"
+          title="-0.01"
+        >
+          −
+        </Button>
         <input
           type="range"
           min={0.3}
@@ -173,6 +265,15 @@ export default function UIUX() {
           className="min-w-0 w-full accent-amber-400"
           aria-label="Escala de ficha (slider)"
         />
+        <Button
+          size="sm"
+          variant="neutral"
+          onClick={() => dispatch(setPieceScale(nextVal(pieceScale, 0.01, 0.3, 2.0, +1)))}
+          aria-label="Incrementar tamaño de ficha"
+          title="+0.01"
+        >
+          +
+        </Button>
         <input
           type="number"
           min={0.3}

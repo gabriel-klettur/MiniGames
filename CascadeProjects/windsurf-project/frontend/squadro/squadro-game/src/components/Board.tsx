@@ -327,7 +327,9 @@ export default function Board() {
                   background: 'linear-gradient(180deg, #fcd34d 0%, #f59e0b 100%)',
                   transform: 'rotate(90deg)',
                   transformOrigin: '50% 50%',
-                  boxShadow: isActive ? '0 0 0 2px rgba(8, 145, 178, 0.35)' : 'none',
+                  boxShadow: isActive
+                    ? '0 0 0 2px rgba(8, 145, 178, 0.35), 0 2px 4px rgba(0,0,0,0.45), 0 10px 24px rgba(0,0,0,0.35)'
+                    : '0 2px 4px rgba(0,0,0,0.45), 0 10px 24px rgba(0,0,0,0.35)',
                   opacity: isActive ? 1 : 0.6,
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 }
@@ -336,7 +338,9 @@ export default function Board() {
                   height: h,
                   clipPath: 'polygon(50% 0%, 85% 15%, 85% 85%, 50% 100%, 15% 85%, 15% 15%)',
                   background: 'linear-gradient(180deg, #a54d5b 0%, #6e2430 100%)',
-                  boxShadow: isActive ? '0 0 0 2px rgba(8, 145, 178, 0.35)' : 'none',
+                  boxShadow: isActive
+                    ? '0 0 0 2px rgba(8, 145, 178, 0.35), 0 2px 4px rgba(0,0,0,0.45), 0 10px 24px rgba(0,0,0,0.35)'
+                    : '0 2px 4px rgba(0,0,0,0.45), 0 10px 24px rgba(0,0,0,0.35)',
                   opacity: isActive ? 1 : 0.6,
                   cursor: isActive ? 'pointer' : 'not-allowed',
                 };
@@ -515,7 +519,14 @@ export default function Board() {
                 src={src}
                 alt={isLight ? 'Ficha amarilla' : 'Ficha roja'}
                 draggable={false}
-                style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none', pointerEvents: 'none' }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  height: 'auto',
+                  userSelect: 'none',
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.45)) drop-shadow(0 10px 24px rgba(0,0,0,0.35))',
+                }}
               />
             </button>
             {USE_DIRECTION_OVERLAY && (

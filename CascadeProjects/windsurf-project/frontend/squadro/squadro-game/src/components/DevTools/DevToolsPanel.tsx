@@ -2,15 +2,12 @@ import { useState } from 'react';
 import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import UIUX from './UIUX';
-import EstadoTableroPanel from './EstadoTableroPanel';
 import Button from '../ui/Button';
 import AIDiagnosticsPanel from './IAPanel';
 
 export default function DevToolsPanel() {
   const { turn, winner } = useAppSelector((s: RootState) => s.game);
-  const [showUIUX, setShowUIUX] = useState(false);
-  const [showEstado, setShowEstado] = useState(true);
-  const [showIA, setShowIA] = useState(true);
+  const [activeTab, setActiveTab] = useState<'IA' | 'UIUX' | null>('IA');
 
   return (
     <div className="w-full overflow-x-auto rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
@@ -19,19 +16,9 @@ export default function DevToolsPanel() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="primary"
-            onClick={() => setShowEstado((v) => !v)}
-            pressed={showEstado}
-            aria-label="Mostrar/Ocultar Estado"
-            title="Mostrar/Ocultar Estado"
-          >
-            Estado
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={() => setShowIA((v) => !v)}
-            pressed={showIA}
+            variant={activeTab === 'IA' ? 'primary' : 'neutral'}
+            onClick={() => setActiveTab(activeTab === 'IA' ? null : 'IA')}
+            pressed={activeTab === 'IA'}
             aria-label="Mostrar/Ocultar IA"
             title="Mostrar/Ocultar IA"
           >
@@ -39,9 +26,9 @@ export default function DevToolsPanel() {
           </Button>
           <Button
             size="sm"
-            variant="primary"
-            onClick={() => setShowUIUX((v) => !v)}
-            pressed={showUIUX}
+            variant={activeTab === 'UIUX' ? 'primary' : 'neutral'}
+            onClick={() => setActiveTab(activeTab === 'UIUX' ? null : 'UIUX')}
+            pressed={activeTab === 'UIUX'}
             aria-label="Mostrar/Ocultar UI/UX"
             title="Mostrar/Ocultar UI/UX"
           >
@@ -50,9 +37,8 @@ export default function DevToolsPanel() {
           <div className="text-xs text-neutral-400">Turno: {turn}{winner ? ` • Ganador: ${winner}` : ''}</div>
         </div>
       </div>
-      {showEstado && <EstadoTableroPanel />}
-      {showIA && <AIDiagnosticsPanel />}
-      {showUIUX && <UIUX />}
+      {activeTab === 'IA' && <AIDiagnosticsPanel />}
+      {activeTab === 'UIUX' && <UIUX />}
     </div>
   );
 }
