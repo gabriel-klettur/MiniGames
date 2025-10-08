@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import Board from './components/Board';
-import HeaderPanel from './components/HeaderPanel';
+import Board from './components/Board/Board';
+import HeaderPanel from './components/HeaderPanel/HeaderPanel';
 import InfoPanel from './components/InfoPanel';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FootPanel from './components/FootPanel';
@@ -10,8 +10,8 @@ import type { RootState } from './store';
 import { store } from './store';
 import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded } from './store/gameSlice';
 import { movePiece as movePieceRules } from './game/rules';
-import { findBestMove } from './ai/search';
-import { getWorkers, resetPool } from './ai/workerPool';
+import { findBestMove } from './ia/search';
+import { getWorkers, resetPool } from './ia/workerPool';
 
 function App() {
   const dispatch = useAppDispatch();
@@ -236,7 +236,7 @@ function App() {
   }, [ai?.enabled, ai?.aiSide, ai?.speed, ai?.timeMode, ai?.timeSeconds, ai?.difficulty, turn, winner, dispatch]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-gray-100 overflow-x-hidden">
       <div className="w-full px-[10px]">
         <HeaderPanel />
       </div>
@@ -261,7 +261,7 @@ function App() {
         aria-pressed={showDev}
         aria-label="Alternar panel de desarrollo"
         title="Dev"
-        className="fixed bottom-4 right-4 px-3 py-2 rounded-full bg-gray-800 hover:bg-gray-700 active:bg-gray-700 border border-white/10 text-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/20 shadow-lg"
+        className="chip-btn fixed bottom-4 right-4"
       >
         Dev
       </button>

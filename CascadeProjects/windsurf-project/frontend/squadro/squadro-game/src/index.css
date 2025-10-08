@@ -15,6 +15,16 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Ensure the background image also paints on the root element */
+html {
+  /* Global background image (mirror of body) */
+  background-image: url("/src/assets/background.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
 /* Ensure dark theme even if Tailwind is not processed yet */
 html.dark body {
   background-color: #111827; /* tailwind gray-900 */
@@ -36,6 +46,12 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* Global background image: always visible */
+  background-image: url("/src/assets/background.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  background-size: cover;
 }
 
 h1 {

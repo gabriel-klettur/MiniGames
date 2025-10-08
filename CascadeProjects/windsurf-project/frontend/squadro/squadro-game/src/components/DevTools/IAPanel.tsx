@@ -5,7 +5,7 @@ import Button from '../ui/Button';
 import ToggleSwitch from '../ui/ToggleSwitch';
 import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers } from '../../store/gameSlice';
 import { store } from '../../store';
-import { findBestMove } from '../../ai/search';
+import { findBestMove } from '../../ia/search';
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (

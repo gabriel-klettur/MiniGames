@@ -1,8 +1,10 @@
 import { useAppSelector } from '../store/hooks';
 import type { RootState } from '../store';
+import fichaAmarilla from '../assets/ficha_amarilla.png';
+import fichaRoja from '../assets/ficha_roja.png';
 
 export default function InfoPanel() {
-  const { pieces, ai } = useAppSelector((s: RootState) => s.game);
+  const { pieces, ai, turn } = useAppSelector((s: RootState) => s.game);
   const retiredLight = pieces.filter((p) => p.owner === 'Light' && p.state === 'retirada').length;
   const retiredDark = pieces.filter((p) => p.owner === 'Dark' && p.state === 'retirada').length;
 
@@ -55,18 +57,25 @@ export default function InfoPanel() {
           </div>
         </div>
       )}
-    
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40">
-          <div className="text-xs text-neutral-400">Retiradas Light</div>
+      <div className="grid grid-cols-3 gap-3 items-stretch">
+        {/* Retiradas Light (sin label) */}
+        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40 text-center flex items-center justify-center">
           <div className="text-xl font-bold text-yellow-300">{retiredLight} / 4</div>
         </div>
-        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40">
-          <div className="text-xs text-neutral-400">Retiradas Dark</div>
-          <div className="text-xl font-bold text-emerald-400">{retiredDark} / 4</div>
+        {/* Turno al centro: solo imagen de la ficha */}
+        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40 text-center flex items-center justify-center">
+          <img
+            src={turn === 'Light' ? fichaAmarilla : fichaRoja}
+            alt={turn === 'Light' ? 'Ficha amarilla (Light)' : 'Ficha roja (Dark)'}
+            draggable={false}
+            className="w-10 h-auto select-none"
+          />
+        </div>
+        {/* Retiradas Dark (sin label) */}
+        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40 text-center flex items-center justify-center">
+          <div className="text-xl font-bold" style={{ color: '#dc143c', textShadow: '0 1px 0 rgba(0,0,0,0.35)' }}>{retiredDark} / 4</div>
         </div>
       </div>
     </div>
   );
 }
-

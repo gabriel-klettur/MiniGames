@@ -3,10 +3,10 @@ import { useAppSelector } from '../../store/hooks';
 import type { RootState } from '../../store';
 import UIUX from './UIUX/UIUX';
 import Button from '../ui/Button';
-import AIDiagnosticsPanel from './IAPanel';
+import AIDiagnosticsPanel from '../IA/IAPanel';
 
 export default function DevToolsPanel() {
-  const { turn, winner } = useAppSelector((s: RootState) => s.game);
+  const { winner } = useAppSelector((s: RootState) => s.game);
   const [activeTab, setActiveTab] = useState<'IA' | 'UIUX' | null>('IA');
 
   return (
@@ -34,7 +34,9 @@ export default function DevToolsPanel() {
           >
             UI/UX
           </Button>
-          <div className="text-xs text-neutral-400">Turno: {turn}{winner ? ` • Ganador: ${winner}` : ''}</div>
+          {winner && (
+            <div className="text-xs text-neutral-400">Ganador: {winner}</div>
+          )}
         </div>
       </div>
       {activeTab === 'IA' && <AIDiagnosticsPanel />}

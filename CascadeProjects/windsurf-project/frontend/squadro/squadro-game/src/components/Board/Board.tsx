@@ -1,13 +1,13 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { movePiece } from '../store/gameSlice';
-import { DEFAULT_LANE_LENGTH } from '../game/board';
-import type { Piece } from '../game/types';
-import { coordOfPiece } from '../game/rules';
-import type { RootState } from '../store';
-import { getBoardProfile } from './boardProfiles';
-import fichaAmarilla from '../assets/ficha_amarilla.png';
-import fichaRoja from '../assets/ficha_roja.png';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { movePiece } from '../../store/gameSlice';
+import { DEFAULT_LANE_LENGTH } from '../../game/board';
+import type { Piece } from '../../game/types';
+import { coordOfPiece } from '../../game/rules';
+import type { RootState } from '../../store';
+import { getBoardProfile } from '../boardProfiles';
+import fichaAmarilla from '../../assets/ficha_amarilla.png';
+import fichaRoja from '../../assets/ficha_roja.png';
 
 const GAP = 8; // px between cells
 const EDGE_SAFE = 12; // px safety on each side to avoid visual clipping at edges
@@ -147,7 +147,7 @@ export default function Board() {
     backgroundSize: '100% 100%',
     padding: 0,
     borderRadius: 12,
-    boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+    boxShadow: 'none',
     width: Math.max(0, size * cellPx + GAP * (size - 1)),
     maxWidth: '100%',
     overflow: 'hidden',
@@ -557,12 +557,11 @@ export default function Board() {
 
   return (
     <div className="w-full flex flex-col items-center gap-3">
-      <div className="text-sm text-neutral-300">
-        Turno: <span className="font-semibold">{turn}</span>
-        {winner && (
-          <span className="ml-3 text-emerald-400 font-semibold">Ganador: {winner}</span>
-        )}
-      </div>
+      {winner && (
+        <div className="text-sm text-neutral-300">
+          <span className="text-emerald-400 font-semibold">Ganador: {winner}</span>
+        </div>
+      )}
       <div ref={gridRef} style={gridStyle}>
         {/* Calibration overlay: intersections markers */}
         {ui?.calibration?.showOverlay && (
