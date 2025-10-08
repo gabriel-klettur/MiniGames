@@ -46,7 +46,19 @@ export type Orientation = 'classic' | 'bga';
 export interface UISettings {
   pieceWidth: number; // px width of the prism-shaped piece
   pieceHeight: number; // px height of the prism-shaped piece
+  pieceScale?: number; // 0..1 factor to scale sprite size relative to pitch (default ~0.7)
   orientation: Orientation; // board rendering orientation
+  // Overlay calibration parameters to align sprites with board artwork
+  calibration?: {
+    originX: number;       // px offset added to computed origin.x
+    originY: number;       // px offset added to computed origin.y
+    pitchScaleX: number;   // multiplier applied to base pitch along X (cols)
+    pitchScaleY: number;   // multiplier applied to base pitch along Y (rows)
+    showOverlay: boolean;  // if true, render intersection markers for calibration
+  };
+  // Debug overlays for development and calibration
+  showCoordsOverlay?: boolean;   // show rX,cY labels per cell
+  showPipIndicators?: boolean;   // show pip/dot indicators on edges
 }
 
 // AI configuration for vs AI games

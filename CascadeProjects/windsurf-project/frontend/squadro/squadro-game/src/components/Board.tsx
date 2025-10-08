@@ -5,11 +5,17 @@ import { DEFAULT_LANE_LENGTH } from '../game/board';
 import type { Piece } from '../game/types';
 import { coordOfPiece } from '../game/rules';
 import type { RootState } from '../store';
+import { getBoardProfile } from './boardProfiles';
+import fichaAmarilla from '../assets/ficha_amarilla.png';
+import fichaRoja from '../assets/ficha_roja.png';
 
 const GAP = 8; // px between cells
 const EDGE_SAFE = 12; // px safety on each side to avoid visual clipping at edges
 const DOT_SIZE = 5; // px
 const DOT_COLOR = '#f5e0a3'; // warm ivory/gold-like, inspired by reference
+// Feature flag: render pieces on a single absolute layer centered on intersections
+const USE_ABSOLUTE_LAYER = true;
+const USE_DIRECTION_OVERLAY = false; // disable cone/tip overlays when using sprite images
 // Unified visual themes so both sides share the same design and only differ by color
 const THEMES = {
   Light: {
@@ -30,6 +36,7 @@ export default function Board() {
   const dispatch = useAppDispatch();
   const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
   const orientation = ui?.orientation ?? 'classic';
+  const profile = getBoardProfile(orientation);
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
 
@@ -76,6 +83,23 @@ export default function Board() {
     };
   }, [size]);
 
+  // Helpers to map logical orientation to display orientation
+  const mapRowCol = (row: number, col: number) => {
+    const L = DEFAULT_LANE_LENGTH;
+    // Invert logic: classic is flipped, bga is identity
+    if (orientation === 'classic') return { row: L - row, col: L - col };
+    return { row, col };
+  };
+  const mapSide = (s: 'left' | 'right' | 'top' | 'bottom' | undefined) => {
+    if (!s) return undefined;
+    // Invert only for classic; bga keeps natural sides
+    if (orientation !== 'classic') return s;
+    if (s === 'left') return 'right';
+    if (s === 'right') return 'left';
+    if (s === 'top') return 'bottom';
+    return 'top';
+  };
+
   // Derive pip counts from the game's lane speeds so visuals and rules always match.
   // Mapping of edges to speeds:
   // - Left edge (c=0, rows 1..L-1): Light speedBack per laneIndex (row-1)
@@ -116,12 +140,18 @@ export default function Board() {
     gridTemplateRows: `repeat(${size}, ${cellPx}px)`,
     gap: GAP,
     backgroundColor: 'transparent',
+    backgroundImage: `url(${profile.image})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    // Stretch to fit the computed square; assets are square so this should not distort
+    backgroundSize: '100% 100%',
     padding: 0,
     borderRadius: 12,
     boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
     width: Math.max(0, size * cellPx + GAP * (size - 1)),
     maxWidth: '100%',
     overflow: 'hidden',
+    position: 'relative',
   } as React.CSSProperties;
 
   // Build mapping from (row,col) to pieces present there
@@ -142,8 +172,9 @@ export default function Board() {
   const renderCell = (row: number, col: number): React.ReactElement => {
     // Map display coordinates to source coordinates depending on orientation
     const L = DEFAULT_LANE_LENGTH;
-    const srcRow = orientation === 'classic' ? row : L - row;
-    const srcCol = orientation === 'classic' ? col : L - col;
+    // Invert: under classic we flip, under bga we pass-through
+    const srcRow = orientation === 'classic' ? (L - row) : row;
+    const srcCol = orientation === 'classic' ? (L - col) : col;
     const key = `${srcRow}:${srcCol}`;
     const ps = cells[key] ?? [];
     // Dimensions controlled by UI settings
@@ -172,8 +203,9 @@ export default function Board() {
       height: cellPx,
       boxSizing: 'border-box',
       borderRadius: 10,
-      backgroundColor: '#1f2937', // gray-800
-      border: '1px solid #374151', // gray-700
+      // Transparent cells to reveal the board artwork underneath
+      backgroundColor: 'transparent',
+      border: 'none',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -182,14 +214,6 @@ export default function Board() {
 
     // Pips: indicators inspired by the physical board. Only some cells render dots for now.
     const pipInfo = getPipInfo(srcRow, srcCol);
-    const mapSide = (s: 'left' | 'right' | 'top' | 'bottom' | undefined) => {
-      if (!s) return undefined;
-      if (orientation === 'classic') return s;
-      if (s === 'left') return 'right';
-      if (s === 'right') return 'left';
-      if (s === 'top') return 'bottom';
-      return 'top';
-    };
     const displaySide = mapSide(pipInfo.side);
     const pipContainerStyle: React.CSSProperties = (() => {
       const base: React.CSSProperties = {
@@ -225,7 +249,7 @@ export default function Board() {
     // Build overlay elements for this cell: pip markers + coordinate badge rX,cY
     const overlay = (
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        {pipInfo.count > 0 && (
+        {ui?.showPipIndicators && pipInfo.count > 0 && (
           <div aria-hidden style={pipContainerStyle}>
             {Array.from({ length: pipInfo.count }).map((_, i) => (
               <div
@@ -242,28 +266,30 @@ export default function Board() {
             ))}
           </div>
         )}
-        <div
-          style={{
-            position: 'absolute',
-            top: 4,
-            left: 4,
-            backgroundColor: '#000',
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: 700,
-            borderRadius: 6,
-            padding: '1px 4px',
-            opacity: 0.85,
-            lineHeight: 1,
-            boxShadow: '0 0 0 1px rgba(255,255,255,0.1)'
-          }}
-        >
-          {`r${row},c${col}`}
-        </div>
+        {ui?.showCoordsOverlay && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 4,
+              left: 4,
+              backgroundColor: '#000',
+              color: '#fff',
+              fontSize: 10,
+              fontWeight: 700,
+              borderRadius: 6,
+              padding: '1px 4px',
+              opacity: 0.85,
+              lineHeight: 1,
+              boxShadow: '0 0 0 1px rgba(255,255,255,0.1)'
+            }}
+          >
+            {`r${row},c${col}`}
+          </div>
+        )}
       </div>
     );
 
-    // Compute a compact grid for this cell to place all pieces without overlap
+    // Compute a compact grid for this cell (kept only when not using absolute layer)
     const m = ps.length;
     const cols = Math.max(1, Math.ceil(Math.sqrt(m)));
     const rows = Math.max(1, Math.ceil(m / cols));
@@ -275,7 +301,7 @@ export default function Board() {
     return (
       <div key={key} className="flex items-center justify-center rounded-md bg-neutral-800 border border-neutral-700" style={cellStyle}>
         <div style={{ position: 'absolute', inset: 0 }}>
-          {ps.map((p, idx) => {
+          {!USE_ABSOLUTE_LAYER && ps.map((p, idx) => {
             const isLight = p.owner === 'Light';
             const isActive = p.owner === turn;
             // Grid placement within the cell
@@ -430,6 +456,79 @@ export default function Board() {
     }
   }
 
+  // Absolute layer: compute piece elements positioned at intersection centers
+  const basePitch = profile.getPitch(cellPx, GAP);
+  const baseOrigin = profile.getOrigin(0);
+  const cal = ui?.calibration ?? { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false };
+  const pitchX = Math.max(4, basePitch * (Number.isFinite(cal.pitchScaleX) ? cal.pitchScaleX : 1));
+  const pitchY = Math.max(4, basePitch * (Number.isFinite(cal.pitchScaleY) ? cal.pitchScaleY : 1));
+  const origin = { x: baseOrigin.x + (cal.originX || 0), y: baseOrigin.y + (cal.originY || 0) };
+  const pieceElements = USE_ABSOLUTE_LAYER
+    ? pieces.filter((p) => p.state !== 'retirada').map((p) => {
+        const { row, col } = coordOfPiece(p);
+        const { row: dRow, col: dCol } = mapRowCol(row, col);
+        const cx = origin.x + dCol * pitchX + cellPx / 2;
+        const cy = origin.y + dRow * pitchY + cellPx / 2;
+        const isLight = p.owner === 'Light';
+        const isActive = p.owner === turn;
+        // Size pieces relative to pitch for consistent spacing on any device
+        const minW = 12;
+        const basis = Math.min(pitchX, pitchY);
+        // Allow growing beyond one cell: cap ~2x of basis to avoid absurd sizes
+        const maxW = Math.max(16, Math.round(basis * 2.0));
+        const scale = (() => {
+          const s = ui?.pieceScale;
+          if (typeof s === 'number' && isFinite(s)) return Math.max(0.3, Math.min(2.0, s));
+          return 0.7; // default
+        })();
+        const w = Math.max(minW, Math.min(Math.round(basis * scale), maxW));
+        const src = isLight ? fichaAmarilla : fichaRoja;
+        return (
+          <div
+            key={p.id}
+            className="piece-anim"
+            style={{
+              position: 'absolute',
+              left: cx,
+              top: cy,
+              width: w,
+              transform: 'translate(-50%, -50%)',
+              willChange: 'left, top',
+              zIndex: 3,
+            }}
+          >
+            <button
+              onClick={() => handleClickPiece(p.id)}
+              title={`${p.owner} ${p.laneIndex} • ${p.state}`}
+              aria-label={`Mover pieza ${p.id}`}
+              disabled={!isActive}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: 0,
+                border: 'none',
+                background: 'none',
+                cursor: isActive ? 'pointer' : 'not-allowed',
+              }}
+            >
+              <img
+                src={src}
+                alt={isLight ? 'Ficha amarilla' : 'Ficha roja'}
+                draggable={false}
+                style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none', pointerEvents: 'none' }}
+              />
+            </button>
+            {USE_DIRECTION_OVERLAY && (
+              <div
+                aria-hidden
+                style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+              />
+            )}
+          </div>
+        );
+      })
+    : null;
+
   return (
     <div className="w-full flex flex-col items-center gap-3">
       <div className="text-sm text-neutral-300">
@@ -438,7 +537,43 @@ export default function Board() {
           <span className="ml-3 text-emerald-400 font-semibold">Ganador: {winner}</span>
         )}
       </div>
-      <div ref={gridRef} style={gridStyle}>{cellsArray}</div>
+      <div ref={gridRef} style={gridStyle}>
+        {/* Calibration overlay: intersections markers */}
+        {ui?.calibration?.showOverlay && (
+          <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none' }}>
+            {Array.from({ length: size }).map((_, r) => (
+              Array.from({ length: size }).map((__, c) => {
+                const { row: dr, col: dc } = mapRowCol(r, c);
+                const x = origin.x + dc * pitchX + cellPx / 2;
+                const y = origin.y + dr * pitchY + cellPx / 2;
+                return (
+                  <div
+                    key={`mk-${r}-${c}`}
+                    style={{
+                      position: 'absolute',
+                      left: Math.round(x),
+                      top: Math.round(y),
+                      width: 8,
+                      height: 8,
+                      transform: 'translate(-50%, -50%)',
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(59,130,246,0.9)', // blue-500
+                      boxShadow: '0 0 0 1px #000, 0 0 4px rgba(59,130,246,0.8)',
+                      opacity: 0.9,
+                    }}
+                  />
+                );
+              })
+            ))}
+          </div>
+        )}
+        {USE_ABSOLUTE_LAYER && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+            {pieceElements}
+          </div>
+        )}
+        {cellsArray}
+      </div>
     </div>
   );
 }

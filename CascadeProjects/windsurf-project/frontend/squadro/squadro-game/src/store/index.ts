@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,7 +16,17 @@ const AI_STORAGE_KEY = 'squadro_ai';
 type StoredUI = {
   pieceWidth?: number;
   pieceHeight?: number;
+  pieceScale?: number;
   orientation?: 'classic' | 'bga';
+  showCoordsOverlay?: boolean;
+  showPipIndicators?: boolean;
+  calibration?: {
+    originX?: number;
+    originY?: number;
+    pitchScaleX?: number;
+    pitchScaleY?: number;
+    showOverlay?: boolean;
+  };
 };
 
 function loadStoredUI(): StoredUI | undefined {
@@ -44,7 +54,18 @@ const stored = loadStoredUI();
 if (stored) {
   if (typeof stored.pieceWidth === 'number') store.dispatch(setPieceWidth(stored.pieceWidth));
   if (typeof stored.pieceHeight === 'number') store.dispatch(setPieceHeight(stored.pieceHeight));
+  if (typeof stored.pieceScale === 'number') store.dispatch(setPieceScale(stored.pieceScale));
   if (stored.orientation === 'classic' || stored.orientation === 'bga') store.dispatch(setOrientation(stored.orientation));
+  if (typeof stored.showCoordsOverlay === 'boolean') store.dispatch(setShowCoordsOverlay(stored.showCoordsOverlay));
+  if (typeof stored.showPipIndicators === 'boolean') store.dispatch(setShowPipIndicators(stored.showPipIndicators));
+  if (stored.calibration && typeof stored.calibration === 'object') {
+    const c = stored.calibration;
+    if (typeof c.originX === 'number') store.dispatch(setCalibrationOriginX(c.originX));
+    if (typeof c.originY === 'number') store.dispatch(setCalibrationOriginY(c.originY));
+    if (typeof c.pitchScaleX === 'number') store.dispatch(setCalibrationPitchScaleX(c.pitchScaleX));
+    if (typeof c.pitchScaleY === 'number') store.dispatch(setCalibrationPitchScaleY(c.pitchScaleY));
+    if (typeof c.showOverlay === 'boolean') store.dispatch(setCalibrationOverlay(c.showOverlay));
+  }
 }
 
 // Subscribe to store updates to persist UI settings
@@ -55,7 +76,17 @@ store.subscribe(() => {
   const toSave: StoredUI = {
     pieceWidth: ui.pieceWidth,
     pieceHeight: ui.pieceHeight,
+    pieceScale: ui.pieceScale,
     orientation: ui.orientation as 'classic' | 'bga',
+    showCoordsOverlay: ui.showCoordsOverlay,
+    showPipIndicators: ui.showPipIndicators,
+    calibration: ui.calibration ? {
+      originX: ui.calibration.originX,
+      originY: ui.calibration.originY,
+      pitchScaleX: (ui.calibration as any).pitchScaleX,
+      pitchScaleY: (ui.calibration as any).pitchScaleY,
+      showOverlay: ui.calibration.showOverlay,
+    } : undefined,
   };
   const changed = JSON.stringify(toSave) !== JSON.stringify(lastSaved);
   if (changed) {

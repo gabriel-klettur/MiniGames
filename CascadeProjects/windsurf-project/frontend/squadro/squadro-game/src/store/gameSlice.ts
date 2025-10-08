@@ -48,6 +48,43 @@ const gameSlice = createSlice({
       const v = Math.max(24, Math.min(120, Math.round(action.payload)));
       state.ui.pieceHeight = v;
     },
+    setPieceScale(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(0.3, Math.min(2.0, Number(action.payload)));
+      state.ui.pieceScale = v;
+    },
+    // Debug overlays
+    setShowCoordsOverlay(state: GameState, action: PayloadAction<boolean>) {
+      state.ui.showCoordsOverlay = !!action.payload;
+    },
+    setShowPipIndicators(state: GameState, action: PayloadAction<boolean>) {
+      state.ui.showPipIndicators = !!action.payload;
+    },
+    // --- UI calibration ---
+    setCalibrationOverlay(state: GameState, action: PayloadAction<boolean>) {
+      const cal = (state.ui.calibration ?? (state.ui.calibration = { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false } as any));
+      cal.showOverlay = !!action.payload;
+    },
+    setCalibrationOriginX(state: GameState, action: PayloadAction<number>) {
+      const cal = (state.ui.calibration ?? (state.ui.calibration = { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false } as any));
+      // Clamp to a reasonable range to avoid losing pieces off-screen
+      const v = Math.max(-100, Math.min(100, Math.round(action.payload)));
+      cal.originX = v;
+    },
+    setCalibrationOriginY(state: GameState, action: PayloadAction<number>) {
+      const cal = (state.ui.calibration ?? (state.ui.calibration = { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false } as any));
+      const v = Math.max(-100, Math.min(100, Math.round(action.payload)));
+      cal.originY = v;
+    },
+    setCalibrationPitchScaleX(state: GameState, action: PayloadAction<number>) {
+      const cal = (state.ui.calibration ?? (state.ui.calibration = { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false } as any));
+      const v = Math.max(0.8, Math.min(1.2, Number(action.payload)));
+      (cal as any).pitchScaleX = v;
+    },
+    setCalibrationPitchScaleY(state: GameState, action: PayloadAction<number>) {
+      const cal = (state.ui.calibration ?? (state.ui.calibration = { originX: 0, originY: 0, pitchScaleX: 1, pitchScaleY: 1, showOverlay: false } as any));
+      const v = Math.max(0.8, Math.min(1.2, Number(action.payload)));
+      (cal as any).pitchScaleY = v;
+    },
     setOrientation(state: GameState, action: PayloadAction<'classic' | 'bga'>) {
       state.ui.orientation = action.payload;
     },
@@ -140,5 +177,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
 export default gameSlice.reducer;

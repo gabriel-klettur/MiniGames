@@ -31,7 +31,17 @@ export function createInitialState(): GameState {
     ui: {
       pieceWidth: 16, // default thinner width in px
       pieceHeight: 44, // default height in px
+      pieceScale: 0.7, // default sprite scale relative to pitch basis
       orientation: 'classic',
+      showCoordsOverlay: false,
+      showPipIndicators: false,
+      calibration: {
+        originX: 0,
+        originY: 0,
+        pitchScaleX: 1,
+        pitchScaleY: 1,
+        showOverlay: false,
+      },
     },
     ai: {
       enabled: false,
