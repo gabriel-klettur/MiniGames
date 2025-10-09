@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useAppSelector } from '../../store/hooks';
-import type { RootState } from '../../store';
-import UIUX from './UIUX/UIUX';
-import Button from '../ui/Button';
-import AIDiagnosticsPanel from './IAPanel/IAPanel';
+import { useAppSelector } from '../../store/hooks.ts';
+import type { RootState } from '../../store/index.ts';
+import UIUX from './UIUX/UIUX.tsx';
+import Button from '../ui/Button.tsx';
+import AIDiagnosticsPanel from './IAPanel/IAPanel.tsx';
 
 export default function DevToolsPanel() {
   const { winner } = useAppSelector((s: RootState) => s.game);

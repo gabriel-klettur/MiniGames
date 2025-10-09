@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Board from './components/Board/Board';
 import HeaderPanel from './components/HeaderPanel/HeaderPanel';
-import IAUserPanel from './components/IAUserPanel/IAUserPanel';
+import IAUserPanel from './components/IAUserPanel/IAUserPanel.tsx';
 import InfoPanel from './components/InfoPanel';
 import DevToolsPanel from './components/DevTools/DevToolsPanel';
 import FootPanel from './components/FootPanel';
@@ -9,7 +9,7 @@ import './App.css';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import type { RootState } from './store';
 import { store } from './store';
-import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded } from './store/gameSlice';
+import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIDifficulty, setAIEnabled, setAISide } from './store/gameSlice';
 import { movePiece as movePieceRules } from './game/rules';
 import { findBestMove } from './ia/search';
 import { getWorkers, resetPool } from './ia/workerPool';
@@ -251,7 +251,36 @@ function App() {
         {/* IA user panel (toggleable from header) */}
         {showIA && (
           <div className="w-full px-[10px]">
-            <IAUserPanel />
+            <IAUserPanel
+              depth={ai?.difficulty ?? 3}
+              onChangeDepth={(d) => dispatch(setAIDifficulty(d))}
+              onAIMove={() => {
+                // Ensure AI is enabled so the effect can run on its next turn
+                if (!ai?.enabled) dispatch(setAIEnabled(true));
+              }}
+              disabled={!!winner}
+              aiControlP1={!!(ai?.enabled && ai?.aiSide === 'Light')}
+              aiControlP2={!!(ai?.enabled && ai?.aiSide === 'Dark')}
+              onToggleAiControlP1={() => {
+                const active = !!(ai?.enabled && ai?.aiSide === 'Light');
+                if (active) {
+                  dispatch(setAIEnabled(false));
+                } else {
+                  dispatch(setAISide('Light'));
+                  dispatch(setAIEnabled(true));
+                }
+              }}
+              onToggleAiControlP2={() => {
+                const active = !!(ai?.enabled && ai?.aiSide === 'Dark');
+                if (active) {
+                  dispatch(setAIEnabled(false));
+                } else {
+                  dispatch(setAISide('Dark'));
+                  dispatch(setAIEnabled(true));
+                }
+              }}
+              busy={!!ai?.busy}
+            />
           </div>
         )}
         <main className="w-full overflow-x-hidden">

@@ -17,7 +17,7 @@
 .ia-badge.p2 { background: #7f1d1d; }
 
 /* Contenedor derecho con fondo y sombra */
-.iauser-right { background: linear-gradient(180deg, #141a23 0%, #0f151e 100%); padding: 6px; border-radius: 12px; box-shadow: inset 0 1px 2px rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.35); display: inline-flex; align-items: center; gap: 8px; }
+.iauser-right { background: linear-gradient(180deg, #141a23 0%, #0f151e 100%); padding: 6px; border-radius: 12px; box-shadow: inset 0 1px 2px rgba(255,255,255,0.04), 0 2px 6px rgba(0,0,0,0.35); margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
 
 /* Layout utilitario para el panel */
 .iauser-inline { display: flex; align-items: center; gap: 8px; }
