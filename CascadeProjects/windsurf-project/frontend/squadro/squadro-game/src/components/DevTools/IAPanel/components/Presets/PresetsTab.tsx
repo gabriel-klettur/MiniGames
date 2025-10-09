@@ -159,10 +159,20 @@ export default function PresetsTab() {
                     <option value="auto">auto</option>
                   </select>
                 </label>
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
-                  Segundos
-                  <input type="number" min={0} max={60} step={1} value={selected.settings.timeSeconds ?? 10} onChange={(e) => setField('timeSeconds', Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
-                </label>
+                {selected.settings.timeMode !== 'auto' && (
+                  <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                    Segundos
+                    <input
+                      type="number"
+                      min={0}
+                      max={60}
+                      step={1}
+                      value={selected.settings.timeSeconds ?? 10}
+                      onChange={(e) => setField('timeSeconds', Math.max(0, Math.min(60, Number(e.target.value))))}
+                      className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+                    />
+                  </label>
+                )}
               </div>
             </div>
           </>

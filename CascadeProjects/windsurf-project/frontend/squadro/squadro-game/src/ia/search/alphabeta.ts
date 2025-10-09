@@ -116,8 +116,16 @@ function negamax(
   // Time check
   if (performance.now() >= deadline) return { score: 0, bestMove: null, timeout: true };
 
-  // Leaf / terminal
-  if (depth === 0 || state.winner) {
+  // Terminal: prefer faster wins and delay losses (mate distance)
+  if (state.winner) {
+    params.stats && (params.stats.nodes += 1);
+    const WIN = 100000;
+    const score = state.winner === me ? (WIN - ply) : (-WIN + ply);
+    return { score, bestMove: null, timeout: false };
+  }
+
+  // Leaf (non-terminal)
+  if (depth === 0) {
     params.stats && (params.stats.nodes += 1);
     return { score: evaluate(state, me), bestMove: null, timeout: false };
   }
