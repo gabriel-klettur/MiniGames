@@ -1,4 +1,5 @@
 import { findBestMove, type SearchOptions, type SearchEvent } from './search';
+import type { EngineOptions } from './search/types';
 import type { GameState } from '../game/types';
 import { movePiece as applyMoveRules } from '../game/rules';
 
@@ -6,7 +7,7 @@ import { movePiece as applyMoveRules } from '../game/rules';
 interface RunMessage {
   type: 'run';
   state: GameState;
-  opts: { maxDepth: number; timeLimitMs: number; rootMoves?: string[]; forcedFirstMove?: string };
+  opts: { maxDepth: number; timeLimitMs: number; rootMoves?: string[]; forcedFirstMove?: string; engine?: EngineOptions };
 }
 
 // Messages to main thread
@@ -20,6 +21,7 @@ interface ResultMessage {
   moveId: string | null;
   score: number;
   depthReached: number;
+  engineStats?: any;
 }
 
 self.onmessage = async (e: MessageEvent) => {
@@ -48,6 +50,7 @@ self.onmessage = async (e: MessageEvent) => {
       self.postMessage(msg);
     },
     rootMoves: opts.rootMoves,
+    engine: opts.engine,
   };
 
   const best = await findBestMove(workingState, options);
@@ -56,6 +59,7 @@ self.onmessage = async (e: MessageEvent) => {
     moveId: forcedMoveId ?? best.moveId,
     score: forcedMoveId ? -best.score : best.score,
     depthReached: best.depthReached + adjustDepth,
+    engineStats: best.engineStats,
   };
   // eslint-disable-next-line no-restricted-globals
   self.postMessage(res);

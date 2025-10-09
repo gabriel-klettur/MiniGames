@@ -556,7 +556,7 @@ export default function Board() {
     : null;
 
   return (
-    <div className="w-full flex flex-col items-center gap-3">
+    <div className="w-full flex flex-col items-center gap-1">
       {winner && (
         <div className="text-sm text-neutral-300">
           <span className="text-emerald-400 font-semibold">Ganador: {winner}</span>

@@ -1,9 +1,9 @@
-import React from 'react';
 import './IAUserPanel.css';
 import type { IAUserPanelProps } from './IAUserPanel.types.ts';
 import DepthSelect from './DepthSelect.tsx';
 import PlayerToggleButton from './PlayerToggleButton.tsx';
 import RobotIcon from './RobotIcon.tsx';
+import PresetsSelect from './PresetsSelect';
 
 /**
  * IAUserPanel (Squadro): Presentational component mirroring Soluna's API.
@@ -25,7 +25,10 @@ export default function IAUserPanel(props: IAUserPanelProps) {
   return (
     <section className="panel small iauser-panel" aria-label="Controles de IA (usuario)">
       <div className="row actions iauser-inline" aria-label="Dificultad y acciones de IA">
-        <DepthSelect depth={depth} onChangeDepth={onChangeDepth} />
+        <div className="iauser-left" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <DepthSelect depth={depth} onChangeDepth={onChangeDepth} />
+          <PresetsSelect />
+        </div>
         <div className="iauser-right">
           {/* Toggle IA controla P1 */}
           <PlayerToggleButton label="P1" active={aiControlP1} onClick={onToggleAiControlP1} />

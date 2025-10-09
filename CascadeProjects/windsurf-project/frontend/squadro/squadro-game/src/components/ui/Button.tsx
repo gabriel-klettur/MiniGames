@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ButtonVariant = 'primary' | 'neutral' | 'accent' | 'outline';
+export type ButtonVariant = 'primary' | 'neutral' | 'accent' | 'outline' | 'danger';
 export type ButtonSize = 'sm' | 'md';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,6 +19,7 @@ const variants: Record<ButtonVariant, string> = {
   neutral: 'bg-gray-800 text-gray-200 border-white/10 hover:bg-gray-700 active:bg-gray-700 focus:ring-blue-400/20',
   accent: 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-500 active:bg-indigo-600 focus:ring-indigo-400/30',
   outline: 'bg-transparent text-neutral-200 border-neutral-600 hover:bg-neutral-800/40 active:bg-neutral-800/60 focus:ring-blue-400/20',
+  danger: 'bg-red-700 text-white border-red-600 hover:bg-red-600 active:bg-red-700 focus:ring-red-400/30',
 };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(

@@ -42,8 +42,22 @@ function App() {
     if (ai.busy) return;
 
     const computeTime = () => {
-      // VS IA: usar tiempo ilimitado para alcanzar la profundidad objetivo
-      return Infinity;
+      const a = ai;
+      if (!a) return Infinity;
+      // Manual: respetar segundos configurados; 0 => ilimitado
+      if (a.timeMode === 'manual') {
+        const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
+        return secs === 0 ? Infinity : secs * 1000;
+      }
+      // Auto: usar parámetros avanzados si existen; si no, derivar de speed/difficulty
+      const d = Math.max(1, Math.min(20, a.difficulty ?? 3));
+      const base = (typeof a.aiTimeBaseMs === 'number') ? a.aiTimeBaseMs : (a.speed === 'rapido' ? 1200 : a.speed === 'lento' ? 5000 : 2500);
+      const perMove = (typeof a.aiTimePerMoveMs === 'number') ? a.aiTimePerMoveMs : 300; // default bonus per depth unit
+      const exponent = (typeof a.aiTimeExponent === 'number') ? a.aiTimeExponent : 1.0;
+      const raw = base + perMove * Math.max(0, d - 3) ** Math.max(0.5, exponent);
+      const minMs = (typeof a.aiTimeMinMs === 'number') ? a.aiTimeMinMs : 800;
+      const maxMs = (typeof a.aiTimeMaxMs === 'number') ? a.aiTimeMaxMs : 8000;
+      return Math.max(minMs, Math.min(maxMs, raw));
     };
 
     const go = async () => {
@@ -56,6 +70,18 @@ function App() {
       // Single-thread fallback if workers are disabled
       if (ai?.useWorkers === false) {
         try {
+          // Engine options derived from AI state
+          const engineOpts = {
+            enableTT: ai.enableTT !== false,
+            enableKillers: ai.enableKillers !== false,
+            enableHistory: ai.enableHistory !== false,
+            enablePVS: ai.enablePVS !== false,
+            enableLMR: ai.enableLMR !== false,
+            lmrMinDepth: typeof ai.lmrMinDepth === 'number' ? ai.lmrMinDepth : 3,
+            lmrLateMoveIdx: typeof ai.lmrLateMoveIdx === 'number' ? ai.lmrLateMoveIdx : 3,
+            lmrReduction: typeof ai.lmrReduction === 'number' ? ai.lmrReduction : 1,
+          } as const;
+
           const res = await findBestMove(gs, {
             maxDepth: ai.difficulty,
             timeLimitMs: computeTime(),
@@ -63,9 +89,10 @@ function App() {
               if (ev.type === 'progress') dispatch(aiSearchProgress(ev.nodesVisited));
               else if (ev.type === 'iter') dispatch(aiSearchIter({ depth: ev.depth, score: ev.score }));
             },
+            engine: engineOpts,
           });
           const durationMs = Date.now() - startAt;
-          dispatch(aiSearchEnded({ durationMs, depthReached: res.depthReached, score: res.score, nodesVisited: (state.game.ai?.nodesVisited) || 0 }));
+          dispatch(aiSearchEnded({ durationMs, depthReached: res.depthReached, score: res.score, nodesVisited: (state.game.ai?.nodesVisited) || 0, engineStats: res.engineStats }));
           if (!cancelled && res.moveId) dispatch(movePiece(res.moveId));
         } finally {
           if (!cancelled) dispatch(setAIBusy(false));
@@ -188,7 +215,7 @@ function App() {
               const durationMs = Date.now() - startAt;
               const nodesVisited = aggregateNodes();
               const depthReached = Math.max(maxDepthIter, data.depthReached as number);
-              dispatch(aiSearchEnded({ durationMs, depthReached, score: data.score as number, nodesVisited }));
+              dispatch(aiSearchEnded({ durationMs, depthReached, score: data.score as number, nodesVisited, engineStats: (data as any).engineStats }));
               if (!cancelled && data.moveId) {
                 dispatch(movePiece(data.moveId as string));
               }
@@ -202,7 +229,7 @@ function App() {
               const durationMs = Date.now() - startAt;
               const nodesVisited = aggregateNodes();
               const depthReached = bestResult ? Math.max(maxDepthIter, bestResult.depthReached) : maxDepthIter;
-              dispatch(aiSearchEnded({ durationMs, depthReached, score: bestResult?.score ?? -Infinity, nodesVisited }));
+              dispatch(aiSearchEnded({ durationMs, depthReached, score: bestResult?.score ?? -Infinity, nodesVisited, engineStats: (data as any).engineStats }));
               if (!cancelled && bestResult && bestResult.moveId) {
                 dispatch(movePiece(bestResult.moveId));
               }
@@ -213,7 +240,17 @@ function App() {
           }
         };
         const t = tasks[i];
-        w.postMessage({ type: 'run', state: gs, opts: { maxDepth: ai.difficulty, timeLimitMs: computeTime(), rootMoves: t.rootMoves, forcedFirstMove: t.forcedFirstMove } });
+        const engineOpts = {
+          enableTT: ai?.enableTT !== false,
+          enableKillers: ai?.enableKillers !== false,
+          enableHistory: ai?.enableHistory !== false,
+          enablePVS: ai?.enablePVS !== false,
+          enableLMR: ai?.enableLMR !== false,
+          lmrMinDepth: typeof ai?.lmrMinDepth === 'number' ? ai!.lmrMinDepth : 3,
+          lmrLateMoveIdx: typeof ai?.lmrLateMoveIdx === 'number' ? ai!.lmrLateMoveIdx : 3,
+          lmrReduction: typeof ai?.lmrReduction === 'number' ? ai!.lmrReduction : 1,
+        } as const;
+        w.postMessage({ type: 'run', state: gs, opts: { maxDepth: ai.difficulty, timeLimitMs: computeTime(), rootMoves: t.rootMoves, forcedFirstMove: t.forcedFirstMove, engine: engineOpts } });
       }
     };
 
@@ -243,9 +280,9 @@ function App() {
         <HeaderPanel showIA={showIA} onToggleIA={() => setShowIA((v) => !v)} />
       </div>
       {/* Full-width play area with exact 10px side margins (no horizontal overflow) */}
-      <div className="w-full px-[10px] flex flex-col gap-4 overflow-x-hidden">
+      <div className="w-full px-[10px] flex flex-col gap-2 overflow-x-hidden">
         {/* InfoPanel above the board */}
-        <div className=" p-4">
+        <div className=" p-1">
           <InfoPanel />
         </div>
         {/* IA user panel (toggleable from header) */}

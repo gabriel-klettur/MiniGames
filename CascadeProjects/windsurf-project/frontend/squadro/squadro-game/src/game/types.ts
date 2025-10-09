@@ -82,12 +82,43 @@ export interface AISettings {
   timeSeconds: number;       // when manual, budget per move
   useWorkers?: boolean;      // if true (default), run AI in Web Workers
   busy?: boolean;            // ephemeral: IA pensando
+  // --- Advanced time configuration (auto mode) ---
+  aiTimeMinMs?: number;
+  aiTimeMaxMs?: number;
+  aiTimeBaseMs?: number;
+  aiTimePerMoveMs?: number;
+  aiTimeExponent?: number;
+  // --- Engine toggles/params ---
+  enableTT?: boolean;
+  failSoft?: boolean;
+  preferHashMove?: boolean;
+  enablePVS?: boolean;
+  enableKillers?: boolean;
+  enableHistory?: boolean;
+  enableLMR?: boolean;
+  lmrMinDepth?: number;
+  lmrLateMoveIdx?: number;
+  lmrReduction?: number;
+  // Optional future features (UI-ready)
+  enableAspiration?: boolean;
+  aspirationDelta?: number;
+  enableQuiescence?: boolean;
+  quiescenceDepth?: number;
+  quiescenceHighTowerThreshold?: number;
   // --- Instrumentation (ephemeral, not persisted) ---
   nodesVisited?: number;     // nodes searched in current/last search
   startedAt?: number;        // timestamp when current search started (ms)
   lastDurationMs?: number;   // duration of the last completed search
   depthReached?: number;     // max depth reached in iterative deepening
   lastScore?: number;        // score of best move at last iter
+  // Optional engine internal metrics for tuning (populated on search end)
+  engineStats?: {
+    ttProbes?: number;
+    ttHits?: number;
+    cutoffs?: number;
+    pvsReSearches?: number;
+    lmrReductions?: number;
+  };
 }
 
 // Centralized starting player to ensure deterministic game start

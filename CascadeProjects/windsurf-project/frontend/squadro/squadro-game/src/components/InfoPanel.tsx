@@ -38,7 +38,7 @@ export default function InfoPanel() {
           </div>
         </div>
         {/* Turno al centro: solo imagen de la ficha */}
-        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40 text-center flex items-center justify-center">
+        <div className="rounded-lg border border-neutral-700 p-1 bg-neutral-800/40 text-center flex items-center justify-center">
           <img
             src={turn === 'Light' ? fichaAmarilla : fichaRoja}
             alt={turn === 'Light' ? 'Ficha amarilla (Light)' : 'Ficha roja (Dark)'}
@@ -47,7 +47,7 @@ export default function InfoPanel() {
           />
         </div>
         {/* Retiradas Dark (sin label) */}
-        <div className="rounded-lg border border-neutral-700 p-3 bg-neutral-800/40 text-center flex items-center justify-center">
+        <div className="rounded-lg border border-neutral-700 p-1 bg-neutral-800/40 text-center flex items-center justify-center">
           <div className="inline-flex items-center gap-2">
             {ai?.enabled && ai?.aiSide === 'Dark' && (
               <svg

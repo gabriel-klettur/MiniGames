@@ -1,5 +1,6 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
+import type { IAPreset } from '../ia/presets';
 import type { GameState, Player, AISpeed } from '../game/types';
 import { createInitialState } from '../game/pieces';
 import { movePiece as movePieceRules } from '../game/rules';
@@ -161,6 +162,70 @@ const gameSlice = createSlice({
       const secs = Math.max(0, Math.min(60, Math.round(action.payload)));
       state.ai.timeSeconds = secs;
     },
+    // --- Advanced time (auto mode) ---
+    setAiTimeMinMs(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return; state.ai.aiTimeMinMs = Math.max(100, Math.min(60000, Math.round(action.payload)));
+    },
+    setAiTimeMaxMs(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return; state.ai.aiTimeMaxMs = Math.max(200, Math.min(120000, Math.round(action.payload)));
+    },
+    setAiTimeBaseMs(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return; state.ai.aiTimeBaseMs = Math.max(0, Math.min(60000, Math.round(action.payload)));
+    },
+    setAiTimePerMoveMs(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return; state.ai.aiTimePerMoveMs = Math.max(0, Math.min(10000, Math.round(action.payload)));
+    },
+    setAiTimeExponent(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return; state.ai.aiTimeExponent = Math.max(0, Math.min(4, Number(action.payload)));
+    },
+    // --- Engine toggles/params ---
+    setAiEnableTT(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableTT = !!action.payload; },
+    setAiFailSoft(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.failSoft = !!action.payload; },
+    setAiPreferHashMove(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.preferHashMove = !!action.payload; },
+    setAiEnablePVS(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enablePVS = !!action.payload; },
+    setAiEnableKillers(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableKillers = !!action.payload; },
+    setAiEnableHistory(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableHistory = !!action.payload; },
+    setAiEnableLMR(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableLMR = !!action.payload; },
+    setAiLmrMinDepth(state: GameState, action: PayloadAction<number>) { if (!state.ai) return; state.ai.lmrMinDepth = Math.max(0, Math.min(20, Math.round(action.payload))); },
+    setAiLmrLateMoveIdx(state: GameState, action: PayloadAction<number>) { if (!state.ai) return; state.ai.lmrLateMoveIdx = Math.max(0, Math.min(20, Math.round(action.payload))); },
+    setAiLmrReduction(state: GameState, action: PayloadAction<number>) { if (!state.ai) return; state.ai.lmrReduction = Math.max(0, Math.min(4, Math.round(action.payload))); },
+    // Apply multiple AI settings from a preset (difficulty, workers, speed/time)
+    applyIAPreset(state: GameState, action: PayloadAction<IAPreset['settings']>) {
+      if (!state.ai) {
+        state.ai = {
+          enabled: false,
+          aiSide: 'Dark',
+          difficulty: 3,
+          speed: 'normal',
+          timeMode: 'manual',
+          timeSeconds: 10,
+        };
+      }
+      const s = action.payload || {};
+      if (typeof s.difficulty === 'number') {
+        const d = Math.max(1, Math.min(20, Math.round(s.difficulty)));
+        state.ai.difficulty = d;
+      }
+      if (typeof s.useWorkers === 'boolean') {
+        state.ai.useWorkers = !!s.useWorkers;
+      }
+      if (s.speed) {
+        state.ai.speed = s.speed as AISpeed;
+        // syncing speed with timeMode/timeSeconds similar to setAISpeed
+        if (s.speed === 'auto') {
+          state.ai.timeMode = 'auto';
+          state.ai.timeSeconds = 0;
+        } else {
+          state.ai.timeMode = 'manual';
+          state.ai.timeSeconds = s.speed === 'rapido' ? 5 : s.speed === 'normal' ? 10 : 30;
+        }
+      }
+      if (s.timeMode) state.ai.timeMode = s.timeMode;
+      if (typeof s.timeSeconds === 'number') {
+        const secs = Math.max(0, Math.min(60, Math.round(s.timeSeconds)));
+        state.ai.timeSeconds = secs;
+      }
+    },
     setAIBusy(state: GameState, action: PayloadAction<boolean>) {
       if (!state.ai) return;
       state.ai.busy = action.payload;
@@ -173,6 +238,7 @@ const gameSlice = createSlice({
       state.ai.depthReached = 0;
       state.ai.lastScore = undefined;
       state.ai.lastDurationMs = undefined;
+      state.ai.engineStats = undefined as any;
     },
     aiSearchProgress(state: GameState, action: PayloadAction<number>) {
       if (!state.ai) return;
@@ -183,12 +249,13 @@ const gameSlice = createSlice({
       state.ai.depthReached = action.payload.depth;
       state.ai.lastScore = action.payload.score;
     },
-    aiSearchEnded(state: GameState, action: PayloadAction<{ durationMs: number; depthReached: number; score: number; nodesVisited: number }>) {
+    aiSearchEnded(state: GameState, action: PayloadAction<{ durationMs: number; depthReached: number; score: number; nodesVisited: number; engineStats?: { ttProbes?: number; ttHits?: number; cutoffs?: number; pvsReSearches?: number; lmrReductions?: number } }>) {
       if (!state.ai) return;
       state.ai.lastDurationMs = action.payload.durationMs;
       state.ai.depthReached = action.payload.depthReached;
       state.ai.lastScore = action.payload.score;
       state.ai.nodesVisited = action.payload.nodesVisited;
+      if (action.payload.engineStats) state.ai.engineStats = { ...action.payload.engineStats } as any;
     },
     aiSearchReset(state: GameState) {
       if (!state.ai) return;
@@ -197,9 +264,10 @@ const gameSlice = createSlice({
       state.ai.lastScore = undefined;
       state.ai.lastDurationMs = undefined;
       state.ai.startedAt = undefined;
+      state.ai.engineStats = undefined as any;
     },
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;
