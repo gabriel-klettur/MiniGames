@@ -4,10 +4,11 @@ import type { RootState } from '../../store/index.ts';
 import UIUX from './UIUX/UIUX.tsx';
 import Button from '../ui/Button.tsx';
 import AIDiagnosticsPanel from './IAPanel/IAPanel.tsx';
+import InfoIA from './InfoIA';
 
 export default function DevToolsPanel() {
   const { winner } = useAppSelector((s: RootState) => s.game);
-  const [activeTab, setActiveTab] = useState<'IA' | 'UIUX' | null>('IA');
+  const [activeTab, setActiveTab] = useState<'IA' | 'InfoIA' | 'UIUX' | null>('IA');
 
   return (
     <div className="w-full overflow-x-auto rounded-xl border border-neutral-700 bg-neutral-900/60 p-4">
@@ -26,6 +27,16 @@ export default function DevToolsPanel() {
           </Button>
           <Button
             size="sm"
+            variant={activeTab === 'InfoIA' ? 'primary' : 'neutral'}
+            onClick={() => setActiveTab(activeTab === 'InfoIA' ? null : 'InfoIA')}
+            pressed={activeTab === 'InfoIA'}
+            aria-label="Mostrar/Ocultar InfoIA"
+            title="Mostrar/Ocultar InfoIA"
+          >
+            InfoIA
+          </Button>
+          <Button
+            size="sm"
             variant={activeTab === 'UIUX' ? 'primary' : 'neutral'}
             onClick={() => setActiveTab(activeTab === 'UIUX' ? null : 'UIUX')}
             pressed={activeTab === 'UIUX'}
@@ -40,6 +51,7 @@ export default function DevToolsPanel() {
         </div>
       </div>
       {activeTab === 'IA' && <AIDiagnosticsPanel />}
+      {activeTab === 'InfoIA' && <InfoIA />}
       {activeTab === 'UIUX' && <UIUX />}
     </div>
   );

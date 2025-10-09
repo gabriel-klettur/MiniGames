@@ -23,6 +23,7 @@ export default function PresetsTab() {
 
   useEffect(() => {
     try { savePresets(items); } catch {}
+    try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
   }, [items]);
 
   const selected = useMemo(() => items.find(it => it.id === selectedId) || null, [items, selectedId]);
@@ -68,12 +69,14 @@ export default function PresetsTab() {
     dispatch(applyIAPreset({ ...selected.settings }));
     try { setSelectedPresetId(selected.id); } catch {}
     setAppliedId(selected.id);
+    try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
   };
 
   const restoreDefaults = () => {
     const def = getDefaultPresets();
     setItems(def);
     setSelectedId(def[0]?.id || '');
+    try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
   };
 
   // Small inline SVG icons (no external deps)

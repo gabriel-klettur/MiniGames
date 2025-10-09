@@ -13,6 +13,13 @@ export function evaluate(gs: GameState, root: Player): number {
   const me = root;
   const opp = other(root);
 
+  // Terminal handling: treat wins/losses as near-mate scores so the engine can detect
+  // forced outcomes and stop early during iterative deepening.
+  // Note: we don't incorporate ply distance here; negamax will still break on large magnitude.
+  if (gs.winner) {
+    return gs.winner === me ? 100000 : -100000;
+  }
+
   const params = EVAL_PARAMS;
 
   // 1) Carrera: bonus por retiradas y por tener menos turnos restantes

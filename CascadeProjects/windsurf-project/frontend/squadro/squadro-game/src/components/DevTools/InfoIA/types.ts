@@ -1,0 +1,104 @@
+import type { ChangeEvent } from 'react';
+
+export type TimeMode = 'auto' | 'manual';
+
+export type MoveDetail = {
+  index: number;
+  elapsedMs: number;
+  depthReached?: number;
+  nodes?: number;
+  nps?: number;
+  score?: number;
+  bestMove?: any;
+  player?: 'Light' | 'Dark';
+  depthUsed?: number;
+  applied?: boolean;
+  at?: number;
+};
+
+export type InfoIARecord = {
+  id: string;
+  startedAt: number;
+  durationMs: number;
+  moves: number;
+  winner: 'Light' | 'Dark' | 0; // 0 = empate/técnico
+  p1Depth: number;
+  p2Depth: number;
+  details?: MoveDetail[];
+};
+
+export type PresetOption = { key: string; label: string; description?: string };
+
+export interface PlayerControlsProps {
+  title: string;
+  depth: number;
+  onChangeDepth: (v: number) => void;
+  timeMode: TimeMode;
+  onChangeTimeMode: (m: TimeMode) => void;
+  timeSeconds: number;
+  onChangeTimeSeconds: (s: number) => void;
+  // Header preset dropdown (optional)
+  presetOptions?: PresetOption[];
+  presetSelectedKey?: string;
+  onChangePreset?: (key: string) => void;
+  /** Per-player engine options (UI callbacks) — subset supported by Squadro */
+  enableTT?: boolean; onToggleEnableTT?: () => void;
+  enableKillers?: boolean; onToggleEnableKillers?: () => void;
+  enableHistory?: boolean; onToggleEnableHistory?: () => void;
+  enablePVS?: boolean; onToggleEnablePVS?: () => void;
+  enableLMR?: boolean; onToggleEnableLMR?: () => void;
+  lmrMinDepth?: number; onChangeLmrMinDepth?: (n: number) => void;
+  lmrLateMoveIdx?: number; onChangeLmrLateMoveIdx?: (n: number) => void;
+  lmrReduction?: number; onChangeLmrReduction?: (n: number) => void;
+}
+
+export interface CompareHead { id: string; name: string; color: string }
+export interface Dataset { id: string; name: string; color: string; records: Array<{ durationMs: number }> }
+
+export interface InfoIAViewProps {
+  // Header actions
+  running: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  onDefaults: () => void;
+  onExportJSON: () => void;
+  onExportCSV: () => void;
+  onExportCSVDetails: () => void;
+  onImportFiles: (e: ChangeEvent<HTMLInputElement>) => void;
+  onClearAll: () => void;
+
+  // Tabs
+  activeTab: 'repeats' | 'sim' | 'charts' | 'books';
+  onChangeTab: (t: 'repeats' | 'sim' | 'charts' | 'books') => void;
+
+  // Charts/compare
+  compareHeads: CompareHead[];
+  onAddCompare: () => void;
+  onRemoveCompare: (id: string) => void;
+  onClearCompare: () => void;
+  chartDatasets: Dataset[];
+
+  // Results
+  records: InfoIARecord[];
+
+  // TimeBar
+  moveIndex: number;
+  moveElapsedMs: number;
+  moveTargetMs?: number;
+  // Progress metrics
+  progDepth?: number;
+  progNodes?: number;
+  progNps?: number;
+  progScore?: number;
+  // Limits
+  gamesCount: number;
+  onChangeGamesCount: (v: number) => void;
+  // Per-player controls
+  p1: PlayerControlsProps;
+  p2: PlayerControlsProps;
+  // Table actions
+  onViewRecord: (id: string) => void;
+  onCopyRecord: (id: string) => void;
+  onDownloadRecord: (id: string) => void;
+  onDeleteRecord: (id: string) => void;
+}
