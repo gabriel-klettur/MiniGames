@@ -1,5 +1,4 @@
-/* IAUserPanel: estilos alineados con Soluna */
-
+/* IAUserPanel (Squadro): estilos y capa por encima de piezas */
 .robot-icon { color: #ffffff; transition: opacity 0.2s ease, filter 0.2s ease, color 0.2s ease; }
 .robot-icon.inactive { color: #ffffff; }
 .robot-icon.active { color: #22c55e; animation: blink-green 1s steps(1, end) infinite; }
@@ -69,6 +68,8 @@
   backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
   -webkit-backdrop-filter: blur(var(--panel-blur)) saturate(1.05);
 }
+/* Ensure IAUserPanel floats above pieces overlay (z-index 1000) */
+.iauser-panel { position: relative; z-index: 1100; }
 .panel .row.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .panel .row + .row { margin-top: 6px; }
 .panel.small { padding: 10px; border-radius: calc(var(--panel-radius) - 2px); }

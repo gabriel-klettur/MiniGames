@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { movePiece } from '../../store/gameSlice';
 import { DEFAULT_LANE_LENGTH } from '../../game/board';
@@ -39,11 +40,12 @@ export default function Board() {
   const profile = getBoardProfile(orientation);
 
   const size = DEFAULT_LANE_LENGTH + 1; // intersections count per axis
-
-  // Dynamically compute cell size so the board (square) fits in the viewport
+  // Refs/state for sizing and overlay portal
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [cellPx, setCellPx] = useState<number>(48);
+  const [overlayRect, setOverlayRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
+  // Dynamically compute cell size so the board (square) fits in the viewport
   useLayoutEffect(() => {
     function compute() {
       const vh = window.innerHeight;
@@ -67,21 +69,41 @@ export default function Board() {
       const byHeight = (availableHeight - GAP * (size - 1)) / size;
       const px = Math.floor(Math.max(10, Math.min(byWidth, byHeight)));
       setCellPx(px);
+      // Also sync overlay rect initially (viewport coordinates)
+      const rect = gridRef.current?.getBoundingClientRect();
+      if (rect) {
+        setOverlayRect({
+          left: Math.round(rect.left),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        });
+      }
+    }
+    function updateOverlayRectOnly() {
+      const rect = gridRef.current?.getBoundingClientRect();
+      if (rect) {
+        setOverlayRect({
+          left: Math.round(rect.left),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height),
+        });
+      }
     }
     compute();
     const ro = new ResizeObserver(compute);
     if (gridRef.current) ro.observe(gridRef.current);
     window.addEventListener('resize', compute);
     window.addEventListener('orientationchange', compute);
-    // Recompute after initial paint in case fonts/layout shift
-    const t = setTimeout(compute, 0);
+    window.addEventListener('scroll', updateOverlayRectOnly, { passive: true } as any);
     return () => {
-      clearTimeout(t);
       ro.disconnect();
       window.removeEventListener('resize', compute);
       window.removeEventListener('orientationchange', compute);
+      window.removeEventListener('scroll', updateOverlayRectOnly as any);
     };
-  }, [size]);
+  }, [size, orientation]);
 
   // Helpers to map logical orientation to display orientation
   const mapRowCol = (row: number, col: number) => {
@@ -152,6 +174,7 @@ export default function Board() {
     maxWidth: '100%',
     overflow: 'hidden',
     position: 'relative',
+    zIndex: 'auto',
   } as React.CSSProperties;
 
   // Build mapping from (row,col) to pieces present there
@@ -512,7 +535,8 @@ export default function Board() {
               width: w,
               transform: `translate(-50%, -50%)${rotationDeg ? ` rotate(${rotationDeg}deg)` : ''}${pieceStretchY !== 1 ? ` scaleY(${pieceStretchY})` : ''}`,
               willChange: 'left, top',
-              zIndex: 3,
+              zIndex: 20010,
+              pointerEvents: 'auto',
               transition: animMs <= 0 ? 'none' : `left ${animMs}ms ease, top ${animMs}ms ease`,
             }}
           >
@@ -553,7 +577,7 @@ export default function Board() {
           </div>
         );
       })
-    : null;
+    : [];
 
   return (
     <div className="w-full flex flex-col items-center gap-1">
@@ -592,13 +616,28 @@ export default function Board() {
             ))}
           </div>
         )}
-        {USE_ABSOLUTE_LAYER && (
-          <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+        {/* pieces rendered via portal overlay to avoid any ancestor clipping */}
+      {cellsArray}
+      </div>
+      {/* Portal overlay pinned to board's screen rect */}
+      {USE_ABSOLUTE_LAYER && showPieces && overlayRect && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: overlayRect.left,
+            top: overlayRect.top,
+            width: overlayRect.width,
+            height: overlayRect.height,
+            zIndex: 1000,
+            pointerEvents: 'auto',
+          }}
+        >
+          <div style={{ position: 'absolute', inset: 0 }}>
             {pieceElements}
           </div>
-        )}
-        {cellsArray}
-      </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
