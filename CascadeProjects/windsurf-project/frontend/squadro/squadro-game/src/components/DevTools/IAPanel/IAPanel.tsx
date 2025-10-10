@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import Button from '../../ui/Button';
 import ToggleSwitch from '../../ui/ToggleSwitch';
-import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction } from '../../../store/gameSlice';
+import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights } from '../../../store/gameSlice';
 import { store } from '../../../store';
 import { findBestMove } from '../../../ia/search';
 import PresetsTab from './components/Presets/PresetsTab';
@@ -244,6 +244,74 @@ export default function AIDiagnosticsPanel() {
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2">minDepth<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrMinDepth ?? 3} onChange={(e) => dispatch(setAiLmrMinDepth(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2">lateIdx<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrLateMoveIdx ?? 3} onChange={(e) => dispatch(setAiLmrLateMoveIdx(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2">reduction<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrReduction ?? 1} onChange={(e) => dispatch(setAiLmrReduction(Number(e.target.value)))} /></label>
+            </div>
+          </div>
+          {/* Heurística Global (aplica a ambos lados) */}
+          <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 md:col-span-2">
+            <h4 className="text-xs font-semibold text-neutral-300 mb-2">Heurística (global) • aplica a Light y Dark</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {([
+                ['w_race', 1.0],
+                ['w_clash', 0.8],
+                ['w_sprint', 0.6],
+                ['w_block', 0.3],
+              ] as const).map(([k, def]) => (
+                <label key={k} className="text-xs text-neutral-300 inline-flex items-center gap-2">
+                  {k}
+                  <input
+                    type="number"
+                    step={0.1}
+                    className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                    defaultValue={(ai?.evalWeights as any)?.Light?.[k] ?? (ai?.evalWeights as any)?.Dark?.[k] ?? def}
+                    onBlur={(e) => {
+                      const v = Number(e.target.value);
+                      dispatch(setAIEvalWeights({ player: 'Light', weights: { [k]: v } as any }));
+                      dispatch(setAIEvalWeights({ player: 'Dark', weights: { [k]: v } as any }));
+                    }}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2">done_bonus
+                <input
+                  type="number"
+                  step={0.5}
+                  className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                  defaultValue={(ai?.evalWeights as any)?.Light?.done_bonus ?? (ai?.evalWeights as any)?.Dark?.done_bonus ?? 5.0}
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    dispatch(setAIEvalWeights({ player: 'Light', weights: { done_bonus: v } }));
+                    dispatch(setAIEvalWeights({ player: 'Dark', weights: { done_bonus: v } }));
+                  }}
+                />
+              </label>
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2">sprint_thr
+                <input
+                  type="number"
+                  step={1}
+                  className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                  defaultValue={(ai?.evalWeights as any)?.Light?.sprint_threshold ?? (ai?.evalWeights as any)?.Dark?.sprint_threshold ?? 2}
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    dispatch(setAIEvalWeights({ player: 'Light', weights: { sprint_threshold: v } }));
+                    dispatch(setAIEvalWeights({ player: 'Dark', weights: { sprint_threshold: v } }));
+                  }}
+                />
+              </label>
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2">tempo
+                <input
+                  type="number"
+                  step={1}
+                  className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                  defaultValue={(ai?.evalWeights as any)?.Light?.tempo ?? (ai?.evalWeights as any)?.Dark?.tempo ?? 5}
+                  onBlur={(e) => {
+                    const v = Number(e.target.value);
+                    dispatch(setAIEvalWeights({ player: 'Light', weights: { tempo: v } }));
+                    dispatch(setAIEvalWeights({ player: 'Dark', weights: { tempo: v } }));
+                  }}
+                />
+              </label>
             </div>
           </div>
         </div>

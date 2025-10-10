@@ -1,4 +1,5 @@
 import type { GameState, Player, Piece } from '../game/types';
+import type { EvalParams } from './evalTypes';
 
 /**
  * evaluate — Heurística para Squadro.
@@ -20,7 +21,8 @@ export function evaluate(gs: GameState, root: Player): number {
     return gs.winner === me ? 100000 : -100000;
   }
 
-  const params = EVAL_PARAMS;
+  // Allow per-player override from game state (InfoIA/IAPanel can set gs.ai.evalWeights)
+  const params: EvalParams = (gs.ai as any)?.evalWeights?.[me] ?? EVAL_PARAMS;
 
   // 1) Carrera: bonus por retiradas y por tener menos turnos restantes
   const ownDone = countRetired(gs, me);
@@ -38,8 +40,8 @@ export function evaluate(gs: GameState, root: Player): number {
   // 4) Bloqueos útiles vs exposición (documento del cliente)
   const block = blockQuality(gs, me, opp);
 
-  // 4) Tempo (iniciativa) suave
-  const tempo = gs.turn === me ? 5 : 0;
+  // 4) Tempo (iniciativa) suave (configurable, fallback 5)
+  const tempo = gs.turn === me ? (typeof (params as any).tempo === 'number' ? (params as any).tempo : 5) : 0;
 
   return (
     params.w_race * raceScore +

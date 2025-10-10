@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAppDispatch } from '../../../../../store/hooks';
-import { applyIAPreset } from '../../../../../store/gameSlice';
+import { applyIAPreset, setAIEvalWeights } from '../../../../../store/gameSlice';
 import { loadPresets, savePresets, getDefaultPresets, getSelectedPresetId, setSelectedPresetId, type IAPreset } from '../../../../../ia/presets';
+import { loadEvalPresets, saveEvalPresets, getDefaultEvalPresets, getSelectedEvalPresetId, setSelectedEvalPresetId, type EvalPreset } from '../../../../../ia/evalPresets';
 import Button from '../../../../ui/Button';
 
 export default function PresetsTab() {
@@ -9,6 +10,11 @@ export default function PresetsTab() {
   const [items, setItems] = useState<IAPreset[]>(() => loadPresets());
   const [selectedId, setSelectedId] = useState<string>(() => getSelectedPresetId() || '');
   const [appliedId, setAppliedId] = useState<string>(() => getSelectedPresetId() || '');
+
+  // Heuristic (evaluation) presets state
+  const [evalItems, setEvalItems] = useState<EvalPreset[]>(() => loadEvalPresets());
+  const [evalSelectedId, setEvalSelectedId] = useState<string>(() => getSelectedEvalPresetId() || '');
+  const [evalAppliedId, setEvalAppliedId] = useState<string>(() => getSelectedEvalPresetId() || '');
 
   useEffect(() => {
     // Ensure defaults exist
@@ -22,11 +28,27 @@ export default function PresetsTab() {
   }, [items, selectedId]);
 
   useEffect(() => {
+    if (!evalItems || evalItems.length === 0) {
+      const def = getDefaultEvalPresets();
+      setEvalItems(def);
+      setEvalSelectedId((getSelectedEvalPresetId() || def[0]?.id || ''));
+      return;
+    }
+    if (!evalSelectedId && evalItems.length > 0) setEvalSelectedId(evalItems[0].id);
+  }, [evalItems, evalSelectedId]);
+
+  useEffect(() => {
     try { savePresets(items); } catch {}
     try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
   }, [items]);
 
+  useEffect(() => {
+    try { saveEvalPresets(evalItems); } catch {}
+    try { window.dispatchEvent(new Event('squadro:eval-presets:update')); } catch {}
+  }, [evalItems]);
+
   const selected = useMemo(() => items.find(it => it.id === selectedId) || null, [items, selectedId]);
+  const evalSelected = useMemo(() => evalItems.find(it => it.id === evalSelectedId) || null, [evalItems, evalSelectedId]);
 
   const createPreset = () => {
     const id = `custom_${Date.now().toString(36)}`;
@@ -77,6 +99,49 @@ export default function PresetsTab() {
     setItems(def);
     setSelectedId(def[0]?.id || '');
     try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
+  };
+
+  // --- Heuristic presets CRUD ---
+  const createEvalPreset = () => {
+    const id = `eval_${Date.now().toString(36)}`;
+    const name = `Eval ${evalItems.length + 1}`;
+    const base = getDefaultEvalPresets()[0]?.weights;
+    setEvalItems(prev => [...prev, { id, name, weights: { ...(base || { w_race:1, w_clash:0.8, w_sprint:0.6, w_block:0.3, done_bonus:5, sprint_threshold:2, tempo:5 }) } }]);
+    setEvalSelectedId(id);
+  };
+  const duplicateEvalPreset = () => {
+    if (!evalSelected) return;
+    const id = `${evalSelected.id}_copy_${Date.now().toString(36)}`;
+    const name = `${evalSelected.name} (copia)`;
+    setEvalItems(prev => [...prev, { id, name, weights: { ...evalSelected.weights } }]);
+    setEvalSelectedId(id);
+  };
+  const deleteEvalPreset = () => {
+    if (!evalSelected) return;
+    const next = evalItems.filter(it => it.id !== evalSelected.id);
+    setEvalItems(next);
+    if (evalSelected.id === evalAppliedId) {
+      try { setSelectedEvalPresetId(''); } catch {}
+      setEvalAppliedId('');
+    }
+    if (next.length) setEvalSelectedId(next[0].id); else setEvalSelectedId('');
+  };
+  const renameEvalPreset = (name: string) => {
+    if (!evalSelected) return;
+    setEvalItems(prev => prev.map(it => it.id === evalSelected.id ? ({ ...it, name }) : it));
+  };
+  const setEvalField = <K extends keyof EvalPreset['weights']>(k: K, v: EvalPreset['weights'][K]) => {
+    if (!evalSelected) return;
+    setEvalItems(prev => prev.map(it => it.id === evalSelected.id ? ({ ...it, weights: { ...it.weights, [k]: v } }) : it));
+  };
+  const applyEval = () => {
+    if (!evalSelected) return;
+    const w = evalSelected.weights;
+    // Apply to both players in Redux state (game mode)
+    dispatch(setAIEvalWeights({ player: 'Light', weights: { ...w } }));
+    dispatch(setAIEvalWeights({ player: 'Dark', weights: { ...w } }));
+    try { setSelectedEvalPresetId(evalSelected.id); } catch {}
+    setEvalAppliedId(evalSelected.id);
   };
 
   // Small inline SVG icons (no external deps)

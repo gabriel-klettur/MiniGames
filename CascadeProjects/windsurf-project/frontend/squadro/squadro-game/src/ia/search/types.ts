@@ -25,6 +25,8 @@ export interface EngineOptions {
   lmrMinDepth?: number;    // apply only when depth >= this
   lmrLateMoveIdx?: number; // apply to moves with index >= this
   lmrReduction?: number;   // plies to reduce
+  // Prefer TT bestMove as hash move in ordering
+  preferHashMove?: boolean;
 }
 
 export interface NodeParams {

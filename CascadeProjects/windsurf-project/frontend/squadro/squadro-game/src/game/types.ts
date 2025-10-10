@@ -85,6 +85,16 @@ export interface AISettings {
   timeSeconds: number;       // when manual, budget per move
   useWorkers?: boolean;      // if true (default), run AI in Web Workers
   busy?: boolean;            // ephemeral: IA pensando
+  // Per-player evaluation weights (heuristics)
+  evalWeights?: Partial<Record<Player, {
+    w_race: number;
+    w_clash: number;
+    w_sprint: number;
+    w_block: number;
+    done_bonus: number;
+    sprint_threshold: number;
+    tempo?: number;
+  }>>;
   // --- Advanced time configuration (auto mode) ---
   aiTimeMinMs?: number;
   aiTimeMaxMs?: number;

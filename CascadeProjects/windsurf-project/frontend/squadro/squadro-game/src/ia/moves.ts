@@ -117,7 +117,7 @@ function opponentHasImmediateJump(child: GameState): boolean {
     const lane = child.lanesByPlayer[q.owner][q.laneIndex];
     const dir = q.state === 'en_ida' ? +1 : -1;
     const speed = q.state === 'en_ida' ? lane.speedOut : lane.speedBack;
-    const maxProbe = Math.min(Math.abs(speed), 2);
+    const maxProbe = Math.min(Math.abs(speed), 3);
     for (let s = 1; s <= maxProbe; s++) {
       const pos = q.pos + dir * s;
       if (pos < 0 || pos > lane.length) break;

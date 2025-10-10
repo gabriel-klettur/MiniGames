@@ -32,6 +32,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
     lmrMinDepth: 3,
     lmrLateMoveIdx: 3,
     lmrReduction: 1,
+    preferHashMove: true,
   };
 
   const res = bestMoveIterative(rootState, {

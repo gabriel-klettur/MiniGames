@@ -47,9 +47,18 @@ export interface PlayerControlsProps {
   enableHistory?: boolean; onToggleEnableHistory?: () => void;
   enablePVS?: boolean; onToggleEnablePVS?: () => void;
   enableLMR?: boolean; onToggleEnableLMR?: () => void;
+  preferHashMove?: boolean; onTogglePreferHashMove?: () => void;
   lmrMinDepth?: number; onChangeLmrMinDepth?: (n: number) => void;
   lmrLateMoveIdx?: number; onChangeLmrLateMoveIdx?: (n: number) => void;
   lmrReduction?: number; onChangeLmrReduction?: (n: number) => void;
+  /** Heuristic weights (optional) */
+  w_race?: number; onChangeWRace?: (n: number) => void;
+  w_clash?: number; onChangeWClash?: (n: number) => void;
+  w_sprint?: number; onChangeWSprint?: (n: number) => void;
+  w_block?: number; onChangeWBlock?: (n: number) => void;
+  done_bonus?: number; onChangeDoneBonus?: (n: number) => void;
+  sprint_threshold?: number; onChangeSprintThreshold?: (n: number) => void;
+  tempo?: number; onChangeTempo?: (n: number) => void;
 }
 
 export interface CompareHead { id: string; name: string; color: string }

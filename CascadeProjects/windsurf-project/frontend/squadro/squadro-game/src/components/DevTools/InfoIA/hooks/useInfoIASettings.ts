@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TimeMode } from '../types';
 import type { EngineOptions } from '../../../../ia/search/types';
+import type { EvalParams } from '../../../../ia/evalTypes';
 
 export type ActiveTab = 'repeats' | 'sim' | 'charts' | 'books';
 
@@ -22,6 +23,9 @@ export interface InfoIASettings {
   // Per-player engine options (subset supported by Squadro)
   p1Engine: EngineOptions; setP1Engine: (next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => void;
   p2Engine: EngineOptions; setP2Engine: (next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => void;
+  // Per-player evaluation weights
+  p1Eval: EvalParams; setP1Eval: (next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => void;
+  p2Eval: EvalParams; setP2Eval: (next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => void;
   resetDefaults: () => void;
 }
 
@@ -50,14 +54,32 @@ export function useInfoIASettings(): InfoIASettings {
     lmrMinDepth: 3,
     lmrLateMoveIdx: 3,
     lmrReduction: 1,
+    preferHashMove: true,
+  };
+  const defaultEval: EvalParams = {
+    w_race: 1.0,
+    w_clash: 0.8,
+    w_sprint: 0.6,
+    w_block: 0.3,
+    done_bonus: 5.0,
+    sprint_threshold: 2,
+    tempo: 5,
   };
   const [p1Engine, setP1EngineState] = useState<EngineOptions>({ ...defaultEngine });
   const [p2Engine, setP2EngineState] = useState<EngineOptions>({ ...defaultEngine });
+  const [p1Eval, setP1EvalState] = useState<EvalParams>({ ...defaultEval });
+  const [p2Eval, setP2EvalState] = useState<EvalParams>({ ...defaultEval });
   const setP1Engine = useCallback((next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => {
     setP1EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
   }, []);
   const setP2Engine = useCallback((next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => {
     setP2EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
+  }, []);
+  const setP1Eval = useCallback((next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => {
+    setP1EvalState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
+  }, []);
+  const setP2Eval = useCallback((next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => {
+    setP2EvalState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
   }, []);
 
   const resetDefaults = useCallback(() => {
@@ -68,6 +90,8 @@ export function useInfoIASettings(): InfoIASettings {
     setP1Secs(3); setP2Secs(3);
     setP1EngineState({ ...defaultEngine });
     setP2EngineState({ ...defaultEngine });
+    setP1EvalState({ ...defaultEval });
+    setP2EvalState({ ...defaultEval });
   }, []);
 
   return {
@@ -79,6 +103,8 @@ export function useInfoIASettings(): InfoIASettings {
     p1Secs, p2Secs, setP1Secs, setP2Secs,
     p1Engine, setP1Engine,
     p2Engine, setP2Engine,
+    p1Eval, setP1Eval,
+    p2Eval, setP2Eval,
     resetDefaults,
   };
 }

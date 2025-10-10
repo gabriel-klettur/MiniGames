@@ -151,7 +151,11 @@ function negamax(
   }
 
   const killers = getKillers(ctx, ply);
-  const ordered = orderedMoves(state, moves, me, { killers, history: ctx.history });
+  // Prefer TT hash move if enabled to seed ordering (improves beta cutoffs)
+  const hashMove = (engine?.preferHashMove && ttEntry?.bestMove && moves.includes(ttEntry.bestMove))
+    ? ttEntry.bestMove
+    : null;
+  const ordered = orderedMoves(state, moves, me, { hashMove, killers, history: ctx.history });
 
   let bestScore = -Infinity;
   let bestMove: string | null = null;

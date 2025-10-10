@@ -39,6 +39,9 @@ const InfoIAContainer: React.FC = () => {
       // Per-player engine options
       p1Options: settings.p1Engine as EngineOptions,
       p2Options: settings.p2Engine as EngineOptions,
+      // Per-player evaluation weights
+      p1Eval: settings.p1Eval,
+      p2Eval: settings.p2Eval,
     },
     addRecord,
   );
@@ -138,6 +141,8 @@ const InfoIAContainer: React.FC = () => {
         onToggleEnableKillers: () => settings.setP1Engine(prev => ({ ...prev, enableKillers: !prev.enableKillers })),
         enableHistory: settings.p1Engine.enableHistory,
         onToggleEnableHistory: () => settings.setP1Engine(prev => ({ ...prev, enableHistory: !prev.enableHistory })),
+        preferHashMove: settings.p1Engine.preferHashMove,
+        onTogglePreferHashMove: () => settings.setP1Engine(prev => ({ ...prev, preferHashMove: !prev.preferHashMove })),
         enablePVS: settings.p1Engine.enablePVS,
         onToggleEnablePVS: () => settings.setP1Engine(prev => ({ ...prev, enablePVS: !prev.enablePVS })),
         enableLMR: settings.p1Engine.enableLMR,
@@ -166,6 +171,8 @@ const InfoIAContainer: React.FC = () => {
         onToggleEnableKillers: () => settings.setP2Engine(prev => ({ ...prev, enableKillers: !prev.enableKillers })),
         enableHistory: settings.p2Engine.enableHistory,
         onToggleEnableHistory: () => settings.setP2Engine(prev => ({ ...prev, enableHistory: !prev.enableHistory })),
+        preferHashMove: settings.p2Engine.preferHashMove,
+        onTogglePreferHashMove: () => settings.setP2Engine(prev => ({ ...prev, preferHashMove: !prev.preferHashMove })),
         enablePVS: settings.p2Engine.enablePVS,
         onToggleEnablePVS: () => settings.setP2Engine(prev => ({ ...prev, enablePVS: !prev.enablePVS })),
         enableLMR: settings.p2Engine.enableLMR,

@@ -4,6 +4,7 @@ import { createInitialState } from '../../../../game/pieces';
 import { movePiece as applyMoveRules } from '../../../../game/rules';
 import type { GameState, Player } from '../../../../game/types';
 import { createAIRunner } from '../services/aiRunner';
+import type { EvalParams } from '../../../../ia/evalTypes';
 import type { EngineOptions } from '../../../../ia/search/types';
 
 export interface SimulationSettings {
@@ -19,6 +20,9 @@ export interface SimulationSettings {
   // Optional per-player engine options
   p1Options?: EngineOptions;
   p2Options?: EngineOptions;
+  // Optional per-player evaluation weights
+  p1Eval?: EvalParams;
+  p2Eval?: EvalParams;
 }
 
 export interface SimulationMetrics {
@@ -106,6 +110,17 @@ export function useSimulationRunner(
         const secs = isP1 ? settings.p1Secs : settings.p2Secs;
         const target = computeTimeBudget(mode, secs);
         const engine: EngineOptions | undefined = isP1 ? settings.p1Options : settings.p2Options;
+
+        // Inject per-player evaluation weights into state for evaluate()
+        try {
+          const lightEval: EvalParams | undefined = settings.p1Eval;
+          const darkEval: EvalParams | undefined = settings.p2Eval;
+          if (gs.ai) {
+            const ew: any = (gs.ai.evalWeights ||= {} as any);
+            if (lightEval) ew['Light'] = { ...(ew['Light'] || {}), ...lightEval };
+            if (darkEval) ew['Dark'] = { ...(ew['Dark'] || {}), ...darkEval };
+          }
+        } catch {}
 
         setMoveIndex((v) => v + 1);
         setMoveElapsedMs(0);

@@ -142,6 +142,16 @@ export function movePiece(gs: GameState, pieceId: string): GameState {
     }
   }
 
+  // Post-loop normalization: if we stopped due to clamping beyond the edge,
+  // still apply edge state transitions (turn at far edge or retire at start edge)
+  if (p.state !== 'retirada') {
+    if (pos === lane.length && p.state === 'en_ida') {
+      p.state = 'en_vuelta';
+    } else if (pos === 0 && p.state === 'en_vuelta') {
+      p.state = 'retirada';
+    }
+  }
+
   // Commit final position if not retired
   if (p.state !== 'retirada') {
     p.pos = pos;

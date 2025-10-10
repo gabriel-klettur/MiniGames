@@ -84,6 +84,8 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onToggleEnableKillers={p1.onToggleEnableKillers}
             enableHistory={p1.enableHistory}
             onToggleEnableHistory={p1.onToggleEnableHistory}
+            preferHashMove={p1.preferHashMove}
+            onTogglePreferHashMove={p1.onTogglePreferHashMove}
             enableLMR={p1.enableLMR}
             onToggleEnableLMR={p1.onToggleEnableLMR}
             lmrMinDepth={p1.lmrMinDepth}
@@ -92,6 +94,21 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onChangeLmrLateMoveIdx={p1.onChangeLmrLateMoveIdx}
             lmrReduction={p1.lmrReduction}
             onChangeLmrReduction={p1.onChangeLmrReduction}
+            // Heuristic weights
+            w_race={p1.w_race}
+            onChangeWRace={p1.onChangeWRace}
+            w_clash={p1.w_clash}
+            onChangeWClash={p1.onChangeWClash}
+            w_sprint={p1.w_sprint}
+            onChangeWSprint={p1.onChangeWSprint}
+            w_block={p1.w_block}
+            onChangeWBlock={p1.onChangeWBlock}
+            done_bonus={p1.done_bonus}
+            onChangeDoneBonus={p1.onChangeDoneBonus}
+            sprint_threshold={p1.sprint_threshold}
+            onChangeSprintThreshold={p1.onChangeSprintThreshold}
+            tempo={p1.tempo}
+            onChangeTempo={p1.onChangeTempo}
           />
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
@@ -129,6 +146,8 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onToggleEnableKillers={p2.onToggleEnableKillers}
             enableHistory={p2.enableHistory}
             onToggleEnableHistory={p2.onToggleEnableHistory}
+            preferHashMove={p2.preferHashMove}
+            onTogglePreferHashMove={p2.onTogglePreferHashMove}
             enableLMR={p2.enableLMR}
             onToggleEnableLMR={p2.onToggleEnableLMR}
             lmrMinDepth={p2.lmrMinDepth}
@@ -137,6 +156,21 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onChangeLmrLateMoveIdx={p2.onChangeLmrLateMoveIdx}
             lmrReduction={p2.lmrReduction}
             onChangeLmrReduction={p2.onChangeLmrReduction}
+            // Heuristic weights
+            w_race={p2.w_race}
+            onChangeWRace={p2.onChangeWRace}
+            w_clash={p2.w_clash}
+            onChangeWClash={p2.onChangeWClash}
+            w_sprint={p2.w_sprint}
+            onChangeWSprint={p2.onChangeWSprint}
+            w_block={p2.w_block}
+            onChangeWBlock={p2.onChangeWBlock}
+            done_bonus={p2.done_bonus}
+            onChangeDoneBonus={p2.onChangeDoneBonus}
+            sprint_threshold={p2.sprint_threshold}
+            onChangeSprintThreshold={p2.onChangeSprintThreshold}
+            tempo={p2.tempo}
+            onChangeTempo={p2.onChangeTempo}
           />
         </div>
       </div>

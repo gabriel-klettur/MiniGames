@@ -1,8 +1,10 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { IAPreset } from '../ia/presets';
+import type { EvalParams } from '../ia/evalTypes';
 import type { GameState, Player, AISpeed } from '../game/types';
 import { createInitialState } from '../game/pieces';
+import { getSelectedEvalPresetId, findEvalPresetById } from '../ia/evalPresets';
 import { movePiece as movePieceRules } from '../game/rules';
 
 const initialState: GameState = createInitialState();
@@ -14,12 +16,12 @@ const gameSlice = createSlice({
     resetGame(state: GameState) {
       const prevAI = state.ai ? { ...state.ai } : undefined;
       const next = createInitialState();
+      // Reset core game state
       state.lanesByPlayer = next.lanesByPlayer;
       state.pieces = next.pieces;
       state.turn = next.turn;
       state.winner = next.winner;
-      // Preserve UI settings (including orientation and piece sizes) across resets
-      // Preserve AI settings across resets (do NOT disable VS IA when starting una nueva partida)
+      // Preserve UI and AI settings across resets (do NOT disable VS IA)
       if (prevAI) {
         state.ai = {
           ...prevAI,
@@ -31,9 +33,23 @@ const gameSlice = createSlice({
           lastScore: undefined,
         } as typeof prevAI;
       }
+      // Apply selected heuristic preset (global) at game start
+      try {
+        const sel = getSelectedEvalPresetId();
+        if (sel) {
+          const p = findEvalPresetById(sel);
+          if (p && p.weights) {
+            const w = p.weights as EvalParams;
+            if (!state.ai) state.ai = next.ai!;
+            const ew: any = (state.ai.evalWeights ||= {} as any);
+            ew['Light'] = { ...(ew['Light'] || {}), ...w };
+            ew['Dark'] = { ...(ew['Dark'] || {}), ...w };
+          }
+        }
+      } catch {}
     },
     movePiece(state: GameState, action: PayloadAction<string>) {
-      // Immer allows us to "mutate" safely. Guard against invalid moves.
+      // Apply game rules for a single move, guard against invalid moves.
       try {
         movePieceRules(state, action.payload);
       } catch (err) {
@@ -239,6 +255,14 @@ const gameSlice = createSlice({
       if (!state.ai) return;
       state.ai.busy = action.payload;
     },
+    // --- Evaluation weights (per player) ---
+    setAIEvalWeights(state: GameState, action: PayloadAction<{ player: Player; weights: Partial<EvalParams> }>) {
+      if (!state.ai) return;
+      const { player, weights } = action.payload;
+      const ew = (state.ai.evalWeights ||= {} as any) as any;
+      const prev = ew[player] || {};
+      ew[player] = { ...prev, ...weights } as any;
+    },
     // --- AI instrumentation (ephemeral) ---
     aiSearchStarted(state: GameState, action: PayloadAction<number | undefined>) {
       if (!state.ai) return;
@@ -278,5 +302,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;

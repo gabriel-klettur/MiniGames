@@ -57,6 +57,11 @@ export function createInitialState(): GameState {
       timeMode: 'manual',
       timeSeconds: 10,
       useWorkers: true,
+      // Default evaluation weights per player
+      evalWeights: {
+        Light: { w_race: 1.0, w_clash: 0.8, w_sprint: 0.6, w_block: 0.3, done_bonus: 5.0, sprint_threshold: 2, tempo: 5 },
+        Dark:  { w_race: 1.0, w_clash: 0.8, w_sprint: 0.6, w_block: 0.3, done_bonus: 5.0, sprint_threshold: 2, tempo: 5 },
+      },
     },
   };
   return state;
