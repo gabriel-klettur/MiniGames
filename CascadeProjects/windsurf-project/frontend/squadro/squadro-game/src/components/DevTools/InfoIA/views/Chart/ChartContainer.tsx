@@ -23,22 +23,22 @@ export default function ChartContainer({ datasets }: ChartContainerProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-[11px] text-neutral-300">
-        <div className="font-medium">Resumen</div>
+      <div className="flex items-center justify-between text-[11px] text-neutral-300" title="Resumen — Promedio de duración global y cantidad total de registros en todos los datasets.">
+        <div className="font-medium" title="Resumen de datasets cargados">Resumen</div>
         <div className="inline-flex items-center gap-3 font-mono">
-          <span><strong>N</strong> {total.toLocaleString()}</span>
-          <span><strong>avg</strong> {Math.round(overallAvg).toLocaleString()} ms</span>
+          <span title="N — Cantidad total de partidas consideradas en los gráficos."><strong>N</strong> {total.toLocaleString()}</span>
+          <span title="avg — Promedio de duración (ms) ponderado por partidas."><strong>avg</strong> {Math.round(overallAvg).toLocaleString()} ms</span>
         </div>
       </div>
       {stats.map((s) => (
         <div key={s.id} className="flex items-center gap-2">
-          <div className="w-36 text-xs truncate" title={s.name}>{s.name}</div>
-          <div className="relative h-3 flex-1 rounded-md border border-neutral-700 bg-neutral-900 overflow-hidden">
-            <div className="absolute inset-y-0 left-0 rounded-md transition-[width] duration-150 ease-out" style={{ width: `${Math.round(s.ratio * 100)}%`, background: s.color }} />
+          <div className="w-36 text-xs truncate" title={`${s.name} — Nombre del dataset (serie) mostrado en los gráficos.`}>{s.name}</div>
+          <div className="relative h-3 flex-1 rounded-md border border-neutral-700 bg-neutral-900 overflow-hidden" title="Barra — Proporción del promedio de este dataset respecto al máximo (100%).">
+            <div className="absolute inset-y-0 left-0 rounded-md transition-[width] duration-150 ease-out" style={{ width: `${Math.round(s.ratio * 100)}%`, background: s.color }} title={`Ratio: ${Math.round(s.ratio*100)}%`} />
           </div>
           <div className="w-28 text-right text-[11px] font-mono text-neutral-200">
-            <span className="mr-2">{s.count.toLocaleString()}x</span>
-            <span>{Math.round(s.avg).toLocaleString()} ms</span>
+            <span className="mr-2" title="N — Cantidad de partidas en este dataset.">{s.count.toLocaleString()}x</span>
+            <span title="avg — Promedio de duración (ms) de este dataset.">{Math.round(s.avg).toLocaleString()} ms</span>
           </div>
         </div>
       ))}

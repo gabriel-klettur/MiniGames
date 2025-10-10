@@ -1,5 +1,5 @@
 import type { GameState } from '../game/types';
-import { bestMoveIterative } from './search/index';
+import { bestMoveIterative, findBestMoveRootParallel } from './search/index';
 import type { SearchStats, EngineOptions } from './search/types';
 
 export type BestMove = { moveId: string | null; score: number; depthReached: number; engineStats?: Partial<SearchStats> };
@@ -33,6 +33,12 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
     lmrLateMoveIdx: 3,
     lmrReduction: 1,
     preferHashMove: true,
+    enableAspiration: true,
+    aspDelta: 25,
+    enableQuiescence: false,
+    quiescenceMaxPlies: 4,
+    enableAdaptiveTime: true,
+    timeSlackMs: 50,
   };
 
   const res = bestMoveIterative(rootState, {
@@ -62,3 +68,6 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
   await new Promise((r) => setTimeout(r, 0));
   return { moveId: res.moveId, score: res.score, depthReached: res.depthReached, engineStats: { ...stats } };
 }
+
+// Re-export root-parallel orchestrator for UI usage
+export { findBestMoveRootParallel };

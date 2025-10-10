@@ -181,22 +181,21 @@ Recomendadas (IA):
 
 - [x] Generación de movimientos (`generateMoves`) y aplicación (`applyMove`).
 - [x] Evaluación terminal y heurística específica de Squadro (`evaluate`).
-- [x] Negamax con alfa–beta y ordenación por heurística estática (`search`).
 - [x] Medición de `nodes`, `depthReached` y progreso por iteración.
-- [x] Iterative deepening con límite de tiempo (deadline en Worker).
 - [x] Transposition Table + Zobrist (`tt.ts`, `hash.ts`).
 - [x] PVS y LMR (con parámetros en `EngineOptions`).
 - [x] Killers/History heuristic.
-- [x] Hash move desde TT para `orderedMoves` (via `EngineOptions.preferHashMove`, activo por defecto).
-- [ ] Aspiration Windows.
-- [ ] Quiescence Search (acotada a tácticas claras).
-- [ ] Presupuesto de tiempo adaptativo por branching factor.
+ - [x] Hash move desde TT para `orderedMoves` (via `EngineOptions.preferHashMove`, activo por defecto).
+ - [x] Aspiration Windows (completado).
+  - [x] Quiescence Search (acotada a tácticas claras).
+  - [x] Presupuesto de tiempo adaptativo por factor de ramificación (heurística y slack).
+  - [x] Paralelización a nivel raíz (orquestador en main thread con `workerPool`).
 
 ---
 
 ## Glosario rápido
 
-- Minimax (minimax) — Búsqueda de mejor jugada asumiendo rival óptimo — Alterna max/min — Negamax simplifica signos.
+{{ ... }}
 - Poda alfa–beta (alpha–beta pruning) — Descarta ramas que no mejoran — `alpha >= beta` ⇒ corte β.
 - Variación principal (principal variation) — Secuencia de jugadas óptimas — Útil para depurar y UI.
 - Ordenación de movimientos (move ordering) — Explorar “mejores” primero — Más cortes β.

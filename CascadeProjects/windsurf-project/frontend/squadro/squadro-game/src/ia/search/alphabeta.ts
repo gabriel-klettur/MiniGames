@@ -4,6 +4,7 @@ import { evaluate } from '../evaluate';
 import { TranspositionTable, type TTEntry } from '../tt';
 import type { SearchContext, SearchStats, NodeParams, IterResult, EngineOptions } from './types';
 import { orderedMoves } from './moveOrdering';
+import { quiesce } from './quiescence';
 
 export interface EngineSearchOptions {
   maxDepth: number;
@@ -32,6 +33,8 @@ export function bestMoveIterative(
   let bestScore = -Infinity;
   let depthReached = 0;
   let lastProgressAt = start;
+  let prevScore: number | null = null; // for aspiration windows
+  let lastIterDurationMs = 0;          // for adaptive time control
 
   opts.onProgress?.({ type: 'start', startedAt: start });
   opts.onProgress?.({ type: 'progress', nodesVisited: stats.nodes });
@@ -39,21 +42,55 @@ export function bestMoveIterative(
   for (let depth = 1; depth <= opts.maxDepth; depth++) {
     const remaining = deadline - performance.now();
     if (remaining <= 1) break;
-    const r = negamax({
+    // Simple adaptive time heuristic: if previous iteration took T, 
+    // estimate next iteration ~ T * growthFactor and stop if not enough time remains.
+    if (opts.engine?.enableAdaptiveTime && depth > 1 && lastIterDurationMs > 0) {
+      const growth = 1.8; // conservative multiplier for iterative deepening cost growth
+      const slack = Math.max(0, opts.engine.timeSlackMs ?? 50);
+      const predictedNext = lastIterDurationMs * growth;
+      if (predictedNext + slack >= remaining) {
+        break;
+      }
+    }
+    // Aspiration window: start around previous score when enabled and depth>1
+    let alpha0 = -Infinity;
+    let beta0 = +Infinity;
+    const useAsp = !!opts.engine?.enableAspiration && prevScore !== null && depth > 1;
+    if (useAsp) {
+      const delta = Math.max(1, opts.engine?.aspDelta ?? 25);
+      alpha0 = prevScore! - delta;
+      beta0 = prevScore! + delta;
+    }
+
+    const searchOnce = (a: number, b: number) => negamax({
       state: rootState,
       depth,
-      alpha: -Infinity,
-      beta: +Infinity,
+      alpha: a,
+      beta: b,
       me,
       ply: 0,
       stats,
       allowedRootMoves: opts.allowedRootMoves,
       isRoot: true,
     }, ctx, tt, deadline, opts.engine);
+
+    const iterStart = performance.now();
+    let r = searchOnce(alpha0, beta0);
+    if (r.timeout) break;
+
+    // If aspiration fails low/high, re-search with full window
+    if (useAsp && (r.score <= alpha0 || r.score >= beta0)) {
+      const r2 = searchOnce(-Infinity, +Infinity);
+      if (r2.timeout) break;
+      r = r2;
+      if (stats) stats.aspReSearches = (stats.aspReSearches || 0) + 1;
+    }
     if (r.timeout) break;
     bestMove = r.bestMove;
     bestScore = r.score;
     depthReached = depth;
+    prevScore = r.score;
+    lastIterDurationMs = performance.now() - iterStart;
     opts.onProgress?.({ type: 'iter', depth, score: r.score, bestMove });
     if (Math.abs(r.score) > 90000) break; // forced outcome
     const now = performance.now();
@@ -126,8 +163,20 @@ function negamax(
 
   // Leaf (non-terminal)
   if (depth === 0) {
-    params.stats && (params.stats.nodes += 1);
-    return { score: evaluate(state, me), bestMove: null, timeout: false };
+    if (engine?.enableQuiescence) {
+      return quiesce({
+        state,
+        alpha: params.alpha,
+        beta: params.beta,
+        me,
+        ply,
+        stats: params.stats,
+        qDepth: 0,
+      }, ctx, tt, deadline, engine);
+    } else {
+      params.stats && (params.stats.nodes += 1);
+      return { score: evaluate(state, me), bestMove: null, timeout: false };
+    }
   }
 
   // TT probe

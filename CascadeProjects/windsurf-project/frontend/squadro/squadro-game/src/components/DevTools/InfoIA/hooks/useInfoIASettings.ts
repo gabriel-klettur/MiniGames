@@ -14,6 +14,11 @@ export interface InfoIASettings {
   datasetLabel: string;
   gamesCount: number;
   setGamesCount: (n: number) => void;
+  // Global execution options
+  useRootParallel: boolean;
+  setUseRootParallel: (v: boolean) => void;
+  workers: number;
+  setWorkers: (n: number) => void;
   p1Depth: number; p2Depth: number;
   setP1Depth: (n: number) => void; setP2Depth: (n: number) => void;
   p1Mode: TimeMode; p2Mode: TimeMode;
@@ -38,6 +43,8 @@ export function useInfoIASettings(): InfoIASettings {
   const datasetLabel = 'Local';
 
   const [gamesCount, setGamesCount] = useState<number>(10);
+  const [useRootParallel, setUseRootParallel] = useState<boolean>(false);
+  const [workers, setWorkers] = useState<number>(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
   const [p1Depth, setP1Depth] = useState<number>(3);
   const [p2Depth, setP2Depth] = useState<number>(3);
   const [p1Mode, setP1Mode] = useState<TimeMode>('auto');
@@ -85,6 +92,8 @@ export function useInfoIASettings(): InfoIASettings {
   const resetDefaults = useCallback(() => {
     setVisualize(true);
     setGamesCount(10);
+    setUseRootParallel(false);
+    setWorkers(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
     setP1Secs(3); setP2Secs(3);
@@ -98,6 +107,8 @@ export function useInfoIASettings(): InfoIASettings {
     activeTab, setActiveTab,
     visualize, toggleVisualize, vizRef, datasetLabel,
     gamesCount, setGamesCount,
+    useRootParallel, setUseRootParallel,
+    workers, setWorkers,
     p1Depth, p2Depth, setP1Depth, setP2Depth,
     p1Mode, p2Mode, setP1Mode, setP2Mode,
     p1Secs, p2Secs, setP1Secs, setP2Secs,

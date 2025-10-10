@@ -36,6 +36,8 @@ const InfoIAContainer: React.FC = () => {
       p2Secs: settings.p2Secs,
       vizRef: settings.vizRef,
       suspendPersistence,
+      useRootParallel: settings.useRootParallel,
+      workers: settings.workers,
       // Per-player engine options
       p1Options: settings.p1Engine as EngineOptions,
       p2Options: settings.p2Engine as EngineOptions,
@@ -124,6 +126,10 @@ const InfoIAContainer: React.FC = () => {
       ]}
       gamesCount={settings.gamesCount}
       onChangeGamesCount={settings.setGamesCount}
+      useRootParallel={settings.useRootParallel}
+      onToggleUseRootParallel={() => settings.setUseRootParallel(!settings.useRootParallel)}
+      workers={settings.workers}
+      onChangeWorkers={(n: number) => settings.setWorkers(Math.max(1, Math.min(32, n)))}
       p1={{
         title: 'Jugador 1 (Light)',
         depth: settings.p1Depth,

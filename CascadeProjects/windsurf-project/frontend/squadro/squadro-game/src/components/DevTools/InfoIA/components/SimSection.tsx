@@ -9,6 +9,10 @@ interface SimSectionProps {
   running: boolean;
   gamesCount: number;
   onChangeGamesCount: (v: number) => void;
+  useRootParallel?: boolean;
+  onToggleUseRootParallel?: () => void;
+  workers?: number;
+  onChangeWorkers?: (n: number) => void;
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
   records: InfoIARecord[];
@@ -24,7 +28,7 @@ interface SimSectionProps {
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -36,7 +40,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
     <div className="infoia-sim flex flex-col gap-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
-          <div className="section-title font-semibold text-neutral-200">Límites de simulación</div>
+          <div className="section-title font-semibold text-neutral-200" title="Límites de simulación — Controla cuántas partidas se ejecutan y si se paraleliza la raíz. Ejemplo: 50 partidas con Paralelización raíz ON y 4 workers para evaluar jugadas iniciales en paralelo.">Límites de simulación</div>
           <label className="mt-2 inline-flex items-center gap-2 text-xs text-neutral-300">
             Partidas
             <input
@@ -46,28 +50,50 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               value={gamesCount}
               onChange={(e) => onChangeGamesCount(Math.max(1, Math.min(1000, Number(e.target.value))))}
               className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+              title="Número de partidas a simular"
             />
           </label>
+          <div className="mt-2 flex items-center gap-3 text-xs text-neutral-300">
+            <label className="inline-flex items-center gap-2" title="Activar evaluación de movimientos de raíz en paralelo (usa varios Web Workers)">
+              <input type="checkbox" checked={!!useRootParallel} onChange={() => onToggleUseRootParallel?.()} />
+              Paralelización raíz
+            </label>
+            <label className="inline-flex items-center gap-2" title="Cantidad de workers paralelos para evaluar jugadas de raíz">
+              Workers
+              <input
+                type="number"
+                min={1}
+                max={32}
+                value={workers ?? 2}
+                onChange={(e) => onChangeWorkers?.(Math.max(1, Math.min(32, Number(e.target.value))))}
+                className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+              />
+            </label>
+          </div>
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
-          <div className="section-title font-semibold text-neutral-200">{p1.title}</div>
+          <div className="section-title font-semibold text-neutral-200" title={`${p1.title} — Ajustes del motor y heurística para el Jugador 1. Ejemplo: Profundidad 5, Tiempo Auto, TT+PVS+Killers+History ON, LMR configurado.`}>{p1.title}</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            <label className="text-xs text-neutral-300">Profundidad
+            <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 1">
+              Profundidad
               <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
             </label>
-            <label className="text-xs text-neutral-300">Tiempo
+            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 1: Auto (sin límite) o Manual (segundos)">
+              Tiempo
               <select value={p1.timeMode} onChange={(e) => p1.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                 <option value="auto">Auto</option>
                 <option value="manual">Manual</option>
               </select>
             </label>
             {p1.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300">Segundos
+              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 1">
+                Segundos
                 <input type="number" min={0} max={60} value={p1.timeSeconds} onChange={(e) => p1.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
               </label>
             )}
             {p1.presetOptions && p1.onChangePreset && (
-              <label className="text-xs text-neutral-300 col-span-2">Preset
+              <label className="text-xs text-neutral-300 col-span-2" title="Selecciona un preset de IA para Jugador 1">
+                Preset
                 <select value={p1.presetSelectedKey || ''} onChange={(e) => p1.onChangePreset!(e.target.value)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                   <option value="">(ninguno)</option>
                   {p1.presetOptions.map((opt) => (<option key={opt.key} value={opt.key}>{opt.label}</option>))}
@@ -112,24 +138,28 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
           />
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
-          <div className="section-title font-semibold text-neutral-200">{p2.title}</div>
+          <div className="section-title font-semibold text-neutral-200" title={`${p2.title} — Ajustes del motor y heurística para el Jugador 2. Útil para A/B testing contra Jugador 1.`}>{p2.title}</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            <label className="text-xs text-neutral-300">Profundidad
+            <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 2">
+              Profundidad
               <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
             </label>
-            <label className="text-xs text-neutral-300">Tiempo
+            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 2: Auto (sin límite) o Manual (segundos)">
+              Tiempo
               <select value={p2.timeMode} onChange={(e) => p2.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                 <option value="auto">Auto</option>
                 <option value="manual">Manual</option>
               </select>
             </label>
             {p2.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300">Segundos
+              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 2">
+                Segundos
                 <input type="number" min={0} max={60} value={p2.timeSeconds} onChange={(e) => p2.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
               </label>
             )}
             {p2.presetOptions && p2.onChangePreset && (
-              <label className="text-xs text-neutral-300 col-span-2">Preset
+              <label className="text-xs text-neutral-300 col-span-2" title="Selecciona un preset de IA para Jugador 2">
+                Preset
                 <select value={p2.presetSelectedKey || ''} onChange={(e) => p2.onChangePreset!(e.target.value)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                   <option value="">(ninguno)</option>
                   {p2.presetOptions.map((opt) => (<option key={opt.key} value={opt.key}>{opt.label}</option>))}
@@ -178,19 +208,19 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
       {running && <TimeBar moveIndex={moveIndex} moveElapsedMs={moveElapsedMs} moveTargetMs={moveTargetMs} />}
       {running && (
         <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Jugador — Quién mueve en la jugada actual (Light/Dark). Afecta el signo del score y el bonus de tempo.">
             <strong>Jugador</strong> {moveIndex % 2 === 1 ? 'Light' : 'Dark'}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Depth — Profundidad de la iteración actual. Debería incrementarse hasta el objetivo si el tiempo alcanza.">
             <strong>Depth</strong> {progDepth}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Nodes — Posiciones evaluadas hasta ahora en esta jugada. Úsalo junto a t para estimar NPS.">
             <strong>Nodes</strong> {progNodes.toLocaleString()}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="NPS — Nodos por segundo. Indicador de rendimiento bruto del motor.">
             <strong>NPS</strong> {progNps.toLocaleString()}
           </span>
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Score — Evaluación heurística; positivo favorece al jugador que mueve. Útil para ver si la PV tiene coherencia.">
             <strong>Score</strong> {progScore}
           </span>
         </div>
@@ -198,7 +228,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
 
       {/* Aggregate summary across completed games (updates live) */}
       <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
-        <label className="inline-flex items-center gap-2 mr-2">
+        <label className="inline-flex items-center gap-2 mr-2" title="Filtro por ganador — Muestra sólo partidas donde ganó Light, Dark o hubo empate. Útil para estudiar sesgos o ventajas por configuración.">
           <span className="text-neutral-300">Ganador</span>
           <select
             className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
@@ -224,25 +254,25 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
           const wrD = total ? Math.round((wD * 1000) / total) / 10 : 0;
           return (
             <>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Partidas — Total de partidas tras aplicar el filtro.">
                 <strong>Partidas</strong> {total}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="WR (Light) — Win Rate del bando Light en % sobre el conjunto filtrado.">
                 <strong>WR (Light)</strong> {wrL}%
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="WR (Dark) — Win Rate del bando Dark en % sobre el conjunto filtrado.">
                 <strong>WR (Dark)</strong> {wrD}%
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Empates — Cantidad de partidas que terminaron en empate.">
                 <strong>Empates</strong> {draws}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Min — Duración mínima (segundos) entre las partidas filtradas.">
                 <strong>Min (s)</strong> {(min/1000).toFixed(2)}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Máx — Duración máxima (segundos) entre las partidas filtradas.">
                 <strong>Máx (s)</strong> {(max/1000).toFixed(2)}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80" title="Total — Suma de los tiempos (segundos) de todas las partidas filtradas.">
                 <strong>Total (s)</strong> {(sum/1000).toFixed(2)}
               </span>
             </>
@@ -251,7 +281,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
       </div>
 
       <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
-        <div className="section-title font-semibold text-neutral-200 mb-2">Resultados</div>
+        <div className="section-title font-semibold text-neutral-200 mb-2" title="Resultados — Tabla de partidas y detalles por jugada para analizar profundidad, nodos, NPS y score.">Resultados</div>
         <TablaIA
           records={records}
           onCopyRecord={onCopyRecord}

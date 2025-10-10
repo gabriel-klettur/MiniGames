@@ -18,7 +18,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
   return (
     <div className="tabla-ia mt-2">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[11px] text-neutral-400">
+        <div className="text-[11px] text-neutral-400" title="Resumen — Cantidad de partidas listadas. Entre paréntesis se indican cuántas filas de detalle están expandidas.">
           {loading ? 'Cargando…' : `${records.length} partidas`}
           {expandedCount > 0 && <span className="ml-2 text-neutral-500">({expandedCount} abiertas)</span>}
         </div>
@@ -41,17 +41,17 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
           </Button>
         </div>
       </div>
-      <div className="overflow-x-auto rounded-md border border-neutral-800">
+      <div className="overflow-x-auto rounded-md border border-neutral-800" title="Tabla de partidas — Click en Inicio para expandir/contraer detalles; usa Acciones para copiar/descargar/eliminar.">
         <table className="min-w-full text-[11px]">
           <thead className="bg-neutral-900/70 text-neutral-300">
             <tr>
-              <th className="py-2 px-2 text-left font-semibold">Inicio</th>
-              <th className="py-2 px-2 text-left font-semibold">Duración (ms)</th>
-              <th className="py-2 px-2 text-left font-semibold">Movs</th>
-              <th className="py-2 px-2 text-left font-semibold">Winner</th>
-              <th className="py-2 px-2 text-left font-semibold">P1</th>
-              <th className="py-2 px-2 text-left font-semibold">P2</th>
-              <th className="py-2 px-2 text-left font-semibold">Acciones</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Inicio — Hora de inicio de la partida. Ejemplo: 12:34:56 PM.">Inicio</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Duración — Tiempo total de la partida en milisegundos. Ejemplo: 12 345 ms.">Duración (ms)</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Movs — Número de jugadas totales realizadas. Ejemplo: 37.">Movs</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Winner — Ganador de la partida (Light/Dark) o 0 para empate.">Winner</th>
+              <th className="py-2 px-2 text-left font-semibold" title="P1 — Profundidad (objetivo o alcanzada) asociada al jugador 1. Útil para comparar configuraciones.">P1</th>
+              <th className="py-2 px-2 text-left font-semibold" title="P2 — Profundidad (objetivo o alcanzada) asociada al jugador 2. Útil para comparar configuraciones.">P2</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Acciones — Ver detalles, copiar JSON, descargar o eliminar el registro.">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
@@ -117,19 +117,19 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                           <span><strong>P1</strong> d={r.p1Depth}</span>
                           <span><strong>P2</strong> d={r.p2Depth}</span>
                         </div>
-                        <div className="overflow-x-auto rounded border border-neutral-800">
+                        <div className="overflow-x-auto rounded border border-neutral-800" title="Detalles por jugada — Métricas de cada movimiento evaluado: tiempos, profundidad alcanzada, nodos, NPS y score.">
                           <table className="min-w-full text-[11px]">
                             <thead className="bg-neutral-900/70 text-neutral-300">
                               <tr>
-                                <th className="py-1 px-2 text-left">#</th>
-                                <th className="py-1 px-2 text-left">Jugador</th>
-                                <th className="py-1 px-2 text-left">t(ms)</th>
-                                <th className="py-1 px-2 text-left">depth</th>
-                                <th className="py-1 px-2 text-left">depthReached</th>
-                                <th className="py-1 px-2 text-left">nodes</th>
-                                <th className="py-1 px-2 text-left">NPS</th>
-                                <th className="py-1 px-2 text-left">score</th>
-                                <th className="py-1 px-2 text-left">applied</th>
+                                <th className="py-1 px-2 text-left" title="Índice — Número de la jugada dentro de la partida.">#</th>
+                                <th className="py-1 px-2 text-left" title="Jugador — Quién mueve en esta jugada (Light/Dark).">Jugador</th>
+                                <th className="py-1 px-2 text-left" title="t(ms) — Tiempo empleado por la IA en milisegundos para esta jugada.">t(ms)</th>
+                                <th className="py-1 px-2 text-left" title="depth — Profundidad solicitada (objetivo) para esta jugada.">depth</th>
+                                <th className="py-1 px-2 text-left" title="depthReached — Profundidad máxima realmente alcanzada (puede ser < depth si el tiempo expiró).">depthReached</th>
+                                <th className="py-1 px-2 text-left" title="nodes — Número de posiciones evaluadas en esta jugada.">nodes</th>
+                                <th className="py-1 px-2 text-left" title="NPS — Nodos por segundo (nodes / (t/1000)). Ejemplo: 65 000 indica buen rendimiento.">NPS</th>
+                                <th className="py-1 px-2 text-left" title="score — Evaluación heurística; positivo favorece al jugador que mueve.">score</th>
+                                <th className="py-1 px-2 text-left" title="applied — Indica si la mejor jugada encontrada fue aplicada al tablero (✓).">applied</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-800">

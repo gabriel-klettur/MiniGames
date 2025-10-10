@@ -6,6 +6,7 @@ import type { GameState, Player } from '../../../../game/types';
 import { createAIRunner } from '../services/aiRunner';
 import type { EvalParams } from '../../../../ia/evalTypes';
 import type { EngineOptions } from '../../../../ia/search/types';
+import { findBestMoveRootParallel, type SearchEvent } from '../../../../ia/search';
 
 export interface SimulationSettings {
   gamesCount: number;
@@ -23,6 +24,9 @@ export interface SimulationSettings {
   // Optional per-player evaluation weights
   p1Eval?: EvalParams;
   p2Eval?: EvalParams;
+  // Global execution options
+  useRootParallel?: boolean;
+  workers?: number;
 }
 
 export interface SimulationMetrics {
@@ -110,6 +114,7 @@ export function useSimulationRunner(
         const secs = isP1 ? settings.p1Secs : settings.p2Secs;
         const target = computeTimeBudget(mode, secs);
         const engine: EngineOptions | undefined = isP1 ? settings.p1Options : settings.p2Options;
+        const engineWithWorkers: EngineOptions | undefined = engine ? { ...engine, workers: settings.workers } : { workers: settings.workers } as any;
 
         // Inject per-player evaluation weights into state for evaluate()
         try {
@@ -144,28 +149,47 @@ export function useSimulationRunner(
 
         const runner = runnerRef.current!;
         try {
-          const res = await runner.startSearch(
-            { state: gs, depth, timeMs: target, engine },
-            (p) => {
-              if (!settings.vizRef.current) return;
-              if (typeof p.depth === 'number') setProgDepth(p.depth);
-              if (typeof p.nodes === 'number') {
-                setProgNodes(p.nodes);
-                const now = performance.now();
-                const elapsed = Math.max(1, now - moveStartRef.current);
-                setProgNps(Math.round((p.nodes * 1000) / elapsed));
-              }
-              if (typeof p.score === 'number') setProgScore(p.score);
-            }
-          );
+          const res = settings.useRootParallel
+            ? await findBestMoveRootParallel(gs, {
+                maxDepth: depth,
+                timeLimitMs: target,
+                engine: engineWithWorkers,
+                onProgress: (ev: SearchEvent) => {
+                  if (!settings.vizRef.current) return;
+                  if (ev.type === 'iter') {
+                    setProgDepth(ev.depth);
+                    setProgScore(ev.score);
+                  } else if (ev.type === 'progress') {
+                    setProgNodes(ev.nodesVisited);
+                    const now = performance.now();
+                    const elapsed = Math.max(1, now - moveStartRef.current);
+                    setProgNps(Math.round((ev.nodesVisited * 1000) / elapsed));
+                  }
+                },
+              })
+            : await runner.startSearch(
+                { state: gs, depth, timeMs: target, engine: engineWithWorkers },
+                (p) => {
+                  if (!settings.vizRef.current) return;
+                  if (typeof p.depth === 'number') setProgDepth(p.depth);
+                  if (typeof p.nodes === 'number') {
+                    setProgNodes(p.nodes);
+                    const now = performance.now();
+                    const elapsed = Math.max(1, now - moveStartRef.current);
+                    setProgNps(Math.round((p.nodes * 1000) / elapsed));
+                  }
+                  if (typeof p.score === 'number') setProgScore(p.score);
+                }
+              );
 
           stopMoveRaf();
           // Ensure we record the actual elapsed time even in Auto (Infinity) mode
           const actualElapsed = performance.now() - moveStartRef.current;
           setMoveElapsedMs(actualElapsed);
 
-          if (res?.bestMove) {
-            applyMoveRules(gs, res.bestMove);
+          const chosenMove = (res as any).bestMove ?? (res as any).moveId ?? null;
+          if (chosenMove) {
+            applyMoveRules(gs, chosenMove);
             curDetails.push({
               index: curDetails.length + 1,
               elapsedMs: actualElapsed,
@@ -173,7 +197,7 @@ export function useSimulationRunner(
               nodes: progNodes,
               nps: progNps,
               score: res?.score,
-              bestMove: res.bestMove,
+              bestMove: chosenMove,
               player: cur,
               depthUsed: depth,
               applied: true,

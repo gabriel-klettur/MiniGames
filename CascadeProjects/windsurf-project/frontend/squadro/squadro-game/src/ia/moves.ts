@@ -144,3 +144,24 @@ function coordOf(owner: Player, laneIndex: number, pos: number, gs: GameState): 
   if (owner === 'Light') return { row: laneIndex + offset, col: L - pos };
   return { row: L - pos, col: laneIndex + offset };
 }
+
+/**
+ * generateTacticalMoves — subconjunto de movimientos "tácticos" para Quiescence.
+ * Incluye:
+ * - Movimientos que retiran una pieza propia en este mismo turno.
+ * - Movimientos que provocan un "salto"/retroceso del oponente (aprox por delta en borde).
+ */
+export function generateTacticalMoves(gs: GameState): string[] {
+  const side: Player = gs.turn;
+  const opp: Player = side === 'Light' ? 'Dark' : 'Light';
+  const moves = generateMoves(gs);
+  const tactical: string[] = [];
+  for (const m of moves) {
+    const child = applyMove(gs, m);
+    const didRetire = completesNow(child, side, m);
+    const jumpDeltaOpp = approxOppSendBackCount(gs, child, opp);
+    const didJump = jumpDeltaOpp > 0;
+    if (didRetire || didJump) tactical.push(m);
+  }
+  return tactical;
+}

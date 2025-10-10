@@ -102,6 +102,11 @@ export interface InfoIAViewProps {
   // Limits
   gamesCount: number;
   onChangeGamesCount: (v: number) => void;
+  // Root-parallel controls (global)
+  useRootParallel?: boolean;
+  onToggleUseRootParallel?: () => void;
+  workers?: number;
+  onChangeWorkers?: (n: number) => void;
   // Per-player controls
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;

@@ -7,6 +7,8 @@ export interface SearchStats {
   cutoffs?: number;
   pvsReSearches?: number;
   lmrReductions?: number;
+  // Number of re-searches triggered by Aspiration Windows adjustments
+  aspReSearches?: number;
 }
 
 export interface SearchContext {
@@ -27,6 +29,18 @@ export interface EngineOptions {
   lmrReduction?: number;   // plies to reduce
   // Prefer TT bestMove as hash move in ordering
   preferHashMove?: boolean;
+  // Aspiration Windows
+  enableAspiration?: boolean; // use aspiration windows around last score
+  aspDelta?: number;          // initial half-window size around the previous score
+  // Quiescence Search (limited to tactical moves)
+  enableQuiescence?: boolean;
+  quiescenceMaxPlies?: number; // safety cap for quiescence extensions
+  // Adaptive time control
+  enableAdaptiveTime?: boolean; // break before next iteration if time is likely insufficient
+  timeSlackMs?: number;         // reserved slack to avoid overruns (e.g., 50ms)
+  // Root parallelization (main thread orchestrator)
+  enableRootParallel?: boolean;
+  workers?: number;             // desired workers for root parallelization
 }
 
 export interface NodeParams {

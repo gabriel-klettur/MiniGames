@@ -15,6 +15,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     activeTab, onChangeTab,
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     gamesCount, onChangeGamesCount,
+    useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers,
     p1, p2,
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
@@ -26,7 +27,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     <section className="panel infoia-panel w-full max-w-none flex-1" aria-label="InfoIA">
       {/* Header: title + tabs + status */}
       <div className="infoia__header flex items-center gap-3 mb-2">
-        <h3 className="ia-panel__title m-0 mr-auto text-sm font-semibold text-neutral-200">InfoIA</h3>
+        <h3 className="ia-panel__title m-0 mr-auto text-sm font-semibold text-neutral-200" title="InfoIA — Panel de experimentación y diagnóstico de IA: simulaciones, análisis, gráficos y libros.">InfoIA</h3>
         <HeaderTabs activeTab={activeTab} onChangeTab={onChangeTab} />
         <div className="infoia__status" aria-live="polite">
           {running && (
@@ -55,7 +56,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
       {/* Repeats tab (placeholder) */}
       {activeTab === 'repeats' && (
         <div className="section mt-3">
-          <div className="section-title font-semibold text-neutral-200">Jugadas Repetidas</div>
+          <div className="section-title font-semibold text-neutral-200" title="Jugadas Repetidas — (Placeholder) Vista para detectar líneas repetitivas y ajustar heurística/ordenación.">Jugadas Repetidas</div>
           <RepeatsTab />
         </div>
       )}
@@ -63,7 +64,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
       {/* Charts tab */}
       {activeTab === 'charts' && (
         <div className="section mt-3">
-          <div className="section-title font-semibold text-neutral-200">Gráficos</div>
+          <div className="section-title font-semibold text-neutral-200" title="Gráficos — Compara datasets por promedio de duración y cantidad. Útil para comparar builds/configuraciones.">Gráficos</div>
           <CompareBar compareSets={compareHeads} onAdd={onAddCompare} onRemove={onRemoveCompare} onClear={onClearCompare} />
           <div className="mt-2">
             <ChartContainer datasets={chartDatasets} />
@@ -74,7 +75,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
       {/* Books tab */}
       {activeTab === 'books' && (
         <div className="section mt-3">
-          <div className="section-title font-semibold text-neutral-200">Books</div>
+          <div className="section-title font-semibold text-neutral-200" title="Books — (Placeholder) Espacio para líneas de apertura/guías de juego e importación futura.">Books</div>
           <Books />
         </div>
       )}
@@ -85,6 +86,10 @@ export default function InfoIAView(props: InfoIAViewProps) {
           running={running}
           gamesCount={gamesCount}
           onChangeGamesCount={onChangeGamesCount}
+          useRootParallel={useRootParallel}
+          onToggleUseRootParallel={onToggleUseRootParallel}
+          workers={workers}
+          onChangeWorkers={onChangeWorkers}
           p1={p1}
           p2={p2}
           records={records}

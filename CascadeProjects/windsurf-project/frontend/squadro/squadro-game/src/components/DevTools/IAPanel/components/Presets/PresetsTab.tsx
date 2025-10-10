@@ -130,28 +130,28 @@ export default function PresetsTab() {
         {selected && (
           <>
             <div className="flex items-center gap-2">
-              <label title="Nombre del preset" className="text-xs text-neutral-300 inline-flex items-center gap-2">
+              <label title="Nombre del preset — Etiqueta visible en listas y menús. Ejemplo: 'IAPowa+Rendimiento' para indicar foco en velocidad." className="text-xs text-neutral-300 inline-flex items-center gap-2">
                 Nombre
                 <input type="text" value={selected.name} onChange={(e) => renamePreset(e.target.value)} className="ml-1 w-72 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
               </label>
               <div className="ml-auto inline-flex gap-2">
-                <Button size="sm" variant="primary" onClick={applyCurrent} title="Aplicar al jugador actual"><Icon.Check />Aplicar</Button>
-                <Button size="sm" variant="outline" onClick={restoreDefaults} title="Restaurar presets por defecto"><Icon.Reset />Restaurar por defecto</Button>
+                <Button size="sm" variant="primary" onClick={applyCurrent} title="Aplicar — Copia los ajustes del preset al estado de IA actual (jugador activo). Ejemplo: cambia profundidad/tiempo y toggles sin afectar otros presets."><Icon.Check />Aplicar</Button>
+                <Button size="sm" variant="outline" onClick={restoreDefaults} title="Restaurar por defecto — Restaura el conjunto de presets iniciales (IAPowa, IAPowa+Rendimiento, etc.). Útil si se borraron o modificaron accidentalmente."><Icon.Reset />Restaurar por defecto</Button>
               </div>
             </div>
 
             <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">
               <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">Ajustes</h4>
               <div className="flex gap-3 flex-wrap">
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Dificultad — Mapea a profundidad objetivo por defecto en modos manuales. Ejemplo: dificultad=5 ⇒ profundidad=5 si no se sobreescribe desde la UI.">
                   Dificultad
                   <input type="number" min={1} max={20} step={1} value={selected.settings.difficulty ?? 3} onChange={(e) => setField('difficulty', Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
                 </label>
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Workers — Ejecuta la IA en Web Workers para no bloquear la UI. Ejemplo: ON en dispositivos multi‑núcleo para paralelizar raíz; OFF si se depura en hilo principal.">
                   Workers
                   <input type="checkbox" checked={!!selected.settings.useWorkers} onChange={(e) => setField('useWorkers', e.target.checked)} />
                 </label>
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Velocidad — Preajuste del presupuesto (cuando corresponda) o intención de UX. Ejemplo: 'rápido' prioriza tiempo corto por jugada; 'lento' permite evaluaciones más profundas.">
                   Velocidad
                   <select value={selected.settings.speed || 'normal'} onChange={(e) => setField('speed', e.target.value as any)} className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                     <option value="rapido">rápido</option>
@@ -160,7 +160,7 @@ export default function PresetsTab() {
                     <option value="auto">auto</option>
                   </select>
                 </label>
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Modo tiempo — Manual: fija segundos por jugada. Auto: delega en heurísticas/adaptativo. Ejemplo: Manual=10s asegura timebox; Auto usa profundidad/ventanas para decidir stop.">
                   Modo tiempo
                   <select value={selected.settings.timeMode || 'manual'} onChange={(e) => setField('timeMode', e.target.value as any)} className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                     <option value="manual">manual</option>
@@ -168,7 +168,7 @@ export default function PresetsTab() {
                   </select>
                 </label>
                 {selected.settings.timeMode !== 'auto' && (
-                  <label className="inline-flex items-center gap-2 text-xs text-neutral-300">
+                  <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Segundos por jugada (Manual) — Límite duro por movimiento. Ejemplo: 5s fuerza decisiones más rápidas; 30s permite explorar más profundo.">
                     Segundos
                     <input
                       type="number"
