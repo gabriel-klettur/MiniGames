@@ -19,3 +19,8 @@ export const DEFAULT_PIECE_SCALE = 0.7;
 export const DEFAULT_HEIGHT = 44;
 export const DEFAULT_WIDTH_SCALE = 1;
 export const DEFAULT_ANIM_MS = 200;
+
+// Board scale (visual size of the grid relative to available space)
+export const MIN_BOARD_SCALE = 0.5;
+export const MAX_BOARD_SCALE = 2.0;
+export const DEFAULT_BOARD_SCALE = 1.0;

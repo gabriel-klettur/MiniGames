@@ -32,6 +32,7 @@ export function createInitialState(): GameState {
       pieceWidth: 16, // default thinner width in px
       pieceHeight: 44, // default height in px
       pieceScale: 0.7, // default sprite scale relative to pitch basis
+      boardScale: 1.0, // default board scale (100%)
       orientation: 'classic',
       showPieces: true,
       pieceAnimMs: 200,

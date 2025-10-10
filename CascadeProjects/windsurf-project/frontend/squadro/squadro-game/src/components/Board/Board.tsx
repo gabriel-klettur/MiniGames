@@ -67,7 +67,10 @@ export default function Board() {
       // Compute max cell size by width and height constraints
       const byWidth = (availableWidth - EDGE_SAFE * 2 - GAP * (size - 1)) / size;
       const byHeight = (availableHeight - GAP * (size - 1)) / size;
-      const px = Math.floor(Math.max(10, Math.min(byWidth, byHeight)));
+      const baseMax = Math.min(byWidth, byHeight);
+      // Apply boardScale to scale relative to the max-fit size; allow >1 to zoom (content clips, container stable)
+      const scale = Math.max(0.5, Math.min(2.0, Number(ui?.boardScale ?? 1)));
+      const px = Math.floor(Math.max(10, baseMax * scale));
       setCellPx(px);
       // Also sync overlay rect initially (viewport coordinates)
       const rect = gridRef.current?.getBoundingClientRect();
@@ -103,7 +106,7 @@ export default function Board() {
       window.removeEventListener('orientationchange', compute);
       window.removeEventListener('scroll', updateOverlayRectOnly as any);
     };
-  }, [size, orientation]);
+  }, [size, orientation, ui?.boardScale]);
 
   // Helpers to map logical orientation to display orientation
   const mapRowCol = (row: number, col: number) => {

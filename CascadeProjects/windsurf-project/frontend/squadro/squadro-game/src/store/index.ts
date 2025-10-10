@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -25,6 +25,8 @@ type StoredUI = {
   pieceHeightDark?: number;
   pieceWidthScaleLight?: number;
   pieceWidthScaleDark?: number;
+  // Board scale
+  boardScale?: number;
   orientation?: 'classic' | 'bga';
   showCoordsOverlay?: boolean;
   showPipIndicators?: boolean;
@@ -69,6 +71,7 @@ if (stored) {
   if (typeof stored.pieceHeightDark === 'number') store.dispatch(setPieceHeightDark(stored.pieceHeightDark));
   if (typeof stored.pieceWidthScaleLight === 'number') store.dispatch(setPieceWidthScaleLight(stored.pieceWidthScaleLight));
   if (typeof stored.pieceWidthScaleDark === 'number') store.dispatch(setPieceWidthScaleDark(stored.pieceWidthScaleDark));
+  if (typeof stored.boardScale === 'number') store.dispatch(setBoardScale(stored.boardScale));
   if (stored.orientation === 'classic' || stored.orientation === 'bga') store.dispatch(setOrientation(stored.orientation));
   if (typeof stored.showCoordsOverlay === 'boolean') store.dispatch(setShowCoordsOverlay(stored.showCoordsOverlay));
   if (typeof stored.showPipIndicators === 'boolean') store.dispatch(setShowPipIndicators(stored.showPipIndicators));
@@ -97,6 +100,7 @@ store.subscribe(() => {
     pieceHeightDark: ui.pieceHeightDark,
     pieceWidthScaleLight: ui.pieceWidthScaleLight,
     pieceWidthScaleDark: ui.pieceWidthScaleDark,
+    boardScale: (ui as any).boardScale,
     orientation: ui.orientation as 'classic' | 'bga',
     showCoordsOverlay: ui.showCoordsOverlay,
     showPipIndicators: ui.showPipIndicators,

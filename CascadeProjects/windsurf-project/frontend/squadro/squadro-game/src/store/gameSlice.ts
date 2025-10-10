@@ -77,6 +77,11 @@ const gameSlice = createSlice({
       const v = Math.max(0, Math.min(2000, Math.round(action.payload)));
       state.ui.pieceAnimMs = v;
     },
+    // Board scaling (visual only)
+    setBoardScale(state: GameState, action: PayloadAction<number>) {
+      const v = Math.max(0.5, Math.min(2.0, Number(action.payload)));
+      (state.ui as any).boardScale = v;
+    },
     // Debug overlays
     setShowCoordsOverlay(state: GameState, action: PayloadAction<boolean>) {
       state.ui.showCoordsOverlay = !!action.payload;
@@ -269,5 +274,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;

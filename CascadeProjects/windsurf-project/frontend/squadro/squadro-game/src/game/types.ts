@@ -53,6 +53,8 @@ export interface UISettings {
   pieceWidthScaleLight?: number; // 0.5..2.0 factor for Light
   pieceWidthScaleDark?: number;  // 0.5..2.0 factor for Dark
   pieceScale?: number; // 0..1 factor to scale sprite size relative to pitch (default ~0.7)
+  // Visual scale factor for the entire board grid relative to available space (0.5..1.0)
+  boardScale?: number;
   orientation: Orientation; // board rendering orientation
   // Visibility toggles
   showPieces?: boolean;      // if false, do not render piece sprites (visual only)
