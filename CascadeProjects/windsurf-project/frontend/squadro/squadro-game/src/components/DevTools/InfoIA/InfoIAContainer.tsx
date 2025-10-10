@@ -20,7 +20,6 @@ const InfoIAContainer: React.FC = () => {
     exportJSON,
     exportCSV,
     exportCSVDetails,
-    viewRecord,
     copyRecord,
     downloadRecord,
     flushNow,
@@ -186,7 +185,6 @@ const InfoIAContainer: React.FC = () => {
       progNodes={sim.progNodes}
       progNps={sim.progNps}
       progScore={sim.progScore}
-      onViewRecord={viewRecord}
       onCopyRecord={copyRecord}
       onDownloadRecord={downloadRecord}
       onDeleteRecord={deleteRecord}

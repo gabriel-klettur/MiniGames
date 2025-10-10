@@ -91,27 +91,6 @@ function roughProgress(gs: GameState, side: Player): number {
   return score;
 }
 
-function didLastMoveRetire(gs: GameState, side: Player): boolean {
-  // Si alguna pieza del lado 'side' pasó a 'retirada', el progreso incremental suele ser alto.
-  return gs.pieces.some((p) => p.owner === side && p.state === 'retirada');
-}
-
-function approximateDidJump(before: GameState, after: GameState): boolean {
-  // Heurística: si el número de piezas en posición de borde (pos==0 o pos==L) del rival aumenta,
-  // es probable que haya habido salto que las envió atrás.
-  const countEdge = (gs: GameState, owner: Player) => {
-    let c = 0;
-    for (const p of gs.pieces) {
-      if (p.owner !== owner || p.state === 'retirada') continue;
-      const L = gs.lanesByPlayer[p.owner][p.laneIndex].length;
-      if (p.pos === 0 || p.pos === L) c++;
-    }
-    return c;
-  };
-  const opp: Player = before.turn === 'Light' ? 'Dark' : 'Light';
-  return countEdge(after, opp) > countEdge(before, opp);
-}
-
 // ===== Enhancements for client heuristic =====
 function completesNow(after: GameState, me: Player, moveId: string): boolean {
   const p = after.pieces.find((x) => x.id === moveId);

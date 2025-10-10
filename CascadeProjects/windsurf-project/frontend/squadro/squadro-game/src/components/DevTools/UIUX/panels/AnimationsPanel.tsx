@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks.ts';
 import type { RootState } from '../../../../store/index.ts';
 import { setPieceAnimMs } from '../../../../store/gameSlice.ts';

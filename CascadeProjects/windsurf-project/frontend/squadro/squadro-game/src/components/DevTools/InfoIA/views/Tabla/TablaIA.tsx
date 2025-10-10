@@ -5,13 +5,12 @@ import Button from '../../../../ui/Button';
 interface TablaIAProps {
   records: InfoIARecord[];
   loading?: boolean;
-  onViewRecord: (id: string) => void;
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;
   onDeleteRecord: (id: string) => void;
 }
 
-const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onViewRecord, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggle = useCallback((id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] })), []);
   const expandedCount = useMemo(() => Object.values(expanded).filter(Boolean).length, [expanded]);

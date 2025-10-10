@@ -97,7 +97,6 @@ export interface InfoIAViewProps {
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
   // Table actions
-  onViewRecord: (id: string) => void;
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;
   onDeleteRecord: (id: string) => void;

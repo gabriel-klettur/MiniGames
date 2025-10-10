@@ -19,13 +19,12 @@ interface SimSectionProps {
   progNodes?: number;
   progNps?: number;
   progScore?: number;
-  onViewRecord: (id: string) => void;
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onViewRecord, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -221,7 +220,6 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
         <div className="section-title font-semibold text-neutral-200 mb-2">Resultados</div>
         <TablaIA
           records={records}
-          onViewRecord={onViewRecord}
           onCopyRecord={onCopyRecord}
           onDownloadRecord={onDownloadRecord}
           onDeleteRecord={onDeleteRecord}

@@ -19,7 +19,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
     progDepth = 0, progNodes = 0, progNps = 0, progScore = 0,
-    onViewRecord, onCopyRecord, onDownloadRecord, onDeleteRecord,
+    onCopyRecord, onDownloadRecord, onDeleteRecord,
   } = props;
 
   return (
@@ -95,7 +95,6 @@ export default function InfoIAView(props: InfoIAViewProps) {
           progNodes={progNodes}
           progNps={progNps}
           progScore={progScore}
-          onViewRecord={onViewRecord}
           onCopyRecord={onCopyRecord}
           onDownloadRecord={onDownloadRecord}
           onDeleteRecord={onDeleteRecord}

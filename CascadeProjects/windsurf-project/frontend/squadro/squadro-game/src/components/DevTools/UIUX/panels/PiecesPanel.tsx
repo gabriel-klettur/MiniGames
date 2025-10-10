@@ -1,7 +1,5 @@
-import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks.ts';
 import type { RootState } from '../../../../store/index.ts';
-import Button from '../../../ui/Button.tsx';
 import { setShowPieces, setPieceScale, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark } from '../../../../store/gameSlice.ts';
 import { MIN_HEIGHT, MAX_HEIGHT, MIN_WS, MAX_WS, DEFAULT_PIECE_SCALE, DEFAULT_HEIGHT } from '../utils/constants.ts';
 import ControlRow from '../components/ControlRow.tsx';
