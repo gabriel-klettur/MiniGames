@@ -36,6 +36,7 @@ export function createInitialState(): GameState {
       orientation: 'classic',
       showPieces: true,
       pieceAnimMs: 200,
+      pieceRotateMs: 500,
       pieceWidthScaleLight: 1,
       pieceWidthScaleDark: 1,
       showCoordsOverlay: false,

@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { movePiece } from '../../store/gameSlice';
@@ -44,6 +44,10 @@ export default function Board() {
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [cellPx, setCellPx] = useState<number>(48);
   const [overlayRect, setOverlayRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  // Track previous piece states and a temporary rotation hold to sequence: move first, then rotate
+  const prevStateRef = useRef<Record<string, 'en_ida' | 'en_vuelta' | 'retirada'>>({});
+  const rotationHoldRef = useRef<Record<string, number>>({});
+  const [, forceRerender] = useState(0);
 
   // Dynamically compute cell size so the board (square) fits in the viewport
   useLayoutEffect(() => {
@@ -107,6 +111,44 @@ export default function Board() {
       window.removeEventListener('scroll', updateOverlayRectOnly as any);
     };
   }, [size, orientation, ui?.boardScale]);
+
+  // When a piece just flipped to 'en_vuelta', delay the 180° rotation until position animation finishes
+  useEffect(() => {
+    const now = Date.now();
+    const holdsToSchedule: Array<{ id: string; until: number }> = [];
+    // Detect flips and schedule holds
+    for (const p of pieces) {
+      if (p.state === 'retirada') continue;
+      const prev = prevStateRef.current[p.id];
+      if (prev !== 'en_vuelta' && p.state === 'en_vuelta') {
+        const animMs = Math.max(0, Math.min(2000, ui?.pieceAnimMs ?? 200));
+        const until = now + animMs;
+        rotationHoldRef.current[p.id] = until;
+        holdsToSchedule.push({ id: p.id, until });
+      }
+      // Update prev state snapshot
+      prevStateRef.current[p.id] = p.state;
+    }
+    // Cleanup entries for removed pieces
+    const ids = new Set(pieces.map((pp) => pp.id));
+    for (const id of Object.keys(prevStateRef.current)) {
+      if (!ids.has(id)) {
+        delete prevStateRef.current[id];
+        delete rotationHoldRef.current[id];
+      }
+    }
+    // Schedule tick after holds expire to trigger transform change
+    for (const h of holdsToSchedule) {
+      const delay = Math.max(0, h.until - Date.now());
+      window.setTimeout(() => {
+        // Remove hold and re-render
+        if (rotationHoldRef.current[h.id] && Date.now() >= rotationHoldRef.current[h.id]) {
+          delete rotationHoldRef.current[h.id];
+          forceRerender((t) => t + 1);
+        }
+      }, delay + 10);
+    }
+  }, [pieces, ui?.pieceAnimMs]);
 
   // Helpers to map logical orientation to display orientation
   const mapRowCol = (row: number, col: number) => {
@@ -507,6 +549,7 @@ export default function Board() {
         const cy = origin.y + dRow * pitchY + cellPx / 2;
         const isLight = p.owner === 'Light';
         const isActive = p.owner === turn;
+        const rotateMs = Math.max(0, Math.min(3000, (ui as any)?.pieceRotateMs ?? 500));
         // Size pieces relative to pitch for consistent spacing on any device
         const minW = 12;
         const basis = Math.min(pitchX, pitchY);
@@ -527,6 +570,21 @@ export default function Board() {
           ? (ui?.pieceHeightLight ?? ui?.pieceHeight ?? heightBaseline)
           : (ui?.pieceHeightDark ?? ui?.pieceHeight ?? heightBaseline);
         const pieceStretchY = Math.max(0.5, Math.min(2.0, (rawH || heightBaseline) / heightBaseline));
+        // Rotation: sequence move first, then rotate if just flipped to 'en_vuelta'
+        const holdUntil = rotationHoldRef.current[p.id] || 0;
+        const onHold = holdUntil > Date.now();
+        const dirRot = p.state === 'en_vuelta' && !onHold ? 180 : 0;
+        const rotationAngle = rotationDeg + dirRot;
+        // Compose transitions: position and rotation can have different durations
+        const transitions: string[] = [];
+        if (animMs > 0) {
+          transitions.push(`left ${animMs}ms ease`, `top ${animMs}ms ease`);
+        }
+        if (rotateMs > 0) {
+          transitions.push(`transform ${rotateMs}ms ease`);
+        }
+        const transitionStr = transitions.length ? transitions.join(', ') : 'none';
+
         return (
           <div
             key={p.id}
@@ -536,11 +594,11 @@ export default function Board() {
               left: cx,
               top: cy,
               width: w,
-              transform: `translate(-50%, -50%)${rotationDeg ? ` rotate(${rotationDeg}deg)` : ''}${pieceStretchY !== 1 ? ` scaleY(${pieceStretchY})` : ''}`,
-              willChange: 'left, top',
+              transform: `translate(-50%, -50%) rotate(${rotationAngle}deg)${pieceStretchY !== 1 ? ` scaleY(${pieceStretchY})` : ''}`,
+              willChange: 'left, top, transform',
               zIndex: 20010,
               pointerEvents: 'auto',
-              transition: animMs <= 0 ? 'none' : `left ${animMs}ms ease, top ${animMs}ms ease`,
+              transition: transitionStr,
             }}
           >
             <button

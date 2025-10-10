@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceRotateMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +20,7 @@ type StoredUI = {
   // Pieces visibility and animation speed
   showPieces?: boolean;
   pieceAnimMs?: number;
+  pieceRotateMs?: number;
   // Per-side piece dimensions
   pieceHeightLight?: number;
   pieceHeightDark?: number;
@@ -67,6 +68,7 @@ if (stored) {
   if (typeof stored.pieceScale === 'number') store.dispatch(setPieceScale(stored.pieceScale));
   if (typeof stored.showPieces === 'boolean') store.dispatch(setShowPieces(stored.showPieces));
   if (typeof stored.pieceAnimMs === 'number') store.dispatch(setPieceAnimMs(stored.pieceAnimMs));
+  if (typeof stored.pieceRotateMs === 'number') store.dispatch(setPieceRotateMs(stored.pieceRotateMs));
   if (typeof stored.pieceHeightLight === 'number') store.dispatch(setPieceHeightLight(stored.pieceHeightLight));
   if (typeof stored.pieceHeightDark === 'number') store.dispatch(setPieceHeightDark(stored.pieceHeightDark));
   if (typeof stored.pieceWidthScaleLight === 'number') store.dispatch(setPieceWidthScaleLight(stored.pieceWidthScaleLight));
@@ -96,6 +98,7 @@ store.subscribe(() => {
     pieceScale: ui.pieceScale,
     showPieces: ui.showPieces,
     pieceAnimMs: ui.pieceAnimMs,
+    pieceRotateMs: (ui as any).pieceRotateMs,
     pieceHeightLight: ui.pieceHeightLight,
     pieceHeightDark: ui.pieceHeightDark,
     pieceWidthScaleLight: ui.pieceWidthScaleLight,

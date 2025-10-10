@@ -60,6 +60,7 @@ export interface UISettings {
   showPieces?: boolean;      // if false, do not render piece sprites (visual only)
   // Animation control for absolute-layer movement
   pieceAnimMs?: number;      // duration in ms for left/top transition; 0 disables animation
+  pieceRotateMs?: number;    // duration in ms for rotation at direction change; 0 disables rotation anim
   // Overlay calibration parameters to align sprites with board artwork
   calibration?: {
     originX: number;       // px offset added to computed origin.x

@@ -1,12 +1,13 @@
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks.ts';
 import type { RootState } from '../../../../store/index.ts';
-import { setPieceAnimMs } from '../../../../store/gameSlice.ts';
-import { MIN_ANIM_MS, MAX_ANIM_MS, DEFAULT_ANIM_MS } from '../utils/constants.ts';
+import { setPieceAnimMs, setPieceRotateMs } from '../../../../store/gameSlice.ts';
+import { MIN_ANIM_MS, MAX_ANIM_MS, DEFAULT_ANIM_MS, MIN_ROTATE_MS, MAX_ROTATE_MS, DEFAULT_ROTATE_MS } from '../utils/constants.ts';
 import ControlRow from '../components/ControlRow.tsx';
 
 export default function AnimationsPanel() {
   const dispatch = useAppDispatch();
   const pieceAnimMs = useAppSelector((s: RootState) => s.game.ui.pieceAnimMs) ?? DEFAULT_ANIM_MS;
+  const pieceRotateMs = useAppSelector((s: RootState) => (s.game.ui as any).pieceRotateMs) ?? DEFAULT_ROTATE_MS;
 
   return (
     <>
@@ -34,6 +35,30 @@ export default function AnimationsPanel() {
         />
       </div>
       <div className="text-[11px] text-neutral-500 mt-2">Transición por paso: {pieceAnimMs} ms (0 = instantáneo)</div>
+
+      {/* Rotation duration at direction change */}
+      <div className="mt-6">
+        <ControlRow
+          label="Giro al cambiar dirección"
+          value={pieceRotateMs}
+          onChange={(v) => dispatch(setPieceRotateMs(v))}
+          min={MIN_ROTATE_MS}
+          max={MAX_ROTATE_MS}
+          sliderStep={25}
+          buttonStep={25}
+          inputStep={5}
+          accentClass="accent-cyan-400"
+          ariaLabelSlider="Duración de giro (ms)"
+          ariaLabelDec="Giro más rápido (reduce duración)"
+          ariaLabelInc="Giro más lento (aumenta duración)"
+          ariaLabelInput="Duración de giro (ms)"
+          minusTitle="-25 ms"
+          plusTitle={"+25 ms"}
+          resetValue={DEFAULT_ROTATE_MS}
+          numberInputWidthClass="w-20"
+        />
+      </div>
+      <div className="text-[11px] text-neutral-500 mt-2">Giro 180°: {pieceRotateMs} ms (0 = sin animación)</div>
     </>
   );
 }

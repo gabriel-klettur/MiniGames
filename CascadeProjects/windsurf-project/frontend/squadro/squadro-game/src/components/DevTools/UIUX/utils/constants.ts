@@ -20,6 +20,11 @@ export const DEFAULT_HEIGHT = 44;
 export const DEFAULT_WIDTH_SCALE = 1;
 export const DEFAULT_ANIM_MS = 200;
 
+// Rotation animation duration (at direction change)
+export const MIN_ROTATE_MS = 0;
+export const MAX_ROTATE_MS = 3000;
+export const DEFAULT_ROTATE_MS = 500;
+
 // Board scale (visual size of the grid relative to available space)
 export const MIN_BOARD_SCALE = 0.5;
 export const MAX_BOARD_SCALE = 2.0;
