@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +17,14 @@ type StoredUI = {
   pieceWidth?: number;
   pieceHeight?: number;
   pieceScale?: number;
+  // Pieces visibility and animation speed
+  showPieces?: boolean;
+  pieceAnimMs?: number;
+  // Per-side piece dimensions
+  pieceHeightLight?: number;
+  pieceHeightDark?: number;
+  pieceWidthScaleLight?: number;
+  pieceWidthScaleDark?: number;
   orientation?: 'classic' | 'bga';
   showCoordsOverlay?: boolean;
   showPipIndicators?: boolean;
@@ -55,6 +63,12 @@ if (stored) {
   if (typeof stored.pieceWidth === 'number') store.dispatch(setPieceWidth(stored.pieceWidth));
   if (typeof stored.pieceHeight === 'number') store.dispatch(setPieceHeight(stored.pieceHeight));
   if (typeof stored.pieceScale === 'number') store.dispatch(setPieceScale(stored.pieceScale));
+  if (typeof stored.showPieces === 'boolean') store.dispatch(setShowPieces(stored.showPieces));
+  if (typeof stored.pieceAnimMs === 'number') store.dispatch(setPieceAnimMs(stored.pieceAnimMs));
+  if (typeof stored.pieceHeightLight === 'number') store.dispatch(setPieceHeightLight(stored.pieceHeightLight));
+  if (typeof stored.pieceHeightDark === 'number') store.dispatch(setPieceHeightDark(stored.pieceHeightDark));
+  if (typeof stored.pieceWidthScaleLight === 'number') store.dispatch(setPieceWidthScaleLight(stored.pieceWidthScaleLight));
+  if (typeof stored.pieceWidthScaleDark === 'number') store.dispatch(setPieceWidthScaleDark(stored.pieceWidthScaleDark));
   if (stored.orientation === 'classic' || stored.orientation === 'bga') store.dispatch(setOrientation(stored.orientation));
   if (typeof stored.showCoordsOverlay === 'boolean') store.dispatch(setShowCoordsOverlay(stored.showCoordsOverlay));
   if (typeof stored.showPipIndicators === 'boolean') store.dispatch(setShowPipIndicators(stored.showPipIndicators));
@@ -77,6 +91,12 @@ store.subscribe(() => {
     pieceWidth: ui.pieceWidth,
     pieceHeight: ui.pieceHeight,
     pieceScale: ui.pieceScale,
+    showPieces: ui.showPieces,
+    pieceAnimMs: ui.pieceAnimMs,
+    pieceHeightLight: ui.pieceHeightLight,
+    pieceHeightDark: ui.pieceHeightDark,
+    pieceWidthScaleLight: ui.pieceWidthScaleLight,
+    pieceWidthScaleDark: ui.pieceWidthScaleDark,
     orientation: ui.orientation as 'classic' | 'bga',
     showCoordsOverlay: ui.showCoordsOverlay,
     showPipIndicators: ui.showPipIndicators,
