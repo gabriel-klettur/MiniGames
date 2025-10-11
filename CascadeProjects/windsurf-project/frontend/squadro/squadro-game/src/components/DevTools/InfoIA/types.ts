@@ -14,6 +14,8 @@ export type MoveDetail = {
   depthUsed?: number;
   applied?: boolean;
   at?: number;
+  /** Zobrist-like hash (uint32) of the position AFTER applying the move */
+  zKey?: number;
 };
 
 export type InfoIARecord = {
@@ -24,6 +26,9 @@ export type InfoIARecord = {
   winner: 'Light' | 'Dark' | 0; // 0 = empate/técnico
   p1Depth: number;
   p2Depth: number;
+  // Optional per-game scores for display (e.g., retired pieces count)
+  p1Score?: number;
+  p2Score?: number;
   details?: MoveDetail[];
 };
 

@@ -53,7 +53,6 @@ export function createInitialState(): GameState {
       enabled: false,
       aiSide: 'Dark',
       difficulty: 3,
-      speed: 'normal',
       timeMode: 'manual',
       timeSeconds: 10,
       useWorkers: true,

@@ -73,7 +73,29 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                   </td>
                   <td className="py-2 px-2 font-mono">{Math.round(r.durationMs).toLocaleString()}</td>
                   <td className="py-2 px-2 font-mono">{r.moves}</td>
-                  <td className="py-2 px-2">{String(r.winner)}</td>
+                  <td className="py-2 px-2">
+                    {(() => {
+                      const base = String(r.winner);
+                      const x = typeof r.p1Score === 'number' ? r.p1Score : undefined;
+                      const y = typeof r.p2Score === 'number' ? r.p2Score : undefined;
+                      if (x == null || y == null) return base;
+                      const w = r.winner;
+                      const p1Cls = w === 'Light' ? 'text-emerald-400' : (w === 'Dark' ? 'text-rose-400' : 'text-neutral-300');
+                      const p2Cls = w === 'Dark' ? 'text-emerald-400' : (w === 'Light' ? 'text-rose-400' : 'text-neutral-300');
+                      return (
+                        <span className="inline-flex items-center gap-1">
+                          <span>{base}</span>
+                          <span className="font-mono">
+                            (
+                            <span className={p1Cls} title="Score Jugador 1 (Light)">{x}</span>
+                            -
+                            <span className={p2Cls} title="Score Jugador 2 (Dark)">{y}</span>
+                            )
+                          </span>
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td className="py-2 px-2 font-mono">{r.p1Depth}</td>
                   <td className="py-2 px-2 font-mono">{r.p2Depth}</td>
                   <td className="py-2 px-2">
@@ -124,11 +146,11 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                                 <th className="py-1 px-2 text-left" title="Índice — Número de la jugada dentro de la partida.">#</th>
                                 <th className="py-1 px-2 text-left" title="Jugador — Quién mueve en esta jugada (Light/Dark).">Jugador</th>
                                 <th className="py-1 px-2 text-left" title="t(ms) — Tiempo empleado por la IA en milisegundos para esta jugada.">t(ms)</th>
-                                <th className="py-1 px-2 text-left" title="depth — Profundidad solicitada (objetivo) para esta jugada.">depth</th>
                                 <th className="py-1 px-2 text-left" title="depthReached — Profundidad máxima realmente alcanzada (puede ser < depth si el tiempo expiró).">depthReached</th>
                                 <th className="py-1 px-2 text-left" title="nodes — Número de posiciones evaluadas en esta jugada; total — suma de nodos de toda la partida. Se muestra mov/total para comparar.">nodes</th>
                                 <th className="py-1 px-2 text-left" title="NPS — Nodos por segundo (nodes / (t/1000)). Ejemplo: 65 000 indica buen rendimiento.">NPS</th>
                                 <th className="py-1 px-2 text-left" title="score — Evaluación heurística; positivo favorece al jugador que mueve.">score</th>
+                                <th className="py-1 px-2 text-left" title="move — Identificador del movimiento aplicado (ID de pieza).">move</th>
                                 <th className="py-1 px-2 text-left" title="applied — Indica si la mejor jugada encontrada fue aplicada al tablero (✓).">applied</th>
                               </tr>
                             </thead>
@@ -141,13 +163,13 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                                     <td className="py-1 px-2 font-mono">{d.index}</td>
                                     <td className="py-1 px-2">{d.player}</td>
                                     <td className="py-1 px-2 font-mono">{Math.round(d.elapsedMs || 0).toLocaleString()}</td>
-                                    <td className="py-1 px-2 font-mono">{d.depthUsed ?? ''}</td>
                                     <td className="py-1 px-2 font-mono">{d.depthReached ?? ''}</td>
                                     <td className="py-1 px-2 font-mono" title={`nodes de la jugada / nodos totales de la partida`}>
                                       {(d.nodes ?? 0).toLocaleString()} <span className="text-neutral-500">/ {totalNodes.toLocaleString()}</span>
                                     </td>
                                     <td className="py-1 px-2 font-mono">{(d.nps ?? 0).toLocaleString()}</td>
                                     <td className="py-1 px-2 font-mono">{d.score ?? ''}</td>
+                                    <td className="py-1 px-2 font-mono" title="Movimiento aplicado">{String(d.bestMove ?? '')}</td>
                                     <td className="py-1 px-2">{d.applied ? '✓' : ''}</td>
                                   </tr>
                                 ));

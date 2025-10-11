@@ -273,7 +273,7 @@ function App() {
       }
       (window as any).__squadroCancelAI = undefined;
     };
-  }, [ai?.enabled, ai?.aiSide, ai?.speed, ai?.timeMode, ai?.timeSeconds, ai?.difficulty, turn, winner, dispatch]);
+  }, [ai?.enabled, ai?.aiSide, ai?.timeMode, ai?.timeSeconds, ai?.difficulty, turn, winner, dispatch]);
 
   return (
     <div className="min-h-screen bg-transparent text-gray-100 overflow-x-hidden">

@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceRotateMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceRotateMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
 
 export const store = configureStore({
   reducer: {
@@ -127,7 +127,6 @@ type StoredAI = {
   enabled?: boolean;
   aiSide?: 'Light' | 'Dark';
   difficulty?: number; // 1..20
-  speed?: 'auto' | 'rapido' | 'normal' | 'lento';
   timeMode?: 'auto' | 'manual';
   timeSeconds?: number;
   useWorkers?: boolean;
@@ -158,7 +157,6 @@ if (storedAI) {
   if (typeof storedAI.enabled === 'boolean') store.dispatch(setAIEnabled(storedAI.enabled));
   if (storedAI.aiSide === 'Light' || storedAI.aiSide === 'Dark') store.dispatch(setAISide(storedAI.aiSide));
   if (typeof storedAI.difficulty === 'number') store.dispatch(setAIDifficulty(storedAI.difficulty));
-  if (storedAI.speed === 'auto' || storedAI.speed === 'rapido' || storedAI.speed === 'normal' || storedAI.speed === 'lento') store.dispatch(setAISpeed(storedAI.speed));
   if (storedAI.timeMode === 'auto' || storedAI.timeMode === 'manual') store.dispatch(setAITimeMode(storedAI.timeMode));
   if (typeof storedAI.timeSeconds === 'number') store.dispatch(setAITimeSeconds(storedAI.timeSeconds));
   if (typeof storedAI.useWorkers === 'boolean') store.dispatch(setAIUseWorkers(storedAI.useWorkers));
@@ -173,7 +171,6 @@ store.subscribe(() => {
     enabled: ai.enabled,
     aiSide: ai.aiSide,
     difficulty: ai.difficulty,
-    speed: ai.speed,
     timeMode: ai.timeMode,
     timeSeconds: ai.timeSeconds,
     useWorkers: ai.useWorkers,

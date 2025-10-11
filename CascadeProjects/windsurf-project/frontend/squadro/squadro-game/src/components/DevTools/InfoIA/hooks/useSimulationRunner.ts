@@ -7,6 +7,7 @@ import { createAIRunner } from '../services/aiRunner';
 import type { EvalParams } from '../../../../ia/evalTypes';
 import type { EngineOptions } from '../../../../ia/search/types';
 import { findBestMoveRootParallel, type SearchEvent } from '../../../../ia/search';
+import { hashState } from '../../../../ia/hash';
 import { generateMoves } from '../../../../ia/moves';
 
 export interface SimulationSettings {
@@ -161,6 +162,7 @@ export function useSimulationRunner(
           const rand = legal[Math.floor(Math.random() * legal.length)];
           const tStart = performance.now();
           applyMoveRules(gs, rand);
+          const zKey = hashState(gs);
           const actualElapsed = performance.now() - tStart;
           curDetails.push({
             index: curDetails.length + 1,
@@ -172,6 +174,7 @@ export function useSimulationRunner(
             depthUsed: 0,
             applied: true,
             at: Date.now(),
+            zKey,
           });
           moves++;
           // Yield to UI
@@ -249,6 +252,7 @@ export function useSimulationRunner(
           const chosenMove = (res as any).bestMove ?? (res as any).moveId ?? null;
           if (chosenMove) {
             applyMoveRules(gs, chosenMove);
+            const zKey = hashState(gs);
             // Determine final nodes and nps for this move
             let finalNodes = moveNodesMaxRef.current;
             if (!finalNodes) {
@@ -268,6 +272,7 @@ export function useSimulationRunner(
               depthUsed: depth,
               applied: true,
               at: Date.now(),
+              zKey,
             });
             moves++;
           } else {
@@ -284,6 +289,9 @@ export function useSimulationRunner(
       }
 
       const t1 = performance.now();
+      // Compute simple per-game scores: number of retired pieces per player
+      const p1Score = gs.pieces.filter((p) => p.owner === 'Light' && p.state === 'retirada').length;
+      const p2Score = gs.pieces.filter((p) => p.owner === 'Dark' && p.state === 'retirada').length;
       addRecord({
         id: `${startedAtWall}-${g}`,
         startedAt: startedAtWall,
@@ -292,6 +300,8 @@ export function useSimulationRunner(
         winner: (gs.winner as any) || 0,
         p1Depth: settings.p1Depth,
         p2Depth: settings.p2Depth,
+        p1Score,
+        p2Score,
         details: curDetails,
       });
 

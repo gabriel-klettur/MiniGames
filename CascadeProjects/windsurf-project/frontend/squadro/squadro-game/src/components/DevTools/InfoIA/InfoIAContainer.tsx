@@ -227,6 +227,21 @@ const InfoIAContainer: React.FC = () => {
         // Ordering jitter
         orderingJitterEps: (settings.p1Engine as any).orderingJitterEps,
         onChangeOrderingJitterEps: (n: number) => settings.setP1Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
+        // Heuristic weights
+        w_race: settings.p1Eval.w_race,
+        onChangeWRace: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_race: n })),
+        w_clash: settings.p1Eval.w_clash,
+        onChangeWClash: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_clash: n })),
+        w_sprint: settings.p1Eval.w_sprint,
+        onChangeWSprint: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_sprint: n })),
+        w_block: settings.p1Eval.w_block,
+        onChangeWBlock: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_block: n })),
+        done_bonus: settings.p1Eval.done_bonus,
+        onChangeDoneBonus: (n: number) => settings.setP1Eval(prev => ({ ...prev, done_bonus: n })),
+        sprint_threshold: settings.p1Eval.sprint_threshold,
+        onChangeSprintThreshold: (n: number) => settings.setP1Eval(prev => ({ ...prev, sprint_threshold: n })),
+        tempo: settings.p1Eval.tempo,
+        onChangeTempo: (n: number) => settings.setP1Eval(prev => ({ ...prev, tempo: n })),
       }}
       p2={{
         title: 'Jugador 2 (Dark)',
@@ -266,6 +281,21 @@ const InfoIAContainer: React.FC = () => {
         // Ordering jitter
         orderingJitterEps: (settings.p2Engine as any).orderingJitterEps,
         onChangeOrderingJitterEps: (n: number) => settings.setP2Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
+        // Heuristic weights
+        w_race: settings.p2Eval.w_race,
+        onChangeWRace: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_race: n })),
+        w_clash: settings.p2Eval.w_clash,
+        onChangeWClash: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_clash: n })),
+        w_sprint: settings.p2Eval.w_sprint,
+        onChangeWSprint: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_sprint: n })),
+        w_block: settings.p2Eval.w_block,
+        onChangeWBlock: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_block: n })),
+        done_bonus: settings.p2Eval.done_bonus,
+        onChangeDoneBonus: (n: number) => settings.setP2Eval(prev => ({ ...prev, done_bonus: n })),
+        sprint_threshold: settings.p2Eval.sprint_threshold,
+        onChangeSprintThreshold: (n: number) => settings.setP2Eval(prev => ({ ...prev, sprint_threshold: n })),
+        tempo: settings.p2Eval.tempo,
+        onChangeTempo: (n: number) => settings.setP2Eval(prev => ({ ...prev, tempo: n })),
       }}
       records={records}
       moveIndex={sim.moveIndex}

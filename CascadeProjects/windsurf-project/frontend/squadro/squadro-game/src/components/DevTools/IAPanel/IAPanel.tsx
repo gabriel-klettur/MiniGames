@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import Button from '../../ui/Button';
 import ToggleSwitch from '../../ui/ToggleSwitch';
-import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights, setAiOrderingJitterEps } from '../../../store/gameSlice';
+import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights, setAiOrderingJitterEps } from '../../../store/gameSlice';
 import { store } from '../../../store';
 import { findBestMove } from '../../../ia/search';
 import PresetsTab from './components/Presets/PresetsTab';
@@ -136,7 +136,7 @@ export default function AIDiagnosticsPanel() {
               <Stat label="Turno" title="Turno — Quién mueve ahora (Light/Dark). Ejemplo: algunas heurísticas suman 'tempo' al que juega." value={turn} />
               <Stat label="Lado IA" title="Lado IA — Bando controlado por la IA (Light/Dark). Ejemplo: verifica coherencia de signos del score al alternar lados." value={ai?.aiSide ?? '-'} />
               <Stat label="Dificultad" title="Dificultad — Profundidad objetivo (plies). Ejemplo: 5 ⇒ busca hasta 5 plies si el tiempo alcanza." value={ai?.difficulty ?? '-'} />
-              <Stat label="Velocidad" title="Velocidad — Perfil de tiempo (rápido/normal/lento/auto). Ejemplo: 'rápido' reduce baseMs; 'lento' lo incrementa." value={ai?.speed ?? '-'} />
+              
               <Stat label="Modo tiempo" title="Modo tiempo — Auto usa presupuesto adaptativo; Manual aplica segundos fijos." value={ai?.timeMode ?? '-'} />
               {ai?.timeMode === 'manual' && <Stat label="Segundos" title="Segundos — Límite por jugada en modo Manual." value={ai?.timeSeconds ?? '-'} />}
               <Stat label="Profundidad objetivo" title="Profundidad objetivo — Límite deseado de iterativa; puede quedarse en d-1 si el tiempo expira." value={typeof targetDepth === 'number' ? targetDepth : '-'} />
@@ -210,27 +210,54 @@ export default function AIDiagnosticsPanel() {
 
       {activeTab === 'advanced' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Tiempo (Auto) */}
-          <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2" title="Tiempo (Auto) — Presupuesto adaptativo por jugada. Ejemplo: baseMs=2500, perDepth=300, exp=1.0; limitado por minMs/maxMs.">
-            <h4 className="text-xs font-semibold text-neutral-300 mb-2">Tiempo (Auto)</h4>
+          <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2">
+            <h4 className="text-xs font-semibold text-neutral-300 mb-2">Ajustes</h4>
             <div className="flex gap-3 flex-wrap">
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="minMs — Tiempo mínimo (ms) por jugada en Auto. Ejemplo: evita que jugadas triviales gasten menos de 800ms.">minMs
-                <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.aiTimeMinMs ?? 800} onChange={(e) => dispatch(setAiTimeMinMs(Number(e.target.value)))} />
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="Dificultad — Profundidad objetivo (plies).">
+                Dificultad
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  step={1}
+                  value={ai?.difficulty ?? 3}
+                  onChange={(e) => dispatch(setAIDifficulty(Math.max(1, Math.min(20, Number(e.target.value)))))}
+                  className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                />
               </label>
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="maxMs — Tiempo máximo (ms) por jugada en Auto. Ejemplo: tope de 8000ms para posiciones complejas.">maxMs
-                <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.aiTimeMaxMs ?? 8000} onChange={(e) => dispatch(setAiTimeMaxMs(Number(e.target.value)))} />
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="Workers — Ejecutar IA en Web Workers.">
+                Workers
+                <input type="checkbox" checked={ai?.useWorkers !== false} onChange={(e) => dispatch(setAIUseWorkers(e.target.checked))} />
               </label>
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="baseMs — Presupuesto base (ms) según velocidad (rápido/normal/lento). Ejemplo: normal≈2500ms.">baseMs
-                <input type="number" className="w-24 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.aiTimeBaseMs ?? (ai?.speed === 'rapido' ? 1200 : ai?.speed === 'lento' ? 5000 : 2500)} onChange={(e) => dispatch(setAiTimeBaseMs(Number(e.target.value)))} />
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="Tiempo — Auto: sin límite (mejor jugada sin importar la duración). Manual: segundos fijos por jugada.">
+                Tiempo
+                <select
+                  value={ai?.timeMode || 'auto'}
+                  onChange={(e) => dispatch(setAITimeMode(e.target.value as any))}
+                  className="text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                  aria-label="Modo de tiempo"
+                >
+                  <option value="auto">Auto</option>
+                  <option value="manual">Manual</option>
+                </select>
               </label>
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="perDepth — Incremento de ms por cada unidad de profundidad objetivo. Ejemplo: +300ms por profundidad.">perDepth
-                <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.aiTimePerMoveMs ?? 300} onChange={(e) => dispatch(setAiTimePerMoveMs(Number(e.target.value)))} />
-              </label>
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="exp — Exponente de crecimiento (>=1). Ejemplo: 1.0 lineal, 1.2 sube más rápido con profundidad.">exp
-                <input type="number" step={0.1} className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.aiTimeExponent ?? 1.0} onChange={(e) => dispatch(setAiTimeExponent(Number(e.target.value)))} />
-              </label>
+              {ai?.timeMode === 'manual' && (
+                <label className="text-xs text-neutral-300 inline-flex items-center gap-2">
+                  Segundos
+                  <input
+                    type="number"
+                    min={0}
+                    max={60}
+                    step={1}
+                    value={ai?.timeSeconds ?? 10}
+                    onChange={(e) => dispatch(setAITimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))) }
+                    className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                  />
+                </label>
+              )}
             </div>
           </div>
+          
           {/* Motor: toggles y LMR */}
           <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2" title="Motor — TT/Fail-soft/Hash move/PVS/Killers/History y LMR. Ajusta para balancear poda, ordenación y precisión.">
             <h4 className="text-xs font-semibold text-neutral-300 mb-2">Búsqueda base</h4>

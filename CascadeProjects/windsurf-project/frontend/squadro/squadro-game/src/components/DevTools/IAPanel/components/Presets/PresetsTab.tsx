@@ -35,7 +35,7 @@ export default function PresetsTab() {
   const createPreset = () => {
     const id = `custom_${Date.now().toString(36)}`;
     const name = `Custom ${items.length + 1}`;
-    setItems(prev => [...prev, { id, name, settings: { difficulty: 3, useWorkers: true, speed: 'normal', timeMode: 'manual', timeSeconds: 10 } }]);
+    setItems(prev => [...prev, { id, name, settings: { difficulty: 3, useWorkers: true, timeMode: 'manual', timeSeconds: 10 } }]);
     setSelectedId(id);
   };
 
@@ -159,15 +159,7 @@ export default function PresetsTab() {
                   Workers
                   <input type="checkbox" checked={!!selected.settings.useWorkers} onChange={(e) => setField('useWorkers', e.target.checked)} />
                 </label>
-                <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Velocidad — Preajuste del presupuesto (cuando corresponda) o intención de UX. Ejemplo: 'rápido' prioriza tiempo corto por jugada; 'lento' permite evaluaciones más profundas.">
-                  Velocidad
-                  <select value={selected.settings.speed || 'normal'} onChange={(e) => setField('speed', e.target.value as any)} className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
-                    <option value="rapido">rápido</option>
-                    <option value="normal">normal</option>
-                    <option value="lento">lento</option>
-                    <option value="auto">auto</option>
-                  </select>
-                </label>
+                
                 <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Modo tiempo — Manual: fija segundos por jugada. Auto: delega en heurísticas/adaptativo. Ejemplo: Manual=10s asegura timebox; Auto usa profundidad/ventanas para decidir stop.">
                   Modo tiempo
                   <select value={selected.settings.timeMode || 'manual'} onChange={(e) => setField('timeMode', e.target.value as any)} className="bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
@@ -192,29 +184,7 @@ export default function PresetsTab() {
               </div>
             </div>
 
-            {/* Tiempo (Auto) */}
-            {selected.settings.timeMode !== 'auto' && (
-              <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">
-                <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">Tiempo (Auto)</h4>
-                <div className="flex gap-3 flex-wrap">
-                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="minMs — Tiempo mínimo (ms) por jugada en Auto.">minMs
-                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeMinMs ?? 800} onChange={(e) => setField('aiTimeMinMs', Number(e.target.value))} />
-                  </label>
-                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="maxMs — Tiempo máximo (ms) por jugada en Auto.">maxMs
-                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeMaxMs ?? 8000} onChange={(e) => setField('aiTimeMaxMs', Number(e.target.value))} />
-                  </label>
-                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="baseMs — Presupuesto base (ms).">baseMs
-                    <input type="number" className="w-24 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeBaseMs ?? 2500} onChange={(e) => setField('aiTimeBaseMs', Number(e.target.value))} />
-                  </label>
-                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="perDepth — Incremento de ms por profundidad.">perDepth
-                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimePerMoveMs ?? 300} onChange={(e) => setField('aiTimePerMoveMs', Number(e.target.value))} />
-                  </label>
-                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="exp — Exponente de crecimiento.">exp
-                    <input type="number" step={0.1} className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeExponent ?? 1.0} onChange={(e) => setField('aiTimeExponent', Number(e.target.value))} />
-                  </label>
-                </div>
-              </div>
-            )}
+            
 
             {/* Motor: toggles y LMR */}
             <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">

@@ -2,7 +2,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { IAPreset } from '../ia/presets';
 import type { EvalParams } from '../ia/evalTypes';
-import type { GameState, Player, AISpeed } from '../game/types';
+import type { GameState, Player } from '../game/types';
 import { createInitialState } from '../game/pieces';
 import { getSelectedEvalPresetId, findEvalPresetById } from '../ia/evalPresets';
 import { movePiece as movePieceRules } from '../game/rules';
@@ -147,7 +147,6 @@ const gameSlice = createSlice({
         enabled: false,
         aiSide: 'Dark',
         difficulty: 3,
-        speed: 'normal',
         timeMode: 'manual',
         timeSeconds: 10,
       };
@@ -162,18 +161,6 @@ const gameSlice = createSlice({
       const d = Math.max(1, Math.min(20, Math.round(action.payload)));
       state.ai.difficulty = d;
     },
-    setAISpeed(state: GameState, action: PayloadAction<AISpeed>) {
-      if (!state.ai) return;
-      const speed = action.payload;
-      state.ai.speed = speed;
-      if (speed === 'auto') {
-        state.ai.timeMode = 'auto';
-        state.ai.timeSeconds = 0;
-      } else {
-        state.ai.timeMode = 'manual';
-        state.ai.timeSeconds = speed === 'rapido' ? 5 : speed === 'normal' ? 10 : 30;
-      }
-    },
     setAIUseWorkers(state: GameState, action: PayloadAction<boolean>) {
       if (!state.ai) return;
       state.ai.useWorkers = !!action.payload;
@@ -186,22 +173,6 @@ const gameSlice = createSlice({
       if (!state.ai) return;
       const secs = Math.max(0, Math.min(60, Math.round(action.payload)));
       state.ai.timeSeconds = secs;
-    },
-    // --- Advanced time (auto mode) ---
-    setAiTimeMinMs(state: GameState, action: PayloadAction<number>) {
-      if (!state.ai) return; state.ai.aiTimeMinMs = Math.max(100, Math.min(60000, Math.round(action.payload)));
-    },
-    setAiTimeMaxMs(state: GameState, action: PayloadAction<number>) {
-      if (!state.ai) return; state.ai.aiTimeMaxMs = Math.max(200, Math.min(120000, Math.round(action.payload)));
-    },
-    setAiTimeBaseMs(state: GameState, action: PayloadAction<number>) {
-      if (!state.ai) return; state.ai.aiTimeBaseMs = Math.max(0, Math.min(60000, Math.round(action.payload)));
-    },
-    setAiTimePerMoveMs(state: GameState, action: PayloadAction<number>) {
-      if (!state.ai) return; state.ai.aiTimePerMoveMs = Math.max(0, Math.min(10000, Math.round(action.payload)));
-    },
-    setAiTimeExponent(state: GameState, action: PayloadAction<number>) {
-      if (!state.ai) return; state.ai.aiTimeExponent = Math.max(0, Math.min(4, Number(action.payload)));
     },
     // --- Engine toggles/params ---
     setAiEnableTT(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableTT = !!action.payload; },
@@ -228,7 +199,6 @@ const gameSlice = createSlice({
           enabled: false,
           aiSide: 'Dark',
           difficulty: 3,
-          speed: 'normal',
           timeMode: 'manual',
           timeSeconds: 10,
         };
@@ -241,17 +211,7 @@ const gameSlice = createSlice({
       if (typeof s.useWorkers === 'boolean') {
         state.ai.useWorkers = !!s.useWorkers;
       }
-      if (s.speed) {
-        state.ai.speed = s.speed as AISpeed;
-        // syncing speed with timeMode/timeSeconds similar to setAISpeed
-        if (s.speed === 'auto') {
-          state.ai.timeMode = 'auto';
-          state.ai.timeSeconds = 0;
-        } else {
-          state.ai.timeMode = 'manual';
-          state.ai.timeSeconds = s.speed === 'rapido' ? 5 : s.speed === 'normal' ? 10 : 30;
-        }
-      }
+      // Speed is deprecated in presets; only honor explicit timeMode/timeSeconds
       if (s.timeMode) state.ai.timeMode = s.timeMode;
       {
         const mode = s.timeMode ?? state.ai.timeMode;
@@ -262,12 +222,7 @@ const gameSlice = createSlice({
           state.ai.timeSeconds = secs;
         }
       }
-      // Advanced time (Auto)
-      if (typeof (s as any).aiTimeMinMs === 'number') state.ai.aiTimeMinMs = Math.max(100, Math.min(60000, Math.round((s as any).aiTimeMinMs)));
-      if (typeof (s as any).aiTimeMaxMs === 'number') state.ai.aiTimeMaxMs = Math.max(200, Math.min(120000, Math.round((s as any).aiTimeMaxMs)));
-      if (typeof (s as any).aiTimeBaseMs === 'number') state.ai.aiTimeBaseMs = Math.max(0, Math.min(60000, Math.round((s as any).aiTimeBaseMs)));
-      if (typeof (s as any).aiTimePerMoveMs === 'number') state.ai.aiTimePerMoveMs = Math.max(0, Math.min(10000, Math.round((s as any).aiTimePerMoveMs)));
-      if (typeof (s as any).aiTimeExponent === 'number') state.ai.aiTimeExponent = Math.max(0, Math.min(4, Number((s as any).aiTimeExponent)));
+      // Advanced time (Auto) removed: Auto is unlimited now
       // Engine toggles
       if (typeof (s as any).enableTT === 'boolean') state.ai.enableTT = !!(s as any).enableTT;
       if (typeof (s as any).failSoft === 'boolean') state.ai.failSoft = !!(s as any).failSoft;
@@ -344,5 +299,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAISpeed, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;

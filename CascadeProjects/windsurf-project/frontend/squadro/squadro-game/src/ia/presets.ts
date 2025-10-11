@@ -1,7 +1,7 @@
 // IA Presets for Squadro — persistence and defaults
 // Mirrors the Soluna pattern but adapted to Squadro state shape
 
-import type { AISpeed } from '../game/types';
+// speed has been removed from UI; presets now rely only on timeMode/timeSeconds
 
 export interface IAPreset {
   id: string;
@@ -9,7 +9,6 @@ export interface IAPreset {
   settings: {
     difficulty?: number; // 1..20
     useWorkers?: boolean;
-    speed?: AISpeed;          // maps to timeSeconds via slice
     timeMode?: 'auto' | 'manual';
     timeSeconds?: number;     // when manual
     // Tiempo (Auto)
@@ -59,7 +58,6 @@ export function getDefaultPresets(): IAPreset[] {
       settings: {
         difficulty: 10,
         useWorkers: true,
-        speed: 'normal',
         timeMode: 'auto',
         timeSeconds: 0,
         // Motor robusto
@@ -92,12 +90,12 @@ export function getDefaultPresets(): IAPreset[] {
     {
       id: 'iapowa_perf',
       name: 'IAPowa+Rendimiento',
-      settings: { difficulty: 4, useWorkers: true, speed: 'rapido', timeMode: 'manual', timeSeconds: 5 },
+      settings: { difficulty: 4, useWorkers: true, timeMode: 'manual', timeSeconds: 5 },
     },
     {
       id: 'iapowa_def',
       name: 'IAPowa+Defensa',
-      settings: { difficulty: 5, useWorkers: true, speed: 'lento', timeMode: 'manual', timeSeconds: 30 },
+      settings: { difficulty: 5, useWorkers: true, timeMode: 'manual', timeSeconds: 30 },
     },
   ];
 }

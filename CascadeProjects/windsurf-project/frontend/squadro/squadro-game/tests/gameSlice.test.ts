@@ -8,7 +8,8 @@ import reducer, {
   toggleOrientation,
   setAIEnabled,
   setAIDifficulty,
-  setAISpeed,
+  setAITimeMode,
+  setAITimeSeconds,
   setAIUseWorkers,
   aiSearchStarted,
   aiSearchProgress,
@@ -43,7 +44,9 @@ describe('store/gameSlice reducers', () => {
 
     s = reducer(s, setAIEnabled(true));
     s = reducer(s, setAIDifficulty(7));
-    s = reducer(s, setAISpeed('rapido'));
+    // time: manual 5s (equivalente al antiguo 'rapido')
+    s = reducer(s, setAITimeMode('manual'));
+    s = reducer(s, setAITimeSeconds(5));
     s = reducer(s, setAIUseWorkers(false));
     s = reducer(s, aiSearchStarted(Date.now()));
     s = reducer(s, aiSearchProgress(1234));
@@ -74,7 +77,8 @@ describe('store/gameSlice reducers', () => {
     expect(s2.ai).toBeDefined();
     expect(s2.ai!.enabled).toBe(true);
     expect(s2.ai!.difficulty).toBe(7);
-    expect(s2.ai!.speed).toBe('rapido');
+    expect(s2.ai!.timeMode).toBe('manual');
+    expect(s2.ai!.timeSeconds).toBe(5);
     expect(s2.ai!.useWorkers).toBe(false);
     expect(s2.ai!.busy).toBe(false);
     expect(s2.ai!.nodesVisited).toBe(0);

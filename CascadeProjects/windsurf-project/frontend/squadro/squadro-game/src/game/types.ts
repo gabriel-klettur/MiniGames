@@ -75,12 +75,10 @@ export interface UISettings {
 }
 
 // AI configuration for vs AI games
-export type AISpeed = 'auto' | 'rapido' | 'normal' | 'lento';
 export interface AISettings {
   enabled: boolean;          // if true, game is vs AI
   aiSide: Player;            // which side AI plays
   difficulty: number;        // 1..20
-  speed: AISpeed;            // UI label; maps to time budget
   timeMode: 'auto' | 'manual';
   timeSeconds: number;       // when manual, budget per move
   useWorkers?: boolean;      // if true (default), run AI in Web Workers
@@ -95,12 +93,6 @@ export interface AISettings {
     sprint_threshold: number;
     tempo?: number;
   }>>;
-  // --- Advanced time configuration (auto mode) ---
-  aiTimeMinMs?: number;
-  aiTimeMaxMs?: number;
-  aiTimeBaseMs?: number;
-  aiTimePerMoveMs?: number;
-  aiTimeExponent?: number;
   // --- Engine toggles/params ---
   enableTT?: boolean;
   failSoft?: boolean;
