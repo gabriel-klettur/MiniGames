@@ -16,6 +16,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     gamesCount, onChangeGamesCount,
     useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers,
+    startEligibleLight, onToggleStartEligibleLight,
+    startEligibleDark, onToggleStartEligibleDark,
     p1, p2,
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
@@ -90,6 +92,10 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onToggleUseRootParallel={onToggleUseRootParallel}
           workers={workers}
           onChangeWorkers={onChangeWorkers}
+          startEligibleLight={startEligibleLight}
+          onToggleStartEligibleLight={onToggleStartEligibleLight}
+          startEligibleDark={startEligibleDark}
+          onToggleStartEligibleDark={onToggleStartEligibleDark}
           p1={p1}
           p2={p2}
           records={records}

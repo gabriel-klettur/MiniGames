@@ -12,6 +12,39 @@ export interface IAPreset {
     speed?: AISpeed;          // maps to timeSeconds via slice
     timeMode?: 'auto' | 'manual';
     timeSeconds?: number;     // when manual
+    // Tiempo (Auto)
+    aiTimeMinMs?: number;
+    aiTimeMaxMs?: number;
+    aiTimeBaseMs?: number;
+    aiTimePerMoveMs?: number;
+    aiTimeExponent?: number;
+    // Engine toggles
+    enableTT?: boolean;
+    failSoft?: boolean;
+    preferHashMove?: boolean;
+    enablePVS?: boolean;
+    enableKillers?: boolean;
+    enableHistory?: boolean;
+    enableLMR?: boolean;
+    // Quiescence
+    enableQuiescence?: boolean;
+    quiescenceMaxPlies?: number;
+    // LMR params
+    lmrMinDepth?: number;
+    lmrLateMoveIdx?: number;
+    lmrReduction?: number;
+    // Move ordering jitter (stochastic tie-breaker)
+    orderingJitterEps?: number;
+    // Heuristic weights (global: applied to Light and Dark)
+    evalWeights?: {
+      w_race?: number;
+      w_clash?: number;
+      w_sprint?: number;
+      w_block?: number;
+      done_bonus?: number;
+      sprint_threshold?: number;
+      tempo?: number;
+    };
   };
 }
 
@@ -23,7 +56,38 @@ export function getDefaultPresets(): IAPreset[] {
     {
       id: 'iapowa',
       name: 'IAPowa',
-      settings: { difficulty: 5, useWorkers: true, speed: 'normal', timeMode: 'manual', timeSeconds: 10 },
+      settings: {
+        difficulty: 10,
+        useWorkers: true,
+        speed: 'normal',
+        timeMode: 'auto',
+        timeSeconds: 0,
+        // Motor robusto
+        enableTT: true,
+        failSoft: true,
+        preferHashMove: true,
+        enablePVS: true,
+        enableKillers: true,
+        enableHistory: true,
+        enableLMR: true,
+        // Quiescence
+        enableQuiescence: true,
+        quiescenceMaxPlies: 4,
+        // LMR conservador
+        lmrMinDepth: 3,
+        lmrLateMoveIdx: 3,
+        lmrReduction: 1,
+        // Heurística (global) balanceada para no perder
+        evalWeights: {
+          w_race: 1.2,
+          w_clash: 1.0,
+          w_sprint: 0.7,
+          w_block: 0.4,
+          done_bonus: 6.0,
+          sprint_threshold: 2,
+          tempo: 6,
+        },
+      },
     },
     {
       id: 'iapowa_perf',

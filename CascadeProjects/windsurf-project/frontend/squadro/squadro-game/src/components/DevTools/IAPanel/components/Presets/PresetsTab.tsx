@@ -65,7 +65,15 @@ export default function PresetsTab() {
 
   const setField = <K extends keyof IAPreset['settings']>(k: K, v: IAPreset['settings'][K]) => {
     if (!selected) return;
-    setItems(prev => prev.map(it => it.id === selected.id ? ({ ...it, settings: { ...it.settings, [k]: v } }) : it));
+    setItems(prev => prev.map(it => {
+      if (it.id !== selected.id) return it;
+      const nextSettings = { ...it.settings, [k]: v } as IAPreset['settings'];
+      // Normalize: if switching to auto, seconds must be 0 and we keep panel hidden
+      if (k === 'timeMode' && v === 'auto') {
+        nextSettings.timeSeconds = 0;
+      }
+      return { ...it, settings: nextSettings };
+    }));
   };
 
   const applyCurrent = () => {
@@ -181,6 +189,97 @@ export default function PresetsTab() {
                     />
                   </label>
                 )}
+              </div>
+            </div>
+
+            {/* Tiempo (Auto) */}
+            {selected.settings.timeMode !== 'auto' && (
+              <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">
+                <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">Tiempo (Auto)</h4>
+                <div className="flex gap-3 flex-wrap">
+                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="minMs — Tiempo mínimo (ms) por jugada en Auto.">minMs
+                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeMinMs ?? 800} onChange={(e) => setField('aiTimeMinMs', Number(e.target.value))} />
+                  </label>
+                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="maxMs — Tiempo máximo (ms) por jugada en Auto.">maxMs
+                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeMaxMs ?? 8000} onChange={(e) => setField('aiTimeMaxMs', Number(e.target.value))} />
+                  </label>
+                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="baseMs — Presupuesto base (ms).">baseMs
+                    <input type="number" className="w-24 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeBaseMs ?? 2500} onChange={(e) => setField('aiTimeBaseMs', Number(e.target.value))} />
+                  </label>
+                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="perDepth — Incremento de ms por profundidad.">perDepth
+                    <input type="number" className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimePerMoveMs ?? 300} onChange={(e) => setField('aiTimePerMoveMs', Number(e.target.value))} />
+                  </label>
+                  <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="exp — Exponente de crecimiento.">exp
+                    <input type="number" step={0.1} className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.aiTimeExponent ?? 1.0} onChange={(e) => setField('aiTimeExponent', Number(e.target.value))} />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Motor: toggles y LMR */}
+            <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">
+              <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">Motor • Búsqueda base</h4>
+              <div className="flex gap-3 flex-wrap mb-2">
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={selected.settings.enableTT !== false} onChange={(e) => setField('enableTT', e.target.checked)} /> TT</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={!!selected.settings.failSoft} onChange={(e) => setField('failSoft', e.target.checked)} /> Fail-soft</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={!!selected.settings.preferHashMove} onChange={(e) => setField('preferHashMove', e.target.checked)} /> Hash move</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={selected.settings.enablePVS !== false} onChange={(e) => setField('enablePVS', e.target.checked)} /> PVS</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={selected.settings.enableKillers !== false} onChange={(e) => setField('enableKillers', e.target.checked)} /> Killers</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={selected.settings.enableHistory !== false} onChange={(e) => setField('enableHistory', e.target.checked)} /> History</label>
+                <label className="text-xs inline-flex items-center gap-2"><input type="checkbox" checked={selected.settings.enableLMR !== false} onChange={(e) => setField('enableLMR', e.target.checked)} /> Enable LMR</label>
+                <label className="text-xs inline-flex items-center gap-2" title="Quiescence — Extiende hojas tácticas (p. ej., capturas o swings) unos plies adicionales para estabilizar la evaluación y mitigar el 'horizon effect'. Recomendada ON con qPlies moderado (3–5)."><input type="checkbox" checked={!!selected.settings.enableQuiescence} onChange={(e) => setField('enableQuiescence', e.target.checked)} /> Quiescence</label>
+                <label className="text-xs inline-flex items-center gap-2" title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; sugerido 0.5–2.0.">
+                  jitter
+                  <input type="number" step={0.1} className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.orderingJitterEps ?? 0} onChange={(e) => setField('orderingJitterEps', Number(e.target.value))} />
+                </label>
+              </div>
+              <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">LMR</h4>
+              <div className="flex gap-3 flex-wrap">
+                <label className="text-xs text-neutral-300 inline-flex items-center gap-2">minDepth
+                  <input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.lmrMinDepth ?? 3} onChange={(e) => setField('lmrMinDepth', Number(e.target.value))} />
+                </label>
+                <label className="text-xs text-neutral-300 inline-flex items-center gap-2">lateIdx
+                  <input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.lmrLateMoveIdx ?? 3} onChange={(e) => setField('lmrLateMoveIdx', Number(e.target.value))} />
+                </label>
+                <label className="text-xs text-neutral-300 inline-flex items-center gap-2">reduction
+                  <input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.lmrReduction ?? 1} onChange={(e) => setField('lmrReduction', Number(e.target.value))} />
+                </label>
+                <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="qPlies — Límite de extensiones de Quiescence.">qPlies
+                  <input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={selected.settings.quiescenceMaxPlies ?? 4} onChange={(e) => setField('quiescenceMaxPlies', Number(e.target.value))} />
+                </label>
+              </div>
+            </div>
+
+            {/* Heurística Global */}
+            <div className="rounded-md border border-neutral-800/80 bg-neutral-900/60 p-2 min-w-[300px]">
+              <h4 className="text-xs font-semibold text-neutral-300 m-0 mb-2">Heurística (global)</h4>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                {(['w_race','w_clash','w_sprint','w_block'] as const).map((k) => (
+                  <label key={k} className="text-xs text-neutral-300 inline-flex items-center gap-2">
+                    {k}
+                    <input
+                      type="number"
+                      step={0.1}
+                      className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                      value={(selected.settings.evalWeights as any)?.[k] ?? ''}
+                      onChange={(e) => setField('evalWeights', { ...(selected.settings.evalWeights || {}), [k]: Number(e.target.value) } as any)}
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
+                {(['done_bonus','sprint_threshold','tempo'] as const).map((k) => (
+                  <label key={k} className="text-xs text-neutral-300 inline-flex items-center gap-2">
+                    {k}
+                    <input
+                      type="number"
+                      step={k === 'done_bonus' ? 0.5 : 1}
+                      className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                      value={(selected.settings.evalWeights as any)?.[k] ?? ''}
+                      onChange={(e) => setField('evalWeights', { ...(selected.settings.evalWeights || {}), [k]: Number(e.target.value) } as any)}
+                    />
+                  </label>
+                ))}
               </div>
             </div>
           </>

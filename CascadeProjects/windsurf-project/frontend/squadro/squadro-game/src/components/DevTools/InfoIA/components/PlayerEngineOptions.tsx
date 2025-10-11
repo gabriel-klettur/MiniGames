@@ -12,6 +12,11 @@ interface PlayerEngineOptionsProps {
   lmrMinDepth?: number; onChangeLmrMinDepth?: (n: number) => void;
   lmrLateMoveIdx?: number; onChangeLmrLateMoveIdx?: (n: number) => void;
   lmrReduction?: number; onChangeLmrReduction?: (n: number) => void;
+  // Ordering jitter
+  orderingJitterEps?: number; onChangeOrderingJitterEps?: (n: number) => void;
+  // Quiescence
+  enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
+  quiescenceMaxPlies?: number; onChangeQuiescenceMaxPlies?: (n: number) => void;
   // Optional heuristic weights
   w_race?: number; onChangeWRace?: (n: number) => void;
   w_clash?: number; onChangeWClash?: (n: number) => void;
@@ -34,6 +39,12 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
           <span className={labelCls}>TT</span>
           <ToggleSwitch checked={!!p.enableTT} onChange={() => p.onToggleEnableTT?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
         </div>
+      <div className="flex flex-wrap items-center gap-4">
+        <label className={labelCls + ' inline-flex items-center gap-2'} title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; valores típicos 0.5–2.0.">
+          jitter
+          <input type="number" step={0.1} disabled={dis} className={inputCls} value={p.orderingJitterEps ?? 0} onChange={(e) => p.onChangeOrderingJitterEps?.(Number(e.target.value))} />
+        </label>
+      </div>
         <div className="inline-flex items-center gap-2" title="Principal Variation Search (PVS) — Busca el primer hijo con ventana completa para establecer α; los siguientes con ventana nula [-α-1, -α]. Si alguno mejora α, se re-busca a ventana completa. Ejemplo: si el primer hijo da 15, el segundo se prueba con [-16,-15]; si devuelve 17, se re-busca a [-∞,+∞].">
           <span className={labelCls}>PVS</span>
           <ToggleSwitch checked={!!p.enablePVS} onChange={() => p.onToggleEnablePVS?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
@@ -49,6 +60,10 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
         <div className="inline-flex items-center gap-2" title="Hash move (desde TT) — Si la TT sugiere una bestMove para la posición, se intenta primero para maximizar cortes β tempranos. Ejemplo: si TT recomienda mover 'P5', se eleva al frente del ordering para explorarla antes.">
           <span className={labelCls}>Hash move</span>
           <ToggleSwitch checked={!!p.preferHashMove} onChange={() => p.onTogglePreferHashMove?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
+        </div>
+        <div className="inline-flex items-center gap-2" title="Quiescence — Extiende hojas tácticas (p. ej., capturas o swings) unos plies adicionales para estabilizar la evaluación y mitigar el 'horizon effect'. Recomendada ON con límite de qPlies moderado (3–5).">
+          <span className={labelCls}>Quiescence</span>
+          <ToggleSwitch checked={!!p.enableQuiescence} onChange={() => p.onToggleEnableQuiescence?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
         </div>
         <div className="inline-flex items-center gap-2" title="Late Move Reductions (LMR) — Reduce la profundidad efectiva de jugadas tardías (no tácticas) y re-busca a profundidad completa si superan α. Ejemplo: en movimientos con índice ≥ lateIdx, buscar a d-1 o d-2 con ventana nula; si el score supera α, repetir búsqueda completa.">
           <span className={labelCls}>LMR</span>
@@ -67,6 +82,10 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
         <label className={labelCls + ' inline-flex items-center gap-2'} title="LMR:reduction — Plies a reducir para jugadas tardías no tácticas. Ejemplo: reduction=1 ⇒ profundidad efectiva d-1 (con salvaguarda de re-búsqueda si falla alto).">
           reduction
           <input type="number" disabled={dis} className={inputCls} value={p.lmrReduction ?? 1} onChange={(e) => p.onChangeLmrReduction?.(Number(e.target.value))} />
+        </label>
+        <label className={labelCls + ' inline-flex items-center gap-2'} title="Quiescence:qPlies — Límite de extensiones de búsqueda táctica en hojas. Controla coste. Ejemplo: 4 ⇒ hasta 4 plies adicionales sólo en posiciones ruidosas.">
+          qPlies
+          <input type="number" disabled={dis} className={inputCls} value={p.quiescenceMaxPlies ?? 4} onChange={(e) => p.onChangeQuiescenceMaxPlies?.(Number(e.target.value))} />
         </label>
       </div>
       {(typeof p.w_race === 'number' || typeof p.w_clash === 'number' || typeof p.w_sprint === 'number' || typeof p.w_block === 'number') && (

@@ -13,6 +13,10 @@ interface SimSectionProps {
   onToggleUseRootParallel?: () => void;
   workers?: number;
   onChangeWorkers?: (n: number) => void;
+  startEligibleLight?: boolean;
+  onToggleStartEligibleLight?: () => void;
+  startEligibleDark?: boolean;
+  onToggleStartEligibleDark?: () => void;
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
   records: InfoIARecord[];
@@ -28,7 +32,7 @@ interface SimSectionProps {
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -69,6 +73,14 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
                 className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
+            <label className="inline-flex items-center gap-2" title="Permitir que Light sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
+              <input type="checkbox" checked={!!startEligibleLight} onChange={() => onToggleStartEligibleLight?.()} />
+              Puede iniciar Light
+            </label>
+            <label className="inline-flex items-center gap-2" title="Permitir que Dark sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
+              <input type="checkbox" checked={!!startEligibleDark} onChange={() => onToggleStartEligibleDark?.()} />
+              Puede iniciar Dark
+            </label>
           </div>
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
@@ -78,7 +90,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               Profundidad
               <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
             </label>
-            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 1: Auto (sin límite) o Manual (segundos)">
+            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 1: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
               Tiempo
               <select value={p1.timeMode} onChange={(e) => p1.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                 <option value="auto">Auto</option>
@@ -86,7 +98,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </select>
             </label>
             {p1.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 1">
+              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 1. Consejo: 0 segundos se interpreta como infinito.">
                 Segundos
                 <input type="number" min={0} max={60} value={p1.timeSeconds} onChange={(e) => p1.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
               </label>
@@ -144,7 +156,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               Profundidad
               <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
             </label>
-            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 2: Auto (sin límite) o Manual (segundos)">
+            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 2: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
               Tiempo
               <select value={p2.timeMode} onChange={(e) => p2.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                 <option value="auto">Auto</option>
@@ -152,7 +164,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </select>
             </label>
             {p2.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 2">
+              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 2. Consejo: 0 segundos se interpreta como infinito.">
                 Segundos
                 <input type="number" min={0} max={60} value={p2.timeSeconds} onChange={(e) => p2.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
               </label>

@@ -29,6 +29,9 @@ export interface EngineOptions {
   lmrReduction?: number;   // plies to reduce
   // Prefer TT bestMove as hash move in ordering
   preferHashMove?: boolean;
+  // Small random jitter added to move ordering priority (breaks deterministic ties).
+  // Typical values: 0 (disabled), 0.5 .. 2.0 (very light), 5.0+ (aggressive randomness)
+  orderingJitterEps?: number;
   // Aspiration Windows
   enableAspiration?: boolean; // use aspiration windows around last score
   aspDelta?: number;          // initial half-window size around the previous score
@@ -53,6 +56,8 @@ export interface NodeParams {
   stats?: SearchStats;
   allowedRootMoves?: Set<string>;
   isRoot?: boolean;
+  // Optional hook to report progress (nodes) periodically from deep inside the search
+  progressHook?: (nodes: number) => void;
 }
 
 export interface IterResult {

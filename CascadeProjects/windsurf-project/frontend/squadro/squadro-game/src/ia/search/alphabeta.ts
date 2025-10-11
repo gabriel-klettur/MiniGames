@@ -36,6 +36,16 @@ export function bestMoveIterative(
   let prevScore: number | null = null; // for aspiration windows
   let lastIterDurationMs = 0;          // for adaptive time control
 
+  // Throttled reporter used deep in the tree
+  const progressHook = () => {
+    const now = performance.now();
+    // throttle to ~50ms to avoid spamming UI
+    if (now - lastProgressAt >= 50) {
+      lastProgressAt = now;
+      opts.onProgress?.({ type: 'progress', nodesVisited: stats.nodes });
+    }
+  };
+
   opts.onProgress?.({ type: 'start', startedAt: start });
   opts.onProgress?.({ type: 'progress', nodesVisited: stats.nodes });
 
@@ -72,6 +82,7 @@ export function bestMoveIterative(
       stats,
       allowedRootMoves: opts.allowedRootMoves,
       isRoot: true,
+      progressHook,
     }, ctx, tt, deadline, opts.engine);
 
     const iterStart = performance.now();
@@ -156,6 +167,7 @@ function negamax(
   // Terminal: prefer faster wins and delay losses (mate distance)
   if (state.winner) {
     params.stats && (params.stats.nodes += 1);
+    if (params.progressHook && params.stats) params.progressHook(params.stats.nodes);
     const WIN = 100000;
     const score = state.winner === me ? (WIN - ply) : (-WIN + ply);
     return { score, bestMove: null, timeout: false };
@@ -175,6 +187,7 @@ function negamax(
       }, ctx, tt, deadline, engine);
     } else {
       params.stats && (params.stats.nodes += 1);
+      if (params.progressHook && params.stats) params.progressHook(params.stats.nodes);
       return { score: evaluate(state, me), bestMove: null, timeout: false };
     }
   }
@@ -196,6 +209,7 @@ function negamax(
   if (params.isRoot && params.allowedRootMoves) moves = moves.filter((m) => params.allowedRootMoves!.has(m));
   if (moves.length === 0) {
     params.stats && (params.stats.nodes += 1);
+    if (params.progressHook && params.stats) params.progressHook(params.stats.nodes);
     return { score: evaluate(state, me), bestMove: null, timeout: false };
   }
 
@@ -204,7 +218,7 @@ function negamax(
   const hashMove = (engine?.preferHashMove && ttEntry?.bestMove && moves.includes(ttEntry.bestMove))
     ? ttEntry.bestMove
     : null;
-  const ordered = orderedMoves(state, moves, me, { hashMove, killers, history: ctx.history });
+  const ordered = orderedMoves(state, moves, me, { hashMove, killers, history: ctx.history, jitter: engine?.orderingJitterEps });
 
   let bestScore = -Infinity;
   let bestMove: string | null = null;
@@ -234,6 +248,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r1.timeout) return r1;
       score = -r1.score;
@@ -268,6 +283,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r0.timeout) return r0;
       score = -r0.score;
@@ -281,6 +297,7 @@ function negamax(
           me,
           ply: ply + 1,
           stats: params.stats,
+          progressHook: params.progressHook,
         }, ctx, tt, deadline, engine);
         if (r2.timeout) return r2;
         score = -r2.score;
@@ -296,6 +313,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r.timeout) return r;
       score = -r.score;

@@ -36,6 +36,7 @@ export function orderMoves(
     hashMove?: string | null;
     killers?: string[]; // máx 2 sugeridos
     history?: Map<string, number>; // key = `${player}:${moveId}`
+    jitter?: number; // optional symmetric jitter in priority, ~Uniform(-eps, +eps)
   },
 ): string[] {
   const entries = moves.map((m) => {
@@ -64,6 +65,12 @@ export function orderMoves(
     if (didJump) pri += 2500 + 500 * Math.min(3, jumpDeltaOpp);
     pri += Math.max(-600, Math.min(600, safeProg));
     pri += Math.min(1000, hist);
+    // Apply tiny jitter to break ties deterministically across runs when enabled
+    const eps = typeof opts?.jitter === 'number' ? Math.max(0, opts.jitter) : 0;
+    if (eps > 0) {
+      // Uniform in [-eps, +eps]
+      pri += (Math.random() * 2 * eps) - eps;
+    }
 
     return { m, pri };
   });

@@ -63,8 +63,10 @@ export async function findBestMoveRootParallel(state: GameState, opts: RootParal
     }
   }
 
-  opts.onProgress?.({ type: 'end', durationMs: 0, depthReached: best.depthReached, score: best.score, nodesVisited: 0 });
-  return best;
+  // Aggregate nodes across workers if available
+  const totalNodes = results.reduce((sum, r) => sum + (r.engineStats?.nodes || 0), 0);
+  opts.onProgress?.({ type: 'end', durationMs: 0, depthReached: best.depthReached, score: best.score, nodesVisited: totalNodes });
+  return { ...best, engineStats: { ...(best.engineStats || {}), nodes: totalNodes } };
 }
 
 function runOnWorker(w: Worker, state: GameState, opts: RootParallelOptions, forward?: (ev: SearchEvent) => void): Promise<RootParallelResult> {

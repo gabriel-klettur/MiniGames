@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import Button from '../../ui/Button';
 import ToggleSwitch from '../../ui/ToggleSwitch';
-import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights } from '../../../store/gameSlice';
+import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiTimeMinMs, setAiTimeMaxMs, setAiTimeBaseMs, setAiTimePerMoveMs, setAiTimeExponent, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights, setAiOrderingJitterEps } from '../../../store/gameSlice';
 import { store } from '../../../store';
 import { findBestMove } from '../../../ia/search';
 import PresetsTab from './components/Presets/PresetsTab';
@@ -241,6 +241,13 @@ export default function AIDiagnosticsPanel() {
               <label className="text-xs inline-flex items-center gap-2" title="PVS — Ventana nula en no‑PV con re‑búsqueda si supera α. Acelera sobre αβ estándar."><input type="checkbox" checked={ai?.enablePVS !== false} onChange={(e) => dispatch(setAiEnablePVS(e.target.checked))} /> PVS</label>
               <label className="text-xs inline-flex items-center gap-2" title="Killers — Jugadas que cortaron β en este ply se prueban antes en ramas hermanas."><input type="checkbox" checked={ai?.enableKillers !== false} onChange={(e) => dispatch(setAiEnableKillers(e.target.checked))} /> Killers</label>
               <label className="text-xs inline-flex items-center gap-2" title="History — Puntos por éxito histórico elevan prioridad en el orden."><input type="checkbox" checked={ai?.enableHistory !== false} onChange={(e) => dispatch(setAiEnableHistory(e.target.checked))} /> History</label>
+              <label className="text-xs inline-flex items-center gap-2" title="Quiescence — Extiende hojas tácticas (capturas) para estabilizar la evaluación y evitar blunders."><input type="checkbox" checked={!!ai?.enableQuiescence} onChange={(e) => dispatch(setAiEnableQuiescence(e.target.checked))} /> Quiescence</label>
+            </div>
+            <div className="flex gap-3 flex-wrap mt-1">
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; valores típicos 0.5–2.0.">
+                jitter
+                <input type="number" step={0.1} className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.orderingJitterEps ?? 0} onChange={(e) => dispatch(setAiOrderingJitterEps(Number(e.target.value)))} />
+              </label>
             </div>
             <h4 className="text-xs font-semibold text-neutral-300 mb-2">LMR</h4>
             <div className="flex gap-3 flex-wrap">
@@ -248,6 +255,7 @@ export default function AIDiagnosticsPanel() {
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="minDepth — Profundidad mínima a partir de la cual considerar reducciones. Ej.: con 3 solo aplica cuando depth≥3">minDepth<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrMinDepth ?? 3} onChange={(e) => dispatch(setAiLmrMinDepth(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="lateIdx — Considera 'jugada tardía' desde este índice en el orden. Ej.: 3 ⇒ desde el 4º movimiento.">lateIdx<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrLateMoveIdx ?? 3} onChange={(e) => dispatch(setAiLmrLateMoveIdx(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="reduction — Plies a reducir en jugadas tardías no tácticas. Ej.: 1 ⇒ d-1 (con re‑búsqueda si supera α).">reduction<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrReduction ?? 1} onChange={(e) => dispatch(setAiLmrReduction(Number(e.target.value)))} /></label>
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="qPlies — Límite de extensiones de Quiescence (tácticas) en hojas.">qPlies<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={(ai as any)?.quiescenceDepth ?? 4} onChange={(e) => dispatch(setAiQuiescenceDepth(Number(e.target.value)))} /></label>
             </div>
           </div>
           {/* Heurística Global (aplica a ambos lados) */}

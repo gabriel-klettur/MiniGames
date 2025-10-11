@@ -7,6 +7,7 @@ import { createAIRunner } from '../services/aiRunner';
 import type { EvalParams } from '../../../../ia/evalTypes';
 import type { EngineOptions } from '../../../../ia/search/types';
 import { findBestMoveRootParallel, type SearchEvent } from '../../../../ia/search';
+import { generateMoves } from '../../../../ia/moves';
 
 export interface SimulationSettings {
   gamesCount: number;
@@ -27,6 +28,11 @@ export interface SimulationSettings {
   // Global execution options
   useRootParallel?: boolean;
   workers?: number;
+  // Starting player eligibility per game (per player)
+  startEligibleLight?: boolean;
+  startEligibleDark?: boolean;
+  // Number of initial plies to play randomly (opening randomization)
+  randomOpeningPlies?: number;
 }
 
 export interface SimulationMetrics {
@@ -57,6 +63,7 @@ export function useSimulationRunner(
   // Move timers/raf
   const moveRafRef = useRef<number | null>(null);
   const moveStartRef = useRef<number>(0);
+  const moveNodesMaxRef = useRef<number>(0);
 
   // External runner (worker-backed search)
   const runnerRef = useRef<ReturnType<typeof createAIRunner> | null>(null);
@@ -99,6 +106,19 @@ export function useSimulationRunner(
     for (let g = 0; g < Math.max(1, settings.gamesCount) && runningRef.current; g++) {
       // Local state por partida
       let gs: GameState = createInitialState();
+      try {
+        const allowLight = settings.startEligibleLight !== false;
+        const allowDark = settings.startEligibleDark !== false;
+        if (allowLight || allowDark) {
+          if (allowLight && allowDark) {
+            gs.turn = (Math.random() < 0.5 ? 'Light' : 'Dark') as Player;
+          } else if (allowLight) {
+            gs.turn = 'Light';
+          } else if (allowDark) {
+            gs.turn = 'Dark';
+          }
+        }
+      } catch {}
       let moves = 0;
       const curDetails: MoveDetail[] = [];
       const startedAtWall = Date.now();
@@ -131,6 +151,33 @@ export function useSimulationRunner(
         setMoveElapsedMs(0);
         setMoveTargetMs(Number.isFinite(target) ? target : undefined);
         setProgDepth(0); setProgNodes(0); setProgScore(0); setProgNps(0);
+        moveNodesMaxRef.current = 0;
+
+        // Opening randomization: play a random legal move for the first N plies, if configured
+        const openingLeft = Math.max(0, (settings.randomOpeningPlies ?? 0) - moves);
+        if (openingLeft > 0) {
+          const legal = generateMoves(gs);
+          if (legal.length === 0) break;
+          const rand = legal[Math.floor(Math.random() * legal.length)];
+          const tStart = performance.now();
+          applyMoveRules(gs, rand);
+          const actualElapsed = performance.now() - tStart;
+          curDetails.push({
+            index: curDetails.length + 1,
+            elapsedMs: actualElapsed,
+            nodes: 0,
+            nps: 0,
+            bestMove: rand,
+            player: cur,
+            depthUsed: 0,
+            applied: true,
+            at: Date.now(),
+          });
+          moves++;
+          // Yield to UI
+          await new Promise((r) => setTimeout(r, 0));
+          continue;
+        }
 
         stopMoveRaf();
         try {
@@ -160,10 +207,21 @@ export function useSimulationRunner(
                     setProgDepth(ev.depth);
                     setProgScore(ev.score);
                   } else if (ev.type === 'progress') {
-                    setProgNodes(ev.nodesVisited);
+                    // Keep a monotonic aggregation of nodes across events/workers
+                    moveNodesMaxRef.current = Math.max(moveNodesMaxRef.current, ev.nodesVisited);
+                    setProgNodes(moveNodesMaxRef.current);
                     const now = performance.now();
                     const elapsed = Math.max(1, now - moveStartRef.current);
-                    setProgNps(Math.round((ev.nodesVisited * 1000) / elapsed));
+                    setProgNps(Math.round((moveNodesMaxRef.current * 1000) / elapsed));
+                  } else if (ev.type === 'end') {
+                    // At the end, we receive aggregated nodesVisited across workers
+                    if (typeof ev.nodesVisited === 'number') {
+                      moveNodesMaxRef.current = Math.max(moveNodesMaxRef.current, ev.nodesVisited);
+                      setProgNodes(moveNodesMaxRef.current);
+                      const now = performance.now();
+                      const elapsed = Math.max(1, now - moveStartRef.current);
+                      setProgNps(Math.round((moveNodesMaxRef.current * 1000) / elapsed));
+                    }
                   }
                 },
               })
@@ -173,10 +231,11 @@ export function useSimulationRunner(
                   if (!settings.vizRef.current) return;
                   if (typeof p.depth === 'number') setProgDepth(p.depth);
                   if (typeof p.nodes === 'number') {
-                    setProgNodes(p.nodes);
+                    moveNodesMaxRef.current = Math.max(moveNodesMaxRef.current, p.nodes);
+                    setProgNodes(moveNodesMaxRef.current);
                     const now = performance.now();
                     const elapsed = Math.max(1, now - moveStartRef.current);
-                    setProgNps(Math.round((p.nodes * 1000) / elapsed));
+                    setProgNps(Math.round((moveNodesMaxRef.current * 1000) / elapsed));
                   }
                   if (typeof p.score === 'number') setProgScore(p.score);
                 }
@@ -190,12 +249,19 @@ export function useSimulationRunner(
           const chosenMove = (res as any).bestMove ?? (res as any).moveId ?? null;
           if (chosenMove) {
             applyMoveRules(gs, chosenMove);
+            // Determine final nodes and nps for this move
+            let finalNodes = moveNodesMaxRef.current;
+            if (!finalNodes) {
+              const maybeNodes = (res as any)?.nodes ?? (res as any)?.engineStats?.nodes;
+              if (typeof maybeNodes === 'number') finalNodes = maybeNodes;
+            }
+            const finalNps = Math.round(finalNodes * 1000 / Math.max(1, actualElapsed));
             curDetails.push({
               index: curDetails.length + 1,
               elapsedMs: actualElapsed,
               depthReached: res?.depthReached,
-              nodes: progNodes,
-              nps: progNps,
+              nodes: finalNodes,
+              nps: finalNps,
               score: res?.score,
               bestMove: chosenMove,
               player: cur,

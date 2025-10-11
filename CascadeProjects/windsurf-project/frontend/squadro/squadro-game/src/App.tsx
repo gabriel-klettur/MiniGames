@@ -42,22 +42,15 @@ function App() {
     if (ai.busy) return;
 
     const computeTime = () => {
-      const a = ai;
-      if (!a) return Infinity;
-      // Manual: respetar segundos configurados; 0 => ilimitado
-      if (a.timeMode === 'manual') {
-        const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
-        return secs === 0 ? Infinity : secs * 1000;
-      }
-      // Auto: usar parámetros avanzados si existen; si no, derivar de speed/difficulty
-      const d = Math.max(1, Math.min(20, a.difficulty ?? 3));
-      const base = (typeof a.aiTimeBaseMs === 'number') ? a.aiTimeBaseMs : (a.speed === 'rapido' ? 1200 : a.speed === 'lento' ? 5000 : 2500);
-      const perMove = (typeof a.aiTimePerMoveMs === 'number') ? a.aiTimePerMoveMs : 300; // default bonus per depth unit
-      const exponent = (typeof a.aiTimeExponent === 'number') ? a.aiTimeExponent : 1.0;
-      const raw = base + perMove * Math.max(0, d - 3) ** Math.max(0.5, exponent);
-      const minMs = (typeof a.aiTimeMinMs === 'number') ? a.aiTimeMinMs : 800;
-      const maxMs = (typeof a.aiTimeMaxMs === 'number') ? a.aiTimeMaxMs : 8000;
-      return Math.max(minMs, Math.min(maxMs, raw));
+    const a = ai;
+    if (!a) return Infinity;
+    // Manual: respetar segundos configurados; 0 => ilimitado
+    if (a.timeMode === 'manual') {
+    const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
+    return secs === 0 ? Infinity : secs * 1000;
+    }
+    // Auto: tiempo infinito (el motor decide por profundidad/aspiración/condiciones internas)
+    return Infinity;
     };
 
     const go = async () => {
@@ -77,6 +70,10 @@ function App() {
             enableHistory: ai.enableHistory !== false,
             enablePVS: ai.enablePVS !== false,
             enableLMR: ai.enableLMR !== false,
+            // Quiescence
+            enableQuiescence: !!ai.enableQuiescence,
+            quiescenceMaxPlies: typeof (ai as any).quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,
+            // LMR
             lmrMinDepth: typeof ai.lmrMinDepth === 'number' ? ai.lmrMinDepth : 3,
             lmrLateMoveIdx: typeof ai.lmrLateMoveIdx === 'number' ? ai.lmrLateMoveIdx : 3,
             lmrReduction: typeof ai.lmrReduction === 'number' ? ai.lmrReduction : 1,
@@ -246,6 +243,10 @@ function App() {
           enableHistory: ai?.enableHistory !== false,
           enablePVS: ai?.enablePVS !== false,
           enableLMR: ai?.enableLMR !== false,
+          // Quiescence
+          enableQuiescence: !!ai?.enableQuiescence,
+          quiescenceMaxPlies: typeof (ai as any)?.quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,
+          // LMR
           lmrMinDepth: typeof ai?.lmrMinDepth === 'number' ? ai!.lmrMinDepth : 3,
           lmrLateMoveIdx: typeof ai?.lmrLateMoveIdx === 'number' ? ai!.lmrLateMoveIdx : 3,
           lmrReduction: typeof ai?.lmrReduction === 'number' ? ai!.lmrReduction : 1,

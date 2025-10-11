@@ -33,6 +33,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
     lmrLateMoveIdx: 3,
     lmrReduction: 1,
     preferHashMove: true,
+    orderingJitterEps: 0,
     enableAspiration: true,
     aspDelta: 25,
     enableQuiescence: false,

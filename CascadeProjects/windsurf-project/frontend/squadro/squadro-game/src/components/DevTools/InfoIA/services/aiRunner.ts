@@ -33,6 +33,8 @@ export function createAIRunner() {
           bestMove: (data.moveId ?? null) as string | null,
           score: data.score,
           depthReached: data.depthReached,
+          // Map engineStats.nodes (when present) into result.nodes for consumers
+          nodes: data.engineStats?.nodes,
         };
         currentResolve?.(res);
         currentResolve = null;

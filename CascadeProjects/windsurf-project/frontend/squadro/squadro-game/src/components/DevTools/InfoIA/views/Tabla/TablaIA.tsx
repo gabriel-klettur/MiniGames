@@ -126,26 +126,32 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                                 <th className="py-1 px-2 text-left" title="t(ms) — Tiempo empleado por la IA en milisegundos para esta jugada.">t(ms)</th>
                                 <th className="py-1 px-2 text-left" title="depth — Profundidad solicitada (objetivo) para esta jugada.">depth</th>
                                 <th className="py-1 px-2 text-left" title="depthReached — Profundidad máxima realmente alcanzada (puede ser < depth si el tiempo expiró).">depthReached</th>
-                                <th className="py-1 px-2 text-left" title="nodes — Número de posiciones evaluadas en esta jugada.">nodes</th>
+                                <th className="py-1 px-2 text-left" title="nodes — Número de posiciones evaluadas en esta jugada; total — suma de nodos de toda la partida. Se muestra mov/total para comparar.">nodes</th>
                                 <th className="py-1 px-2 text-left" title="NPS — Nodos por segundo (nodes / (t/1000)). Ejemplo: 65 000 indica buen rendimiento.">NPS</th>
                                 <th className="py-1 px-2 text-left" title="score — Evaluación heurística; positivo favorece al jugador que mueve.">score</th>
                                 <th className="py-1 px-2 text-left" title="applied — Indica si la mejor jugada encontrada fue aplicada al tablero (✓).">applied</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-800">
-                              {(r.details || []).map(d => (
-                                <tr key={d.index}>
-                                  <td className="py-1 px-2 font-mono">{d.index}</td>
-                                  <td className="py-1 px-2">{d.player}</td>
-                                  <td className="py-1 px-2 font-mono">{Math.round(d.elapsedMs || 0).toLocaleString()}</td>
-                                  <td className="py-1 px-2 font-mono">{d.depthUsed ?? ''}</td>
-                                  <td className="py-1 px-2 font-mono">{d.depthReached ?? ''}</td>
-                                  <td className="py-1 px-2 font-mono">{(d.nodes ?? 0).toLocaleString()}</td>
-                                  <td className="py-1 px-2 font-mono">{(d.nps ?? 0).toLocaleString()}</td>
-                                  <td className="py-1 px-2 font-mono">{d.score ?? ''}</td>
-                                  <td className="py-1 px-2">{d.applied ? '✓' : ''}</td>
-                                </tr>
-                              ))}
+                              {(() => {
+                                const rows = r.details || [];
+                                const totalNodes = rows.reduce((acc, dd) => acc + (dd.nodes || 0), 0);
+                                return rows.map(d => (
+                                  <tr key={d.index}>
+                                    <td className="py-1 px-2 font-mono">{d.index}</td>
+                                    <td className="py-1 px-2">{d.player}</td>
+                                    <td className="py-1 px-2 font-mono">{Math.round(d.elapsedMs || 0).toLocaleString()}</td>
+                                    <td className="py-1 px-2 font-mono">{d.depthUsed ?? ''}</td>
+                                    <td className="py-1 px-2 font-mono">{d.depthReached ?? ''}</td>
+                                    <td className="py-1 px-2 font-mono" title={`nodes de la jugada / nodos totales de la partida`}>
+                                      {(d.nodes ?? 0).toLocaleString()} <span className="text-neutral-500">/ {totalNodes.toLocaleString()}</span>
+                                    </td>
+                                    <td className="py-1 px-2 font-mono">{(d.nps ?? 0).toLocaleString()}</td>
+                                    <td className="py-1 px-2 font-mono">{d.score ?? ''}</td>
+                                    <td className="py-1 px-2">{d.applied ? '✓' : ''}</td>
+                                  </tr>
+                                ));
+                              })()}
                               {(r.details == null || r.details.length === 0) && (
                                 <tr>
                                   <td className="py-2 px-2 text-neutral-400" colSpan={9}>Sin detalles registrados para esta partida.</td>

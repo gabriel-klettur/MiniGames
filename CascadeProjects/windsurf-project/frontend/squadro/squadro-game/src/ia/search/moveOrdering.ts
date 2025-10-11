@@ -5,6 +5,7 @@ export interface OrderingHints {
   hashMove?: string | null;
   killers?: string[];
   history?: Map<string, number>;
+  jitter?: number;
 }
 
 export function orderedMoves(

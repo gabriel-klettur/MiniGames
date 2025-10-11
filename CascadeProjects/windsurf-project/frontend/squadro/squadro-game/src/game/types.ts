@@ -112,6 +112,8 @@ export interface AISettings {
   lmrMinDepth?: number;
   lmrLateMoveIdx?: number;
   lmrReduction?: number;
+  // Move ordering jitter (stochastic tie-breaker)
+  orderingJitterEps?: number;
   // Optional future features (UI-ready)
   enableAspiration?: boolean;
   aspirationDelta?: number;

@@ -51,6 +51,11 @@ export interface PlayerControlsProps {
   lmrMinDepth?: number; onChangeLmrMinDepth?: (n: number) => void;
   lmrLateMoveIdx?: number; onChangeLmrLateMoveIdx?: (n: number) => void;
   lmrReduction?: number; onChangeLmrReduction?: (n: number) => void;
+  // ordering jitter (stochastic ordering tie-breaker)
+  orderingJitterEps?: number; onChangeOrderingJitterEps?: (n: number) => void;
+  // Quiescence (optional support)
+  enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
+  quiescenceMaxPlies?: number; onChangeQuiescenceMaxPlies?: (n: number) => void;
   /** Heuristic weights (optional) */
   w_race?: number; onChangeWRace?: (n: number) => void;
   w_clash?: number; onChangeWClash?: (n: number) => void;
@@ -107,6 +112,14 @@ export interface InfoIAViewProps {
   onToggleUseRootParallel?: () => void;
   workers?: number;
   onChangeWorkers?: (n: number) => void;
+  // Opening randomization: number of initial plies to play at random
+  randomOpeningPlies?: number;
+  onChangeRandomOpeningPlies?: (n: number) => void;
+  // Start eligibility (per player)
+  startEligibleLight?: boolean;
+  onToggleStartEligibleLight?: () => void;
+  startEligibleDark?: boolean;
+  onToggleStartEligibleDark?: () => void;
   // Per-player controls
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;

@@ -38,6 +38,8 @@ const InfoIAContainer: React.FC = () => {
       suspendPersistence,
       useRootParallel: settings.useRootParallel,
       workers: settings.workers,
+      startEligibleLight: settings.startEligibleLight,
+      startEligibleDark: settings.startEligibleDark,
       // Per-player engine options
       p1Options: settings.p1Engine as EngineOptions,
       p2Options: settings.p2Engine as EngineOptions,
@@ -67,14 +69,67 @@ const InfoIAContainer: React.FC = () => {
     const found = presetItems.find(p => p.id === key);
     if (!found) return;
     const s = found.settings || {};
+    // Depth and time mode/seconds
     if (who === 1) {
       if (typeof s.difficulty === 'number') settings.setP1Depth(s.difficulty);
       if (s.timeMode) settings.setP1Mode(s.timeMode as any);
-      if (typeof s.timeSeconds === 'number') settings.setP1Secs(s.timeSeconds);
+      {
+        const mode = (s.timeMode ?? settings.p1Mode) as 'auto' | 'manual';
+        if (mode === 'auto') {
+          settings.setP1Secs(0);
+        } else if (typeof s.timeSeconds === 'number') {
+          settings.setP1Secs(Math.max(0, Math.min(60, Math.round(s.timeSeconds))));
+        }
+      }
+      // Engine toggles/LMR
+      settings.setP1Engine(prev => ({
+        ...prev,
+        ...(typeof (s as any).enableTT === 'boolean' ? { enableTT: !!(s as any).enableTT } : {}),
+        ...(typeof (s as any).enableKillers === 'boolean' ? { enableKillers: !!(s as any).enableKillers } : {}),
+        ...(typeof (s as any).enableHistory === 'boolean' ? { enableHistory: !!(s as any).enableHistory } : {}),
+        ...(typeof (s as any).enablePVS === 'boolean' ? { enablePVS: !!(s as any).enablePVS } : {}),
+        ...(typeof (s as any).enableLMR === 'boolean' ? { enableLMR: !!(s as any).enableLMR } : {}),
+        ...(typeof (s as any).enableQuiescence === 'boolean' ? { enableQuiescence: !!(s as any).enableQuiescence } : {}),
+        ...(typeof (s as any).quiescenceMaxPlies === 'number' ? { quiescenceMaxPlies: Number((s as any).quiescenceMaxPlies) } : {}),
+        ...(typeof (s as any).preferHashMove === 'boolean' ? { preferHashMove: !!(s as any).preferHashMove } : {}),
+        ...(typeof (s as any).lmrMinDepth === 'number' ? { lmrMinDepth: Number((s as any).lmrMinDepth) } : {}),
+        ...(typeof (s as any).lmrLateMoveIdx === 'number' ? { lmrLateMoveIdx: Number((s as any).lmrLateMoveIdx) } : {}),
+        ...(typeof (s as any).lmrReduction === 'number' ? { lmrReduction: Number((s as any).lmrReduction) } : {}),
+        ...(typeof (s as any).orderingJitterEps === 'number' ? { orderingJitterEps: Math.max(0, Number((s as any).orderingJitterEps)) } : {})
+      }));
+      // Heuristic weights
+      if ((s as any).evalWeights && typeof (s as any).evalWeights === 'object') {
+        settings.setP1Eval(prev => ({ ...prev, ...(s as any).evalWeights }));
+      }
     } else {
       if (typeof s.difficulty === 'number') settings.setP2Depth(s.difficulty);
       if (s.timeMode) settings.setP2Mode(s.timeMode as any);
-      if (typeof s.timeSeconds === 'number') settings.setP2Secs(s.timeSeconds);
+      {
+        const mode = (s.timeMode ?? settings.p2Mode) as 'auto' | 'manual';
+        if (mode === 'auto') {
+          settings.setP2Secs(0);
+        } else if (typeof s.timeSeconds === 'number') {
+          settings.setP2Secs(Math.max(0, Math.min(60, Math.round(s.timeSeconds))));
+        }
+      }
+      settings.setP2Engine(prev => ({
+        ...prev,
+        ...(typeof (s as any).enableTT === 'boolean' ? { enableTT: !!(s as any).enableTT } : {}),
+        ...(typeof (s as any).enableKillers === 'boolean' ? { enableKillers: !!(s as any).enableKillers } : {}),
+        ...(typeof (s as any).enableHistory === 'boolean' ? { enableHistory: !!(s as any).enableHistory } : {}),
+        ...(typeof (s as any).enablePVS === 'boolean' ? { enablePVS: !!(s as any).enablePVS } : {}),
+        ...(typeof (s as any).enableLMR === 'boolean' ? { enableLMR: !!(s as any).enableLMR } : {}),
+        ...(typeof (s as any).enableQuiescence === 'boolean' ? { enableQuiescence: !!(s as any).enableQuiescence } : {}),
+        ...(typeof (s as any).quiescenceMaxPlies === 'number' ? { quiescenceMaxPlies: Number((s as any).quiescenceMaxPlies) } : {}),
+        ...(typeof (s as any).preferHashMove === 'boolean' ? { preferHashMove: !!(s as any).preferHashMove } : {}),
+        ...(typeof (s as any).lmrMinDepth === 'number' ? { lmrMinDepth: Number((s as any).lmrMinDepth) } : {}),
+        ...(typeof (s as any).lmrLateMoveIdx === 'number' ? { lmrLateMoveIdx: Number((s as any).lmrLateMoveIdx) } : {}),
+        ...(typeof (s as any).lmrReduction === 'number' ? { lmrReduction: Number((s as any).lmrReduction) } : {}),
+        ...(typeof (s as any).orderingJitterEps === 'number' ? { orderingJitterEps: Math.max(0, Number((s as any).orderingJitterEps)) } : {})
+      }));
+      if ((s as any).evalWeights && typeof (s as any).evalWeights === 'object') {
+        settings.setP2Eval(prev => ({ ...prev, ...(s as any).evalWeights }));
+      }
     }
   };
 
@@ -130,6 +185,10 @@ const InfoIAContainer: React.FC = () => {
       onToggleUseRootParallel={() => settings.setUseRootParallel(!settings.useRootParallel)}
       workers={settings.workers}
       onChangeWorkers={(n: number) => settings.setWorkers(Math.max(1, Math.min(32, n)))}
+      startEligibleLight={settings.startEligibleLight}
+      onToggleStartEligibleLight={() => settings.setStartEligibleLight(!settings.startEligibleLight)}
+      startEligibleDark={settings.startEligibleDark}
+      onToggleStartEligibleDark={() => settings.setStartEligibleDark(!settings.startEligibleDark)}
       p1={{
         title: 'Jugador 1 (Light)',
         depth: settings.p1Depth,
@@ -151,6 +210,12 @@ const InfoIAContainer: React.FC = () => {
         onTogglePreferHashMove: () => settings.setP1Engine(prev => ({ ...prev, preferHashMove: !prev.preferHashMove })),
         enablePVS: settings.p1Engine.enablePVS,
         onToggleEnablePVS: () => settings.setP1Engine(prev => ({ ...prev, enablePVS: !prev.enablePVS })),
+        // Quiescence
+        enableQuiescence: (settings.p1Engine as any).enableQuiescence,
+        onToggleEnableQuiescence: () => settings.setP1Engine(prev => ({ ...prev, enableQuiescence: !(prev as any).enableQuiescence } as any)),
+        quiescenceMaxPlies: (settings.p1Engine as any).quiescenceMaxPlies,
+        onChangeQuiescenceMaxPlies: (n: number) => settings.setP1Engine(prev => ({ ...prev, quiescenceMaxPlies: n } as any)),
+        // LMR
         enableLMR: settings.p1Engine.enableLMR,
         onToggleEnableLMR: () => settings.setP1Engine(prev => ({ ...prev, enableLMR: !prev.enableLMR })),
         lmrMinDepth: settings.p1Engine.lmrMinDepth,
@@ -159,6 +224,9 @@ const InfoIAContainer: React.FC = () => {
         onChangeLmrLateMoveIdx: (n: number) => settings.setP1Engine(prev => ({ ...prev, lmrLateMoveIdx: n })),
         lmrReduction: settings.p1Engine.lmrReduction,
         onChangeLmrReduction: (n: number) => settings.setP1Engine(prev => ({ ...prev, lmrReduction: n })),
+        // Ordering jitter
+        orderingJitterEps: (settings.p1Engine as any).orderingJitterEps,
+        onChangeOrderingJitterEps: (n: number) => settings.setP1Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
       }}
       p2={{
         title: 'Jugador 2 (Dark)',
@@ -181,6 +249,12 @@ const InfoIAContainer: React.FC = () => {
         onTogglePreferHashMove: () => settings.setP2Engine(prev => ({ ...prev, preferHashMove: !prev.preferHashMove })),
         enablePVS: settings.p2Engine.enablePVS,
         onToggleEnablePVS: () => settings.setP2Engine(prev => ({ ...prev, enablePVS: !prev.enablePVS })),
+        // Quiescence
+        enableQuiescence: (settings.p2Engine as any).enableQuiescence,
+        onToggleEnableQuiescence: () => settings.setP2Engine(prev => ({ ...prev, enableQuiescence: !(prev as any).enableQuiescence } as any)),
+        quiescenceMaxPlies: (settings.p2Engine as any).quiescenceMaxPlies,
+        onChangeQuiescenceMaxPlies: (n: number) => settings.setP2Engine(prev => ({ ...prev, quiescenceMaxPlies: n } as any)),
+        // LMR
         enableLMR: settings.p2Engine.enableLMR,
         onToggleEnableLMR: () => settings.setP2Engine(prev => ({ ...prev, enableLMR: !prev.enableLMR })),
         lmrMinDepth: settings.p2Engine.lmrMinDepth,
@@ -189,6 +263,9 @@ const InfoIAContainer: React.FC = () => {
         onChangeLmrLateMoveIdx: (n: number) => settings.setP2Engine(prev => ({ ...prev, lmrLateMoveIdx: n })),
         lmrReduction: settings.p2Engine.lmrReduction,
         onChangeLmrReduction: (n: number) => settings.setP2Engine(prev => ({ ...prev, lmrReduction: n })),
+        // Ordering jitter
+        orderingJitterEps: (settings.p2Engine as any).orderingJitterEps,
+        onChangeOrderingJitterEps: (n: number) => settings.setP2Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
       }}
       records={records}
       moveIndex={sim.moveIndex}

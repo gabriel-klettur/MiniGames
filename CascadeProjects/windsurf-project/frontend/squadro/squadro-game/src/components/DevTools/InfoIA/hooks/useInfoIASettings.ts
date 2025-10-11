@@ -19,6 +19,14 @@ export interface InfoIASettings {
   setUseRootParallel: (v: boolean) => void;
   workers: number;
   setWorkers: (n: number) => void;
+  // Openings: number of initial plies to play randomly
+  randomOpeningPlies: number;
+  setRandomOpeningPlies: (n: number) => void;
+  // Starting player eligibility per game (per player)
+  startEligibleLight: boolean;
+  setStartEligibleLight: (v: boolean) => void;
+  startEligibleDark: boolean;
+  setStartEligibleDark: (v: boolean) => void;
   p1Depth: number; p2Depth: number;
   setP1Depth: (n: number) => void; setP2Depth: (n: number) => void;
   p1Mode: TimeMode; p2Mode: TimeMode;
@@ -45,6 +53,9 @@ export function useInfoIASettings(): InfoIASettings {
   const [gamesCount, setGamesCount] = useState<number>(10);
   const [useRootParallel, setUseRootParallel] = useState<boolean>(false);
   const [workers, setWorkers] = useState<number>(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
+  const [randomOpeningPlies, setRandomOpeningPlies] = useState<number>(0);
+  const [startEligibleLight, setStartEligibleLight] = useState<boolean>(true);
+  const [startEligibleDark, setStartEligibleDark] = useState<boolean>(true);
   const [p1Depth, setP1Depth] = useState<number>(3);
   const [p2Depth, setP2Depth] = useState<number>(3);
   const [p1Mode, setP1Mode] = useState<TimeMode>('auto');
@@ -62,6 +73,7 @@ export function useInfoIASettings(): InfoIASettings {
     lmrLateMoveIdx: 3,
     lmrReduction: 1,
     preferHashMove: true,
+    orderingJitterEps: 0,
   };
   const defaultEval: EvalParams = {
     w_race: 1.0,
@@ -109,6 +121,9 @@ export function useInfoIASettings(): InfoIASettings {
     gamesCount, setGamesCount,
     useRootParallel, setUseRootParallel,
     workers, setWorkers,
+    randomOpeningPlies, setRandomOpeningPlies,
+    startEligibleLight, setStartEligibleLight,
+    startEligibleDark, setStartEligibleDark,
     p1Depth, p2Depth, setP1Depth, setP2Depth,
     p1Mode, p2Mode, setP1Mode, setP2Mode,
     p1Secs, p2Secs, setP1Secs, setP2Secs,
