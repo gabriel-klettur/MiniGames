@@ -3,7 +3,7 @@ import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import type { RootState } from '../../../store';
 import Button from '../../ui/Button';
 import ToggleSwitch from '../../ui/ToggleSwitch';
-import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights, setAiOrderingJitterEps } from '../../../store/gameSlice';
+import { aiSearchReset, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAIDifficulty, applyIAPreset, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAIEvalWeights, setAiOrderingJitterEps, setAiRandomOpeningPlies, setAiEnableDFPN, setAiDfpnMaxActive, setAiEnableTablebase } from '../../../store/gameSlice';
 import { store } from '../../../store';
 import { findBestMove } from '../../../ia/search';
 import PresetsTab from './components/Presets/PresetsTab';
@@ -104,10 +104,16 @@ export default function AIDiagnosticsPanel() {
                 title="Profundidad objetivo — Límite deseado; la iterativa puede quedarte en d-1 si el tiempo no alcanza. Ejemplo: fija 4–6 para partidas rápidas."
               />
               <label className="text-xs text-neutral-300" title="Tiempo — Elige Auto (adaptativo) o Manual (segundos fijos por jugada).">Tiempo</label>
-              <div className="segmented" role="tablist" aria-label="Modo de tiempo">
-                <button className={ai?.timeMode === 'auto' ? 'active' : ''} onClick={() => dispatch(setAITimeMode('auto'))} title="Auto — Sin límite fijo; usa parámetros de Tiempo (Auto) para decidir cuándo parar (profundidad/aspiration windows). Ejemplo: baseMs=2500, perDepth=300.">Auto</button>
-                <button className={ai?.timeMode === 'manual' ? 'active' : ''} onClick={() => dispatch(setAITimeMode('manual'))} title="Manual — Límite duro de segundos por jugada. Ejemplo: 10s asegura timebox estable para pruebas comparables.">Manual</button>
-              </div>
+              <select
+                value={ai?.timeMode || 'auto'}
+                onChange={(e) => dispatch(setAITimeMode(e.target.value as any))}
+                className="text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                aria-label="Modo de tiempo"
+                title="Tiempo — Auto: sin límite fijo (Infinity). Manual: segundos fijos por jugada."
+              >
+                <option value="auto">Auto</option>
+                <option value="manual">Manual</option>
+              </select>
               {ai?.timeMode === 'manual' && (
                 <label className="text-xs text-neutral-300 inline-flex items-center gap-2">
                   Segundos
@@ -255,6 +261,18 @@ export default function AIDiagnosticsPanel() {
                   />
                 </label>
               )}
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="Aperturas aleatorias — Número de plies iniciales que la IA jugará al azar antes de empezar a calcular. 0 desactiva.">
+                Aperturas (plies)
+                <input
+                  type="number"
+                  min={0}
+                  max={20}
+                  step={1}
+                  value={(ai as any)?.randomOpeningPlies ?? 0}
+                  onChange={(e) => dispatch(setAiRandomOpeningPlies(Math.max(0, Math.min(20, Number(e.target.value)))))}
+                  className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
+                />
+              </label>
             </div>
           </div>
           
@@ -269,6 +287,8 @@ export default function AIDiagnosticsPanel() {
               <label className="text-xs inline-flex items-center gap-2" title="Killers — Jugadas que cortaron β en este ply se prueban antes en ramas hermanas."><input type="checkbox" checked={ai?.enableKillers !== false} onChange={(e) => dispatch(setAiEnableKillers(e.target.checked))} /> Killers</label>
               <label className="text-xs inline-flex items-center gap-2" title="History — Puntos por éxito histórico elevan prioridad en el orden."><input type="checkbox" checked={ai?.enableHistory !== false} onChange={(e) => dispatch(setAiEnableHistory(e.target.checked))} /> History</label>
               <label className="text-xs inline-flex items-center gap-2" title="Quiescence — Extiende hojas tácticas (capturas) para estabilizar la evaluación y evitar blunders."><input type="checkbox" checked={!!ai?.enableQuiescence} onChange={(e) => dispatch(setAiEnableQuiescence(e.target.checked))} /> Quiescence</label>
+              <label className="text-xs inline-flex items-center gap-2" title="Tablebase — Atajo O(1) para posiciones conocidas (win/loss/draw) con mejor jugada."><input type="checkbox" checked={!!(ai as any)?.enableTablebase} onChange={(e) => dispatch(setAiEnableTablebase(e.target.checked))} /> Tablebase</label>
+              <label className="text-xs inline-flex items-center gap-2" title="DF‑PN — Búsqueda Proof‑Number para finales pequeños; se activa por trigger de piezas activas."><input type="checkbox" checked={!!(ai as any)?.enableDFPN} onChange={(e) => dispatch(setAiEnableDFPN(e.target.checked))} /> DF‑PN</label>
             </div>
             <div className="flex gap-3 flex-wrap mt-1">
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; valores típicos 0.5–2.0.">
@@ -283,6 +303,7 @@ export default function AIDiagnosticsPanel() {
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="lateIdx — Considera 'jugada tardía' desde este índice en el orden. Ej.: 3 ⇒ desde el 4º movimiento.">lateIdx<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrLateMoveIdx ?? 3} onChange={(e) => dispatch(setAiLmrLateMoveIdx(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="reduction — Plies a reducir en jugadas tardías no tácticas. Ej.: 1 ⇒ d-1 (con re‑búsqueda si supera α).">reduction<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={ai?.lmrReduction ?? 1} onChange={(e) => dispatch(setAiLmrReduction(Number(e.target.value)))} /></label>
               <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="qPlies — Límite de extensiones de Quiescence (tácticas) en hojas.">qPlies<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={(ai as any)?.quiescenceDepth ?? 4} onChange={(e) => dispatch(setAiQuiescenceDepth(Number(e.target.value)))} /></label>
+              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="dfpnActive — Activa DF‑PN cuando las piezas activas (no retiradas) sean ≤ este valor.">dfpnActive<input type="number" className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1" value={(ai as any)?.dfpnMaxActive ?? 2} onChange={(e) => dispatch(setAiDfpnMaxActive(Number(e.target.value)))} /></label>
             </div>
           </div>
           {/* Heurística Global (aplica a ambos lados) */}

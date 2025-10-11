@@ -10,6 +10,8 @@ export function generateMoves(gs: GameState): string[] {
     .map((p) => p.id);
 }
 
+ 
+
 /**
  * applyMove — aplica un movimiento (ID de pieza) clonando el estado.
  * Devuelve el nuevo GameState tras aplicar reglas.
@@ -51,9 +53,13 @@ export function orderMoves(
 
     // Penalize if opponent (to move in child) can immediately jump us
     const oppImmediateJump = opponentHasImmediateJump(child);
+    const oppImmediateJumpsCount = countOpponentImmediateJumps(child);
 
-    // Safe progress: favor gain but subtract exposure penalty
-    const safeProg = gain - (oppImmediateJump ? 200 : 0);
+    // SEE-like term: reward our jump potential, penalize opponent's immediate jump capacity
+    const seeTerm = (didJump ? (600 + 300 * Math.min(3, jumpDeltaOpp)) : 0) - (oppImmediateJumpsCount * 700);
+
+    // Safe progress: favor gain but subtract exposure penalties
+    const safeProg = gain - (oppImmediateJump ? 300 : 0) - (oppImmediateJumpsCount * 250);
 
     const histKey = `${me}:${m}`;
     const hist = opts?.history?.get(histKey) ?? 0;
@@ -64,6 +70,8 @@ export function orderMoves(
     if (didRetire) pri += 10000; // completing now is top priority
     if (didJump) pri += 2500 + 500 * Math.min(3, jumpDeltaOpp);
     pri += Math.max(-600, Math.min(600, safeProg));
+    // SEE term bounded to avoid domination
+    pri += Math.max(-800, Math.min(800, seeTerm));
     pri += Math.min(1000, hist);
     // Apply tiny jitter to break ties deterministically across runs when enabled
     const eps = typeof opts?.jitter === 'number' ? Math.max(0, opts.jitter) : 0;
@@ -99,12 +107,12 @@ function roughProgress(gs: GameState, side: Player): number {
 }
 
 // ===== Enhancements for client heuristic =====
-function completesNow(after: GameState, me: Player, moveId: string): boolean {
+export function completesNow(after: GameState, me: Player, moveId: string): boolean {
   const p = after.pieces.find((x) => x.id === moveId);
   return !!p && p.owner === me && p.state === 'retirada';
 }
 
-function approxOppSendBackCount(before: GameState, after: GameState, opp: Player): number {
+export function approxOppSendBackCount(before: GameState, after: GameState, opp: Player): number {
   const countEdge = (gs: GameState, owner: Player) => {
     let c = 0;
     for (const p of gs.pieces) {
@@ -132,6 +140,27 @@ function opponentHasImmediateJump(child: GameState): boolean {
     }
   }
   return false;
+}
+
+// Count number of opponent pieces that have at least one immediate jump after our move
+function countOpponentImmediateJumps(child: GameState): number {
+  const opp: Player = child.turn; // after our move, it's opponent's turn
+  let count = 0;
+  for (const q of child.pieces) {
+    if (q.owner !== opp || q.state === 'retirada') continue;
+    const lane = child.lanesByPlayer[q.owner][q.laneIndex];
+    const dir = q.state === 'en_ida' ? +1 : -1;
+    const speed = q.state === 'en_ida' ? lane.speedOut : lane.speedBack;
+    const maxProbe = Math.min(Math.abs(speed), 3);
+    let canJump = false;
+    for (let s = 1; s <= maxProbe; s++) {
+      const pos = q.pos + dir * s;
+      if (pos < 0 || pos > lane.length) break;
+      if (anyOppAt(child, q.owner, q.laneIndex, pos)) { canJump = true; break; }
+    }
+    if (canJump) count++;
+  }
+  return count;
 }
 
 function anyOppAt(gs: GameState, owner: Player, laneIndex: number, pos: number): boolean {

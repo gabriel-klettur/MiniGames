@@ -1,6 +1,6 @@
 import type { GameState, Player } from '../../game/types';
 import { evaluate } from '../evaluate';
-import { applyMove, generateTacticalMoves } from '../moves';
+import { applyMove, generateTacticalMoves, completesNow, approxOppSendBackCount } from '../moves';
 import { orderedMoves } from './moveOrdering';
 import type { EngineOptions, IterResult, SearchContext, SearchStats } from './types';
 import type { TranspositionTable } from '../tt';
@@ -35,8 +35,10 @@ export function quiesce(
   let alpha = args.alpha;
   const beta = args.beta;
 
-  // Stand-pat baseline
-  const standPat = evaluate(state, me);
+  // Stand-pat baseline with margin
+  const standPatRaw = evaluate(state, me);
+  const spMargin = Math.max(0, engine?.quiescenceStandPatMargin ?? 0);
+  const standPat = standPatRaw - spMargin;
   args.stats && (args.stats.nodes += 1);
   if (standPat >= beta) return { score: standPat, bestMove: null, timeout: false };
   if (standPat > alpha) alpha = standPat;
@@ -47,8 +49,14 @@ export function quiesce(
     return { score: alpha, bestMove: null, timeout: false };
   }
 
-  // Generate only tactical moves
-  const tacts = generateTacticalMoves(state);
+  // Generate only tactical moves and apply SEE-like guard (delta >= margin)
+  const tactsAll = generateTacticalMoves(state);
+  const seeMargin = Math.max(0, engine?.quiescenceSeeMargin ?? 0);
+  const tacts = tactsAll.filter((mv) => {
+    const child = applyMove(state, mv);
+    const delta = evaluate(child, me) - standPatRaw;
+    return delta >= seeMargin;
+  });
   if (tacts.length === 0) {
     return { score: alpha, bestMove: null, timeout: false };
   }
@@ -60,6 +68,14 @@ export function quiesce(
     const mv = ordered[i];
     const child = applyMove(state, mv);
 
+    // Extension policy: do not consume qDepth for retire/jump if enabled
+    const didRetire = completesNow(child, me, mv);
+    const opp: Player = me === 'Light' ? 'Dark' : 'Light';
+    const didJump = approxOppSendBackCount(state, child, opp) > 0;
+    const nextQDepth = ((didRetire && engine?.quiescenceExtendOnRetire) || (didJump && engine?.quiescenceExtendOnJump))
+      ? args.qDepth
+      : args.qDepth + 1;
+
     const r = quiesce(
       {
         state: child,
@@ -68,7 +84,7 @@ export function quiesce(
         me,
         ply: ply + 1,
         stats: args.stats,
-        qDepth: args.qDepth + 1,
+        qDepth: nextQDepth,
       },
       ctx,
       tt,

@@ -31,6 +31,8 @@ const gameSlice = createSlice({
           lastDurationMs: undefined,
           depthReached: 0,
           lastScore: undefined,
+          // Reset opening counter each new game
+          openingPliesUsed: 0,
         } as typeof prevAI;
       }
       // Apply selected heuristic preset (global) at game start
@@ -174,6 +176,25 @@ const gameSlice = createSlice({
       const secs = Math.max(0, Math.min(60, Math.round(action.payload)));
       state.ai.timeSeconds = secs;
     },
+    // --- Opening randomization ---
+    setAiRandomOpeningPlies(state: GameState, action: PayloadAction<number>) {
+      if (!state.ai) return;
+      const n = Math.max(0, Math.min(20, Math.round(action.payload)));
+      (state.ai as any).randomOpeningPlies = n;
+      // If reduced below used, clamp used
+      if (typeof (state.ai as any).openingPliesUsed === 'number') {
+        (state.ai as any).openingPliesUsed = Math.max(0, Math.min((state.ai as any).openingPliesUsed, n));
+      }
+    },
+    incAiOpeningPliesUsed(state: GameState) {
+      if (!state.ai) return;
+      const used = Number((state.ai as any).openingPliesUsed || 0) + 1;
+      (state.ai as any).openingPliesUsed = used;
+    },
+    resetAiOpeningPliesUsed(state: GameState) {
+      if (!state.ai) return;
+      (state.ai as any).openingPliesUsed = 0;
+    },
     // --- Engine toggles/params ---
     setAiEnableTT(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.enableTT = !!action.payload; },
     setAiFailSoft(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; state.ai.failSoft = !!action.payload; },
@@ -192,6 +213,10 @@ const gameSlice = createSlice({
     setAiOrderingJitterEps(state: GameState, action: PayloadAction<number>) {
       if (!state.ai) return; state.ai.orderingJitterEps = Math.max(0, Number(action.payload));
     },
+    // DF-PN and Tablebase toggles/params
+    setAiEnableDFPN(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; (state.ai as any).enableDFPN = !!action.payload; },
+    setAiDfpnMaxActive(state: GameState, action: PayloadAction<number>) { if (!state.ai) return; (state.ai as any).dfpnMaxActive = Math.max(0, Math.min(10, Math.round(action.payload))); },
+    setAiEnableTablebase(state: GameState, action: PayloadAction<boolean>) { if (!state.ai) return; (state.ai as any).enableTablebase = !!action.payload; },
     // Apply multiple AI settings from a preset (difficulty, workers, speed/time)
     applyIAPreset(state: GameState, action: PayloadAction<IAPreset['settings']>) {
       if (!state.ai) {
@@ -234,10 +259,28 @@ const gameSlice = createSlice({
       // Quiescence
       if (typeof (s as any).enableQuiescence === 'boolean') state.ai.enableQuiescence = !!(s as any).enableQuiescence;
       if (typeof (s as any).quiescenceMaxPlies === 'number') state.ai.quiescenceDepth = Math.max(1, Math.min(12, Math.round((s as any).quiescenceMaxPlies)));
+      if (typeof (s as any).quiescenceStandPatMargin === 'number') (state.ai as any).quiescenceStandPatMargin = Number((s as any).quiescenceStandPatMargin);
+      if (typeof (s as any).quiescenceSeeMargin === 'number') (state.ai as any).quiescenceSeeMargin = Number((s as any).quiescenceSeeMargin);
+      if (typeof (s as any).quiescenceExtendOnRetire === 'boolean') (state.ai as any).quiescenceExtendOnRetire = !!(s as any).quiescenceExtendOnRetire;
+      if (typeof (s as any).quiescenceExtendOnJump === 'boolean') (state.ai as any).quiescenceExtendOnJump = !!(s as any).quiescenceExtendOnJump;
+      // DF-PN
+      if (typeof (s as any).enableDFPN === 'boolean') (state.ai as any).enableDFPN = !!(s as any).enableDFPN;
       // LMR params
       if (typeof (s as any).lmrMinDepth === 'number') state.ai.lmrMinDepth = Math.max(0, Math.min(20, Math.round((s as any).lmrMinDepth)));
       if (typeof (s as any).lmrLateMoveIdx === 'number') state.ai.lmrLateMoveIdx = Math.max(0, Math.min(20, Math.round((s as any).lmrLateMoveIdx)));
       if (typeof (s as any).lmrReduction === 'number') state.ai.lmrReduction = Math.max(0, Math.min(4, Math.round((s as any).lmrReduction)));
+      // LMP / Futility / IID
+      if (typeof (s as any).enableLMP === 'boolean') (state.ai as any).enableLMP = !!(s as any).enableLMP;
+      if (typeof (s as any).lmpMaxDepth === 'number') (state.ai as any).lmpMaxDepth = Math.max(0, Math.min(6, Math.round((s as any).lmpMaxDepth)));
+      if (typeof (s as any).lmpBase === 'number') (state.ai as any).lmpBase = Math.max(0, Math.min(16, Math.round((s as any).lmpBase)));
+      if (typeof (s as any).enableFutility === 'boolean') (state.ai as any).enableFutility = !!(s as any).enableFutility;
+      if (typeof (s as any).futilityMargin === 'number') (state.ai as any).futilityMargin = Math.max(0, Math.min(1000, Math.round((s as any).futilityMargin)));
+      if (typeof (s as any).enableQuiescence === 'boolean') (state.ai as any).enableQuiescence = !!(s as any).enableQuiescence;
+      if (typeof (s as any).quiescenceMaxPlies === 'number') (state.ai as any).quiescenceMaxPlies = Math.max(0, Math.min(12, Math.round((s as any).quiescenceMaxPlies)));
+      // Tablebase fast-path
+      if (typeof (s as any).enableTablebase === 'boolean') (state.ai as any).enableTablebase = !!(s as any).enableTablebase;
+      if (typeof (s as any).enableLMP === 'boolean') (state.ai as any).enableLMP = !!(s as any).enableLMP;
+      if (typeof (s as any).dfpnMaxActive === 'number') (state.ai as any).dfpnMaxActive = Math.max(0, Math.min(10, Math.round((s as any).dfpnMaxActive)));
       // Ordering jitter
       if (typeof (s as any).orderingJitterEps === 'number') state.ai.orderingJitterEps = Math.max(0, Number((s as any).orderingJitterEps));
       // Heuristic weights (global -> apply to Light/Dark)
@@ -246,6 +289,12 @@ const gameSlice = createSlice({
         const ew: any = (state.ai.evalWeights ||= {} as any);
         ew['Light'] = { ...(ew['Light'] || {}), ...w } as any;
         ew['Dark']  = { ...(ew['Dark']  || {}), ...w } as any;
+      }
+      // Opening randomization (optional in presets)
+      if (typeof (s as any).randomOpeningPlies === 'number') {
+        const n = Math.max(0, Math.min(20, Math.round((s as any).randomOpeningPlies)));
+        (state.ai as any).randomOpeningPlies = n;
+        (state.ai as any).openingPliesUsed = 0;
       }
     },
     setAIBusy(state: GameState, action: PayloadAction<boolean>) {
@@ -274,10 +323,13 @@ const gameSlice = createSlice({
       if (!state.ai) return;
       state.ai.nodesVisited = action.payload;
     },
-    aiSearchIter(state: GameState, action: PayloadAction<{ depth: number; score: number }>) {
+    aiSearchIter(state: GameState, action: PayloadAction<{ depth: number; score: number; pv?: string[] }>) {
       if (!state.ai) return;
       state.ai.depthReached = action.payload.depth;
       state.ai.lastScore = action.payload.score;
+      if (action.payload.pv) {
+        (state.ai as any).pv = action.payload.pv.slice();
+      }
     },
     aiSearchEnded(state: GameState, action: PayloadAction<{ durationMs: number; depthReached: number; score: number; nodesVisited: number; engineStats?: { ttProbes?: number; ttHits?: number; cutoffs?: number; pvsReSearches?: number; lmrReductions?: number } }>) {
       if (!state.ai) return;
@@ -299,5 +351,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
+export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiRandomOpeningPlies, incAiOpeningPliesUsed, resetAiOpeningPliesUsed, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAiEnableDFPN, setAiDfpnMaxActive, setAiEnableTablebase, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;

@@ -1,5 +1,6 @@
 import type { GameState, Player, Piece } from '../game/types';
 import type { EvalParams } from './evalTypes';
+import { generateMoves, applyMove, approxOppSendBackCount } from './moves';
 
 /**
  * evaluate — Heurística para Squadro.
@@ -31,8 +32,8 @@ export function evaluate(gs: GameState, root: Player): number {
   const oppTurnsLeft = sumTurnsLeft(gs, opp);
   const raceScore = params.done_bonus * (ownDone - oppDone) + (oppTurnsLeft - ownTurnsLeft);
 
-  // 2) Choques inminentes: aproximación ligera a 1-2 plies
-  const clashDelta = scanImminentClashes(gs, 2); // (opp_loss - my_loss)
+  // 2) Choques inminentes: conteo realista de send-backs inmediatos en 1 ply para ambos lados
+  const clashDelta = immediateClashDelta(gs); // (opp_loss - my_loss)
 
   // 3) Sprint: priorizar cierre cuando hay pieza a <= thr turnos
   const sprint = sprintTerm(gs, me, opp, params.sprint_threshold);
@@ -75,76 +76,59 @@ function estimateTurnsLeft(gs: GameState, piece: Piece): number {
   if (piece.state === 'retirada') return 0;
   if (piece.state === 'en_ida') {
     const distOut = Math.max(0, lane.length - piece.pos);
-    const outMoves = Math.ceil(distOut / Math.max(1, lane.speedOut));
-    // vuelta completa
-    const backMoves = Math.ceil(lane.length / Math.max(1, lane.speedBack));
+    const vOut = Math.max(1, lane.speedOut);
+    const outMoves = Math.ceil(distOut / vOut);
+    // Then a full back trip from lane end
+    const vBack = Math.max(1, lane.speedBack);
+    const backMoves = Math.ceil(lane.length / vBack);
+    // Congestion: check landing squares for next 2 moves along current direction
     const congestion = countRivalsOnRoute(gs, piece, 2);
     return outMoves + backMoves + congestion;
   }
   // en_vuelta
   const distBack = Math.max(0, piece.pos);
-  const backMoves = Math.ceil(distBack / Math.max(1, lane.speedBack));
+  const vBack = Math.max(1, lane.speedBack);
+  const backMoves = Math.ceil(distBack / vBack);
   const congestion = countRivalsOnRoute(gs, piece, 2);
   return backMoves + congestion;
 }
 
-function countRivalsOnRoute(gs: GameState, piece: Piece, segments: number): number {
-  // cuenta rivales en las próximas `segments` intersecciones del trayecto del piece
+function countRivalsOnRoute(gs: GameState, piece: Piece, lookaheadMoves: number): number {
+  // Cuenta rivales en los próximos aterrizajes reales (1..lookaheadMoves) según la velocidad del carril
   const lane = gs.lanesByPlayer[piece.owner][piece.laneIndex];
   const dir = piece.state === 'en_ida' ? +1 : (piece.state === 'en_vuelta' ? -1 : 0);
   if (dir === 0) return 0;
+  const v = piece.state === 'en_ida' ? Math.max(1, lane.speedOut) : Math.max(1, lane.speedBack);
   let hits = 0;
-  for (let step = 1; step <= segments; step++) {
-    const next = piece.pos + dir * step;
-    if (next < 0 || next > lane.length) break;
-    if (anyOppAt(gs, piece.owner, piece.laneIndex, next)) hits++;
+  for (let k = 1; k <= lookaheadMoves; k++) {
+    const target = piece.pos + dir * (k * v);
+    if (target < 0 || target > lane.length) break;
+    if (anyOppAt(gs, piece.owner, piece.laneIndex, target)) hits++;
   }
   return hits;
 }
 
 // ===== Choques inminentes: delta de turnos (opp_loss - my_loss) =====
-function scanImminentClashes(gs: GameState, horizon: number): number {
-  // Aprox: si en el próximo movimiento mío puedo saltar a alguien => opp_loss += 1
-  // y si en el próximo movimiento del rival puede saltarme a mí => my_loss += 1
-  const me = gs.turn;
-  const opp = other(me);
-  let myLoss = 0;
-  let oppLoss = 0;
-
-  // Turno actual: puedo saltar si en mis próximos speed pasos hay rivales consecutivos
-  for (const p of gs.pieces) {
-    if (p.owner !== me || p.state === 'retirada') continue;
-    const lane = gs.lanesByPlayer[p.owner][p.laneIndex];
-    const dir = p.state === 'en_ida' ? +1 : -1;
-    const speed = p.state === 'en_ida' ? lane.speedOut : lane.speedBack;
-    const maxProbe = Math.min(Math.abs(speed), horizon);
-    let sawAny = false;
-    for (let s = 1; s <= maxProbe; s++) {
-      const pos = p.pos + dir * s;
-      if (pos < 0 || pos > lane.length) break;
-      if (anyOppAt(gs, p.owner, p.laneIndex, pos)) { sawAny = true; break; }
+function immediateClashDelta(gs: GameState): number {
+  const side = gs.turn;
+  const opp = other(side);
+  const moves = generateMoves(gs);
+  if (moves.length === 0) return 0;
+  let best = 0;
+  const limit = Math.min(moves.length, 5);
+  for (let i = 0; i < limit; i++) {
+    const m = moves[i];
+    const child = applyMove(gs, m);
+    const oppLoss = approxOppSendBackCount(gs, child, opp);
+    let myLoss = 0;
+    for (const my of child.pieces) {
+      if (my.owner !== side || my.state === 'retirada') continue;
+      if (rivalReachesHereSoon(child, opp, my.laneIndex, my.pos, 1)) myLoss += 1;
     }
-    if (sawAny) oppLoss += 1;
+    const delta = oppLoss - myLoss;
+    if (delta > best) best = delta;
   }
-
-  // Siguiente turno del rival: simular 1-ply a futuro de manera barata
-  const afterMy = shallowApplyBestProgress(gs);
-  for (const q of afterMy.pieces) {
-    if (q.owner !== opp || q.state === 'retirada') continue;
-    const lane = afterMy.lanesByPlayer[q.owner][q.laneIndex];
-    const dir = q.state === 'en_ida' ? +1 : -1;
-    const speed = q.state === 'en_ida' ? lane.speedOut : lane.speedBack;
-    const maxProbe = Math.min(Math.abs(speed), Math.max(1, horizon - 1));
-    let canHit = false;
-    for (let s = 1; s <= maxProbe; s++) {
-      const pos = q.pos + dir * s;
-      if (pos < 0 || pos > lane.length) break;
-      if (anyOppAt(afterMy, q.owner, q.laneIndex, pos)) { canHit = true; break; }
-    }
-    if (canHit) myLoss += 1;
-  }
-
-  return (oppLoss - myLoss);
+  return best;
 }
 
 function anyOppAt(gs: GameState, owner: Player, laneIndex: number, pos: number): boolean {

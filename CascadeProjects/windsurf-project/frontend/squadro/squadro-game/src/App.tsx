@@ -9,9 +9,10 @@ import './App.css';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import type { RootState } from './store';
 import { store } from './store';
-import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIDifficulty, setAIEnabled, setAISide } from './store/gameSlice';
+import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIDifficulty, setAIEnabled, setAISide, incAiOpeningPliesUsed } from './store/gameSlice';
 import { movePiece as movePieceRules } from './game/rules';
 import { findBestMove } from './ia/search';
+import { generateMoves } from './ia/moves';
 import { getWorkers, resetPool } from './ia/workerPool';
 
 function App() {
@@ -41,19 +42,47 @@ function App() {
     if (turn !== ai.aiSide) return;
     if (ai.busy) return;
 
-    const computeTime = () => {
-    const a = ai;
-    if (!a) return Infinity;
-    // Manual: respetar segundos configurados; 0 => ilimitado
-    if (a.timeMode === 'manual') {
-    const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
-    return secs === 0 ? Infinity : secs * 1000;
-    }
-    // Auto: tiempo infinito (el motor decide por profundidad/aspiración/condiciones internas)
-    return Infinity;
+    const computeTime = (gs: RootState['game']) => {
+      const a = ai;
+      if (!a) return Infinity;
+      // Manual: respetar segundos configurados; 0 => ilimitado
+      if (a.timeMode === 'manual') {
+        const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
+        return secs === 0 ? Infinity : secs * 1000;
+      }
+      // Auto: presupuesto por fase con scaling por dificultad y branching
+      const retiredTotal = gs.pieces.filter((p) => p.state === 'retirada').length;
+      const phase: 'opening' | 'middle' | 'end' = retiredTotal <= 2 ? 'opening' : (retiredTotal <= 6 ? 'middle' : 'end');
+      let baseMs = phase === 'opening' ? 1200 : (phase === 'middle' ? 1800 : 2400);
+      // Escalar por dificultad (1..20) -> factor ~ [0.7 .. 1.6]
+      const diff = Math.max(1, Math.min(20, a.difficulty ?? 5));
+      const diffFactor = Math.max(0.7, Math.min(1.6, 0.7 + 0.045 * (diff - 1)));
+      baseMs *= diffFactor;
+      // Ajuste por branching de raíz
+      const legal = generateMoves(gs).length;
+      const bfAdj = 1 + Math.max(0, legal - 4) * 0.03; // +3% por jugada por encima de 4
+      const budget = Math.min(6000, Math.max(400, Math.round(baseMs * bfAdj)));
+      return budget;
     };
 
     const go = async () => {
+      // Random opening plies: if configured and remaining, play a random legal move and return
+      try {
+        const state: RootState = store.getState();
+        const gs = state.game;
+        const limit = Math.max(0, Number((gs.ai as any)?.randomOpeningPlies || 0));
+        const used = Math.max(0, Number((gs.ai as any)?.openingPliesUsed || 0));
+        if (limit > used) {
+          const legal = generateMoves(gs);
+          if (legal.length > 0) {
+            const rand = legal[Math.floor(Math.random() * legal.length)];
+            dispatch(movePiece(rand));
+            dispatch(incAiOpeningPliesUsed());
+            return;
+          }
+        }
+      } catch {}
+
       dispatch(setAIBusy(true));
       const startAt = Date.now();
       dispatch(aiSearchStarted(startAt));
@@ -70,21 +99,39 @@ function App() {
             enableHistory: ai.enableHistory !== false,
             enablePVS: ai.enablePVS !== false,
             enableLMR: ai.enableLMR !== false,
+            preferHashMove: ai.preferHashMove !== false,
             // Quiescence
             enableQuiescence: !!ai.enableQuiescence,
             quiescenceMaxPlies: typeof (ai as any).quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,
+            quiescenceStandPatMargin: typeof (ai as any).quiescenceStandPatMargin === 'number' ? (ai as any).quiescenceStandPatMargin : undefined,
+            quiescenceSeeMargin: typeof (ai as any).quiescenceSeeMargin === 'number' ? (ai as any).quiescenceSeeMargin : undefined,
+            quiescenceExtendOnRetire: typeof (ai as any).quiescenceExtendOnRetire === 'boolean' ? (ai as any).quiescenceExtendOnRetire : undefined,
+            quiescenceExtendOnJump: typeof (ai as any).quiescenceExtendOnJump === 'boolean' ? (ai as any).quiescenceExtendOnJump : undefined,
             // LMR
             lmrMinDepth: typeof ai.lmrMinDepth === 'number' ? ai.lmrMinDepth : 3,
             lmrLateMoveIdx: typeof ai.lmrLateMoveIdx === 'number' ? ai.lmrLateMoveIdx : 3,
             lmrReduction: typeof ai.lmrReduction === 'number' ? ai.lmrReduction : 1,
+            // LMP / Futility / IID / Ordering jitter
+            enableLMP: typeof (ai as any).enableLMP === 'boolean' ? (ai as any).enableLMP : undefined,
+            lmpMaxDepth: typeof (ai as any).lmpMaxDepth === 'number' ? (ai as any).lmpMaxDepth : undefined,
+            lmpBase: typeof (ai as any).lmpBase === 'number' ? (ai as any).lmpBase : undefined,
+            enableFutility: typeof (ai as any).enableFutility === 'boolean' ? (ai as any).enableFutility : undefined,
+            futilityMargin: typeof (ai as any).futilityMargin === 'number' ? (ai as any).futilityMargin : undefined,
+            enableIID: typeof (ai as any).enableIID === 'boolean' ? (ai as any).enableIID : undefined,
+            iidMinDepth: typeof (ai as any).iidMinDepth === 'number' ? (ai as any).iidMinDepth : undefined,
+            orderingJitterEps: typeof (ai as any).orderingJitterEps === 'number' ? (ai as any).orderingJitterEps : undefined,
+            // Tablebase & DF-PN
+            enableTablebase: typeof (ai as any).enableTablebase === 'boolean' ? (ai as any).enableTablebase : undefined,
+            enableDFPN: typeof (ai as any).enableDFPN === 'boolean' ? (ai as any).enableDFPN : undefined,
+            dfpnMaxActive: typeof (ai as any).dfpnMaxActive === 'number' ? (ai as any).dfpnMaxActive : undefined,
           } as const;
 
           const res = await findBestMove(gs, {
             maxDepth: ai.difficulty,
-            timeLimitMs: computeTime(),
+            timeLimitMs: computeTime(gs),
             onProgress: (ev) => {
               if (ev.type === 'progress') dispatch(aiSearchProgress(ev.nodesVisited));
-              else if (ev.type === 'iter') dispatch(aiSearchIter({ depth: ev.depth, score: ev.score }));
+              else if (ev.type === 'iter') dispatch(aiSearchIter({ depth: ev.depth, score: ev.score, pv: ev.pv }));
             },
             engine: engineOpts,
           });
@@ -164,6 +211,8 @@ function App() {
       const lastNodes: number[] = Array(workerCount).fill(0);
       let maxDepthIter = 0;
       let bestIterScore = -Infinity;
+      let globalBestAlpha = -Infinity;
+      let lastAlphaBroadcast = -Infinity;
       let completed = 0;
       let finalized = false;
       let bestResult: { score: number; moveId: string | null; depthReached: number } | null = null;
@@ -197,7 +246,18 @@ function App() {
             } else if (ev.type === 'iter') {
               if (typeof ev.depth === 'number' && ev.depth > maxDepthIter) maxDepthIter = ev.depth;
               if (typeof ev.score === 'number' && ev.score > bestIterScore) bestIterScore = ev.score;
-              dispatch(aiSearchIter({ depth: maxDepthIter, score: bestIterScore }));
+              dispatch(aiSearchIter({ depth: maxDepthIter, score: bestIterScore, pv: ev.pv }));
+              // Alpha sharing: broadcast improved alpha to all workers (throttled by improvement)
+              if (typeof ev.score === 'number' && ev.score > globalBestAlpha) {
+                globalBestAlpha = ev.score;
+                // Avoid spam: require improvement over last broadcast
+                if (globalBestAlpha > lastAlphaBroadcast) {
+                  lastAlphaBroadcast = globalBestAlpha;
+                  for (const ww of workers) {
+                    try { ww.postMessage({ type: 'alpha_update', alpha: globalBestAlpha }); } catch {}
+                  }
+                }
+              }
             }
             // Ignore 'start' and 'end' events here to avoid multiple resets/ends
           } else if (data?.type === 'result') {
@@ -205,6 +265,16 @@ function App() {
             completed++;
             if (!bestResult || data.score > bestResult.score) {
               bestResult = { score: data.score as number, moveId: data.moveId as string | null, depthReached: data.depthReached as number };
+            }
+            // Alpha sharing on final result as well
+            if (typeof data.score === 'number' && data.score > globalBestAlpha) {
+              globalBestAlpha = data.score as number;
+              if (globalBestAlpha > lastAlphaBroadcast) {
+                lastAlphaBroadcast = globalBestAlpha;
+                for (const ww of workers) {
+                  try { ww.postMessage({ type: 'alpha_update', alpha: globalBestAlpha }); } catch {}
+                }
+              }
             }
             // Early cancel on forced outcome
             if (typeof data.score === 'number' && Math.abs(data.score) > 90000) {
@@ -237,21 +307,49 @@ function App() {
           }
         };
         const t = tasks[i];
+        // Seed cross-worker PV when any worker reports an iter PV
+        w.addEventListener('message', (msg: MessageEvent) => {
+          const d = msg.data as any;
+          if (d?.type === 'search_event' && d.ev?.type === 'iter' && Array.isArray(d.ev?.pv) && d.ev.pv.length > 0) {
+            const hint = d.ev.pv[0] as string;
+            for (const ww of workers) {
+              try { ww.postMessage({ type: 'pv_update', hint }); } catch {}
+            }
+          }
+        });
         const engineOpts = {
           enableTT: ai?.enableTT !== false,
           enableKillers: ai?.enableKillers !== false,
           enableHistory: ai?.enableHistory !== false,
           enablePVS: ai?.enablePVS !== false,
           enableLMR: ai?.enableLMR !== false,
+          preferHashMove: ai?.preferHashMove !== false,
           // Quiescence
           enableQuiescence: !!ai?.enableQuiescence,
           quiescenceMaxPlies: typeof (ai as any)?.quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,
+          quiescenceStandPatMargin: typeof (ai as any)?.quiescenceStandPatMargin === 'number' ? (ai as any).quiescenceStandPatMargin : undefined,
+          quiescenceSeeMargin: typeof (ai as any)?.quiescenceSeeMargin === 'number' ? (ai as any).quiescenceSeeMargin : undefined,
+          quiescenceExtendOnRetire: typeof (ai as any)?.quiescenceExtendOnRetire === 'boolean' ? (ai as any).quiescenceExtendOnRetire : undefined,
+          quiescenceExtendOnJump: typeof (ai as any)?.quiescenceExtendOnJump === 'boolean' ? (ai as any).quiescenceExtendOnJump : undefined,
           // LMR
           lmrMinDepth: typeof ai?.lmrMinDepth === 'number' ? ai!.lmrMinDepth : 3,
           lmrLateMoveIdx: typeof ai?.lmrLateMoveIdx === 'number' ? ai!.lmrLateMoveIdx : 3,
           lmrReduction: typeof ai?.lmrReduction === 'number' ? ai!.lmrReduction : 1,
+          // LMP / Futility / IID / Ordering jitter
+          enableLMP: typeof (ai as any)?.enableLMP === 'boolean' ? (ai as any).enableLMP : undefined,
+          lmpMaxDepth: typeof (ai as any)?.lmpMaxDepth === 'number' ? (ai as any).lmpMaxDepth : undefined,
+          lmpBase: typeof (ai as any)?.lmpBase === 'number' ? (ai as any).lmpBase : undefined,
+          enableFutility: typeof (ai as any)?.enableFutility === 'boolean' ? (ai as any).enableFutility : undefined,
+          futilityMargin: typeof (ai as any)?.futilityMargin === 'number' ? (ai as any).futilityMargin : undefined,
+          enableIID: typeof (ai as any)?.enableIID === 'boolean' ? (ai as any).enableIID : undefined,
+          iidMinDepth: typeof (ai as any)?.iidMinDepth === 'number' ? (ai as any).iidMinDepth : undefined,
+          orderingJitterEps: typeof (ai as any)?.orderingJitterEps === 'number' ? (ai as any).orderingJitterEps : undefined,
+          // Tablebase & DF-PN
+          enableTablebase: typeof (ai as any)?.enableTablebase === 'boolean' ? (ai as any).enableTablebase : undefined,
+          enableDFPN: typeof (ai as any)?.enableDFPN === 'boolean' ? (ai as any).enableDFPN : undefined,
+          dfpnMaxActive: typeof (ai as any)?.dfpnMaxActive === 'number' ? (ai as any).dfpnMaxActive : undefined,
         } as const;
-        w.postMessage({ type: 'run', state: gs, opts: { maxDepth: ai.difficulty, timeLimitMs: computeTime(), rootMoves: t.rootMoves, forcedFirstMove: t.forcedFirstMove, engine: engineOpts } });
+        w.postMessage({ type: 'run', state: gs, opts: { maxDepth: ai.difficulty, timeLimitMs: computeTime(gs), rootMoves: t.rootMoves, forcedFirstMove: t.forcedFirstMove, engine: engineOpts } });
       }
     };
 

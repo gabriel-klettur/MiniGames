@@ -1,11 +1,13 @@
 import React, { useEffect, useState, type ChangeEvent } from 'react';
+import { useAppSelector } from '../../../store/hooks.ts';
+import type { RootState } from '../../../store/index.ts';
 import InfoIAView from './InfoIAView.tsx';
 import { useInfoIASettings } from './hooks/useInfoIASettings.ts';
 import { useCompareDatasets } from './hooks/useCompareDatasets.ts';
 import { useRecords } from './hooks/useRecords.ts';
 import { useSimulationRunner } from './hooks/useSimulationRunner.ts';
 import type { EngineOptions } from '../../../ia/search/types';
-import { loadPresets, type IAPreset } from '../../../ia/presets';
+import { loadPresets, setSelectedPresetId, type IAPreset } from '../../../ia/presets';
 
 const InfoIAContainer: React.FC = () => {
   const settings = useInfoIASettings();
@@ -50,6 +52,28 @@ const InfoIAContainer: React.FC = () => {
     addRecord,
   );
 
+  // Regression suite state (results)
+  const [suiteResult, setSuiteResult] = useState<import('../../../tests/runSuite').SuiteResult | null>(null);
+
+  const handleRunSuite = async () => {
+    try {
+      setSuspendPersistence(true);
+      setSuiteResult(null);
+      const mod = await import('../../../tests/runSuite');
+      const res = await mod.runSuite();
+      setSuiteResult(res);
+    } catch (err) {
+      console.error('runSuite failed', err);
+      setSuiteResult({ total: 0, passed: 0, failed: 0, details: [] });
+    } finally {
+      setSuspendPersistence(false);
+      flushNow();
+    }
+  };
+
+  // Engine stats from last search (global)
+  const engineStats = useAppSelector((s: RootState) => (s.game.ai?.engineStats ? { ...s.game.ai.engineStats } : null));
+
   // Presets compartidos con IAPanel (localStorage / ia/presets)
   const [presetItems, setPresetItems] = useState<IAPreset[]>(() => loadPresets());
   useEffect(() => {
@@ -91,6 +115,20 @@ const InfoIAContainer: React.FC = () => {
         ...(typeof (s as any).enableLMR === 'boolean' ? { enableLMR: !!(s as any).enableLMR } : {}),
         ...(typeof (s as any).enableQuiescence === 'boolean' ? { enableQuiescence: !!(s as any).enableQuiescence } : {}),
         ...(typeof (s as any).quiescenceMaxPlies === 'number' ? { quiescenceMaxPlies: Number((s as any).quiescenceMaxPlies) } : {}),
+        ...(typeof (s as any).enableTablebase === 'boolean' ? { enableTablebase: !!(s as any).enableTablebase } : {}),
+        // New pruning and IID options
+        ...(typeof (s as any).enableLMP === 'boolean' ? { enableLMP: !!(s as any).enableLMP } : {}),
+        ...(typeof (s as any).lmpMaxDepth === 'number' ? { lmpMaxDepth: Number((s as any).lmpMaxDepth) } : {}),
+        ...(typeof (s as any).lmpBase === 'number' ? { lmpBase: Number((s as any).lmpBase) } : {}),
+        ...(typeof (s as any).enableFutility === 'boolean' ? { enableFutility: !!(s as any).enableFutility } : {}),
+        ...(typeof (s as any).futilityMargin === 'number' ? { futilityMargin: Number((s as any).futilityMargin) } : {}),
+        ...(typeof (s as any).enableIID === 'boolean' ? { enableIID: !!(s as any).enableIID } : {}),
+        ...(typeof (s as any).iidMinDepth === 'number' ? { iidMinDepth: Number((s as any).iidMinDepth) } : {}),
+        // Quiescence margins/extensions
+        ...(typeof (s as any).quiescenceStandPatMargin === 'number' ? { quiescenceStandPatMargin: Number((s as any).quiescenceStandPatMargin) } : {}),
+        ...(typeof (s as any).quiescenceSeeMargin === 'number' ? { quiescenceSeeMargin: Number((s as any).quiescenceSeeMargin) } : {}),
+        ...(typeof (s as any).quiescenceExtendOnRetire === 'boolean' ? { quiescenceExtendOnRetire: !!(s as any).quiescenceExtendOnRetire } : {}),
+        ...(typeof (s as any).quiescenceExtendOnJump === 'boolean' ? { quiescenceExtendOnJump: !!(s as any).quiescenceExtendOnJump } : {}),
         ...(typeof (s as any).preferHashMove === 'boolean' ? { preferHashMove: !!(s as any).preferHashMove } : {}),
         ...(typeof (s as any).lmrMinDepth === 'number' ? { lmrMinDepth: Number((s as any).lmrMinDepth) } : {}),
         ...(typeof (s as any).lmrLateMoveIdx === 'number' ? { lmrLateMoveIdx: Number((s as any).lmrLateMoveIdx) } : {}),
@@ -121,6 +159,20 @@ const InfoIAContainer: React.FC = () => {
         ...(typeof (s as any).enableLMR === 'boolean' ? { enableLMR: !!(s as any).enableLMR } : {}),
         ...(typeof (s as any).enableQuiescence === 'boolean' ? { enableQuiescence: !!(s as any).enableQuiescence } : {}),
         ...(typeof (s as any).quiescenceMaxPlies === 'number' ? { quiescenceMaxPlies: Number((s as any).quiescenceMaxPlies) } : {}),
+        ...(typeof (s as any).enableTablebase === 'boolean' ? { enableTablebase: !!(s as any).enableTablebase } : {}),
+        // New pruning and IID options
+        ...(typeof (s as any).enableLMP === 'boolean' ? { enableLMP: !!(s as any).enableLMP } : {}),
+        ...(typeof (s as any).lmpMaxDepth === 'number' ? { lmpMaxDepth: Number((s as any).lmpMaxDepth) } : {}),
+        ...(typeof (s as any).lmpBase === 'number' ? { lmpBase: Number((s as any).lmpBase) } : {}),
+        ...(typeof (s as any).enableFutility === 'boolean' ? { enableFutility: !!(s as any).enableFutility } : {}),
+        ...(typeof (s as any).futilityMargin === 'number' ? { futilityMargin: Number((s as any).futilityMargin) } : {}),
+        ...(typeof (s as any).enableIID === 'boolean' ? { enableIID: !!(s as any).enableIID } : {}),
+        ...(typeof (s as any).iidMinDepth === 'number' ? { iidMinDepth: Number((s as any).iidMinDepth) } : {}),
+        // Quiescence margins/extensions
+        ...(typeof (s as any).quiescenceStandPatMargin === 'number' ? { quiescenceStandPatMargin: Number((s as any).quiescenceStandPatMargin) } : {}),
+        ...(typeof (s as any).quiescenceSeeMargin === 'number' ? { quiescenceSeeMargin: Number((s as any).quiescenceSeeMargin) } : {}),
+        ...(typeof (s as any).quiescenceExtendOnRetire === 'boolean' ? { quiescenceExtendOnRetire: !!(s as any).quiescenceExtendOnRetire } : {}),
+        ...(typeof (s as any).quiescenceExtendOnJump === 'boolean' ? { quiescenceExtendOnJump: !!(s as any).quiescenceExtendOnJump } : {}),
         ...(typeof (s as any).preferHashMove === 'boolean' ? { preferHashMove: !!(s as any).preferHashMove } : {}),
         ...(typeof (s as any).lmrMinDepth === 'number' ? { lmrMinDepth: Number((s as any).lmrMinDepth) } : {}),
         ...(typeof (s as any).lmrLateMoveIdx === 'number' ? { lmrLateMoveIdx: Number((s as any).lmrLateMoveIdx) } : {}),
@@ -131,6 +183,9 @@ const InfoIAContainer: React.FC = () => {
         settings.setP2Eval(prev => ({ ...prev, ...(s as any).evalWeights }));
       }
     }
+    // Persist selection and notify listeners for cross-panel sync
+    try { setSelectedPresetId(key); } catch {}
+    try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
   };
 
   // Ensure persistence resumes when the simulation finishes naturally.
@@ -215,6 +270,14 @@ const InfoIAContainer: React.FC = () => {
         onToggleEnableQuiescence: () => settings.setP1Engine(prev => ({ ...prev, enableQuiescence: !(prev as any).enableQuiescence } as any)),
         quiescenceMaxPlies: (settings.p1Engine as any).quiescenceMaxPlies,
         onChangeQuiescenceMaxPlies: (n: number) => settings.setP1Engine(prev => ({ ...prev, quiescenceMaxPlies: n } as any)),
+        // Tablebase
+        enableTablebase: (settings.p1Engine as any).enableTablebase,
+        onToggleEnableTablebase: () => settings.setP1Engine(prev => ({ ...prev, enableTablebase: !(prev as any).enableTablebase } as any)),
+        // DF-PN
+        enableDFPN: (settings.p1Engine as any).enableDFPN,
+        onToggleEnableDFPN: () => settings.setP1Engine(prev => ({ ...prev, enableDFPN: !(prev as any).enableDFPN } as any)),
+        dfpnMaxActive: (settings.p1Engine as any).dfpnMaxActive,
+        onChangeDfpnMaxActive: (n: number) => settings.setP1Engine(prev => ({ ...prev, dfpnMaxActive: Math.max(0, Math.min(10, n)) } as any)),
         // LMR
         enableLMR: settings.p1Engine.enableLMR,
         onToggleEnableLMR: () => settings.setP1Engine(prev => ({ ...prev, enableLMR: !prev.enableLMR })),
@@ -269,6 +332,14 @@ const InfoIAContainer: React.FC = () => {
         onToggleEnableQuiescence: () => settings.setP2Engine(prev => ({ ...prev, enableQuiescence: !(prev as any).enableQuiescence } as any)),
         quiescenceMaxPlies: (settings.p2Engine as any).quiescenceMaxPlies,
         onChangeQuiescenceMaxPlies: (n: number) => settings.setP2Engine(prev => ({ ...prev, quiescenceMaxPlies: n } as any)),
+        // Tablebase
+        enableTablebase: (settings.p2Engine as any).enableTablebase,
+        onToggleEnableTablebase: () => settings.setP2Engine(prev => ({ ...prev, enableTablebase: !(prev as any).enableTablebase } as any)),
+        // DF-PN
+        enableDFPN: (settings.p2Engine as any).enableDFPN,
+        onToggleEnableDFPN: () => settings.setP2Engine(prev => ({ ...prev, enableDFPN: !(prev as any).enableDFPN } as any)),
+        dfpnMaxActive: (settings.p2Engine as any).dfpnMaxActive,
+        onChangeDfpnMaxActive: (n: number) => settings.setP2Engine(prev => ({ ...prev, dfpnMaxActive: Math.max(0, Math.min(10, n)) } as any)),
         // LMR
         enableLMR: settings.p2Engine.enableLMR,
         onToggleEnableLMR: () => settings.setP2Engine(prev => ({ ...prev, enableLMR: !prev.enableLMR })),
@@ -308,6 +379,9 @@ const InfoIAContainer: React.FC = () => {
       onCopyRecord={copyRecord}
       onDownloadRecord={downloadRecord}
       onDeleteRecord={deleteRecord}
+      onRunSuite={handleRunSuite}
+      suiteResult={suiteResult}
+      engineStats={engineStats}
     />
   );
 };

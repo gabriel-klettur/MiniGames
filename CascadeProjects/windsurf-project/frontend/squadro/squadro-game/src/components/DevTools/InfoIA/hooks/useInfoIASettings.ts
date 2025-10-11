@@ -74,6 +74,7 @@ export function useInfoIASettings(): InfoIASettings {
     lmrReduction: 1,
     preferHashMove: true,
     orderingJitterEps: 0,
+    enableTablebase: false,
   };
   const defaultEval: EvalParams = {
     w_race: 1.0,

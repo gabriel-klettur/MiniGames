@@ -24,8 +24,23 @@ interface ResultMessage {
   engineStats?: any;
 }
 
+let sharedEngineOptions: EngineOptions | null = null;
+
+self.addEventListener('message', (e: MessageEvent) => {
+  const msg = e.data as any;
+  if (!msg) return;
+  if (msg.type === 'pv_update' && sharedEngineOptions) {
+    const hint = typeof msg.hint === 'string' ? msg.hint : undefined;
+    if (hint) sharedEngineOptions.rootPVHint = hint;
+  }
+  if (msg.type === 'alpha_update' && sharedEngineOptions) {
+    const a = Number(msg.alpha);
+    if (!Number.isNaN(a)) sharedEngineOptions.sharedRootAlpha = a;
+  }
+});
+
 self.onmessage = async (e: MessageEvent) => {
-  const data = e.data as RunMessage | { type: 'noop' };
+  const data = e.data as RunMessage | { type: 'noop' } | { type: 'pv_update'; hint: string };
   if (!data || data.type !== 'run') return;
 
   const { state, opts } = data;
@@ -41,6 +56,10 @@ self.onmessage = async (e: MessageEvent) => {
     adjustDepth = 1;
   }
 
+  // Use a shared engine options object so mid-run updates (pv_update) can be observed by the search
+  const engineRef: EngineOptions = { ...(opts.engine || {}) } as EngineOptions;
+  sharedEngineOptions = engineRef;
+
   const options: SearchOptions = {
     maxDepth: Math.max(0, opts.maxDepth - adjustDepth),
     timeLimitMs: opts.timeLimitMs,
@@ -50,7 +69,7 @@ self.onmessage = async (e: MessageEvent) => {
       self.postMessage(msg);
     },
     rootMoves: opts.rootMoves,
-    engine: opts.engine,
+    engine: engineRef,
   };
 
   const best = await findBestMove(workingState, options);

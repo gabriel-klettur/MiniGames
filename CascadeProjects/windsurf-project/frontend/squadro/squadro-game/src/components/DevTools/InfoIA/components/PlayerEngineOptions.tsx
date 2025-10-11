@@ -17,6 +17,11 @@ interface PlayerEngineOptionsProps {
   // Quiescence
   enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
   quiescenceMaxPlies?: number; onChangeQuiescenceMaxPlies?: (n: number) => void;
+  // Tablebase fast-path
+  enableTablebase?: boolean; onToggleEnableTablebase?: () => void;
+  // DF-PN
+  enableDFPN?: boolean; onToggleEnableDFPN?: () => void;
+  dfpnMaxActive?: number; onChangeDfpnMaxActive?: (n: number) => void;
   // Optional heuristic weights
   w_race?: number; onChangeWRace?: (n: number) => void;
   w_clash?: number; onChangeWClash?: (n: number) => void;
@@ -65,6 +70,14 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
           <span className={labelCls}>Quiescence</span>
           <ToggleSwitch checked={!!p.enableQuiescence} onChange={() => p.onToggleEnableQuiescence?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
         </div>
+        <div className="inline-flex items-center gap-2" title="Tablebase — Atajo O(1) para posiciones conocidas (win/loss/draw) con mejor jugada. Si hay hit, devuelve inmediatamente sin buscar.">
+          <span className={labelCls}>Tablebase</span>
+          <ToggleSwitch checked={!!p.enableTablebase} onChange={() => p.onToggleEnableTablebase?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
+        </div>
+        <div className="inline-flex items-center gap-2" title="DF-PN — Activar búsqueda Proof-Number en finales pequeños. Útil para resolver subárboles con pocas piezas activas. Trigger por nº de piezas activas.">
+          <span className={labelCls}>DF‑PN</span>
+          <ToggleSwitch checked={!!p.enableDFPN} onChange={() => p.onToggleEnableDFPN?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
+        </div>
         <div className="inline-flex items-center gap-2" title="Late Move Reductions (LMR) — Reduce la profundidad efectiva de jugadas tardías (no tácticas) y re-busca a profundidad completa si superan α. Ejemplo: en movimientos con índice ≥ lateIdx, buscar a d-1 o d-2 con ventana nula; si el score supera α, repetir búsqueda completa.">
           <span className={labelCls}>LMR</span>
           <ToggleSwitch checked={!!p.enableLMR} onChange={() => p.onToggleEnableLMR?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
@@ -86,6 +99,10 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
         <label className={labelCls + ' inline-flex items-center gap-2'} title="Quiescence:qPlies — Límite de extensiones de búsqueda táctica en hojas. Controla coste. Ejemplo: 4 ⇒ hasta 4 plies adicionales sólo en posiciones ruidosas.">
           qPlies
           <input type="number" disabled={dis} className={inputCls} value={p.quiescenceMaxPlies ?? 4} onChange={(e) => p.onChangeQuiescenceMaxPlies?.(Number(e.target.value))} />
+        </label>
+        <label className={labelCls + ' inline-flex items-center gap-2'} title="DF‑PN:maxActive — Activa DF‑PN cuando las piezas activas (no retiradas) sean ≤ este valor. Conservador: 2 por defecto.">
+          dfpnActive
+          <input type="number" disabled={dis} className={inputCls} value={p.dfpnMaxActive ?? 2} onChange={(e) => p.onChangeDfpnMaxActive?.(Number(e.target.value))} />
         </label>
       </div>
       {(typeof p.w_race === 'number' || typeof p.w_clash === 'number' || typeof p.w_sprint === 'number' || typeof p.w_block === 'number') && (

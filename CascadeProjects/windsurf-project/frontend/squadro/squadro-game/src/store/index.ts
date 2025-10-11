@@ -1,5 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
-import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceRotateMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale } from './gameSlice';
+import gameReducer, { setPieceHeight, setPieceWidth, setPieceScale, setOrientation, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setShowPieces, setPieceAnimMs, setPieceRotateMs, setPieceHeightLight, setPieceHeightDark, setPieceWidthScaleLight, setPieceWidthScaleDark, setBoardScale, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiEnableQuiescence, setAiQuiescenceDepth, setAiOrderingJitterEps, setAIEvalWeights, setAiRandomOpeningPlies, applyIAPreset } from './gameSlice';
+import { getSelectedPresetId, setSelectedPresetId, loadPresets, findPresetById } from '../ia/presets';
+import type { EvalParams } from '../ia/evalTypes';
 
 export const store = configureStore({
   reducer: {
@@ -49,6 +51,22 @@ function loadStoredUI(): StoredUI | undefined {
   } catch {
     // ignore
   }
+
+// --- Apply default IA preset at startup ---
+try {
+  const aiNow = (store.getState() as RootState).game.ai;
+  // Heuristic: if advanced toggles are uninitialized (e.g., enableTT is undefined), apply selected or default preset
+  const needsPreset = !aiNow || typeof (aiNow as any).enableTT === 'undefined';
+  if (needsPreset) {
+    const sel = getSelectedPresetId();
+    const list = loadPresets();
+    const chosen = sel ? findPresetById(sel, list) : (list.find(p => p.id === 'iapowa') || null);
+    if (chosen) {
+      store.dispatch(applyIAPreset({ ...chosen.settings }));
+      if (!sel) { try { setSelectedPresetId(chosen.id); } catch {} }
+    }
+  }
+} catch {}
   return undefined;
 }
 
@@ -130,6 +148,27 @@ type StoredAI = {
   timeMode?: 'auto' | 'manual';
   timeSeconds?: number;
   useWorkers?: boolean;
+  // Engine toggles
+  enableTT?: boolean;
+  failSoft?: boolean;
+  preferHashMove?: boolean;
+  enablePVS?: boolean;
+  enableKillers?: boolean;
+  enableHistory?: boolean;
+  enableLMR?: boolean;
+  // LMR params
+  lmrMinDepth?: number;
+  lmrLateMoveIdx?: number;
+  lmrReduction?: number;
+  // Quiescence
+  enableQuiescence?: boolean;
+  quiescenceDepth?: number;
+  // Move ordering jitter
+  orderingJitterEps?: number;
+  // Random openings
+  randomOpeningPlies?: number;
+  // Global eval weights (applied a ambos lados si se cargan)
+  evalWeights?: Partial<EvalParams> | { Light?: Partial<EvalParams>; Dark?: Partial<EvalParams> };
 };
 
 function loadStoredAI(): StoredAI | undefined {
@@ -160,6 +199,37 @@ if (storedAI) {
   if (storedAI.timeMode === 'auto' || storedAI.timeMode === 'manual') store.dispatch(setAITimeMode(storedAI.timeMode));
   if (typeof storedAI.timeSeconds === 'number') store.dispatch(setAITimeSeconds(storedAI.timeSeconds));
   if (typeof storedAI.useWorkers === 'boolean') store.dispatch(setAIUseWorkers(storedAI.useWorkers));
+  // Engine toggles
+  if (typeof storedAI.enableTT === 'boolean') store.dispatch(setAiEnableTT(storedAI.enableTT));
+  if (typeof storedAI.failSoft === 'boolean') store.dispatch(setAiFailSoft(storedAI.failSoft));
+  if (typeof storedAI.preferHashMove === 'boolean') store.dispatch(setAiPreferHashMove(storedAI.preferHashMove));
+  if (typeof storedAI.enablePVS === 'boolean') store.dispatch(setAiEnablePVS(storedAI.enablePVS));
+  if (typeof storedAI.enableKillers === 'boolean') store.dispatch(setAiEnableKillers(storedAI.enableKillers));
+  if (typeof storedAI.enableHistory === 'boolean') store.dispatch(setAiEnableHistory(storedAI.enableHistory));
+  if (typeof storedAI.enableLMR === 'boolean') store.dispatch(setAiEnableLMR(storedAI.enableLMR));
+  // LMR params
+  if (typeof storedAI.lmrMinDepth === 'number') store.dispatch(setAiLmrMinDepth(storedAI.lmrMinDepth));
+  if (typeof storedAI.lmrLateMoveIdx === 'number') store.dispatch(setAiLmrLateMoveIdx(storedAI.lmrLateMoveIdx));
+  if (typeof storedAI.lmrReduction === 'number') store.dispatch(setAiLmrReduction(storedAI.lmrReduction));
+  // Quiescence
+  if (typeof storedAI.enableQuiescence === 'boolean') store.dispatch(setAiEnableQuiescence(storedAI.enableQuiescence));
+  if (typeof storedAI.quiescenceDepth === 'number') store.dispatch(setAiQuiescenceDepth(storedAI.quiescenceDepth));
+  // Jitter
+  if (typeof storedAI.orderingJitterEps === 'number') store.dispatch(setAiOrderingJitterEps(storedAI.orderingJitterEps));
+  // Random openings
+  if (typeof storedAI.randomOpeningPlies === 'number') store.dispatch(setAiRandomOpeningPlies(storedAI.randomOpeningPlies));
+  // Eval weights
+  if (storedAI.evalWeights && typeof storedAI.evalWeights === 'object') {
+    const ew = storedAI.evalWeights as any;
+    if (ew.Light || ew.Dark) {
+      if (ew.Light) store.dispatch(setAIEvalWeights({ player: 'Light', weights: ew.Light }));
+      if (ew.Dark) store.dispatch(setAIEvalWeights({ player: 'Dark', weights: ew.Dark }));
+    } else {
+      // Global: apply to both sides
+      store.dispatch(setAIEvalWeights({ player: 'Light', weights: ew }));
+      store.dispatch(setAIEvalWeights({ player: 'Dark', weights: ew }));
+    }
+  }
 }
 
 let lastSavedAI: StoredAI | undefined;
@@ -174,6 +244,27 @@ store.subscribe(() => {
     timeMode: ai.timeMode,
     timeSeconds: ai.timeSeconds,
     useWorkers: ai.useWorkers,
+    // Engine toggles
+    enableTT: ai.enableTT,
+    failSoft: ai.failSoft,
+    preferHashMove: ai.preferHashMove,
+    enablePVS: ai.enablePVS,
+    enableKillers: ai.enableKillers,
+    enableHistory: ai.enableHistory,
+    enableLMR: ai.enableLMR,
+    // LMR params
+    lmrMinDepth: ai.lmrMinDepth,
+    lmrLateMoveIdx: ai.lmrLateMoveIdx,
+    lmrReduction: ai.lmrReduction,
+    // Quiescence
+    enableQuiescence: ai.enableQuiescence,
+    quiescenceDepth: ai.quiescenceDepth,
+    // Jitter
+    orderingJitterEps: ai.orderingJitterEps,
+    // Random openings
+    randomOpeningPlies: (ai as any).randomOpeningPlies,
+    // Eval weights (persist current merged)
+    evalWeights: ai.evalWeights,
   };
   const changed = JSON.stringify(toSave) !== JSON.stringify(lastSavedAI);
   if (changed) {

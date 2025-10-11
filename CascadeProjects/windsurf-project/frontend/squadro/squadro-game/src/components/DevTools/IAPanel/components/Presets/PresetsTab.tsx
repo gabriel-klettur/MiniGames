@@ -65,15 +65,24 @@ export default function PresetsTab() {
 
   const setField = <K extends keyof IAPreset['settings']>(k: K, v: IAPreset['settings'][K]) => {
     if (!selected) return;
+    let nextSettings: IAPreset['settings'] | null = null;
     setItems(prev => prev.map(it => {
       if (it.id !== selected.id) return it;
-      const nextSettings = { ...it.settings, [k]: v } as IAPreset['settings'];
-      // Normalize: if switching to auto, seconds must be 0 and we keep panel hidden
+      const ns = { ...it.settings, [k]: v } as IAPreset['settings'];
+      // Normalize: if switching to auto, seconds must be 0
       if (k === 'timeMode' && v === 'auto') {
-        nextSettings.timeSeconds = 0;
+        ns.timeSeconds = 0;
       }
-      return { ...it, settings: nextSettings };
+      nextSettings = ns;
+      return { ...it, settings: ns };
     }));
+    // Apply immediately to current AI state and mark as applied
+    if (nextSettings) {
+      dispatch(applyIAPreset(nextSettings as IAPreset['settings']));
+      setAppliedId(selected.id);
+      try { setSelectedPresetId(selected.id); } catch {}
+      try { window.dispatchEvent(new Event('squadro:presets:update')); } catch {}
+    }
   };
 
   const applyCurrent = () => {

@@ -7,6 +7,10 @@ export default function InfoPanel() {
   const { pieces, ai, turn } = useAppSelector((s: RootState) => s.game);
   const retiredLight = pieces.filter((p) => p.owner === 'Light' && p.state === 'retirada').length;
   const retiredDark = pieces.filter((p) => p.owner === 'Dark' && p.state === 'retirada').length;
+  const pv: string[] | undefined = (ai as any)?.pv;
+  const depth = ai?.depthReached ?? 0;
+  const nodes = ai?.nodesVisited ?? 0;
+  const dur = ai?.lastDurationMs ?? undefined;
 
   return (
     <div className="flex flex-col gap-3">
@@ -72,6 +76,20 @@ export default function InfoPanel() {
             <div className="text-xl font-bold" style={{ color: '#dc143c', textShadow: '0 1px 0 rgba(0,0,0,0.35)' }}>{retiredDark} / 4</div>
           </div>
         </div>
+      </div>
+      {/* PV (principal variation) */}
+      {pv && pv.length > 0 && (
+        <div className="rounded-lg border border-neutral-700 p-2 bg-neutral-800/30 text-xs text-neutral-300">
+          <span className="opacity-80 mr-2">PV</span>
+          <span className="font-mono">
+            {pv.slice(0, 8).join(' \u2192 ')}{pv.length > 8 ? ' ...' : ''}
+          </span>
+        </div>
+      )}
+      {/* Compact metrics */}
+      <div className="rounded-lg border border-neutral-700 p-2 bg-neutral-800/30 text-xs text-neutral-300">
+        <span className="opacity-80 mr-2">Search</span>
+        <span className="font-mono">depth={depth} · nodes={nodes}{typeof dur === 'number' ? ` · ms=${dur}` : ''}</span>
       </div>
     </div>
   );

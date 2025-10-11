@@ -23,6 +23,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
     moveIndex, moveElapsedMs, moveTargetMs,
     progDepth = 0, progNodes = 0, progNps = 0, progScore = 0,
     onCopyRecord, onDownloadRecord, onDeleteRecord,
+    onRunSuite,
+    suiteResult,
   } = props;
 
   return (
@@ -53,6 +55,11 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onImportFiles={onImportFiles}
           onClearAll={onClearAll}
         />
+        {onRunSuite && (
+          <div className="mt-2">
+            <button className="chip-btn" onClick={onRunSuite} aria-label="Run regression suite" title="Run regression suite">Run Regression Suite</button>
+          </div>
+        )}
       </div>
 
       {/* Repeats tab (placeholder) */}
@@ -110,6 +117,36 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onDownloadRecord={onDownloadRecord}
           onDeleteRecord={onDeleteRecord}
         />
+      )}
+      {(suiteResult || props.engineStats) && (
+        <div className="mt-3 rounded-lg border border-neutral-700 p-3 bg-neutral-900/60">
+          {suiteResult && (
+            <>
+              <div className="text-sm font-semibold mb-2">Regression Suite</div>
+              <div className="text-xs text-neutral-300">Total: {suiteResult.total} · Passed: {suiteResult.passed} · Failed: {suiteResult.failed}</div>
+              <ul className="mt-2 text-xs list-disc pl-5">
+                {suiteResult.details.map((d, i) => (
+                  <li key={i} className={d.ok ? 'text-emerald-300' : 'text-red-300'}>
+                    {d.name}: {d.ok ? 'OK' : `FAIL (${d.message || 'expectation failed'})`} · depth={d.depthReached} · move={d.moveId || '-'} · score={d.score}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          {props.engineStats && (
+            <div className="mt-3">
+              <div className="text-sm font-semibold mb-1">Engine Stats</div>
+              <div className="grid grid-cols-3 gap-2 text-xs text-neutral-300">
+                <div>TT probes: {props.engineStats.ttProbes ?? 0}</div>
+                <div>TT hits: {props.engineStats.ttHits ?? 0}</div>
+                <div>Cutoffs: {props.engineStats.cutoffs ?? 0}</div>
+                <div>PVS re: {props.engineStats.pvsReSearches ?? 0}</div>
+                <div>LMR red: {props.engineStats.lmrReductions ?? 0}</div>
+                <div>Asp re: {props.engineStats.aspReSearches ?? 0}</div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </section>
   );

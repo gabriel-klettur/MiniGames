@@ -1,0 +1,69 @@
+[
+  {
+    "name": "Initial_3ply",
+    "moves": [],
+    "depth": 3,
+    "timeMs": 1500,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveIs": "L2", "scoreAtLeast": 1.0 }
+  },
+  {
+    "name": "After_L0_3ply",
+    "moves": ["L0"],
+    "depth": 3,
+    "timeMs": 1500,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveOneOf": ["D3", "D4"], "scoreAtLeast": 1.0 }
+  },
+  {
+    "name": "TwoPlies_Smoke",
+    "moves": ["L0", "D1"],
+    "depth": 3,
+    "timeMs": 1500,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Sprint_threshold_close",
+    "moves": ["L0", "D0", "L1"],
+    "depth": 3,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "scoreAtLeast": 0.5 }
+  },
+  {
+    "name": "Back_trip_edge",
+    "moves": ["L0", "D0", "L0", "D0"],
+    "depth": 3,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Endgame_DFPN_Smoke1",
+    "moves": ["L0", "D0", "L0", "D0", "L0"],
+    "depth": 2,
+    "timeMs": 800,
+    "engine": { "enableDFPN": true, "dfpnMaxActive": 10 },
+    "expect": { "minDepth": 2, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Endgame_DFPN_Smoke2",
+    "moves": ["L2", "D2", "L2", "D2", "L2", "D2"],
+    "depth": 2,
+    "timeMs": 800,
+    "engine": { "enableDFPN": true, "dfpnMaxActive": 10 },
+    "expect": { "minDepth": 2, "bestMoveNonNull": true }
+  },
+  {
+    "name": "TB_Win_Immediate",
+    "moves": ["L0", "D0", "L1"],
+    "depth": 1,
+    "timeMs": 200,
+    "tbEntry": { "value": "win", "bestMove": "D2", "score": 100000 },
+    "expect": { "minDepth": 0, "bestMoveIs": "D2", "scoreAtLeast": 90000 }
+  },
+  {
+    "name": "TB_Draw_Immediate",
+    "moves": ["L2", "D2", "L2", "D2"],
+    "depth": 1,
+    "timeMs": 200,
+    "tbEntry": { "value": "draw", "bestMove": "L3", "score": 0 },
+    "expect": { "minDepth": 0, "bestMoveIs": "L3", "scoreAtMost": 1 }
+  }
+]

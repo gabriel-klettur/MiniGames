@@ -83,6 +83,9 @@ export interface AISettings {
   timeSeconds: number;       // when manual, budget per move
   useWorkers?: boolean;      // if true (default), run AI in Web Workers
   busy?: boolean;            // ephemeral: IA pensando
+  // Opening randomization
+  randomOpeningPlies?: number; // number of initial plies to play randomly (0 disables)
+  openingPliesUsed?: number;   // internal counter of random plies already used
   // Per-player evaluation weights (heuristics)
   evalWeights?: Partial<Record<Player, {
     w_race: number;

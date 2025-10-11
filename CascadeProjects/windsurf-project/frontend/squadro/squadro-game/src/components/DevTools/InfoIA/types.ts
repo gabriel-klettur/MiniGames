@@ -1,4 +1,6 @@
 import type { ChangeEvent } from 'react';
+import type { SuiteResult } from '../../../tests/runSuite';
+import type { SearchStats } from '../../../ia/search/types';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -61,6 +63,11 @@ export interface PlayerControlsProps {
   // Quiescence (optional support)
   enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
   quiescenceMaxPlies?: number; onChangeQuiescenceMaxPlies?: (n: number) => void;
+  // Tablebase probe (optional support)
+  enableTablebase?: boolean; onToggleEnableTablebase?: () => void;
+  // DF-PN (optional support)
+  enableDFPN?: boolean; onToggleEnableDFPN?: () => void;
+  dfpnMaxActive?: number; onChangeDfpnMaxActive?: (n: number) => void;
   /** Heuristic weights (optional) */
   w_race?: number; onChangeWRace?: (n: number) => void;
   w_clash?: number; onChangeWClash?: (n: number) => void;
@@ -132,4 +139,9 @@ export interface InfoIAViewProps {
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;
   onDeleteRecord: (id: string) => void;
+  // Regression suite
+  onRunSuite?: () => void;
+  suiteResult?: SuiteResult | null;
+  // Engine stats (from last search end)
+  engineStats?: Partial<SearchStats> | null;
 }

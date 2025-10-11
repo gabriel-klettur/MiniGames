@@ -1,5 +1,5 @@
 import type { GameState, Player } from '../../game/types';
-import { generateMoves, applyMove } from '../moves';
+import { generateMoves, applyMove, generateTacticalMoves } from '../moves';
 import { evaluate } from '../evaluate';
 import { TranspositionTable, type TTEntry } from '../tt';
 import type { SearchContext, SearchStats, NodeParams, IterResult, EngineOptions } from './types';
@@ -49,13 +49,28 @@ export function bestMoveIterative(
   opts.onProgress?.({ type: 'start', startedAt: start });
   opts.onProgress?.({ type: 'progress', nodesVisited: stats.nodes });
 
+  const reconstructPV = (root: GameState, tt: TranspositionTable | null, maxLen: number): string[] => {
+    if (!tt) return [];
+    const pv: string[] = [];
+    let cur = root;
+    for (let i = 0; i < maxLen; i++) {
+      const e = tt.get(cur);
+      if (!e || !e.bestMove) break;
+      pv.push(e.bestMove);
+      cur = applyMove(cur, e.bestMove);
+    }
+    return pv;
+  };
+
   for (let depth = 1; depth <= opts.maxDepth; depth++) {
     const remaining = deadline - performance.now();
     if (remaining <= 1) break;
-    // Simple adaptive time heuristic: if previous iteration took T, 
-    // estimate next iteration ~ T * growthFactor and stop if not enough time remains.
+    // Adaptive time: estimate next iteration cost based on previous iter and root branching factor
     if (opts.engine?.enableAdaptiveTime && depth > 1 && lastIterDurationMs > 0) {
-      const growth = 1.8; // conservative multiplier for iterative deepening cost growth
+      const baseGrowth = (opts.engine?.adaptiveGrowthFactor ?? 1.8);
+      const rootBF = opts.allowedRootMoves?.size ?? generateMoves(rootState).length;
+      const bfAdj = Math.max(0, rootBF - 4) * (opts.engine?.adaptiveBFWeight ?? 0.05);
+      const growth = baseGrowth + bfAdj;
       const slack = Math.max(0, opts.engine.timeSlackMs ?? 50);
       const predictedNext = lastIterDurationMs * growth;
       if (predictedNext + slack >= remaining) {
@@ -71,8 +86,15 @@ export function bestMoveIterative(
       alpha0 = prevScore! - delta;
       beta0 = prevScore! + delta;
     }
+    // Raise alpha0 by sharedRootAlpha from sibling workers if available
+    if (typeof opts.engine?.sharedRootAlpha === 'number' && Number.isFinite(opts.engine.sharedRootAlpha)) {
+      alpha0 = Math.max(alpha0, opts.engine.sharedRootAlpha);
+    }
 
-    const searchOnce = (a: number, b: number) => negamax({
+    // Carry-over PV move from previous iteration to seed root ordering; fall back to cross-worker hint
+    const pvHint: string | undefined = (bestMove ?? opts.engine?.rootPVHint ?? undefined);
+
+    const searchOnce = (a: number, b: number): IterResult => negamax({
       state: rootState,
       depth,
       alpha: a,
@@ -81,17 +103,18 @@ export function bestMoveIterative(
       ply: 0,
       stats,
       allowedRootMoves: opts.allowedRootMoves,
+      pvHintMove: pvHint || undefined,
       isRoot: true,
       progressHook,
     }, ctx, tt, deadline, opts.engine);
 
     const iterStart = performance.now();
-    let r = searchOnce(alpha0, beta0);
+    let r: IterResult = searchOnce(alpha0, beta0);
     if (r.timeout) break;
 
     // If aspiration fails low/high, re-search with full window
     if (useAsp && (r.score <= alpha0 || r.score >= beta0)) {
-      const r2 = searchOnce(-Infinity, +Infinity);
+      const r2: IterResult = searchOnce(-Infinity, +Infinity);
       if (r2.timeout) break;
       r = r2;
       if (stats) stats.aspReSearches = (stats.aspReSearches || 0) + 1;
@@ -102,7 +125,8 @@ export function bestMoveIterative(
     depthReached = depth;
     prevScore = r.score;
     lastIterDurationMs = performance.now() - iterStart;
-    opts.onProgress?.({ type: 'iter', depth, score: r.score, bestMove });
+    const pvLine = reconstructPV(rootState, tt, depth);
+    opts.onProgress?.({ type: 'iter', depth, score: r.score, bestMove, pv: pvLine });
     if (Math.abs(r.score) > 90000) break; // forced outcome
     const now = performance.now();
     if (now - lastProgressAt >= 0) {
@@ -197,11 +221,33 @@ function negamax(
   if (ttEntry && ttEntry.depth >= depth) {
     if (ttEntry.bound === 'EXACT') return { score: ttEntry.score, bestMove: ttEntry.bestMove ?? null, timeout: false };
     if (ttEntry.bound === 'LOWER' && ttEntry.score > params.alpha) params.alpha = ttEntry.score;
-    else if (ttEntry.bound === 'UPPER' && ttEntry.score < params.beta) params.beta = ttEntry.score;
-    if (params.alpha >= params.beta) {
-      params.stats && (params.stats.cutoffs = (params.stats.cutoffs || 0) + 1);
-      return { score: ttEntry.score, bestMove: ttEntry.bestMove ?? null, timeout: false };
+  }
+
+  // Internal Iterative Deepening (IID): if no hash move and depth is sufficient, probe depth-1
+  let iidBest: string | null = null;
+  if (!!engine?.enableIID && depth >= (engine?.iidMinDepth ?? 3) && !params.iidProbe) {
+    const hasHashMove = !!(ttEntry && ttEntry.bestMove);
+    if (!hasHashMove) {
+      const probe: IterResult = negamax({
+        state,
+        depth: depth - 1,
+        alpha: params.alpha,
+        beta: params.alpha + 1, // narrow window
+        me,
+        ply: ply,
+        stats: params.stats,
+        iidProbe: true,
+        progressHook: params.progressHook,
+      }, ctx, tt, deadline, engine);
+      if (probe.timeout) return probe;
+      iidBest = probe.bestMove;
     }
+  }
+  // If we had a TT entry with an UPPER bound, adjust beta
+  if (ttEntry && ttEntry.bound === 'UPPER' && ttEntry.score < params.beta) params.beta = ttEntry.score;
+  if (ttEntry && params.alpha >= params.beta) {
+    params.stats && (params.stats.cutoffs = (params.stats.cutoffs || 0) + 1);
+    return { score: ttEntry.score, bestMove: ttEntry.bestMove ?? null, timeout: false };
   }
 
   // Generate and order moves
@@ -213,11 +259,29 @@ function negamax(
     return { score: evaluate(state, me), bestMove: null, timeout: false };
   }
 
+  // Futility pruning (node-level): shallow depth, non-PV, non-tactical environment
+  if (!!engine?.enableFutility && !params.isRoot && depth <= 2) {
+    const staticEval = evaluate(state, me);
+    const margin = (engine?.futilityMargin ?? 150) * Math.max(1, depth);
+    const tactsHere = generateTacticalMoves(state);
+    if (staticEval + margin <= params.alpha && tactsHere.length === 0) {
+      // Safe to assume no move will raise alpha sufficiently; prune with alpha bound
+      return { score: params.alpha, bestMove: null, timeout: false };
+    }
+  }
+
   const killers = getKillers(ctx, ply);
-  // Prefer TT hash move if enabled to seed ordering (improves beta cutoffs)
-  const hashMove = (engine?.preferHashMove && ttEntry?.bestMove && moves.includes(ttEntry.bestMove))
-    ? ttEntry.bestMove
-    : null;
+  // Precompute tactical moves at this node for LMP decisions
+  const tactSet: Set<string> | null = (engine?.enableLMP || engine?.enableFutility) ? new Set(generateTacticalMoves(state)) : null;
+  // Prefer PV hint at root; otherwise use TT hash move if enabled
+  let hashMove: string | null = null;
+  if (params.isRoot && params.pvHintMove && moves.includes(params.pvHintMove)) {
+    hashMove = params.pvHintMove;
+  } else if (engine?.preferHashMove && ttEntry?.bestMove && moves.includes(ttEntry.bestMove)) {
+    hashMove = ttEntry.bestMove;
+  } else if (iidBest && moves.includes(iidBest)) {
+    hashMove = iidBest;
+  }
   const ordered = orderedMoves(state, moves, me, { hashMove, killers, history: ctx.history, jitter: engine?.orderingJitterEps });
 
   let bestScore = -Infinity;
@@ -232,15 +296,34 @@ function negamax(
 
     let score: number;
 
-    // Late Move Reductions (LMR): on non-PV late moves, try reduced-depth zero-window search
+    // Late Move Pruning (LMP): at shallow depths, skip very late non-tactical moves (non-PV)
+    if (!!engine?.enableLMP && !isPV && depth <= (engine?.lmpMaxDepth ?? 2)) {
+      const threshold = (engine?.lmpBase ?? 6) + 2 * depth;
+      const isTactical = tactSet ? tactSet.has(mv) : false;
+      if (i >= threshold && !isTactical) {
+        // Skip searching this move
+        continue;
+      }
+    }
+
+    // Late Move Reductions (LMR): on non-PV, non-tactical late moves, try reduced-depth zero-window
+    const isTacticalMove = tactSet ? tactSet.has(mv) : false;
     const canLMR = !!engine?.enableLMR
+      && !isPV
+      && !isTacticalMove
       && depth >= (engine?.lmrMinDepth ?? 3)
       && i >= (engine?.lmrLateMoveIdx ?? 3);
 
-    if (!isPV && canLMR) {
-      const red = Math.max(1, engine?.lmrReduction ?? 1);
+    if (canLMR) {
+      // Dynamic reduction: base + index bonus - history credit
+      const base = Math.max(1, engine?.lmrReduction ?? 1);
+      const idxBonus = i >= 6 ? 1 : 0;
+      const histKey = `${me}:${mv}`;
+      const histVal = ctx.history.get(histKey) || 0;
+      const histBonus = histVal > 500 ? 1 : 0; // strong history lowers reduction
+      const red = Math.max(1, base + idxBonus - histBonus);
       const reducedDepth = Math.max(1, depth - 1 - red);
-      const r1 = negamax({
+      const r1: IterResult = negamax({
         state: child,
         depth: reducedDepth,
         alpha: -a - 1,

@@ -31,7 +31,8 @@ describe('pieces.createInitialState', () => {
     expect(s.lanesByPlayer.Dark).toHaveLength(5);
     expect(s.pieces).toHaveLength(10);
     expect(s.turn).toBe(STARTING_PLAYER);
-    expect(s.ui).toEqual({ pieceWidth: 16, pieceHeight: 44, orientation: 'classic' });
+    // Match only the key UI defaults; the UI object now has additional defaults (scale, overlays, etc.)
+    expect(s.ui).toMatchObject({ pieceWidth: 16, pieceHeight: 44, orientation: 'classic' });
     expect(s.ai).toBeDefined();
     expect(s.ai!.enabled).toBe(false);
   });

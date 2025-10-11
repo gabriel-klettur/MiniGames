@@ -20,6 +20,45 @@ describe('rules.movePiece', () => {
     expect(gs.turn).toBe('Dark');
   });
 
+  it('con dos bloques separados, salta sólo el primero y termina', () => {
+    const gs = createInitialState();
+    const L = DEFAULT_LANE_LENGTH; // 6
+    // Usamos L2 (fila i+1 = 3). Para Dark, fijamos row = 3 => pos = 3.
+    // Colocamos dos oponentes en j=4 (col=5) y j=2 (col=3) para crear dos bloques separados.
+    const d4 = gs.pieces.find(p => p.id === 'D4')!; d4.pos = 3; // (row=3,col=5)
+    const d2 = gs.pieces.find(p => p.id === 'D2')!; d2.pos = 3; // (row=3,col=3)
+    // Ejecutar movimiento de L2 (speedOut=2). Debe saltar el primer bloque (col=5) y parar en pos=2.
+    movePiece(gs, 'L2');
+    const l2 = gs.pieces.find(p => p.id === 'L2')!;
+    expect(l2.pos).toBe(2);
+    // D4 vuelve a su borde de salida
+    expect(d4.pos).toBe(0);
+    // D2 permanece donde estaba (no saltado)
+    expect(d2.pos).toBe(3);
+  });
+
+  it('al saltar, un rival en_vuelta vuelve a su borde opuesto (pos = lane.length)', () => {
+    const gs = createInitialState();
+    const L = DEFAULT_LANE_LENGTH; // 6
+    // Usamos L4 (fila i+1 = 5). Para Dark, row=5 => pos = 1.
+    const d4 = gs.pieces.find(p => p.id === 'D4')!; d4.pos = 1; (d4 as any).state = 'en_vuelta';
+    // Ejecutar movimiento de L4 (speedOut=3) para cruzar por row=5 y saltar a D4.
+    movePiece(gs, 'L4');
+    // Como D4 estaba en_vuelta, debe volver al borde opuesto (pos = L)
+    expect(d4.pos).toBe(L);
+  });
+
+  it('en vuelta con velocidad que excede, se clampea a 0 y se retira', () => {
+    const gs = createInitialState();
+    // Tomamos L1 (speedBack=3). Forzamos estado en_vuelta en pos=2 para exceder.
+    const l1 = gs.pieces.find(p => p.id === 'L1')!; (l1 as any).state = 'en_vuelta'; l1.pos = 2;
+    // Aseguramos turno Light
+    gs.turn = 'Light';
+    movePiece(gs, 'L1');
+    expect(l1.pos).toBe(0);
+    expect(l1.state).toBe('retirada');
+  });
+
   it('gira en el borde lejano y pasa a en_vuelta', () => {
     const gs = createInitialState();
     const L = DEFAULT_LANE_LENGTH;
