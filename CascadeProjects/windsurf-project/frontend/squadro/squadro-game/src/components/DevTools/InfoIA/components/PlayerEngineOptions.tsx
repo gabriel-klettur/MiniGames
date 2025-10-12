@@ -33,7 +33,7 @@ interface PlayerEngineOptionsProps {
 }
 
 const labelCls = 'text-xs text-neutral-300';
-const inputCls = 'w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100';
+const inputCls = 'w-full min-w-0 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100';
 
 const JitterInput: React.FC<{ value?: number; disabled?: boolean; onChange?: (n: number) => void }> = ({ value, disabled, onChange }) => {
   const [val, setVal] = useState<string>(String(value ?? 0));
@@ -85,13 +85,15 @@ const JitterInput: React.FC<{ value?: number; disabled?: boolean; onChange?: (n:
 const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
   const dis = !!p.disabled;
   return (
-    <div className="engine-opts mt-2 flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="engine-opts mt-2 flex flex-col gap-3">
+      <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
+        <div className="text-xs font-semibold text-neutral-300 mb-2">Búsqueda y orden</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div className="inline-flex items-center gap-2" title="Tabla de transposiciones (TT) — Cachea evaluaciones por hash de posición para reutilizarlas en nodos repetidos. Útil cuando distintas secuencias alcanzan el mismo tablero. Ejemplo: si A→B→C y D→E→C producen la misma posición C, TT puede devolver una cota (EXACT/LOWER/UPPER) en O(1) y evitar recalcular la rama completa.">
           <span className={labelCls}>TT</span>
           <ToggleSwitch checked={!!p.enableTT} onChange={() => p.onToggleEnableTT?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
         </div>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="inline-flex items-center gap-2">
         <label className={labelCls + ' inline-flex items-center gap-2'} title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; valores típicos 0.5–2.0.">
           jitter
           <JitterInput value={p.orderingJitterEps} disabled={dis} onChange={(n) => p.onChangeOrderingJitterEps?.(n)} />
@@ -129,32 +131,36 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
           <span className={labelCls}>LMR</span>
           <ToggleSwitch checked={!!p.enableLMR} onChange={() => p.onToggleEnableLMR?.()} onLabel="On" offLabel="Off" className={dis ? 'opacity-60 pointer-events-none' : ''} />
         </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-4">
-        <label className={labelCls + ' inline-flex items-center gap-2'} title="LMR:minDepth — Profundidad mínima a partir de la cual considerar reducciones. Ejemplo: con minDepth=3, sólo se aplican reducciones cuando depth≥3.">
+        </div>
+      </section>
+      <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
+        <div className="text-xs font-semibold text-neutral-300 mb-2">Parámetros</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <label className={labelCls + ' flex flex-col gap-1'} title="LMR:minDepth — Profundidad mínima a partir de la cual considerar reducciones. Ejemplo: con minDepth=3, sólo se aplican reducciones cuando depth≥3.">
           minDepth
           <input type="number" disabled={dis} className={inputCls} value={p.lmrMinDepth ?? 3} onChange={(e) => p.onChangeLmrMinDepth?.(Number(e.target.value))} />
         </label>
-        <label className={labelCls + ' inline-flex items-center gap-2'} title="LMR:lateIdx — Considera 'jugada tardía' a partir de este índice en el orden. Ejemplo: lateIdx=3 ⇒ sólo desde el 4º movimiento (0,1,2 son tempranos).">
+        <label className={labelCls + ' flex flex-col gap-1'} title="LMR:lateIdx — Considera 'jugada tardía' a partir de este índice en el orden. Ejemplo: lateIdx=3 ⇒ sólo desde el 4º movimiento (0,1,2 son tempranos).">
           lateIdx
           <input type="number" disabled={dis} className={inputCls} value={p.lmrLateMoveIdx ?? 3} onChange={(e) => p.onChangeLmrLateMoveIdx?.(Number(e.target.value))} />
         </label>
-        <label className={labelCls + ' inline-flex items-center gap-2'} title="LMR:reduction — Plies a reducir para jugadas tardías no tácticas. Ejemplo: reduction=1 ⇒ profundidad efectiva d-1 (con salvaguarda de re-búsqueda si falla alto).">
+        <label className={labelCls + ' flex flex-col gap-1'} title="LMR:reduction — Plies a reducir para jugadas tardías no tácticas. Ejemplo: reduction=1 ⇒ profundidad efectiva d-1 (con salvaguarda de re-búsqueda si falla alto).">
           reduction
           <input type="number" disabled={dis} className={inputCls} value={p.lmrReduction ?? 1} onChange={(e) => p.onChangeLmrReduction?.(Number(e.target.value))} />
         </label>
-        <label className={labelCls + ' inline-flex items-center gap-2'} title="Quiescence:qPlies — Límite de extensiones de búsqueda táctica en hojas. Controla coste. Ejemplo: 4 ⇒ hasta 4 plies adicionales sólo en posiciones ruidosas.">
+        <label className={labelCls + ' flex flex-col gap-1'} title="Quiescence:qPlies — Límite de extensiones de búsqueda táctica en hojas. Controla coste. Ejemplo: 4 ⇒ hasta 4 plies adicionales sólo en posiciones ruidosas.">
           qPlies
           <input type="number" disabled={dis} className={inputCls} value={p.quiescenceMaxPlies ?? 4} onChange={(e) => p.onChangeQuiescenceMaxPlies?.(Number(e.target.value))} />
         </label>
-        <label className={labelCls + ' inline-flex items-center gap-2'} title="DF‑PN:maxActive — Activa DF‑PN cuando las piezas activas (no retiradas) sean ≤ este valor. Conservador: 2 por defecto.">
+        <label className={labelCls + ' flex flex-col gap-1'} title="DF‑PN:maxActive — Activa DF‑PN cuando las piezas activas (no retiradas) sean ≤ este valor. Conservador: 2 por defecto.">
           dfpnActive
           <input type="number" disabled={dis} className={inputCls} value={p.dfpnMaxActive ?? 2} onChange={(e) => p.onChangeDfpnMaxActive?.(Number(e.target.value))} />
         </label>
-      </div>
+        </div>
+      </section>
       {(typeof p.w_race === 'number' || typeof p.w_clash === 'number' || typeof p.w_sprint === 'number' || typeof p.w_block === 'number') && (
-        <div className="mt-2">
-          <div className="text-xs font-semibold text-neutral-300 mb-1">Heurística (pesos)</div>
+        <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
+          <div className="text-xs font-semibold text-neutral-300 mb-2">Heurística (pesos)</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <label className={labelCls + ' inline-flex items-center gap-2'} title="w_race — Peso de carrera: recompensa tener menos turnos restantes. Ejemplo: si tú tienes 6 turnos totales y rival 8, un w_race alto favorece tu posición por ventaja de carrera.">
               w_race
@@ -187,7 +193,7 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
               <input type="number" step={1} disabled={dis} className={inputCls} value={p.tempo ?? 5} onChange={(e) => p.onChangeTempo?.(Number(e.target.value))} />
             </label>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

@@ -49,47 +49,46 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title="Límites de simulación — Controla cuántas partidas se ejecutan y si se paraleliza la raíz. Ejemplo: 50 partidas con Paralelización raíz ON y 4 workers para evaluar jugadas iniciales en paralelo.">Límites de simulación</div>
-          <label className="mt-2 inline-flex items-center gap-2 text-xs text-neutral-300">
-            Partidas
-            <input
-              type="number"
-              min={1}
-              max={1000}
-              value={gamesCount}
-              onChange={(e) => onChangeGamesCount(Math.max(1, Math.min(1000, Number(e.target.value))))}
-              className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
-              title="Número de partidas a simular"
-            />
-          </label>
-          <div className="mt-2 flex items-center gap-3 text-xs text-neutral-300">
-            <label className="inline-flex items-center gap-2" title="Activar evaluación de movimientos de raíz en paralelo (usa varios Web Workers)">
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-min">
+            <label className="flex flex-col text-xs text-neutral-300" title="Número de partidas a simular">
+              <span>Partidas</span>
+              <input
+                type="number"
+                min={1}
+                max={1000}
+                value={gamesCount}
+                onChange={(e) => onChangeGamesCount(Math.max(1, Math.min(1000, Number(e.target.value))))}
+                className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+              />
+            </label>
+            <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Activar evaluación de movimientos de raíz en paralelo (usa varios Web Workers)">
               <input type="checkbox" checked={!!useRootParallel} onChange={() => onToggleUseRootParallel?.()} />
               Paralelización raíz
             </label>
-            <label className="inline-flex items-center gap-2" title="Cantidad de workers paralelos para evaluar jugadas de raíz">
-              Workers
+            <label className="flex flex-col text-xs text-neutral-300" title="Cantidad de workers paralelos para evaluar jugadas de raíz">
+              <span>Workers</span>
               <input
                 type="number"
                 min={1}
                 max={32}
                 value={workers ?? 2}
                 onChange={(e) => onChangeWorkers?.(Math.max(1, Math.min(32, Number(e.target.value))))}
-                className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+                className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
-            <label className="inline-flex items-center gap-2" title="Número de plies iniciales jugados al azar para diversificar aperturas (0 desactiva)">
-              Apertura aleatoria
+            <label className="flex flex-col text-xs text-neutral-300" title="Número de plies iniciales jugados al azar para diversificar aperturas (0 desactiva)">
+              <span>Apertura aleatoria</span>
               <input
                 type="number"
                 min={0}
                 max={20}
                 value={randomOpeningPlies ?? 0}
                 onChange={(e) => onChangeRandomOpeningPlies?.(Math.max(0, Math.min(20, Number(e.target.value))))}
-                className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+                className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
-            <label className="inline-flex items-center gap-2" title="Exploración ε — Probabilidad por jugada de elegir un movimiento aleatorio tras la apertura para generar diversidad en self-play. 0 desactiva.">
-              Expl. ε
+            <label className="flex flex-col text-xs text-neutral-300" title="Exploración ε — Probabilidad por jugada de elegir un movimiento aleatorio tras la apertura para generar diversidad en self-play. 0 desactiva.">
+              <span>Expl. ε</span>
               <input
                 type="number"
                 min={0}
@@ -97,14 +96,14 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
                 step={0.01}
                 value={typeof exploreEps === 'number' ? exploreEps : 0}
                 onChange={(e) => onChangeExploreEps?.(Math.max(0, Math.min(1, Number(e.target.value))))}
-                className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+                className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
-            <label className="inline-flex items-center gap-2" title="Permitir que Light sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
+            <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Permitir que Light sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
               <input type="checkbox" checked={!!startEligibleLight} onChange={() => onToggleStartEligibleLight?.()} />
               Puede iniciar Light
             </label>
-            <label className="inline-flex items-center gap-2" title="Permitir que Dark sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
+            <label className="inline-flex items-center gap-2 text-xs text-neutral-300" title="Permitir que Dark sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">
               <input type="checkbox" checked={!!startEligibleDark} onChange={() => onToggleStartEligibleDark?.()} />
               Puede iniciar Dark
             </label>
