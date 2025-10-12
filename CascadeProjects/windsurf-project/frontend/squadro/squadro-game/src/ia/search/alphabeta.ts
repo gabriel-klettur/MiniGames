@@ -12,6 +12,7 @@ export interface EngineSearchOptions {
   onProgress?: (ev: { type: 'start' | 'progress' | 'iter' | 'end'; [k: string]: any }) => void;
   allowedRootMoves?: Set<string>;
   engine?: EngineOptions;
+  maxNodes?: number;
 }
 
 export function createDefaultContext(): SearchContext {
@@ -102,6 +103,7 @@ export function bestMoveIterative(
       me,
       ply: 0,
       stats,
+      maxNodes: opts.maxNodes,
       allowedRootMoves: opts.allowedRootMoves,
       pvHintMove: pvHint || undefined,
       isRoot: true,
@@ -185,6 +187,10 @@ function negamax(
 ): IterResult {
   const { state, depth, me, ply } = params;
 
+  if (params.stats && typeof params.maxNodes === 'number' && params.stats.nodes >= params.maxNodes) {
+    return { score: 0, bestMove: null, timeout: true };
+  }
+
   // Time check
   if (performance.now() >= deadline) return { score: 0, bestMove: null, timeout: true };
 
@@ -207,6 +213,7 @@ function negamax(
         me,
         ply,
         stats: params.stats,
+        maxNodes: params.maxNodes,
         qDepth: 0,
       }, ctx, tt, deadline, engine);
     } else {
@@ -240,6 +247,7 @@ function negamax(
         progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (probe.timeout) return probe;
+      if (params.stats) params.stats.iidProbes = (params.stats.iidProbes || 0) + 1;
       iidBest = probe.bestMove;
     }
   }
@@ -266,6 +274,7 @@ function negamax(
     const tactsHere = generateTacticalMoves(state);
     if (staticEval + margin <= params.alpha && tactsHere.length === 0) {
       // Safe to assume no move will raise alpha sufficiently; prune with alpha bound
+      params.stats && (params.stats.futilityPrunes = (params.stats.futilityPrunes || 0) + 1);
       return { score: params.alpha, bestMove: null, timeout: false };
     }
   }
@@ -282,6 +291,9 @@ function negamax(
   } else if (iidBest && moves.includes(iidBest)) {
     hashMove = iidBest;
   }
+  if (hashMove) {
+    params.stats && (params.stats.hashMoveUsed = (params.stats.hashMoveUsed || 0) + 1);
+  }
   const ordered = orderedMoves(state, moves, me, { hashMove, killers, history: ctx.history, jitter: engine?.orderingJitterEps });
 
   let bestScore = -Infinity;
@@ -293,6 +305,9 @@ function negamax(
     const mv = ordered[i];
     const child = applyMove(state, mv);
     const isPV = i === 0; // principal variation candidate
+    if (killers.includes(mv)) {
+      params.stats && (params.stats.killersTried = (params.stats.killersTried || 0) + 1);
+    }
 
     let score: number;
 
@@ -302,6 +317,7 @@ function negamax(
       const isTactical = tactSet ? tactSet.has(mv) : false;
       if (i >= threshold && !isTactical) {
         // Skip searching this move
+        params.stats && (params.stats.lmpPrunes = (params.stats.lmpPrunes || 0) + 1);
         continue;
       }
     }
@@ -331,6 +347,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        maxNodes: params.maxNodes,
         progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r1.timeout) return r1;
@@ -350,6 +367,7 @@ function negamax(
           params.stats && (params.stats.cutoffs = (params.stats.cutoffs || 0) + 1);
           pushKiller(ctx, ply, mv);
           bumpHistory(ctx, me, mv, depth * depth);
+          if (params.stats) params.stats.historyUpdates = (params.stats.historyUpdates || 0) + 1;
           break;
         }
         continue;
@@ -366,6 +384,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        maxNodes: params.maxNodes,
         progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r0.timeout) return r0;
@@ -380,6 +399,7 @@ function negamax(
           me,
           ply: ply + 1,
           stats: params.stats,
+          maxNodes: params.maxNodes,
           progressHook: params.progressHook,
         }, ctx, tt, deadline, engine);
         if (r2.timeout) return r2;
@@ -396,6 +416,7 @@ function negamax(
         me,
         ply: ply + 1,
         stats: params.stats,
+        maxNodes: params.maxNodes,
         progressHook: params.progressHook,
       }, ctx, tt, deadline, engine);
       if (r.timeout) return r;
@@ -412,6 +433,7 @@ function negamax(
       params.stats && (params.stats.cutoffs = (params.stats.cutoffs || 0) + 1);
       pushKiller(ctx, ply, mv);
       bumpHistory(ctx, me, mv, depth * depth);
+      if (params.stats) params.stats.historyUpdates = (params.stats.historyUpdates || 0) + 1;
       break;
     }
   }

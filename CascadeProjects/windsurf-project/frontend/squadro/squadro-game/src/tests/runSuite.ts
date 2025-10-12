@@ -11,6 +11,8 @@ export type SuiteCase = {
   moves: string[];
   depth?: number;
   timeMs: number;
+  repeat?: number;
+  allowFailuresPct?: number;
   engine?: Partial<EngineOptions>;
   tbEntry?: { value: 'win' | 'loss' | 'draw'; bestMove?: string; pv?: string[]; score?: number };
   expect: {
@@ -80,33 +82,56 @@ export async function runSuite(): Promise<SuiteResult> {
   const details: SuiteResult['details'] = [];
   for (const c of cases) {
     const root = await buildState(c.moves);
-    // Reset tablebase and optionally preload an entry for this root
-    tbClear();
-    if (c.tbEntry) {
-      const key = hashState(root);
-      tbAdd(key, { value: c.tbEntry.value, bestMove: c.tbEntry.bestMove, pv: c.tbEntry.pv, score: c.tbEntry.score });
+    const runs = Math.max(1, Math.floor(c.repeat ?? 1));
+    const allowPct = Math.max(0, Math.min(1, c.allowFailuresPct ?? 0));
+    const maxAllowed = Math.floor(allowPct * runs);
+    let fails = 0;
+    let bestDepth = 0;
+    let lastScore = 0;
+    let lastMoveId: string | null = null;
+    let lastMsg: string | undefined = undefined;
+    for (let i = 0; i < runs; i++) {
+      tbClear();
+      if (c.tbEntry) {
+        const key = hashState(root);
+        tbAdd(key, { value: c.tbEntry.value, bestMove: c.tbEntry.bestMove, pv: c.tbEntry.pv, score: c.tbEntry.score });
+      }
+      let lastPV: string[] | null = null;
+      const engineArg: Partial<EngineOptions> = {
+        ...(c.engine || {}),
+        orderingJitterEps: 0,
+        enableAdaptiveTime: false,
+        enableRootParallel: false,
+        workers: 1,
+      };
+      if (c.tbEntry) engineArg.enableTablebase = true;
+      const res = await findBestMove(root, {
+        maxDepth: Math.max(1, typeof c.depth === 'number' ? c.depth : 4),
+        timeLimitMs: Math.max(200, c.timeMs),
+        maxNodes: (c as any).maxNodes,
+        onProgress: (ev) => {
+          if (ev.type === 'iter' && Array.isArray(ev.pv)) {
+            lastPV = ev.pv;
+          }
+        },
+        engine: (engineArg as any) || undefined,
+      });
+      const chk = checkExpect(res.depthReached, res.moveId, res.score, lastPV, c.expect);
+      if (!chk.ok) fails += 1;
+      if (res.depthReached > bestDepth) bestDepth = res.depthReached;
+      lastScore = res.score;
+      lastMoveId = res.moveId;
+      lastMsg = chk.message;
     }
-    let lastPV: string[] | null = null;
-    const engineArg: Partial<EngineOptions> = { ...(c.engine || {}) };
-    if (c.tbEntry) engineArg.enableTablebase = true;
-    const res = await findBestMove(root, {
-      maxDepth: Math.max(1, typeof c.depth === 'number' ? c.depth : 4),
-      timeLimitMs: Math.max(200, c.timeMs),
-      onProgress: (ev) => {
-        if (ev.type === 'iter' && Array.isArray(ev.pv)) {
-          lastPV = ev.pv;
-        }
-      },
-      engine: (engineArg as any) || undefined,
-    });
-    const chk = checkExpect(res.depthReached, res.moveId, res.score, lastPV, c.expect);
+    const ok = fails <= maxAllowed;
+    const msg = runs > 1 ? (ok ? undefined : `flaky ${fails}/${runs}`) : lastMsg;
     details.push({
       name: c.name,
-      ok: chk.ok,
-      depthReached: res.depthReached,
-      score: res.score,
-      moveId: res.moveId,
-      message: chk.message,
+      ok,
+      depthReached: bestDepth,
+      score: lastScore,
+      moveId: lastMoveId,
+      message: msg,
     });
   }
   const passed = details.filter(d => d.ok).length;

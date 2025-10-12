@@ -16,6 +16,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     compareHeads, onAddCompare, onRemoveCompare, onClearCompare, chartDatasets,
     gamesCount, onChangeGamesCount,
     useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers,
+    randomOpeningPlies, onChangeRandomOpeningPlies,
     startEligibleLight, onToggleStartEligibleLight,
     startEligibleDark, onToggleStartEligibleDark,
     p1, p2,
@@ -55,9 +56,14 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onImportFiles={onImportFiles}
           onClearAll={onClearAll}
         />
-        {onRunSuite && (
+        {(onRunSuite || props.onExportJUnit) && (
           <div className="mt-2">
-            <button className="chip-btn" onClick={onRunSuite} aria-label="Run regression suite" title="Run regression suite">Run Regression Suite</button>
+            {onRunSuite && (
+              <button className="chip-btn mr-2" onClick={onRunSuite} aria-label="Run regression suite" title="Run regression suite">Run Regression Suite</button>
+            )}
+            {props.onExportJUnit && (
+              <button className="chip-btn" onClick={props.onExportJUnit} aria-label="Export JUnit report" title="Export JUnit report">Export JUnit</button>
+            )}
           </div>
         )}
       </div>
@@ -99,6 +105,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onToggleUseRootParallel={onToggleUseRootParallel}
           workers={workers}
           onChangeWorkers={onChangeWorkers}
+          randomOpeningPlies={randomOpeningPlies}
+          onChangeRandomOpeningPlies={onChangeRandomOpeningPlies}
           startEligibleLight={startEligibleLight}
           onToggleStartEligibleLight={onToggleStartEligibleLight}
           startEligibleDark={startEligibleDark}
@@ -146,6 +154,67 @@ export default function InfoIAView(props: InfoIAViewProps) {
               </div>
             </div>
           )}
+        </div>
+      )}
+      {props.suiteDiff && (
+        <div className="mt-3 rounded-lg border border-neutral-700 p-3 bg-neutral-900/60">
+          <div className="text-sm font-semibold mb-2">Baseline Diff</div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <div className="font-semibold text-red-300 mb-1">Rotos</div>
+              {props.suiteDiff.broke.length === 0 ? (
+                <div className="text-neutral-400">—</div>
+              ) : (
+                <ul className="list-disc pl-5 text-red-300">
+                  {props.suiteDiff.broke.map((n) => (<li key={n}>{n}</li>))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <div className="font-semibold text-emerald-300 mb-1">Arreglados</div>
+              {props.suiteDiff.fixed.length === 0 ? (
+                <div className="text-neutral-400">—</div>
+              ) : (
+                <ul className="list-disc pl-5 text-emerald-300">
+                  {props.suiteDiff.fixed.map((n) => (<li key={n}>{n}</li>))}
+                </ul>
+              )}
+            </div>
+            <div className="col-span-2">
+              <div className="font-semibold text-neutral-200 mb-1">Cambiados</div>
+              {props.suiteDiff.changed.length === 0 ? (
+                <div className="text-neutral-400">—</div>
+              ) : (
+                <ul className="list-disc pl-5 text-neutral-300">
+                  {props.suiteDiff.changed.map((c) => (
+                    <li key={c.name}>
+                      {c.name}: {c.from ? `${c.from.moveId ?? '-'}@d${c.from.depthReached} (${c.from.score})` : '—'} → {c.to ? `${c.to.moveId ?? '-'}@d${c.to.depthReached} (${c.to.score})` : '—'}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <div className="font-semibold text-neutral-200 mb-1">Nuevos</div>
+              {props.suiteDiff.newCases.length === 0 ? (
+                <div className="text-neutral-400">—</div>
+              ) : (
+                <ul className="list-disc pl-5 text-neutral-300">
+                  {props.suiteDiff.newCases.map((n) => (<li key={n}>{n}</li>))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <div className="font-semibold text-neutral-200 mb-1">Quitados</div>
+              {props.suiteDiff.removed.length === 0 ? (
+                <div className="text-neutral-400">—</div>
+              ) : (
+                <ul className="list-disc pl-5 text-neutral-300">
+                  {props.suiteDiff.removed.map((n) => (<li key={n}>{n}</li>))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </section>

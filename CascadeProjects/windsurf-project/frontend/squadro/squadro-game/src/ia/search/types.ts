@@ -9,6 +9,14 @@ export interface SearchStats {
   lmrReductions?: number;
   // Number of re-searches triggered by Aspiration Windows adjustments
   aspReSearches?: number;
+  futilityPrunes?: number;
+  lmpPrunes?: number;
+  iidProbes?: number;
+  killersTried?: number;
+  historyUpdates?: number;
+  hashMoveUsed?: number;
+  qNodes?: number;
+  qPlies?: number;
 }
 
 export interface SearchContext {
@@ -80,6 +88,7 @@ export interface NodeParams {
   me: Player;      // root perspective
   ply: number;     // root=0
   stats?: SearchStats;
+  maxNodes?: number;
   allowedRootMoves?: Set<string>;
   pvHintMove?: string;
   isRoot?: boolean;

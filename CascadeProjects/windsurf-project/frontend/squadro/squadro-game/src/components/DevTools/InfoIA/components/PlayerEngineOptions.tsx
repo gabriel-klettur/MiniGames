@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ToggleSwitch from '../../../ui/ToggleSwitch';
 
 interface PlayerEngineOptionsProps {
@@ -35,6 +35,53 @@ interface PlayerEngineOptionsProps {
 const labelCls = 'text-xs text-neutral-300';
 const inputCls = 'w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100';
 
+const JitterInput: React.FC<{ value?: number; disabled?: boolean; onChange?: (n: number) => void }> = ({ value, disabled, onChange }) => {
+  const [val, setVal] = useState<string>(String(value ?? 0));
+  useEffect(() => { setVal(String(value ?? 0)); }, [value]);
+  const commit = (v: string) => {
+    const raw = (v || '').replace(',', '.');
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return;
+    const num = Number(raw);
+    if (Number.isFinite(num)) onChange?.(Math.max(0, num));
+  };
+  const parse = (): number => {
+    const raw = (val || '').replace(',', '.');
+    const num = Number(raw);
+    return Number.isFinite(num) ? Math.max(0, num) : Math.max(0, Number(value ?? 0));
+  };
+  const step = (delta: number) => {
+    const cur = parse();
+    const next = Math.max(0, Math.round((cur + delta) * 10) / 10);
+    setVal(String(next));
+    onChange?.(next);
+  };
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        type="text"
+        inputMode="decimal"
+        disabled={!!disabled}
+        className={inputCls}
+        value={val}
+        onChange={(e) => { const v = e.target.value; setVal(v); commit(v); }}
+        onBlur={() => { if (val === '' || val === '-' || val === '.' || val === '-.') setVal(String(value ?? 0)); }}
+      />
+      <button
+        type="button"
+        disabled={!!disabled}
+        className="px-1 py-0.5 rounded border border-neutral-700 bg-neutral-800 text-neutral-200"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); step(-0.1); }}
+      >−</button>
+      <button
+        type="button"
+        disabled={!!disabled}
+        className="px-1 py-0.5 rounded border border-neutral-700 bg-neutral-800 text-neutral-200"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); step(+0.1); }}
+      >+</button>
+    </span>
+  );
+};
+
 const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
   const dis = !!p.disabled;
   return (
@@ -47,7 +94,7 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
       <div className="flex flex-wrap items-center gap-4">
         <label className={labelCls + ' inline-flex items-center gap-2'} title="orderingJitterEps — Ruido leve en la prioridad del orden para romper empates deterministas. 0 desactiva; valores típicos 0.5–2.0.">
           jitter
-          <input type="number" step={0.1} disabled={dis} className={inputCls} value={p.orderingJitterEps ?? 0} onChange={(e) => p.onChangeOrderingJitterEps?.(Number(e.target.value))} />
+          <JitterInput value={p.orderingJitterEps} disabled={dis} onChange={(n) => p.onChangeOrderingJitterEps?.(n)} />
         </label>
       </div>
         <div className="inline-flex items-center gap-2" title="Principal Variation Search (PVS) — Busca el primer hijo con ventana completa para establecer α; los siguientes con ventana nula [-α-1, -α]. Si alguno mejora α, se re-busca a ventana completa. Ejemplo: si el primer hijo da 15, el segundo se prueba con [-16,-15]; si devuelve 17, se re-busca a [-∞,+∞].">

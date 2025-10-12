@@ -8,6 +8,7 @@ import { useRecords } from './hooks/useRecords.ts';
 import { useSimulationRunner } from './hooks/useSimulationRunner.ts';
 import type { EngineOptions } from '../../../ia/search/types';
 import { loadPresets, setSelectedPresetId, type IAPreset } from '../../../ia/presets';
+import { loadLastSuite, saveLastSuite } from './services/storage.ts';
 
 const InfoIAContainer: React.FC = () => {
   const settings = useInfoIASettings();
@@ -42,6 +43,8 @@ const InfoIAContainer: React.FC = () => {
       workers: settings.workers,
       startEligibleLight: settings.startEligibleLight,
       startEligibleDark: settings.startEligibleDark,
+      randomOpeningPlies: settings.randomOpeningPlies,
+      traceHeuristics: settings.traceHeuristics,
       // Per-player engine options
       p1Options: settings.p1Engine as EngineOptions,
       p2Options: settings.p2Engine as EngineOptions,
@@ -54,6 +57,53 @@ const InfoIAContainer: React.FC = () => {
 
   // Regression suite state (results)
   const [suiteResult, setSuiteResult] = useState<import('../../../tests/runSuite').SuiteResult | null>(null);
+  const [baselineSuite, setBaselineSuite] = useState<import('../../../tests/runSuite').SuiteResult | null>(null);
+  const [suiteDiff, setSuiteDiff] = useState<{
+    broke: string[];
+    fixed: string[];
+    changed: Array<{ name: string; from: { moveId: string | null; score: number; depthReached: number } | null; to: { moveId: string | null; score: number; depthReached: number } | null }>;
+    newCases: string[];
+    removed: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const last = loadLastSuite();
+      if (last && typeof last === 'object' && Array.isArray(last.details)) setBaselineSuite(last);
+    } catch {}
+  }, []);
+
+  const computeSuiteDiff = (
+    base: import('../../../tests/runSuite').SuiteResult | null,
+    cur: import('../../../tests/runSuite').SuiteResult | null,
+  ) => {
+    if (!base || !cur) return null;
+    const byName = (arr: typeof base.details) => {
+      const m = new Map<string, typeof arr[number]>();
+      for (const d of arr) m.set(d.name, d);
+      return m;
+    };
+    const a = byName(base.details);
+    const b = byName(cur.details);
+    const broke: string[] = [];
+    const fixed: string[] = [];
+    const changed: Array<{ name: string; from: any; to: any }> = [];
+    const newCases: string[] = [];
+    const removed: string[] = [];
+    for (const [name, d0] of a.entries()) {
+      const d1 = b.get(name);
+      if (!d1) { removed.push(name); continue; }
+      if (d0.ok && !d1.ok) broke.push(name);
+      if (!d0.ok && d1.ok) fixed.push(name);
+      if ((d0.moveId !== d1.moveId) || (d0.score !== d1.score) || (d0.depthReached !== d1.depthReached)) {
+        changed.push({ name, from: { moveId: d0.moveId, score: d0.score, depthReached: d0.depthReached }, to: { moveId: d1.moveId, score: d1.score, depthReached: d1.depthReached } });
+      }
+    }
+    for (const [name] of b.entries()) {
+      if (!a.has(name)) newCases.push(name);
+    }
+    return { broke, fixed, changed, newCases, removed };
+  };
 
   const handleRunSuite = async () => {
     try {
@@ -62,6 +112,10 @@ const InfoIAContainer: React.FC = () => {
       const mod = await import('../../../tests/runSuite');
       const res = await mod.runSuite();
       setSuiteResult(res);
+      const diff = computeSuiteDiff(baselineSuite, res);
+      setSuiteDiff(diff);
+      saveLastSuite(res);
+      setBaselineSuite(res);
     } catch (err) {
       console.error('runSuite failed', err);
       setSuiteResult({ total: 0, passed: 0, failed: 0, details: [] });
@@ -69,6 +123,23 @@ const InfoIAContainer: React.FC = () => {
       setSuspendPersistence(false);
       flushNow();
     }
+  };
+
+  const handleExportJUnit = async () => {
+    try {
+      if (!suiteResult) return;
+      const { toJUnitXml } = await import('../../../tests/reporters');
+      const xml = toJUnitXml(suiteResult, 'SquadroRegression');
+      const blob = new Blob([xml], { type: 'application/xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'squadro-regression-junit.xml';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {}
   };
 
   // Engine stats from last search (global)
@@ -240,6 +311,10 @@ const InfoIAContainer: React.FC = () => {
       onToggleUseRootParallel={() => settings.setUseRootParallel(!settings.useRootParallel)}
       workers={settings.workers}
       onChangeWorkers={(n: number) => settings.setWorkers(Math.max(1, Math.min(32, n)))}
+      randomOpeningPlies={settings.randomOpeningPlies}
+      onChangeRandomOpeningPlies={(n: number) => settings.setRandomOpeningPlies(Math.max(0, Math.min(20, n)))}
+      traceHeuristics={settings.traceHeuristics}
+      onToggleTraceHeuristics={() => settings.setTraceHeuristics(!settings.traceHeuristics)}
       startEligibleLight={settings.startEligibleLight}
       onToggleStartEligibleLight={() => settings.setStartEligibleLight(!settings.startEligibleLight)}
       startEligibleDark={settings.startEligibleDark}
@@ -380,6 +455,8 @@ const InfoIAContainer: React.FC = () => {
       onDownloadRecord={downloadRecord}
       onDeleteRecord={deleteRecord}
       onRunSuite={handleRunSuite}
+      suiteDiff={suiteDiff}
+      onExportJUnit={suiteResult ? handleExportJUnit : undefined}
       suiteResult={suiteResult}
       engineStats={engineStats}
     />

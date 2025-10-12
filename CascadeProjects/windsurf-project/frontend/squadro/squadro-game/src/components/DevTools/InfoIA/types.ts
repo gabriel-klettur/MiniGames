@@ -18,6 +18,24 @@ export type MoveDetail = {
   at?: number;
   /** Zobrist-like hash (uint32) of the position AFTER applying the move */
   zKey?: number;
+  /** Optional summary of heuristics and search stats for this move */
+  explain?: {
+    ttProbes?: number;
+    ttHits?: number;
+    cutoffs?: number;
+    pvsReSearches?: number;
+    lmrReductions?: number;
+    aspReSearches?: number;
+    killersTried?: number;
+    historyUpdates?: number;
+    hashMoveUsed?: boolean;
+    qPlies?: number;
+    qNodes?: number;
+    lmpPrunes?: number;
+    futilityPrunes?: number;
+    iidProbes?: number;
+    tbHits?: number;
+  };
 };
 
 export type InfoIARecord = {
@@ -141,7 +159,15 @@ export interface InfoIAViewProps {
   onDeleteRecord: (id: string) => void;
   // Regression suite
   onRunSuite?: () => void;
+  onExportJUnit?: () => void;
   suiteResult?: SuiteResult | null;
+  suiteDiff?: {
+    broke: string[];
+    fixed: string[];
+    changed: Array<{ name: string; from: { moveId: string | null; score: number; depthReached: number } | null; to: { moveId: string | null; score: number; depthReached: number } | null }>;
+    newCases: string[];
+    removed: string[];
+  } | null;
   // Engine stats (from last search end)
   engineStats?: Partial<SearchStats> | null;
 }

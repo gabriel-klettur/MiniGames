@@ -107,6 +107,7 @@ export function useInfoIASettings(): InfoIASettings {
     setGamesCount(10);
     setUseRootParallel(false);
     setWorkers(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
+    setRandomOpeningPlies(0);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
     setP1Secs(3); setP2Secs(3);

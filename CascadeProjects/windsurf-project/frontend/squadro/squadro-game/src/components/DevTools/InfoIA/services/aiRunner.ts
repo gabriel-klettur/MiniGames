@@ -8,6 +8,7 @@ export type AIRunnerResult = {
   nodes?: number;
   elapsedMs?: number;
   nps?: number;
+  engineStats?: any;
 };
 
 export type AIRunnerProgress = {
@@ -35,6 +36,7 @@ export function createAIRunner() {
           depthReached: data.depthReached,
           // Map engineStats.nodes (when present) into result.nodes for consumers
           nodes: data.engineStats?.nodes,
+          engineStats: data.engineStats,
         };
         currentResolve?.(res);
         currentResolve = null;

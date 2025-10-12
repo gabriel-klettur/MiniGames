@@ -14,6 +14,41 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const toggle = useCallback((id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] })), []);
   const expandedCount = useMemo(() => Object.values(expanded).filter(Boolean).length, [expanded]);
+  const dupCountByMoves = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const r of records) m.set(r.moves, (m.get(r.moves) || 0) + 1);
+    return m;
+  }, [records]);
+  // Palette of professional, subtle hues for duplicate groups
+  const palette = useMemo(() => ([
+    { bgRow: 'bg-amber-900/10', marker: 'bg-amber-400', badgeBorder: 'border-amber-500/30', badgeBg: 'bg-amber-500/10', badgeText: 'text-amber-300' },
+    { bgRow: 'bg-sky-900/10', marker: 'bg-sky-400', badgeBorder: 'border-sky-500/30', badgeBg: 'bg-sky-500/10', badgeText: 'text-sky-300' },
+    { bgRow: 'bg-violet-900/10', marker: 'bg-violet-400', badgeBorder: 'border-violet-500/30', badgeBg: 'bg-violet-500/10', badgeText: 'text-violet-300' },
+    { bgRow: 'bg-emerald-900/10', marker: 'bg-emerald-400', badgeBorder: 'border-emerald-500/30', badgeBg: 'bg-emerald-500/10', badgeText: 'text-emerald-300' },
+    { bgRow: 'bg-rose-900/10', marker: 'bg-rose-400', badgeBorder: 'border-rose-500/30', badgeBg: 'bg-rose-500/10', badgeText: 'text-rose-300' },
+    { bgRow: 'bg-indigo-900/10', marker: 'bg-indigo-400', badgeBorder: 'border-indigo-500/30', badgeBg: 'bg-indigo-500/10', badgeText: 'text-indigo-300' },
+    { bgRow: 'bg-lime-900/10', marker: 'bg-lime-400', badgeBorder: 'border-lime-500/30', badgeBg: 'bg-lime-500/10', badgeText: 'text-lime-300' },
+    { bgRow: 'bg-fuchsia-900/10', marker: 'bg-fuchsia-400', badgeBorder: 'border-fuchsia-500/30', badgeBg: 'bg-fuchsia-500/10', badgeText: 'text-fuchsia-300' },
+    { bgRow: 'bg-cyan-900/10', marker: 'bg-cyan-400', badgeBorder: 'border-cyan-500/30', badgeBg: 'bg-cyan-500/10', badgeText: 'text-cyan-300' },
+  ]), []);
+  // Stable group index per duplicated moves value (A, B, C...)
+  const dupGroupIndexByMoves = useMemo(() => {
+    const m = new Map<number, number>();
+    const keys = Array.from(dupCountByMoves.entries())
+      .filter(([, c]) => c >= 2)
+      .map(([k]) => k)
+      .sort((a, b) => a - b);
+    keys.forEach((k, i) => m.set(k, i));
+    return m;
+  }, [dupCountByMoves]);
+  // Precompute a display legend for duplicate groups
+  const dupGroups = useMemo(() => {
+    const arr: Array<{ moves: number; count: number; idx: number }> = [];
+    dupCountByMoves.forEach((count, mv) => {
+      if (count >= 2) arr.push({ moves: mv, count, idx: dupGroupIndexByMoves.get(mv) ?? 0 });
+    });
+    return arr.sort((a, b) => a.moves - b.moves);
+  }, [dupCountByMoves, dupGroupIndexByMoves]);
 
   return (
     <div className="tabla-ia mt-2">
@@ -41,6 +76,20 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
           </Button>
         </div>
       </div>
+      {dupGroups.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mb-2 text-[11px]">
+          {dupGroups.map(g => {
+            const pal = palette[g.idx % palette.length];
+            const gid = String.fromCharCode(65 + (g.idx % 26));
+            return (
+              <span key={g.moves} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${pal.badgeBorder} ${pal.badgeBg} ${pal.badgeText}`} title={`Grupo ${gid}: Movs=${g.moves}, repeticiones=${g.count}`}>
+                <span className={`inline-block w-2 h-2 rounded ${pal.marker}`} />
+                Grupo {gid} · Movs {g.moves} · ×{g.count}
+              </span>
+            );
+          })}
+        </div>
+      )}
       <div className="overflow-x-auto rounded-md border border-neutral-800" title="Tabla de partidas — Click en Inicio para expandir/contraer detalles; usa Acciones para copiar/descargar/eliminar.">
         <table className="min-w-full text-[11px]">
           <thead className="bg-neutral-900/70 text-neutral-300">
@@ -55,9 +104,14 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
-            {records.map((r) => (
+            {records.map((r) => {
+              const count = dupCountByMoves.get(r.moves) || 0;
+              const gIdx = dupGroupIndexByMoves.get(r.moves);
+              const pal = (gIdx !== undefined) ? palette[(gIdx as number) % palette.length] : null;
+              const groupId = (gIdx !== undefined) ? String.fromCharCode(65 + ((gIdx as number) % 26)) : null;
+              return (
               <React.Fragment key={r.id}>
-                <tr className="hover:bg-neutral-800/40">
+                <tr className={`hover:bg-neutral-800/40 ${count >= 2 && pal ? pal.bgRow : ''}` }>
                   <td className="py-2 px-2">
                     <button
                       type="button"
@@ -65,6 +119,9 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                       onClick={() => toggle(r.id)}
                       title={expanded[r.id] ? 'Contraer' : 'Expandir'}
                     >
+                      {(count >= 2 && pal) && (
+                        <span className={`inline-block w-1 h-4 rounded ${pal.marker}`} aria-hidden />
+                      )}
                       <svg width="12" height="12" viewBox="0 0 24 24" className={`transition-transform ${expanded[r.id] ? 'rotate-90' : ''}`} aria-hidden>
                         <path d="M8 5l8 7-8 7V5z" fill="currentColor" />
                       </svg>
@@ -72,7 +129,15 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                     </button>
                   </td>
                   <td className="py-2 px-2 font-mono">{Math.round(r.durationMs).toLocaleString()}</td>
-                  <td className="py-2 px-2 font-mono">{r.moves}</td>
+                  <td className="py-2 px-2 font-mono">
+                    {r.moves}
+                    {count >= 2 && pal ? (
+                      <span className={`ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${pal.badgeBorder} ${pal.badgeBg} ${pal.badgeText}`} title={`Grupo ${groupId}: este valor de Movs aparece ${count} veces`}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${pal.marker}`} />
+                        {groupId} ×{count}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-2 px-2">
                     {(() => {
                       const base = String(r.winner);
@@ -139,7 +204,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                           <span><strong>P1</strong> d={r.p1Depth}</span>
                           <span><strong>P2</strong> d={r.p2Depth}</span>
                         </div>
-                        <div className="overflow-x-auto rounded border border-neutral-800" title="Detalles por jugada — Métricas de cada movimiento evaluado: tiempos, profundidad alcanzada, nodos, NPS y score.">
+                        <div className="overflow-x-auto rounded border border-neutral-800" title="Detalles por jugada — Métricas de cada movimiento evaluado: tiempos, profundidad alcanzada, nodos, NPS, score y resumen de heurísticas (opcional).">
                           <table className="min-w-full text-[11px]">
                             <thead className="bg-neutral-900/70 text-neutral-300">
                               <tr>
@@ -150,6 +215,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                                 <th className="py-1 px-2 text-left" title="nodes — Número de posiciones evaluadas en esta jugada; total — suma de nodos de toda la partida. Se muestra mov/total para comparar.">nodes</th>
                                 <th className="py-1 px-2 text-left" title="NPS — Nodos por segundo (nodes / (t/1000)). Ejemplo: 65 000 indica buen rendimiento.">NPS</th>
                                 <th className="py-1 px-2 text-left" title="score — Evaluación heurística; positivo favorece al jugador que mueve.">score</th>
+                                <th className="py-1 px-2 text-left" title="Heurísticas aplicadas — Resumen de técnicas activas durante la búsqueda de esta jugada (TT, PVS, LMR, Aspiration,…).">Heur</th>
                                 <th className="py-1 px-2 text-left" title="move — Identificador del movimiento aplicado (ID de pieza).">move</th>
                                 <th className="py-1 px-2 text-left" title="applied — Indica si la mejor jugada encontrada fue aplicada al tablero (✓).">applied</th>
                               </tr>
@@ -169,6 +235,66 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                                     </td>
                                     <td className="py-1 px-2 font-mono">{(d.nps ?? 0).toLocaleString()}</td>
                                     <td className="py-1 px-2 font-mono">{d.score ?? ''}</td>
+                                    <td className="py-1 px-2">
+                                        {(() => {
+                                          const ex = d.explain || {};
+                                          const items: Array<{ key: string; label: string; title: string } > = [];
+                                          if (typeof ex.ttProbes === 'number' && ex.ttProbes > 0) {
+                                            const hits = typeof ex.ttHits === 'number' ? ex.ttHits : 0;
+                                            const rate = ex.ttProbes > 0 ? Math.round((hits / ex.ttProbes) * 100) : 0;
+                                            items.push({ key: 'TT', label: `TT ${rate}%` , title: `Transposition Table — probes/hits: ${ex.ttProbes}/${hits}` });
+                                          }
+                                          if (typeof ex.pvsReSearches === 'number' && ex.pvsReSearches > 0) {
+                                            items.push({ key: 'PVS', label: `PVS ${ex.pvsReSearches}`, title: 'PVS re-searches' });
+                                          }
+                                          if (typeof ex.lmrReductions === 'number' && ex.lmrReductions > 0) {
+                                            items.push({ key: 'LMR', label: `LMR ×${ex.lmrReductions}`, title: 'Late Move Reductions applied' });
+                                          }
+                                          if (typeof ex.aspReSearches === 'number' && ex.aspReSearches > 0) {
+                                            items.push({ key: 'ASP', label: `ASP ${ex.aspReSearches}`, title: 'Aspiration-window re-searches' });
+                                          }
+                                          if (typeof (ex as any).cutoffs === 'number' && (ex as any).cutoffs > 0) {
+                                            items.push({ key: 'CUT', label: `CUT ${String((ex as any).cutoffs)}`, title: 'Beta cutoffs (α ≥ β) registrados en el subárbol' });
+                                          }
+                                          if (ex.hashMoveUsed) {
+                                            items.push({ key: 'HASH', label: 'HASH', title: 'Se usó hash/PV/IID move para priorizar el orden en raíz' });
+                                          }
+                                          if (typeof (ex as any).killersTried === 'number' && (ex as any).killersTried > 0) {
+                                            items.push({ key: 'KLR', label: `KLR ${String((ex as any).killersTried)}`, title: 'Killer moves intentadas en este subárbol' });
+                                          }
+                                          if (typeof (ex as any).historyUpdates === 'number' && (ex as any).historyUpdates > 0) {
+                                            items.push({ key: 'HIST', label: `HIST ${String((ex as any).historyUpdates)}`, title: 'Actualizaciones de la tabla de historia (history heuristic)' });
+                                          }
+                                          if (typeof (ex as any).qPlies === 'number' && (ex as any).qPlies > 0) {
+                                            items.push({ key: 'Qp', label: `Qp ${String((ex as any).qPlies)}`, title: 'Plies de quiescence alcanzados (máximo en la jugada)' });
+                                          }
+                                          if (typeof (ex as any).qNodes === 'number' && (ex as any).qNodes > 0) {
+                                            items.push({ key: 'Qn', label: `Qn ${String((ex as any).qNodes)}`, title: 'Nodos evaluados en quiescence' });
+                                          }
+                                          if (typeof (ex as any).lmpPrunes === 'number' && (ex as any).lmpPrunes > 0) {
+                                            items.push({ key: 'LMP', label: `LMP ${String((ex as any).lmpPrunes)}`, title: 'Late Move Pruning — jugadas podadas por tardías' });
+                                          }
+                                          if (typeof (ex as any).futilityPrunes === 'number' && (ex as any).futilityPrunes > 0) {
+                                            items.push({ key: 'FUT', label: `FUT ${String((ex as any).futilityPrunes)}`, title: 'Futility pruning — podas por margen insuficiente' });
+                                          }
+                                          if (typeof (ex as any).iidProbes === 'number' && (ex as any).iidProbes > 0) {
+                                            items.push({ key: 'IID', label: `IID ${String((ex as any).iidProbes)}`, title: 'Internal Iterative Deepening — sondas depth-1 para ordenar' });
+                                          }
+                                          if (typeof (ex as any).tbHits === 'number' && (ex as any).tbHits > 0) {
+                                            items.push({ key: 'TB', label: `TB ${String((ex as any).tbHits)}`, title: 'Tablebase hits (atajos por finales resueltos)' });
+                                          }
+                                          if (items.length === 0) return <span className="text-neutral-500">—</span>;
+                                          return (
+                                            <div className="flex flex-wrap gap-1">
+                                              {items.slice(0, 6).map(it => (
+                                                <span key={it.key} className="inline-flex items-center px-1.5 py-0.5 rounded-md border border-sky-500/20 bg-sky-500/10 text-sky-300" title={it.title}>
+                                                  {it.label}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          );
+                                        })()}
+                                      </td>
                                     <td className="py-1 px-2 font-mono" title="Movimiento aplicado">{String(d.bestMove ?? '')}</td>
                                     <td className="py-1 px-2">{d.applied ? '✓' : ''}</td>
                                   </tr>
@@ -176,7 +302,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                               })()}
                               {(r.details == null || r.details.length === 0) && (
                                 <tr>
-                                  <td className="py-2 px-2 text-neutral-400" colSpan={9}>Sin detalles registrados para esta partida.</td>
+                                  <td className="py-2 px-2 text-neutral-400" colSpan={10}>Sin detalles registrados para esta partida.</td>
                                 </tr>
                               )}
                             </tbody>
@@ -187,7 +313,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                   </tr>
                 )}
               </React.Fragment>
-            ))}
+            );})}
             {records.length === 0 && (
               <tr>
                 <td className="py-6 text-neutral-400 text-center" colSpan={7}>No hay partidas todavía.</td>

@@ -20,6 +20,8 @@ export interface SearchOptions {
   rootMoves?: string[];
   // Optional: engine options (toggles/params)
   engine?: EngineOptions;
+  // Optional: deterministic node budget cutoff
+  maxNodes?: number;
 }
 
 export async function findBestMove(rootState: GameState, opts: SearchOptions): Promise<BestMove> {
@@ -98,7 +100,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
       opts.onProgress?.({ type: 'end', durationMs, depthReached, score, nodesVisited });
       // Microtask yield to maintain async semantics
       await new Promise((r) => setTimeout(r, 0));
-      return { moveId: hit.bestMove ?? null, score, depthReached };
+      return { moveId: hit.bestMove ?? null, score, depthReached, engineStats: { nodes: 0, tbHits: 1 } } as any;
     }
   }
 
@@ -116,7 +118,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
       opts.onProgress?.({ type: 'end', durationMs, depthReached, score: probe.score, nodesVisited });
       // Yield back to UI microtask queue to keep async semantics
       await new Promise((r) => setTimeout(r, 0));
-      return { moveId: probe.pv[0] ?? null, score: probe.score, depthReached };
+      return { moveId: probe.pv[0] ?? null, score: probe.score, depthReached, engineStats: { nodes: 0, dfpnSolved: true } } as any;
     }
     // If not solved, fall through to iterative deepening as usual
   }
@@ -125,6 +127,7 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
     maxDepth: opts.maxDepth,
     timeLimitMs: opts.timeLimitMs,
     allowedRootMoves: allowed,
+    maxNodes: opts.maxNodes,
     onProgress: (ev: any) => {
       if (ev.type === 'start') {
         opts.onProgress?.({ type: 'start', startedAt: ev.startedAt });

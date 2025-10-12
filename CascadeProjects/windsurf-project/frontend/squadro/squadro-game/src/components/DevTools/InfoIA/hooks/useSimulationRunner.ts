@@ -5,7 +5,7 @@ import { movePiece as applyMoveRules } from '../../../../game/rules';
 import type { GameState, Player } from '../../../../game/types';
 import { createAIRunner } from '../services/aiRunner';
 import type { EvalParams } from '../../../../ia/evalTypes';
-import type { EngineOptions } from '../../../../ia/search/types';
+import type { EngineOptions, SearchStats } from '../../../../ia/search/types';
 import { findBestMoveRootParallel, type SearchEvent } from '../../../../ia/search';
 import { hashState } from '../../../../ia/hash';
 import { generateMoves } from '../../../../ia/moves';
@@ -34,6 +34,8 @@ export interface SimulationSettings {
   startEligibleDark?: boolean;
   // Number of initial plies to play randomly (opening randomization)
   randomOpeningPlies?: number;
+  // Collect per-move heuristics summary when available
+  traceHeuristics?: boolean;
 }
 
 export interface SimulationMetrics {
@@ -162,7 +164,7 @@ export function useSimulationRunner(
           const rand = legal[Math.floor(Math.random() * legal.length)];
           const tStart = performance.now();
           applyMoveRules(gs, rand);
-          const zKey = hashState(gs);
+          const zKey = Number(hashState(gs) & (0xffff_ffffn));
           const actualElapsed = performance.now() - tStart;
           curDetails.push({
             index: curDetails.length + 1,
@@ -252,7 +254,7 @@ export function useSimulationRunner(
           const chosenMove = (res as any).bestMove ?? (res as any).moveId ?? null;
           if (chosenMove) {
             applyMoveRules(gs, chosenMove);
-            const zKey = hashState(gs);
+            const zKey = Number(hashState(gs) & (0xffff_ffffn));
             // Determine final nodes and nps for this move
             let finalNodes = moveNodesMaxRef.current;
             if (!finalNodes) {
@@ -260,6 +262,29 @@ export function useSimulationRunner(
               if (typeof maybeNodes === 'number') finalNodes = maybeNodes;
             }
             const finalNps = Math.round(finalNodes * 1000 / Math.max(1, actualElapsed));
+            let explain: MoveDetail['explain'] | undefined = undefined;
+            try {
+              if ((res as any)?.engineStats) {
+                const st = (res as any).engineStats as Partial<SearchStats>;
+                explain = {
+                  ttProbes: st.ttProbes,
+                  ttHits: st.ttHits,
+                  cutoffs: st.cutoffs,
+                  pvsReSearches: st.pvsReSearches,
+                  lmrReductions: st.lmrReductions,
+                  aspReSearches: st.aspReSearches,
+                  killersTried: st.killersTried,
+                  historyUpdates: st.historyUpdates,
+                  hashMoveUsed: (st.hashMoveUsed || 0) > 0,
+                  qPlies: st.qPlies,
+                  qNodes: st.qNodes,
+                  lmpPrunes: st.lmpPrunes,
+                  futilityPrunes: st.futilityPrunes,
+                  iidProbes: st.iidProbes,
+                  tbHits: (st as any).tbHits as any,
+                } as any;
+              }
+            } catch {}
             curDetails.push({
               index: curDetails.length + 1,
               elapsedMs: actualElapsed,
@@ -273,6 +298,7 @@ export function useSimulationRunner(
               applied: true,
               at: Date.now(),
               zKey,
+              explain,
             });
             moves++;
           } else {

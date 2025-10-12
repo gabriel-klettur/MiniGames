@@ -19,6 +19,7 @@ export function quiesce(
     me: Player;
     ply: number;
     stats?: SearchStats;
+    maxNodes?: number;
     qDepth: number;
   },
   ctx: SearchContext,
@@ -27,6 +28,10 @@ export function quiesce(
   engine?: EngineOptions,
 ): IterResult {
   const { state, me, ply } = args;
+
+  if (args.stats && typeof args.maxNodes === 'number' && args.stats.nodes >= args.maxNodes) {
+    return { score: 0, bestMove: null, timeout: true };
+  }
 
   // Time check
   if (performance.now() >= deadline) return { score: 0, bestMove: null, timeout: true };
@@ -39,7 +44,11 @@ export function quiesce(
   const standPatRaw = evaluate(state, me);
   const spMargin = Math.max(0, engine?.quiescenceStandPatMargin ?? 0);
   const standPat = standPatRaw - spMargin;
-  args.stats && (args.stats.nodes += 1);
+  if (args.stats) {
+    args.stats.nodes += 1;
+    args.stats.qNodes = (args.stats.qNodes || 0) + 1;
+    args.stats.qPlies = Math.max(args.stats.qPlies || 0, args.qDepth);
+  }
   if (standPat >= beta) return { score: standPat, bestMove: null, timeout: false };
   if (standPat > alpha) alpha = standPat;
 
@@ -84,6 +93,7 @@ export function quiesce(
         me,
         ply: ply + 1,
         stats: args.stats,
+        maxNodes: args.maxNodes,
         qDepth: nextQDepth,
       },
       ctx,

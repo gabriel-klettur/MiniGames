@@ -13,6 +13,8 @@ interface SimSectionProps {
   onToggleUseRootParallel?: () => void;
   workers?: number;
   onChangeWorkers?: (n: number) => void;
+  randomOpeningPlies?: number;
+  onChangeRandomOpeningPlies?: (n: number) => void;
   startEligibleLight?: boolean;
   onToggleStartEligibleLight?: () => void;
   startEligibleDark?: boolean;
@@ -32,7 +34,7 @@ interface SimSectionProps {
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -70,6 +72,17 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
                 max={32}
                 value={workers ?? 2}
                 onChange={(e) => onChangeWorkers?.(Math.max(1, Math.min(32, Number(e.target.value))))}
+                className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+              />
+            </label>
+            <label className="inline-flex items-center gap-2" title="Número de plies iniciales jugados al azar para diversificar aperturas (0 desactiva)">
+              Apertura aleatoria
+              <input
+                type="number"
+                min={0}
+                max={20}
+                value={randomOpeningPlies ?? 0}
+                onChange={(e) => onChangeRandomOpeningPlies?.(Math.max(0, Math.min(20, Number(e.target.value))))}
                 className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
@@ -132,6 +145,8 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onChangeLmrLateMoveIdx={p1.onChangeLmrLateMoveIdx}
             lmrReduction={p1.lmrReduction}
             onChangeLmrReduction={p1.onChangeLmrReduction}
+            orderingJitterEps={p1.orderingJitterEps}
+            onChangeOrderingJitterEps={p1.onChangeOrderingJitterEps}
             // Heuristic weights
             w_race={p1.w_race}
             onChangeWRace={p1.onChangeWRace}
@@ -198,6 +213,8 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             onChangeLmrLateMoveIdx={p2.onChangeLmrLateMoveIdx}
             lmrReduction={p2.lmrReduction}
             onChangeLmrReduction={p2.onChangeLmrReduction}
+            orderingJitterEps={p2.orderingJitterEps}
+            onChangeOrderingJitterEps={p2.onChangeOrderingJitterEps}
             // Heuristic weights
             w_race={p2.w_race}
             onChangeWRace={p2.onChangeWRace}
