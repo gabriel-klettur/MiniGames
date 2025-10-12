@@ -15,6 +15,8 @@ interface SimSectionProps {
   onChangeWorkers?: (n: number) => void;
   randomOpeningPlies?: number;
   onChangeRandomOpeningPlies?: (n: number) => void;
+  exploreEps?: number;
+  onChangeExploreEps?: (n: number) => void;
   startEligibleLight?: boolean;
   onToggleStartEligibleLight?: () => void;
   startEligibleDark?: boolean;
@@ -34,7 +36,7 @@ interface SimSectionProps {
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -84,6 +86,18 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
                 value={randomOpeningPlies ?? 0}
                 onChange={(e) => onChangeRandomOpeningPlies?.(Math.max(0, Math.min(20, Number(e.target.value))))}
                 className="w-16 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
+              />
+            </label>
+            <label className="inline-flex items-center gap-2" title="Exploración ε — Probabilidad por jugada de elegir un movimiento aleatorio tras la apertura para generar diversidad en self-play. 0 desactiva.">
+              Expl. ε
+              <input
+                type="number"
+                min={0}
+                max={1}
+                step={0.01}
+                value={typeof exploreEps === 'number' ? exploreEps : 0}
+                onChange={(e) => onChangeExploreEps?.(Math.max(0, Math.min(1, Number(e.target.value))))}
+                className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
             <label className="inline-flex items-center gap-2" title="Permitir que Light sea jugador inicial en cada partida simulada (si ambos están permitidos, se elige al azar).">

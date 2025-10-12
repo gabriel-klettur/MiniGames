@@ -22,11 +22,17 @@ export interface InfoIASettings {
   // Openings: number of initial plies to play randomly
   randomOpeningPlies: number;
   setRandomOpeningPlies: (n: number) => void;
+  // Exploration epsilon (epsilon-greedy probability per move post-opening)
+  exploreEps: number;
+  setExploreEps: (n: number) => void;
   // Starting player eligibility per game (per player)
   startEligibleLight: boolean;
   setStartEligibleLight: (v: boolean) => void;
   startEligibleDark: boolean;
   setStartEligibleDark: (v: boolean) => void;
+  // Trace per-move heuristics summary when available
+  traceHeuristics: boolean;
+  setTraceHeuristics: (v: boolean) => void;
   p1Depth: number; p2Depth: number;
   setP1Depth: (n: number) => void; setP2Depth: (n: number) => void;
   p1Mode: TimeMode; p2Mode: TimeMode;
@@ -54,6 +60,8 @@ export function useInfoIASettings(): InfoIASettings {
   const [useRootParallel, setUseRootParallel] = useState<boolean>(false);
   const [workers, setWorkers] = useState<number>(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
   const [randomOpeningPlies, setRandomOpeningPlies] = useState<number>(0);
+  const [exploreEps, setExploreEps] = useState<number>(0);
+  const [traceHeuristics, setTraceHeuristics] = useState<boolean>(false);
   const [startEligibleLight, setStartEligibleLight] = useState<boolean>(true);
   const [startEligibleDark, setStartEligibleDark] = useState<boolean>(true);
   const [p1Depth, setP1Depth] = useState<number>(3);
@@ -108,6 +116,8 @@ export function useInfoIASettings(): InfoIASettings {
     setUseRootParallel(false);
     setWorkers(typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 2) : 2);
     setRandomOpeningPlies(0);
+    setExploreEps(0);
+    setTraceHeuristics(false);
     setP1Depth(3); setP2Depth(3);
     setP1Mode('auto'); setP2Mode('auto');
     setP1Secs(3); setP2Secs(3);
@@ -124,6 +134,8 @@ export function useInfoIASettings(): InfoIASettings {
     useRootParallel, setUseRootParallel,
     workers, setWorkers,
     randomOpeningPlies, setRandomOpeningPlies,
+    exploreEps, setExploreEps,
+    traceHeuristics, setTraceHeuristics,
     startEligibleLight, setStartEligibleLight,
     startEligibleDark, setStartEligibleDark,
     p1Depth, p2Depth, setP1Depth, setP2Depth,

@@ -11,6 +11,7 @@ export interface UseRecords {
   deleteRecord: (id: string) => void;
   clearAll: () => void;
   exportJSON: () => void;
+  exportJSONL: () => void;
   exportCSV: () => void;
   exportCSVDetails: () => void;
   viewRecord: (id: string) => void;
@@ -75,6 +76,52 @@ export function useRecords(_opts: UseRecordsOptions = {}): UseRecords {
       const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = 'squadro-infoia.json'; a.click(); URL.revokeObjectURL(url);
+    } catch {}
+  }, [records]);
+
+  const exportJSONL = useCallback(() => {
+    try {
+      const lines: string[] = [];
+      for (const r of records) {
+        const outcome = r.winner === 'Light' ? 1 : (r.winner === 'Dark' ? -1 : 0);
+        const gameLine = {
+          type: 'game',
+          id: r.id,
+          startedAt: r.startedAt,
+          durationMs: Math.round(r.durationMs),
+          moves: r.moves,
+          winner: r.winner,
+          p1Depth: r.p1Depth,
+          p2Depth: r.p2Depth,
+          p1Score: r.p1Score ?? null,
+          p2Score: r.p2Score ?? null,
+          outcomeLight: outcome,
+        } as const;
+        lines.push(JSON.stringify(gameLine));
+        const details = r.details && r.details.length ? r.details : [];
+        for (const d of details) {
+          const moveLine: any = {
+            type: 'move',
+            gameId: r.id,
+            idx: d.index ?? null,
+            at: d.at ?? null,
+            player: d.player ?? null,
+            moveId: d.bestMove ?? null,
+            zKey: typeof d.zKey === 'number' ? (d.zKey >>> 0) : null,
+            elapsedMs: Math.round(d.elapsedMs ?? 0),
+            depthUsed: d.depthUsed ?? null,
+            depthReached: d.depthReached ?? null,
+            nodes: d.nodes ?? null,
+            nps: d.nps ?? null,
+            score: d.score ?? null,
+          };
+          if (d.explain) moveLine.explain = d.explain;
+          lines.push(JSON.stringify(moveLine));
+        }
+      }
+      const blob = new Blob([lines.join('\n') + '\n'], { type: 'application/x-ndjson' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'squadro-infoia.jsonl'; a.click(); URL.revokeObjectURL(url);
     } catch {}
   }, [records]);
 
@@ -177,5 +224,5 @@ export function useRecords(_opts: UseRecordsOptions = {}): UseRecords {
 
   const flushNow = useCallback(() => { /* IndexedDB already persisted */ }, []);
 
-  return { records, setRecords, addRecord, deleteRecord, clearAll, exportJSON, exportCSV, exportCSVDetails, viewRecord, copyRecord, downloadRecord, flushNow };
+  return { records, setRecords, addRecord, deleteRecord, clearAll, exportJSON, exportJSONL, exportCSV, exportCSVDetails, viewRecord, copyRecord, downloadRecord, flushNow };
 }

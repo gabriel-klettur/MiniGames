@@ -34,6 +34,8 @@ export interface SimulationSettings {
   startEligibleDark?: boolean;
   // Number of initial plies to play randomly (opening randomization)
   randomOpeningPlies?: number;
+  // Epsilon-greedy exploration probability per move (post-opening)
+  exploreEps?: number;
   // Collect per-move heuristics summary when available
   traceHeuristics?: boolean;
 }
@@ -180,6 +182,33 @@ export function useSimulationRunner(
           });
           moves++;
           // Yield to UI
+          await new Promise((r) => setTimeout(r, 0));
+          continue;
+        }
+
+        // Epsilon-greedy exploration (post-opening): with probability exploreEps, choose a random legal move
+        const eps = Math.max(0, Math.min(1, Number(settings.exploreEps ?? 0)));
+        if (eps > 0 && Math.random() < eps) {
+          const legal = generateMoves(gs);
+          if (legal.length === 0) break;
+          const rand = legal[Math.floor(Math.random() * legal.length)];
+          const tStart = performance.now();
+          applyMoveRules(gs, rand);
+          const zKey = Number(hashState(gs) & (0xffff_ffffn));
+          const actualElapsed = performance.now() - tStart;
+          curDetails.push({
+            index: curDetails.length + 1,
+            elapsedMs: actualElapsed,
+            nodes: 0,
+            nps: 0,
+            bestMove: rand,
+            player: cur,
+            depthUsed: 0,
+            applied: true,
+            at: Date.now(),
+            zKey,
+          });
+          moves++;
           await new Promise((r) => setTimeout(r, 0));
           continue;
         }

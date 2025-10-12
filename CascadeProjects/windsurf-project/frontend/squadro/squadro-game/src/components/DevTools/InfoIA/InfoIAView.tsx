@@ -17,6 +17,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     gamesCount, onChangeGamesCount,
     useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers,
     randomOpeningPlies, onChangeRandomOpeningPlies,
+    exploreEps, onChangeExploreEps,
     startEligibleLight, onToggleStartEligibleLight,
     startEligibleDark, onToggleStartEligibleDark,
     p1, p2,
@@ -53,6 +54,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onExportJSON={onExportJSON}
           onExportCSV={onExportCSV}
           onExportCSVDetails={onExportCSVDetails}
+          onExportJSONL={props.onExportJSONL}
           onImportFiles={onImportFiles}
           onClearAll={onClearAll}
         />
@@ -107,6 +109,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onChangeWorkers={onChangeWorkers}
           randomOpeningPlies={randomOpeningPlies}
           onChangeRandomOpeningPlies={onChangeRandomOpeningPlies}
+          exploreEps={exploreEps}
+          onChangeExploreEps={onChangeExploreEps}
           startEligibleLight={startEligibleLight}
           onToggleStartEligibleLight={onToggleStartEligibleLight}
           startEligibleDark={startEligibleDark}

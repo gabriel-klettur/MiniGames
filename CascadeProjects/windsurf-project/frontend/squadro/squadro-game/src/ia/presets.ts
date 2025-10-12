@@ -152,6 +152,56 @@ export function getDefaultPresets(): IAPreset[] {
       },
     },
     {
+      id: 'iapowa_d10_imbatible',
+      name: 'IAPowa D10 Imbatible',
+      settings: {
+        difficulty: 10,
+        useWorkers: true,
+        timeMode: 'auto',
+        timeSeconds: 0,
+        // Búsqueda máxima fuerza con poda segura
+        enableTT: true,
+        failSoft: true,
+        preferHashMove: true,
+        enablePVS: true,
+        enableKillers: true,
+        enableHistory: true,
+        enableLMR: true,
+        // Poda selectiva
+        enableLMP: true,
+        lmpMaxDepth: 2,
+        lmpBase: 6,
+        enableFutility: true,
+        futilityMargin: 150,
+        enableIID: true,
+        iidMinDepth: 3,
+        // Quiescence más profunda para evitar horizonte
+        enableQuiescence: true,
+        quiescenceMaxPlies: 6,
+        quiescenceStandPatMargin: 0,
+        quiescenceSeeMargin: 0,
+        quiescenceExtendOnRetire: true,
+        quiescenceExtendOnJump: true,
+        // LMR calibrado para precisión
+        lmrMinDepth: 3,
+        lmrLateMoveIdx: 5,
+        lmrReduction: 1,
+        // Orden determinista (sin jitter) y sin aleatoriedad de apertura
+        orderingJitterEps: 0,
+        randomOpeningPlies: 0,
+        // Heurística global robusta (ajustable por self-play)
+        evalWeights: {
+          w_race: 1.3,
+          w_clash: 1.25,
+          w_sprint: 0.5,
+          w_block: 0.6,
+          done_bonus: 7.0,
+          sprint_threshold: 2,
+          tempo: 7,
+        },
+      },
+    },
+    {
       id: 'iapowa_perf',
       name: 'IAPowa+Rendimiento',
       settings: {

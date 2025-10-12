@@ -21,6 +21,7 @@ const InfoIAContainer: React.FC = () => {
     deleteRecord,
     clearAll,
     exportJSON,
+    exportJSONL,
     exportCSV,
     exportCSVDetails,
     copyRecord,
@@ -44,6 +45,7 @@ const InfoIAContainer: React.FC = () => {
       startEligibleLight: settings.startEligibleLight,
       startEligibleDark: settings.startEligibleDark,
       randomOpeningPlies: settings.randomOpeningPlies,
+      exploreEps: settings.exploreEps,
       traceHeuristics: settings.traceHeuristics,
       // Per-player engine options
       p1Options: settings.p1Engine as EngineOptions,
@@ -291,6 +293,7 @@ const InfoIAContainer: React.FC = () => {
       onStop={handleStop}
       onDefaults={settings.resetDefaults}
       onExportJSON={exportJSON}
+      onExportJSONL={exportJSONL}
       onExportCSV={exportCSV}
       onExportCSVDetails={exportCSVDetails}
       onImportFiles={onImportFiles}
@@ -313,6 +316,8 @@ const InfoIAContainer: React.FC = () => {
       onChangeWorkers={(n: number) => settings.setWorkers(Math.max(1, Math.min(32, n)))}
       randomOpeningPlies={settings.randomOpeningPlies}
       onChangeRandomOpeningPlies={(n: number) => settings.setRandomOpeningPlies(Math.max(0, Math.min(20, n)))}
+      exploreEps={settings.exploreEps}
+      onChangeExploreEps={(n: number) => settings.setExploreEps(Math.max(0, Math.min(1, n)))}
       traceHeuristics={settings.traceHeuristics}
       onToggleTraceHeuristics={() => settings.setTraceHeuristics(!settings.traceHeuristics)}
       startEligibleLight={settings.startEligibleLight}

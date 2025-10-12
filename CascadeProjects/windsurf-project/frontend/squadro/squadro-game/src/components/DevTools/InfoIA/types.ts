@@ -108,6 +108,7 @@ export interface InfoIAViewProps {
   onExportJSON: () => void;
   onExportCSV: () => void;
   onExportCSVDetails: () => void;
+  onExportJSONL?: () => void;
   onImportFiles: (e: ChangeEvent<HTMLInputElement>) => void;
   onClearAll: () => void;
 
@@ -145,6 +146,12 @@ export interface InfoIAViewProps {
   // Opening randomization: number of initial plies to play at random
   randomOpeningPlies?: number;
   onChangeRandomOpeningPlies?: (n: number) => void;
+  // Exploration epsilon (epsilon-greedy random move probability per move post-opening)
+  exploreEps?: number;
+  onChangeExploreEps?: (n: number) => void;
+  // Heuristics tracing toggle (optional, for future UI)
+  traceHeuristics?: boolean;
+  onToggleTraceHeuristics?: () => void;
   // Start eligibility (per player)
   startEligibleLight?: boolean;
   onToggleStartEligibleLight?: () => void;

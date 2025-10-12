@@ -9,12 +9,13 @@ interface HeaderActionsProps {
   onExportJSON: () => void;
   onExportCSV: () => void;
   onExportCSVDetails: () => void;
+  onExportJSONL?: () => void;
   onImportFiles: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearAll: () => void;
 }
 
 export default function HeaderActions(props: HeaderActionsProps) {
-  const { running, onStart, onStop, onDefaults, onExportJSON, onExportCSV, onExportCSVDetails, onImportFiles, onClearAll } = props;
+  const { running, onStart, onStop, onDefaults, onExportJSON, onExportCSV, onExportCSVDetails, onExportJSONL, onImportFiles, onClearAll } = props;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   return (
     <div className="infoia__actions flex items-center flex-wrap gap-2">
@@ -45,6 +46,14 @@ export default function HeaderActions(props: HeaderActionsProps) {
         </svg>
         Export JSON
       </Button>
+      {onExportJSONL && (
+        <Button size="sm" variant="neutral" onClick={onExportJSONL} title="Exportar JSONL — Exporta líneas por partida y por jugada en formato NDJSON (JSON Lines) para entrenamiento y análisis incremental.">
+          <svg width="12" height="12" viewBox="0 0 24 24" className="mr-1" aria-hidden>
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" strokeWidth="2" fill="none"/>
+          </svg>
+          Export JSONL
+        </Button>
+      )}
       <Button size="sm" variant="neutral" onClick={onExportCSV} title="Exportar CSV — Exporta un CSV resumido (una fila por partida) con duración, ganador, profundidad, etc. Ejemplo: rápido para análisis en hoja de cálculo.">
         <svg width="12" height="12" viewBox="0 0 24 24" className="mr-1" aria-hidden>
           <path d="M4 4h16v16H4z" stroke="currentColor" strokeWidth="2" fill="none"/>
