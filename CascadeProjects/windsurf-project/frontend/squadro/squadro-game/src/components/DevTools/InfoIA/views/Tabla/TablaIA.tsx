@@ -50,18 +50,112 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
     return arr.sort((a, b) => a.moves - b.moves);
   }, [dupCountByMoves, dupGroupIndexByMoves]);
 
+  const sigData = useMemo(() => {
+    const sigById = new Map<string, string>();
+    const countBySig = new Map<string, number>();
+    const shortBySig = new Map<string, string>();
+    // Core signature (only moves count + sequence), for filtering 'Solo idénticas'
+    const coreSigById = new Map<string, string>();
+    const countByCoreSig = new Map<string, number>();
+    for (const r of records) {
+      const rows = r.details || [];
+      const hasAllZ = rows.length > 0 && rows.every(d => typeof d.zKey === 'number');
+      const core = hasAllZ
+        ? 'Z:' + rows.map(d => String(((d.zKey as number) >>> 0).toString(36))).join('-')
+        : 'M:' + rows.map(d => String(d.bestMove ?? '')).join('|');
+      const sig = `W${String(r.winner)}|N${r.moves}|D${r.p1Depth}:${r.p2Depth}|${core}`;
+      sigById.set(r.id, sig);
+      countBySig.set(sig, (countBySig.get(sig) || 0) + 1);
+      const coreSig = `N${r.moves}|${core}`;
+      coreSigById.set(r.id, coreSig);
+      countByCoreSig.set(coreSig, (countByCoreSig.get(coreSig) || 0) + 1);
+      // short hash (FNV-1a 32-bit, base36)
+      let h = 2166136261 >>> 0;
+      for (let i = 0; i < sig.length; i++) { h ^= sig.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+      shortBySig.set(sig, h.toString(36));
+    }
+    const idxBySig = new Map<string, number>();
+    const keys = Array.from(countBySig.entries()).filter(([, c]) => c >= 2).map(([k]) => k).sort();
+    keys.forEach((k, i) => idxBySig.set(k, i));
+    return { sigById, countBySig, idxBySig, shortBySig, coreSigById, countByCoreSig };
+  }, [records]);
+
+  const exactPalette = useMemo(() => ([
+    { marker: 'bg-emerald-400', badgeBorder: 'border-emerald-500/30', badgeBg: 'bg-emerald-500/10', badgeText: 'text-emerald-300' },
+    { marker: 'bg-blue-400',    badgeBorder: 'border-blue-500/30',    badgeBg: 'bg-blue-500/10',    badgeText: 'text-blue-300' },
+    { marker: 'bg-teal-400',    badgeBorder: 'border-teal-500/30',    badgeBg: 'bg-teal-500/10',    badgeText: 'text-teal-300' },
+    { marker: 'bg-orange-400',  badgeBorder: 'border-orange-500/30',  badgeBg: 'bg-orange-500/10',  badgeText: 'text-orange-300' },
+    { marker: 'bg-pink-400',    badgeBorder: 'border-pink-500/30',    badgeBg: 'bg-pink-500/10',    badgeText: 'text-pink-300' },
+    { marker: 'bg-cyan-400',    badgeBorder: 'border-cyan-500/30',    badgeBg: 'bg-cyan-500/10',    badgeText: 'text-cyan-300' },
+  ]), []);
+
+  const [showUnique, setShowUnique] = useState<boolean>(false);
+  const [showOnlyExact, setShowOnlyExact] = useState<boolean>(false);
+  const [selectedMoves, setSelectedMoves] = useState<Set<number>>(new Set());
+  const hasFilter = selectedMoves.size > 0;
+  const [compareMoves, setCompareMoves] = useState<boolean>(false);
+  const [compareUseZKey, setCompareUseZKey] = useState<boolean>(false);
+
+  const handleClickGroup = useCallback((mv: number, ev: React.MouseEvent<HTMLButtonElement> | React.MouseEvent<HTMLSpanElement>) => {
+    setSelectedMoves(prev => {
+      const next = new Set(prev);
+      const multi = (ev as any).ctrlKey || (ev as any).metaKey || (ev as any).shiftKey;
+      const isSelected = next.has(mv);
+      if (multi) {
+        if (isSelected) next.delete(mv); else next.add(mv);
+        return next;
+      }
+      // single-select toggle
+      if (isSelected && next.size === 1) {
+        return new Set(); // clear when clicking the only selected
+      }
+      return new Set([mv]);
+    });
+  }, []);
+
+  const clearFilter = useCallback(() => setSelectedMoves(new Set()), []);
+
+  const list = useMemo(() => {
+    let base = hasFilter ? records.filter(r => selectedMoves.has(r.moves)) : records;
+    if (showOnlyExact) {
+      base = base.filter(r => {
+        const c = sigData.coreSigById.get(r.id);
+        return !!c && (sigData.countByCoreSig.get(c) || 0) >= 2;
+      });
+    }
+    if (!showUnique) return base;
+    const seen = new Set<string>();
+    const out: InfoIARecord[] = [];
+    for (const r of base) {
+      const sig = sigData.sigById.get(r.id) || r.id;
+      if (!seen.has(sig)) { seen.add(sig); out.push(r); }
+    }
+    return out;
+  }, [records, showUnique, sigData, hasFilter, selectedMoves, showOnlyExact]);
+
   return (
     <div className="tabla-ia mt-2">
       <div className="flex items-center justify-between mb-2">
         <div className="text-[11px] text-neutral-400" title="Resumen — Cantidad de partidas listadas. Entre paréntesis se indican cuántas filas de detalle están expandidas.">
-          {loading ? 'Cargando…' : `${records.length} partidas`}
+          {loading ? 'Cargando…' : `${list.length} partidas`}
           {expandedCount > 0 && <span className="ml-2 text-neutral-500">({expandedCount} abiertas)</span>}
+          {list.length !== records.length && (
+            <span className="ml-2 text-neutral-500">· {records.length} totales</span>
+          )}
         </div>
         <div className="inline-flex items-center gap-1">
           <Button
             size="sm"
+            variant={showOnlyExact ? 'neutral' : 'outline'}
+            onClick={() => setShowOnlyExact(v => !v)}
+            title={showOnlyExact ? 'Mostrar todas (sin limitar a partidas exactamente idénticas)' : 'Mostrar solo partidas exactamente idénticas (mismo Movs y misma secuencia; usa zKey si está disponible)'}
+          >
+            {showOnlyExact ? 'Solo idénticas ✓' : 'Solo idénticas'}
+          </Button>
+          <Button
+            size="sm"
             variant="neutral"
-            onClick={() => setExpanded(Object.fromEntries(records.map(r => [r.id, true])))}
+            onClick={() => setExpanded(Object.fromEntries(list.map(r => [r.id, true])))}
             title="Expandir todos los detalles"
           >
             Expandir todo
@@ -74,6 +168,42 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
           >
             Contraer todo
           </Button>
+          <Button
+            size="sm"
+            variant={showUnique ? 'neutral' : 'outline'}
+            onClick={() => setShowUnique(v => !v)}
+            title={showUnique ? 'Mostrar todas las partidas (incluyendo duplicadas exactas)' : 'Colapsar duplicadas exactas (mostrar solo una por firma)'}
+          >
+            {showUnique ? 'Mostrar todas' : 'Colapsar idénticas'}
+          </Button>
+          {hasFilter && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={clearFilter}
+              title="Quitar filtro por grupos (Movs)"
+            >
+              Limpiar filtro
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant={compareMoves ? 'neutral' : 'outline'}
+            onClick={() => setCompareMoves(v => !v)}
+            title={compareMoves ? 'Ocultar comparación de movimientos' : 'Mostrar comparación de movimientos (columnas por partida)'}
+          >
+            {compareMoves ? 'Ocultar comparación' : 'Comparar moves'}
+          </Button>
+          {compareMoves && (
+            <Button
+              size="sm"
+              variant={compareUseZKey ? 'neutral' : 'outline'}
+              onClick={() => setCompareUseZKey(v => !v)}
+              title={compareUseZKey ? 'Comparar por move (ID)' : 'Comparar por zKey (estado)'}
+            >
+              {compareUseZKey ? 'zKey ✓' : 'zKey'}
+            </Button>
+          )}
         </div>
       </div>
       {dupGroups.length > 0 && (
@@ -81,15 +211,66 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
           {dupGroups.map(g => {
             const pal = palette[g.idx % palette.length];
             const gid = String.fromCharCode(65 + (g.idx % 26));
+            const active = selectedMoves.has(g.moves);
             return (
-              <span key={g.moves} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${pal.badgeBorder} ${pal.badgeBg} ${pal.badgeText}`} title={`Grupo ${gid}: Movs=${g.moves}, repeticiones=${g.count}`}>
+              <button
+                key={g.moves}
+                type="button"
+                onClick={(e) => handleClickGroup(g.moves, e)}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border transition-colors ${pal.badgeBorder} ${pal.badgeBg} ${pal.badgeText} ${active ? 'ring-1 ring-offset-1 ring-offset-neutral-900 ring-amber-500/40' : 'hover:opacity-90'} cursor-pointer`}
+                title={`Grupo ${gid}: Movs=${g.moves}, repeticiones=${g.count} — Click para filtrar ${active ? '(activo)' : ''}`}
+              >
                 <span className={`inline-block w-2 h-2 rounded ${pal.marker}`} />
                 Grupo {gid} · Movs {g.moves} · ×{g.count}
-              </span>
+              </button>
             );
           })}
         </div>
       )}
+      {compareMoves && (() => {
+        const cols = list.map(r => ({
+          id: r.id,
+          label: `${new Date(r.startedAt).toLocaleTimeString()} · M${r.moves}`,
+          entries: (r.details || []).map(d => (
+            compareUseZKey ? (typeof d.zKey === 'number' ? ((d.zKey >>> 0).toString(36)) : '') : String(d.bestMove ?? '')
+          )),
+        }));
+        const maxRows = cols.reduce((m, c) => Math.max(m, c.entries.length), 0);
+        return (
+          <div className="overflow-auto rounded-md border border-neutral-800 mb-2" title="Comparación por movimientos — Cada columna es una partida; cada fila es un índice de jugada.">
+            <table className="min-w-full text-[11px]">
+              <thead className="bg-neutral-900/70 text-neutral-300">
+                <tr>
+                  <th className="py-2 px-2 text-left font-semibold w-12" title="# de jugada">#</th>
+                  {cols.map(c => (
+                    <th key={c.id} className="py-2 px-2 text-left font-semibold whitespace-nowrap" title={c.label}>{c.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {Array.from({ length: maxRows }).map((_, i) => {
+                  const rowVals = cols.map(c => c.entries[i] ?? '');
+                  const allEq = rowVals.length > 0 && rowVals.every(v => v && v === rowVals[0]);
+                  return (
+                    <tr key={i} className={allEq ? 'bg-emerald-900/10' : ''}>
+                      <td className="py-1 px-2 font-mono text-neutral-400">{i + 1}</td>
+                      {rowVals.map((v, j) => (
+                        <td key={j} className={`py-1 px-2 font-mono ${allEq ? 'text-emerald-300' : ''}`}>{v || '—'}</td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {cols.length === 0 && (
+                  <tr>
+                    <td className="py-2 px-2 text-neutral-400" colSpan={1}>Sin datos para comparar.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
       <div className="overflow-x-auto rounded-md border border-neutral-800" title="Tabla de partidas — Click en Inicio para expandir/contraer detalles; usa Acciones para copiar/descargar/eliminar.">
         <table className="min-w-full text-[11px]">
           <thead className="bg-neutral-900/70 text-neutral-300">
@@ -104,11 +285,15 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-800">
-            {records.map((r) => {
+            {list.map((r) => {
               const count = dupCountByMoves.get(r.moves) || 0;
               const gIdx = dupGroupIndexByMoves.get(r.moves);
               const pal = (gIdx !== undefined) ? palette[(gIdx as number) % palette.length] : null;
               const groupId = (gIdx !== undefined) ? String.fromCharCode(65 + ((gIdx as number) % 26)) : null;
+              const sig = sigData.sigById.get(r.id) || '';
+              const exact = sig ? (sigData.countBySig.get(sig) || 0) : 0;
+              const eIdx = sig && exact >= 2 ? (sigData.idxBySig.get(sig) ?? 0) : undefined;
+              const ePal = (eIdx !== undefined) ? exactPalette[(eIdx as number) % exactPalette.length] : null;
               return (
               <React.Fragment key={r.id}>
                 <tr className={`hover:bg-neutral-800/40 ${count >= 2 && pal ? pal.bgRow : ''}` }>
@@ -121,6 +306,9 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                     >
                       {(count >= 2 && pal) && (
                         <span className={`inline-block w-1 h-4 rounded ${pal.marker}`} aria-hidden />
+                      )}
+                      {(ePal && exact >= 2) && (
+                        <span className={`inline-block w-1 h-4 rounded ${ePal.marker}`} aria-hidden />
                       )}
                       <svg width="12" height="12" viewBox="0 0 24 24" className={`transition-transform ${expanded[r.id] ? 'rotate-90' : ''}`} aria-hidden>
                         <path d="M8 5l8 7-8 7V5z" fill="currentColor" />
@@ -135,6 +323,12 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                       <span className={`ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${pal.badgeBorder} ${pal.badgeBg} ${pal.badgeText}`} title={`Grupo ${groupId}: este valor de Movs aparece ${count} veces`}>
                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${pal.marker}`} />
                         {groupId} ×{count}
+                      </span>
+                    ) : null}
+                    {exact >= 2 && ePal ? (
+                      <span className={`ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${ePal.badgeBorder} ${ePal.badgeBg} ${ePal.badgeText}`} title={`Partidas idénticas por secuencia de movimientos: ×${exact} · hash=${sigData.shortBySig.get(sig)}`}>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${ePal.marker}`} />
+                        Idénticas ×{exact}
                       </span>
                     ) : null}
                   </td>
