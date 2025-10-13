@@ -286,6 +286,101 @@ const InfoIAContainer: React.FC = () => {
     try { (e.target as HTMLInputElement).value = ''; } catch {}
   };
 
+  // Serialize current settings to a JSON file and trigger download
+  const handleSaveConfig = () => {
+    try {
+      const cfg = {
+        $schema: 'squadro.infoia.config.v1',
+        savedAt: new Date().toISOString(),
+        gamesCount: settings.gamesCount,
+        useRootParallel: settings.useRootParallel,
+        workers: settings.workers,
+        randomOpeningPlies: settings.randomOpeningPlies,
+        exploreEps: settings.exploreEps,
+        traceHeuristics: settings.traceHeuristics,
+        startEligibleLight: settings.startEligibleLight,
+        startEligibleDark: settings.startEligibleDark,
+        p1: {
+          depth: settings.p1Depth,
+          mode: settings.p1Mode,
+          secs: settings.p1Secs,
+          engine: { ...settings.p1Engine },
+          eval: { ...settings.p1Eval },
+        },
+        p2: {
+          depth: settings.p2Depth,
+          mode: settings.p2Mode,
+          secs: settings.p2Secs,
+          engine: { ...settings.p2Engine },
+          eval: { ...settings.p2Eval },
+        },
+      };
+      const json = JSON.stringify(cfg, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      a.download = `infoia-config-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {}
+  };
+
+  // Import one or more configuration JSON files and apply (last file wins)
+  const onImportConfigFiles: (e: ChangeEvent<HTMLInputElement>) => void = (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const readFile = (file: File) => new Promise<any>((resolve) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        try { resolve(JSON.parse(String(fr.result || ''))); } catch { resolve(null); }
+      };
+      fr.onerror = () => resolve(null);
+      fr.readAsText(file);
+    });
+    (async () => {
+      let lastCfg: any = null;
+      for (let i = 0; i < files.length; i++) {
+        const cfg = await readFile(files[i]);
+        if (cfg && typeof cfg === 'object') lastCfg = cfg;
+      }
+      if (!lastCfg) return;
+      try {
+        const cfg = lastCfg;
+        if (typeof cfg.gamesCount === 'number') settings.setGamesCount(cfg.gamesCount);
+        if (typeof cfg.useRootParallel === 'boolean') settings.setUseRootParallel(!!cfg.useRootParallel);
+        if (typeof cfg.workers === 'number') settings.setWorkers(Math.max(1, Math.min(32, cfg.workers)));
+        if (typeof cfg.randomOpeningPlies === 'number') settings.setRandomOpeningPlies(Math.max(0, Math.min(20, cfg.randomOpeningPlies)));
+        if (typeof cfg.exploreEps === 'number') settings.setExploreEps(Math.max(0, Math.min(1, cfg.exploreEps)));
+        if (typeof cfg.traceHeuristics === 'boolean') settings.setTraceHeuristics(!!cfg.traceHeuristics);
+        if (typeof cfg.startEligibleLight === 'boolean') settings.setStartEligibleLight(!!cfg.startEligibleLight);
+        if (typeof cfg.startEligibleDark === 'boolean') settings.setStartEligibleDark(!!cfg.startEligibleDark);
+
+        // P1
+        if (cfg.p1 && typeof cfg.p1 === 'object') {
+          if (typeof cfg.p1.depth === 'number') settings.setP1Depth(cfg.p1.depth);
+          if (cfg.p1.mode) settings.setP1Mode(cfg.p1.mode as any);
+          if (typeof cfg.p1.secs === 'number') settings.setP1Secs(Math.max(0, Math.min(60, cfg.p1.secs)));
+          if (cfg.p1.engine && typeof cfg.p1.engine === 'object') settings.setP1Engine(prev => ({ ...prev, ...cfg.p1.engine } as any));
+          if (cfg.p1.eval && typeof cfg.p1.eval === 'object') settings.setP1Eval(prev => ({ ...prev, ...cfg.p1.eval } as any));
+        }
+        // P2
+        if (cfg.p2 && typeof cfg.p2 === 'object') {
+          if (typeof cfg.p2.depth === 'number') settings.setP2Depth(cfg.p2.depth);
+          if (cfg.p2.mode) settings.setP2Mode(cfg.p2.mode as any);
+          if (typeof cfg.p2.secs === 'number') settings.setP2Secs(Math.max(0, Math.min(60, cfg.p2.secs)));
+          if (cfg.p2.engine && typeof cfg.p2.engine === 'object') settings.setP2Engine(prev => ({ ...prev, ...cfg.p2.engine } as any));
+          if (cfg.p2.eval && typeof cfg.p2.eval === 'object') settings.setP2Eval(prev => ({ ...prev, ...cfg.p2.eval } as any));
+        }
+      } finally {
+        try { (e.target as HTMLInputElement).value = ''; } catch {}
+      }
+    })();
+  };
+
   return (
     <InfoIAView
       running={sim.running}
@@ -298,6 +393,8 @@ const InfoIAContainer: React.FC = () => {
       onExportCSVDetails={exportCSVDetails}
       onImportFiles={onImportFiles}
       onClearAll={clearAll}
+      onSaveConfig={handleSaveConfig}
+      onImportConfigFiles={onImportConfigFiles}
       activeTab={settings.activeTab}
       onChangeTab={settings.setActiveTab}
       compareHeads={compareSets.map((s: { id: string; name: string; color: string }) => ({ id: s.id, name: s.name, color: s.color }))}
@@ -370,6 +467,46 @@ const InfoIAContainer: React.FC = () => {
         // Ordering jitter
         orderingJitterEps: (settings.p1Engine as any).orderingJitterEps,
         onChangeOrderingJitterEps: (n: number) => settings.setP1Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
+        // LMP
+        enableLMP: (settings.p1Engine as any).enableLMP,
+        onToggleEnableLMP: () => settings.setP1Engine(prev => ({ ...prev, enableLMP: !(prev as any).enableLMP } as any)),
+        lmpMaxDepth: (settings.p1Engine as any).lmpMaxDepth,
+        onChangeLmpMaxDepth: (n: number) => settings.setP1Engine(prev => ({ ...prev, lmpMaxDepth: n } as any)),
+        lmpBase: (settings.p1Engine as any).lmpBase,
+        onChangeLmpBase: (n: number) => settings.setP1Engine(prev => ({ ...prev, lmpBase: n } as any)),
+        // Futility
+        enableFutility: (settings.p1Engine as any).enableFutility,
+        onToggleEnableFutility: () => settings.setP1Engine(prev => ({ ...prev, enableFutility: !(prev as any).enableFutility } as any)),
+        futilityMargin: (settings.p1Engine as any).futilityMargin,
+        onChangeFutilityMargin: (n: number) => settings.setP1Engine(prev => ({ ...prev, futilityMargin: n } as any)),
+        // Aspiration
+        enableAspiration: (settings.p1Engine as any).enableAspiration,
+        onToggleEnableAspiration: () => settings.setP1Engine(prev => ({ ...prev, enableAspiration: !(prev as any).enableAspiration } as any)),
+        aspDelta: (settings.p1Engine as any).aspDelta,
+        onChangeAspDelta: (n: number) => settings.setP1Engine(prev => ({ ...prev, aspDelta: n } as any)),
+        // IID
+        enableIID: (settings.p1Engine as any).enableIID,
+        onToggleEnableIID: () => settings.setP1Engine(prev => ({ ...prev, enableIID: !(prev as any).enableIID } as any)),
+        iidMinDepth: (settings.p1Engine as any).iidMinDepth,
+        onChangeIidMinDepth: (n: number) => settings.setP1Engine(prev => ({ ...prev, iidMinDepth: n } as any)),
+        // Quiescence avanzado
+        quiescenceStandPatMargin: (settings.p1Engine as any).quiescenceStandPatMargin,
+        onChangeQuiescenceStandPatMargin: (n: number) => settings.setP1Engine(prev => ({ ...prev, quiescenceStandPatMargin: n } as any)),
+        quiescenceSeeMargin: (settings.p1Engine as any).quiescenceSeeMargin,
+        onChangeQuiescenceSeeMargin: (n: number) => settings.setP1Engine(prev => ({ ...prev, quiescenceSeeMargin: n } as any)),
+        quiescenceExtendOnRetire: (settings.p1Engine as any).quiescenceExtendOnRetire,
+        onToggleQuiescenceExtendOnRetire: () => settings.setP1Engine(prev => ({ ...prev, quiescenceExtendOnRetire: !(prev as any).quiescenceExtendOnRetire } as any)),
+        quiescenceExtendOnJump: (settings.p1Engine as any).quiescenceExtendOnJump,
+        onToggleQuiescenceExtendOnJump: () => settings.setP1Engine(prev => ({ ...prev, quiescenceExtendOnJump: !(prev as any).quiescenceExtendOnJump } as any)),
+        // Adaptive time
+        enableAdaptiveTime: (settings.p1Engine as any).enableAdaptiveTime,
+        onToggleEnableAdaptiveTime: () => settings.setP1Engine(prev => ({ ...prev, enableAdaptiveTime: !(prev as any).enableAdaptiveTime } as any)),
+        timeSlackMs: (settings.p1Engine as any).timeSlackMs,
+        onChangeTimeSlackMs: (n: number) => settings.setP1Engine(prev => ({ ...prev, timeSlackMs: n } as any)),
+        adaptiveGrowthFactor: (settings.p1Engine as any).adaptiveGrowthFactor,
+        onChangeAdaptiveGrowthFactor: (n: number) => settings.setP1Engine(prev => ({ ...prev, adaptiveGrowthFactor: n } as any)),
+        adaptiveBFWeight: (settings.p1Engine as any).adaptiveBFWeight,
+        onChangeAdaptiveBFWeight: (n: number) => settings.setP1Engine(prev => ({ ...prev, adaptiveBFWeight: n } as any)),
         // Heuristic weights
         w_race: settings.p1Eval.w_race,
         onChangeWRace: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_race: n })),
@@ -432,6 +569,46 @@ const InfoIAContainer: React.FC = () => {
         // Ordering jitter
         orderingJitterEps: (settings.p2Engine as any).orderingJitterEps,
         onChangeOrderingJitterEps: (n: number) => settings.setP2Engine(prev => ({ ...prev, orderingJitterEps: Math.max(0, n) } as any)),
+        // LMP
+        enableLMP: (settings.p2Engine as any).enableLMP,
+        onToggleEnableLMP: () => settings.setP2Engine(prev => ({ ...prev, enableLMP: !(prev as any).enableLMP } as any)),
+        lmpMaxDepth: (settings.p2Engine as any).lmpMaxDepth,
+        onChangeLmpMaxDepth: (n: number) => settings.setP2Engine(prev => ({ ...prev, lmpMaxDepth: n } as any)),
+        lmpBase: (settings.p2Engine as any).lmpBase,
+        onChangeLmpBase: (n: number) => settings.setP2Engine(prev => ({ ...prev, lmpBase: n } as any)),
+        // Futility
+        enableFutility: (settings.p2Engine as any).enableFutility,
+        onToggleEnableFutility: () => settings.setP2Engine(prev => ({ ...prev, enableFutility: !(prev as any).enableFutility } as any)),
+        futilityMargin: (settings.p2Engine as any).futilityMargin,
+        onChangeFutilityMargin: (n: number) => settings.setP2Engine(prev => ({ ...prev, futilityMargin: n } as any)),
+        // Aspiration
+        enableAspiration: (settings.p2Engine as any).enableAspiration,
+        onToggleEnableAspiration: () => settings.setP2Engine(prev => ({ ...prev, enableAspiration: !(prev as any).enableAspiration } as any)),
+        aspDelta: (settings.p2Engine as any).aspDelta,
+        onChangeAspDelta: (n: number) => settings.setP2Engine(prev => ({ ...prev, aspDelta: n } as any)),
+        // IID
+        enableIID: (settings.p2Engine as any).enableIID,
+        onToggleEnableIID: () => settings.setP2Engine(prev => ({ ...prev, enableIID: !(prev as any).enableIID } as any)),
+        iidMinDepth: (settings.p2Engine as any).iidMinDepth,
+        onChangeIidMinDepth: (n: number) => settings.setP2Engine(prev => ({ ...prev, iidMinDepth: n } as any)),
+        // Quiescence avanzado
+        quiescenceStandPatMargin: (settings.p2Engine as any).quiescenceStandPatMargin,
+        onChangeQuiescenceStandPatMargin: (n: number) => settings.setP2Engine(prev => ({ ...prev, quiescenceStandPatMargin: n } as any)),
+        quiescenceSeeMargin: (settings.p2Engine as any).quiescenceSeeMargin,
+        onChangeQuiescenceSeeMargin: (n: number) => settings.setP2Engine(prev => ({ ...prev, quiescenceSeeMargin: n } as any)),
+        quiescenceExtendOnRetire: (settings.p2Engine as any).quiescenceExtendOnRetire,
+        onToggleQuiescenceExtendOnRetire: () => settings.setP2Engine(prev => ({ ...prev, quiescenceExtendOnRetire: !(prev as any).quiescenceExtendOnRetire } as any)),
+        quiescenceExtendOnJump: (settings.p2Engine as any).quiescenceExtendOnJump,
+        onToggleQuiescenceExtendOnJump: () => settings.setP2Engine(prev => ({ ...prev, quiescenceExtendOnJump: !(prev as any).quiescenceExtendOnJump } as any)),
+        // Adaptive time
+        enableAdaptiveTime: (settings.p2Engine as any).enableAdaptiveTime,
+        onToggleEnableAdaptiveTime: () => settings.setP2Engine(prev => ({ ...prev, enableAdaptiveTime: !(prev as any).enableAdaptiveTime } as any)),
+        timeSlackMs: (settings.p2Engine as any).timeSlackMs,
+        onChangeTimeSlackMs: (n: number) => settings.setP2Engine(prev => ({ ...prev, timeSlackMs: n } as any)),
+        adaptiveGrowthFactor: (settings.p2Engine as any).adaptiveGrowthFactor,
+        onChangeAdaptiveGrowthFactor: (n: number) => settings.setP2Engine(prev => ({ ...prev, adaptiveGrowthFactor: n } as any)),
+        adaptiveBFWeight: (settings.p2Engine as any).adaptiveBFWeight,
+        onChangeAdaptiveBFWeight: (n: number) => settings.setP2Engine(prev => ({ ...prev, adaptiveBFWeight: n } as any)),
         // Heuristic weights
         w_race: settings.p2Eval.w_race,
         onChangeWRace: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_race: n })),

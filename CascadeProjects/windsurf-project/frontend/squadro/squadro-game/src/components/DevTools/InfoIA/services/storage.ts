@@ -1,4 +1,5 @@
 import type { InfoIARecord } from '../types';
+import type { InfoIAConfig } from '../types';
 import { dbGetAll, dbSave, dbDelete, dbClear } from '../../../../utils/squadroInfoiaDb';
 
 export async function getAllRecords(): Promise<InfoIARecord[]> {
@@ -26,4 +27,23 @@ export function saveLastSuite(result: any): void {
   try {
     localStorage.setItem(SUITE_KEY, JSON.stringify(result));
   } catch {}
+}
+
+// Persisted configuration snapshot
+const CONFIG_KEY = 'squadro:infoia:config';
+
+export function saveInfoIAConfig(cfg: InfoIAConfig): void {
+  try {
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  } catch {}
+}
+
+export function loadInfoIAConfig(): InfoIAConfig | null {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as InfoIAConfig;
+  } catch {
+    return null;
+  }
 }

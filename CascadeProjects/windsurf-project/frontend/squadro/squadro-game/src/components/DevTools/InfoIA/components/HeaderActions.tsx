@@ -12,11 +12,14 @@ interface HeaderActionsProps {
   onExportJSONL?: () => void;
   onImportFiles: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearAll: () => void;
+  onSaveConfig: () => void;
+  onImportConfigFiles: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function HeaderActions(props: HeaderActionsProps) {
-  const { running, onStart, onStop, onDefaults, onExportJSON, onExportCSV, onExportCSVDetails, onExportJSONL, onImportFiles, onClearAll } = props;
+  const { running, onStart, onStop, onDefaults, onExportJSON, onExportCSV, onExportCSVDetails, onExportJSONL, onImportFiles, onClearAll, onSaveConfig, onImportConfigFiles } = props;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cfgFileInputRef = useRef<HTMLInputElement | null>(null);
   return (
     <div className="infoia__actions flex items-center flex-wrap gap-2">
       {!running ? (
@@ -78,6 +81,15 @@ export default function HeaderActions(props: HeaderActionsProps) {
         aria-hidden
         tabIndex={-1}
       />
+      <input
+        ref={cfgFileInputRef}
+        type="file"
+        accept="application/json"
+        onChange={onImportConfigFiles}
+        className="hidden"
+        aria-hidden
+        tabIndex={-1}
+      />
       <Button
         size="sm"
         variant="neutral"
@@ -96,6 +108,19 @@ export default function HeaderActions(props: HeaderActionsProps) {
         </svg>
         Limpiar
       </Button>
+      <Button size="sm" variant="neutral" onClick={onSaveConfig} title="Guardar configuración — Exporta un archivo JSON con Límites de simulación y ajustes de Jugador 1/2 (motor y evaluación).">
+        <svg width="12" height="12" viewBox="0 0 24 24" className="mr-1" aria-hidden>
+          <path d="M6 4h12a2 2 0 0 1 2 2v12l-4-4H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="currentColor"/>
+        </svg>
+        Guardar configuración
+      </Button>
+      <Button size="sm" variant="outline" onClick={() => { try { cfgFileInputRef.current?.click(); } catch {} }} title="Cargar configuración — Selecciona un archivo JSON de configuración para restaurar Límites de simulación y ajustes de Jugador 1/2.">
+        <svg width="12" height="12" viewBox="0 0 24 24" className="mr-1" aria-hidden>
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" strokeWidth="2" fill="none"/>
+        </svg>
+        Cargar configuración
+      </Button>
     </div>
   );
 }
+

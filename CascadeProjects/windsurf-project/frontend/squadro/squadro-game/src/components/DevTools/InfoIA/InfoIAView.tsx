@@ -57,6 +57,8 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onExportJSONL={props.onExportJSONL}
           onImportFiles={onImportFiles}
           onClearAll={onClearAll}
+          onSaveConfig={props.onSaveConfig}
+          onImportConfigFiles={props.onImportConfigFiles}
         />
         {(onRunSuite || props.onExportJUnit) && (
           <div className="mt-2">

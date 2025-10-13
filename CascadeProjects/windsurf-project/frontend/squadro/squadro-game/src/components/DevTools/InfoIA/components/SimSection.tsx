@@ -44,6 +44,64 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
     return records.filter(r => r.winner === winnerFilter);
   }, [records, winnerFilter]);
 
+  // Build a comparator using UI defaults to avoid false positives when a value is undefined
+  // but the UI shows the same default para ambos paneles.
+  const UI_DEFAULTS: Record<string, any> = {
+    // Engine toggles
+    enableTT: false,
+    enableKillers: false,
+    enableHistory: false,
+    enablePVS: false,
+    enableLMR: false,
+    preferHashMove: false,
+    enableQuiescence: false,
+    enableTablebase: false,
+    enableDFPN: false,
+    enableLMP: false,
+    enableFutility: false,
+    enableAspiration: false,
+    enableIID: false,
+    enableAdaptiveTime: false,
+    quiescenceExtendOnRetire: false,
+    quiescenceExtendOnJump: false,
+    // Engine numbers
+    lmrMinDepth: 3,
+    lmrLateMoveIdx: 3,
+    lmrReduction: 1,
+    quiescenceMaxPlies: 4,
+    quiescenceStandPatMargin: 0,
+    quiescenceSeeMargin: 0,
+    dfpnMaxActive: 2,
+    lmpMaxDepth: 2,
+    lmpBase: 6,
+    futilityMargin: 150,
+    aspDelta: 25,
+    iidMinDepth: 3,
+    timeSlackMs: 50,
+    adaptiveGrowthFactor: 1.8,
+    adaptiveBFWeight: 0.05,
+    orderingJitterEps: 0,
+    // Heuristic weights
+    w_race: 1.0,
+    w_clash: 0.8,
+    w_sprint: 0.6,
+    w_block: 0.3,
+    done_bonus: 5.0,
+    sprint_threshold: 2,
+    tempo: 5,
+  };
+
+  const isDiff = (key: string): boolean => {
+    const a: any = (p1 as any)?.[key];
+    const b: any = (p2 as any)?.[key];
+    const da = a ?? UI_DEFAULTS[key];
+    const db = b ?? UI_DEFAULTS[key];
+    // Normaliza booleanos explícitamente
+    const na = typeof da === 'boolean' ? !!da : da;
+    const nb = typeof db === 'boolean' ? !!db : db;
+    return na !== nb;
+  };
+
   return (
     <div className="infoia-sim flex flex-col gap-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -114,11 +172,11 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
           <div className="grid grid-cols-2 gap-2 mt-2">
             <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 1">
               Profundidad
-              <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+              <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
             <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 1: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
               Tiempo
-              <select value={p1.timeMode} onChange={(e) => p1.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
+              <select value={p1.timeMode} onChange={(e) => p1.onChangeTimeMode(e.target.value as any)} className={"ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeMode !== p2.timeMode ? ' border-amber-400' : '')}>
                 <option value="auto">Auto</option>
                 <option value="manual">Manual</option>
               </select>
@@ -126,7 +184,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             {p1.timeMode === 'manual' && (
               <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 1. Consejo: 0 segundos se interpreta como infinito.">
                 Segundos
-                <input type="number" min={0} max={60} value={p1.timeSeconds} onChange={(e) => p1.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+                <input type="number" min={0} max={60} value={p1.timeSeconds} onChange={(e) => p1.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeSeconds !== p2.timeSeconds ? ' border-amber-400' : '')} />
               </label>
             )}
             {p1.presetOptions && p1.onChangePreset && (
@@ -139,54 +197,18 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </label>
             )}
           </div>
-          <PlayerEngineOptions
-            enableTT={p1.enableTT}
-            onToggleEnableTT={p1.onToggleEnableTT}
-            enablePVS={p1.enablePVS}
-            onToggleEnablePVS={p1.onToggleEnablePVS}
-            enableKillers={p1.enableKillers}
-            onToggleEnableKillers={p1.onToggleEnableKillers}
-            enableHistory={p1.enableHistory}
-            onToggleEnableHistory={p1.onToggleEnableHistory}
-            preferHashMove={p1.preferHashMove}
-            onTogglePreferHashMove={p1.onTogglePreferHashMove}
-            enableLMR={p1.enableLMR}
-            onToggleEnableLMR={p1.onToggleEnableLMR}
-            lmrMinDepth={p1.lmrMinDepth}
-            onChangeLmrMinDepth={p1.onChangeLmrMinDepth}
-            lmrLateMoveIdx={p1.lmrLateMoveIdx}
-            onChangeLmrLateMoveIdx={p1.onChangeLmrLateMoveIdx}
-            lmrReduction={p1.lmrReduction}
-            onChangeLmrReduction={p1.onChangeLmrReduction}
-            orderingJitterEps={p1.orderingJitterEps}
-            onChangeOrderingJitterEps={p1.onChangeOrderingJitterEps}
-            // Heuristic weights
-            w_race={p1.w_race}
-            onChangeWRace={p1.onChangeWRace}
-            w_clash={p1.w_clash}
-            onChangeWClash={p1.onChangeWClash}
-            w_sprint={p1.w_sprint}
-            onChangeWSprint={p1.onChangeWSprint}
-            w_block={p1.w_block}
-            onChangeWBlock={p1.onChangeWBlock}
-            done_bonus={p1.done_bonus}
-            onChangeDoneBonus={p1.onChangeDoneBonus}
-            sprint_threshold={p1.sprint_threshold}
-            onChangeSprintThreshold={p1.onChangeSprintThreshold}
-            tempo={p1.tempo}
-            onChangeTempo={p1.onChangeTempo}
-          />
+          <PlayerEngineOptions {...(p1 as any)} isDiff={isDiff} />
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title={`${p2.title} — Ajustes del motor y heurística para el Jugador 2. Útil para A/B testing contra Jugador 1.`}>{p2.title}</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 2">
               Profundidad
-              <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+              <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
             <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 2: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
               Tiempo
-              <select value={p2.timeMode} onChange={(e) => p2.onChangeTimeMode(e.target.value as any)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
+              <select value={p2.timeMode} onChange={(e) => p2.onChangeTimeMode(e.target.value as any)} className={"ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeMode !== p2.timeMode ? ' border-amber-400' : '')}>
                 <option value="auto">Auto</option>
                 <option value="manual">Manual</option>
               </select>
@@ -194,7 +216,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             {p2.timeMode === 'manual' && (
               <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 2. Consejo: 0 segundos se interpreta como infinito.">
                 Segundos
-                <input type="number" min={0} max={60} value={p2.timeSeconds} onChange={(e) => p2.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className="w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+                <input type="number" min={0} max={60} value={p2.timeSeconds} onChange={(e) => p2.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeSeconds !== p2.timeSeconds ? ' border-amber-400' : '')} />
               </label>
             )}
             {p2.presetOptions && p2.onChangePreset && (
@@ -207,43 +229,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </label>
             )}
           </div>
-          <PlayerEngineOptions
-            enableTT={p2.enableTT}
-            onToggleEnableTT={p2.onToggleEnableTT}
-            enablePVS={p2.enablePVS}
-            onToggleEnablePVS={p2.onToggleEnablePVS}
-            enableKillers={p2.enableKillers}
-            onToggleEnableKillers={p2.onToggleEnableKillers}
-            enableHistory={p2.enableHistory}
-            onToggleEnableHistory={p2.onToggleEnableHistory}
-            preferHashMove={p2.preferHashMove}
-            onTogglePreferHashMove={p2.onTogglePreferHashMove}
-            enableLMR={p2.enableLMR}
-            onToggleEnableLMR={p2.onToggleEnableLMR}
-            lmrMinDepth={p2.lmrMinDepth}
-            onChangeLmrMinDepth={p2.onChangeLmrMinDepth}
-            lmrLateMoveIdx={p2.lmrLateMoveIdx}
-            onChangeLmrLateMoveIdx={p2.onChangeLmrLateMoveIdx}
-            lmrReduction={p2.lmrReduction}
-            onChangeLmrReduction={p2.onChangeLmrReduction}
-            orderingJitterEps={p2.orderingJitterEps}
-            onChangeOrderingJitterEps={p2.onChangeOrderingJitterEps}
-            // Heuristic weights
-            w_race={p2.w_race}
-            onChangeWRace={p2.onChangeWRace}
-            w_clash={p2.w_clash}
-            onChangeWClash={p2.onChangeWClash}
-            w_sprint={p2.w_sprint}
-            onChangeWSprint={p2.onChangeWSprint}
-            w_block={p2.w_block}
-            onChangeWBlock={p2.onChangeWBlock}
-            done_bonus={p2.done_bonus}
-            onChangeDoneBonus={p2.onChangeDoneBonus}
-            sprint_threshold={p2.sprint_threshold}
-            onChangeSprintThreshold={p2.onChangeSprintThreshold}
-            tempo={p2.tempo}
-            onChangeTempo={p2.onChangeTempo}
-          />
+          <PlayerEngineOptions {...(p2 as any)} isDiff={isDiff} />
         </div>
       </div>
 

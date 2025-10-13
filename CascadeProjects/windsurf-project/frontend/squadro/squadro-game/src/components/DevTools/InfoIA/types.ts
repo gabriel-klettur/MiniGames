@@ -1,6 +1,8 @@
 import type { ChangeEvent } from 'react';
 import type { SuiteResult } from '../../../tests/runSuite';
 import type { SearchStats } from '../../../ia/search/types';
+import type { EngineOptions } from '../../../ia/search/types';
+import type { EvalParams } from '../../../ia/evalTypes';
 
 export type TimeMode = 'auto' | 'manual';
 
@@ -52,6 +54,34 @@ export type InfoIARecord = {
   details?: MoveDetail[];
 };
 
+// Configuration snapshot for saving/loading InfoIA settings
+export type InfoIAConfig = {
+  // Global limits and toggles
+  gamesCount: number;
+  useRootParallel: boolean;
+  workers: number;
+  randomOpeningPlies: number;
+  exploreEps: number;
+  traceHeuristics: boolean;
+  startEligibleLight: boolean;
+  startEligibleDark: boolean;
+  // Per-player settings
+  p1: {
+    depth: number;
+    mode: TimeMode;
+    secs: number;
+    engine: Partial<EngineOptions>;
+    eval: Partial<EvalParams>;
+  };
+  p2: {
+    depth: number;
+    mode: TimeMode;
+    secs: number;
+    engine: Partial<EngineOptions>;
+    eval: Partial<EvalParams>;
+  };
+};
+
 export type PresetOption = { key: string; label: string; description?: string };
 
 export interface PlayerControlsProps {
@@ -81,11 +111,33 @@ export interface PlayerControlsProps {
   // Quiescence (optional support)
   enableQuiescence?: boolean; onToggleEnableQuiescence?: () => void;
   quiescenceMaxPlies?: number; onChangeQuiescenceMaxPlies?: (n: number) => void;
+  quiescenceStandPatMargin?: number; onChangeQuiescenceStandPatMargin?: (n: number) => void;
+  quiescenceSeeMargin?: number; onChangeQuiescenceSeeMargin?: (n: number) => void;
+  quiescenceExtendOnRetire?: boolean; onToggleQuiescenceExtendOnRetire?: () => void;
+  quiescenceExtendOnJump?: boolean; onToggleQuiescenceExtendOnJump?: () => void;
   // Tablebase probe (optional support)
   enableTablebase?: boolean; onToggleEnableTablebase?: () => void;
   // DF-PN (optional support)
   enableDFPN?: boolean; onToggleEnableDFPN?: () => void;
   dfpnMaxActive?: number; onChangeDfpnMaxActive?: (n: number) => void;
+  // LMP (Late Move Pruning)
+  enableLMP?: boolean; onToggleEnableLMP?: () => void;
+  lmpMaxDepth?: number; onChangeLmpMaxDepth?: (n: number) => void;
+  lmpBase?: number; onChangeLmpBase?: (n: number) => void;
+  // Futility pruning
+  enableFutility?: boolean; onToggleEnableFutility?: () => void;
+  futilityMargin?: number; onChangeFutilityMargin?: (n: number) => void;
+  // Aspiration windows
+  enableAspiration?: boolean; onToggleEnableAspiration?: () => void;
+  aspDelta?: number; onChangeAspDelta?: (n: number) => void;
+  // IID
+  enableIID?: boolean; onToggleEnableIID?: () => void;
+  iidMinDepth?: number; onChangeIidMinDepth?: (n: number) => void;
+  // Adaptive time control
+  enableAdaptiveTime?: boolean; onToggleEnableAdaptiveTime?: () => void;
+  timeSlackMs?: number; onChangeTimeSlackMs?: (n: number) => void;
+  adaptiveGrowthFactor?: number; onChangeAdaptiveGrowthFactor?: (n: number) => void;
+  adaptiveBFWeight?: number; onChangeAdaptiveBFWeight?: (n: number) => void;
   /** Heuristic weights (optional) */
   w_race?: number; onChangeWRace?: (n: number) => void;
   w_clash?: number; onChangeWClash?: (n: number) => void;
@@ -111,6 +163,9 @@ export interface InfoIAViewProps {
   onExportJSONL?: () => void;
   onImportFiles: (e: ChangeEvent<HTMLInputElement>) => void;
   onClearAll: () => void;
+  // Save/load configuration
+  onSaveConfig: () => void;
+  onImportConfigFiles: (e: ChangeEvent<HTMLInputElement>) => void;
 
   // Tabs
   activeTab: 'repeats' | 'sim' | 'charts' | 'books';
