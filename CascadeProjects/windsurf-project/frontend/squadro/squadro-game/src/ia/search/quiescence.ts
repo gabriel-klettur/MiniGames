@@ -21,6 +21,7 @@ export function quiesce(
     stats?: SearchStats;
     maxNodes?: number;
     qDepth: number;
+    path?: Set<string>;
   },
   ctx: SearchContext,
   tt: TranspositionTable | null,
@@ -95,6 +96,7 @@ export function quiesce(
         stats: args.stats,
         maxNodes: args.maxNodes,
         qDepth: nextQDepth,
+        path: args.path,
       },
       ctx,
       tt,

@@ -145,7 +145,17 @@ export interface PlayerControlsProps {
   w_block?: number; onChangeWBlock?: (n: number) => void;
   done_bonus?: number; onChangeDoneBonus?: (n: number) => void;
   sprint_threshold?: number; onChangeSprintThreshold?: (n: number) => void;
-  tempo?: number; onChangeTempo?: (n: number) => void;
+  // Extended (12-point) heuristic multipliers
+  w_chain?: number; onChangeWChain?: (n: number) => void;
+  w_parity?: number; onChangeWParity?: (n: number) => void;
+  w_struct?: number; onChangeWStruct?: (n: number) => void;
+  w_ones?: number; onChangeWOnes?: (n: number) => void;
+  w_return?: number; onChangeWReturn?: (n: number) => void;
+  w_waste?: number; onChangeWWaste?: (n: number) => void;
+  w_mob?: number; onChangeWMob?: (n: number) => void;
+  // Repetition/draw options
+  drawScore?: number; onChangeDrawScore?: (n: number) => void;
+  preferDrawWhenLosing?: boolean; onTogglePreferDrawWhenLosing?: () => void;
 }
 
 export interface CompareHead { id: string; name: string; color: string }

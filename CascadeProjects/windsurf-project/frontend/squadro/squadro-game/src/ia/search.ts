@@ -60,6 +60,9 @@ export async function findBestMove(rootState: GameState, opts: SearchOptions): P
     // DFPN defaults (trigger conservador)
     enableDFPN: false,
     dfpnMaxActive: 2,
+    // Repetition handling
+    drawScore: 0,
+    preferDrawWhenLosing: true,
   };
 
   // Phase detection (opening/middle/end) by retired pieces total

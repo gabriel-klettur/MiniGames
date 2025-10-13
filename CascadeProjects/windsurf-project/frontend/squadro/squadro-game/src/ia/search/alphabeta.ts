@@ -1,4 +1,5 @@
 import type { GameState, Player } from '../../game/types';
+import { hashState } from '../hash';
 import { generateMoves, applyMove, generateTacticalMoves } from '../moves';
 import { evaluate } from '../evaluate';
 import { TranspositionTable, type TTEntry } from '../tt';
@@ -25,7 +26,7 @@ export function bestMoveIterative(
   stats: SearchStats,
 ): { moveId: string | null; score: number; depthReached: number } {
   const start = performance.now();
-  const deadline = start + Math.max(10, opts.timeLimitMs);
+  const deadline = start + Math.max(30, opts.timeLimitMs);
   const me: Player = rootState.turn;
   const ctx = createDefaultContext();
   const tt = opts.engine?.enableTT ? new TranspositionTable() : null;
@@ -64,6 +65,8 @@ export function bestMoveIterative(
   };
 
   for (let depth = 1; depth <= opts.maxDepth; depth++) {
+    // Age TT generation each iteration to prefer fresher entries
+    tt?.tickGeneration();
     const remaining = deadline - performance.now();
     if (remaining <= 1) break;
     // Adaptive time: estimate next iteration cost based on previous iter and root branching factor
@@ -107,6 +110,7 @@ export function bestMoveIterative(
       allowedRootMoves: opts.allowedRootMoves,
       pvHintMove: pvHint || undefined,
       isRoot: true,
+      path: new Set<string>(),
       progressHook,
     }, ctx, tt, deadline, opts.engine);
 
@@ -135,6 +139,38 @@ export function bestMoveIterative(
       lastProgressAt = now;
       opts.onProgress?.({ type: 'progress', nodesVisited: stats.nodes });
     }
+  }
+
+  // Safe fallback when time budget expires before completing any iteration
+  if (!Number.isFinite(bestScore)) {
+    // Pick a legal root move (respecting allowedRootMoves if any)
+    let rootMoves = generateMoves(rootState);
+    if (opts.allowedRootMoves) rootMoves = rootMoves.filter((m) => opts.allowedRootMoves!.has(m));
+    const chosen = rootMoves.length > 0 ? rootMoves[0] : null;
+    bestMove = chosen;
+    // Try a trivial 2-ply repetition detection to honor drawScore quickly
+    const repKey0 = `${hashState(rootState).toString()}:${rootState.turn}`;
+    let fallbackScore: number;
+    if (chosen) {
+      const child = applyMove(rootState, chosen);
+      const oppMoves = generateMoves(child);
+      if (oppMoves.length === 1) {
+        const child2 = applyMove(child, oppMoves[0]);
+        const repKey2 = `${hashState(child2).toString()}:${child2.turn}`;
+        if (repKey0 === repKey2) {
+          const drawScore = typeof opts.engine?.drawScore === 'number' ? opts.engine.drawScore : 0;
+          fallbackScore = drawScore;
+        } else {
+          fallbackScore = evaluate(rootState, me);
+        }
+      } else {
+        fallbackScore = evaluate(rootState, me);
+      }
+    } else {
+      // No legal moves: fall back to static eval
+      fallbackScore = evaluate(rootState, me);
+    }
+    bestScore = fallbackScore;
   }
 
   const durationMs = performance.now() - start;
@@ -187,6 +223,16 @@ function negamax(
 ): IterResult {
   const { state, depth, me, ply } = params;
 
+  // Repetition detection on current path: key by hash+side-to-move
+  const repKey = `${hashState(state).toString()}:${state.turn}`;
+  const path = params.path || new Set<string>();
+  if (path.has(repKey)) {
+    const drawScore = typeof engine?.drawScore === 'number' ? engine.drawScore : 0;
+    return { score: drawScore, bestMove: null, timeout: false };
+  }
+  const nextPath = new Set(path);
+  nextPath.add(repKey);
+
   if (params.stats && typeof params.maxNodes === 'number' && params.stats.nodes >= params.maxNodes) {
     return { score: 0, bestMove: null, timeout: true };
   }
@@ -215,6 +261,7 @@ function negamax(
         stats: params.stats,
         maxNodes: params.maxNodes,
         qDepth: 0,
+        path: nextPath,
       }, ctx, tt, deadline, engine);
     } else {
       params.stats && (params.stats.nodes += 1);
@@ -245,6 +292,7 @@ function negamax(
         stats: params.stats,
         iidProbe: true,
         progressHook: params.progressHook,
+        path: nextPath,
       }, ctx, tt, deadline, engine);
       if (probe.timeout) return probe;
       if (params.stats) params.stats.iidProbes = (params.stats.iidProbes || 0) + 1;
@@ -349,6 +397,7 @@ function negamax(
         stats: params.stats,
         maxNodes: params.maxNodes,
         progressHook: params.progressHook,
+        path: nextPath,
       }, ctx, tt, deadline, engine);
       if (r1.timeout) return r1;
       score = -r1.score;
@@ -386,6 +435,7 @@ function negamax(
         stats: params.stats,
         maxNodes: params.maxNodes,
         progressHook: params.progressHook,
+        path: nextPath,
       }, ctx, tt, deadline, engine);
       if (r0.timeout) return r0;
       score = -r0.score;
@@ -401,6 +451,7 @@ function negamax(
           stats: params.stats,
           maxNodes: params.maxNodes,
           progressHook: params.progressHook,
+          path: nextPath,
         }, ctx, tt, deadline, engine);
         if (r2.timeout) return r2;
         score = -r2.score;
@@ -418,6 +469,7 @@ function negamax(
         stats: params.stats,
         maxNodes: params.maxNodes,
         progressHook: params.progressHook,
+        path: nextPath,
       }, ctx, tt, deadline, engine);
       if (r.timeout) return r;
       score = -r.score;

@@ -520,8 +520,26 @@ const InfoIAContainer: React.FC = () => {
         onChangeDoneBonus: (n: number) => settings.setP1Eval(prev => ({ ...prev, done_bonus: n })),
         sprint_threshold: settings.p1Eval.sprint_threshold,
         onChangeSprintThreshold: (n: number) => settings.setP1Eval(prev => ({ ...prev, sprint_threshold: n })),
-        tempo: settings.p1Eval.tempo,
-        onChangeTempo: (n: number) => settings.setP1Eval(prev => ({ ...prev, tempo: n })),
+        // Extended heuristic weights (12-point scale)
+        w_chain: (settings.p1Eval as any).w_chain,
+        onChangeWChain: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_chain: n } as any)),
+        w_parity: (settings.p1Eval as any).w_parity,
+        onChangeWParity: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_parity: n } as any)),
+        w_struct: (settings.p1Eval as any).w_struct,
+        onChangeWStruct: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_struct: n } as any)),
+        w_ones: (settings.p1Eval as any).w_ones,
+        onChangeWOnes: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_ones: n } as any)),
+        w_return: (settings.p1Eval as any).w_return,
+        onChangeWReturn: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_return: n } as any)),
+        w_waste: (settings.p1Eval as any).w_waste,
+        onChangeWWaste: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_waste: n } as any)),
+        w_mob: (settings.p1Eval as any).w_mob,
+        onChangeWMob: (n: number) => settings.setP1Eval(prev => ({ ...prev, w_mob: n } as any)),
+        // Repetition options
+        drawScore: (settings.p1Engine as any).drawScore,
+        onChangeDrawScore: (n: number) => settings.setP1Engine(prev => ({ ...prev, drawScore: n } as any)),
+        preferDrawWhenLosing: (settings.p1Engine as any).preferDrawWhenLosing,
+        onTogglePreferDrawWhenLosing: () => settings.setP1Engine(prev => ({ ...prev, preferDrawWhenLosing: !(prev as any).preferDrawWhenLosing } as any)),
       }}
       p2={{
         title: 'Jugador 2 (Dark)',
@@ -622,8 +640,26 @@ const InfoIAContainer: React.FC = () => {
         onChangeDoneBonus: (n: number) => settings.setP2Eval(prev => ({ ...prev, done_bonus: n })),
         sprint_threshold: settings.p2Eval.sprint_threshold,
         onChangeSprintThreshold: (n: number) => settings.setP2Eval(prev => ({ ...prev, sprint_threshold: n })),
-        tempo: settings.p2Eval.tempo,
-        onChangeTempo: (n: number) => settings.setP2Eval(prev => ({ ...prev, tempo: n })),
+        // Extended heuristic weights (12-point scale)
+        w_chain: (settings.p2Eval as any).w_chain,
+        onChangeWChain: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_chain: n } as any)),
+        w_parity: (settings.p2Eval as any).w_parity,
+        onChangeWParity: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_parity: n } as any)),
+        w_struct: (settings.p2Eval as any).w_struct,
+        onChangeWStruct: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_struct: n } as any)),
+        w_ones: (settings.p2Eval as any).w_ones,
+        onChangeWOnes: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_ones: n } as any)),
+        w_return: (settings.p2Eval as any).w_return,
+        onChangeWReturn: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_return: n } as any)),
+        w_waste: (settings.p2Eval as any).w_waste,
+        onChangeWWaste: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_waste: n } as any)),
+        w_mob: (settings.p2Eval as any).w_mob,
+        onChangeWMob: (n: number) => settings.setP2Eval(prev => ({ ...prev, w_mob: n } as any)),
+        // Repetition options
+        drawScore: (settings.p2Engine as any).drawScore,
+        onChangeDrawScore: (n: number) => settings.setP2Engine(prev => ({ ...prev, drawScore: n } as any)),
+        preferDrawWhenLosing: (settings.p2Engine as any).preferDrawWhenLosing,
+        onTogglePreferDrawWhenLosing: () => settings.setP2Engine(prev => ({ ...prev, preferDrawWhenLosing: !(prev as any).preferDrawWhenLosing } as any)),
       }}
       records={records}
       moveIndex={sim.moveIndex}

@@ -5,11 +5,11 @@ import { generateMoves, applyMove, approxOppSendBackCount } from './moves';
 /**
  * evaluate — Heurística para Squadro.
  *
- * Componentes:
- * - Carrera en turnos (no solo distancia): menos turnos restantes es mejor.
- * - Choques inminentes: medir swing de turnos (opp_loss - my_loss) en horizonte corto.
- * - Sprint final: priorizar cierre cuando alguna pieza está a <= thr turnos.
- * - Congestión local: estimar sobrecoste por rivales en próximos segmentos.
+ * Componentes principales (escala del documento Heuristica_v2):
+ * - Ventaja de carrera en "acciones" (top-4 sin interacción): 100 pts por tempo de ventaja.
+ * - Finalizadas (diferencia): 200 pts por pieza.
+ * - Captura inmediata (aprox): 50 pts por rival devuelto (aprox por delta en borde).
+ * - Sprint/bloqueo (moderadores): pequeños términos auxiliares (mantener hasta completar las 12 señales).
  */
 export function evaluate(gs: GameState, root: Player): number {
   const me = root;
@@ -22,34 +22,84 @@ export function evaluate(gs: GameState, root: Player): number {
     return gs.winner === me ? 100000 : -100000;
   }
 
+// Mejor cadena de send-backs del jugador en turno (máximo número de rivales devueltos por una jugada propia)
+function bestMyChain(gs: GameState, me: Player): number {
+  if (gs.turn !== me) return 0;
+  const opp = other(me);
+  const moves = generateMoves(gs);
+  let best = 0;
+  for (const m of moves) {
+    const child = applyMove(gs, m);
+    const c = sendBackCountLocal(gs, child, opp);
+    if (c > best) best = c;
+    if (best >= 3) break; // cap razonable
+  }
+  return best;
+}
+
   // Allow per-player override from game state (InfoIA/IAPanel can set gs.ai.evalWeights)
   const params: EvalParams = (gs.ai as any)?.evalWeights?.[me] ?? EVAL_PARAMS;
 
-  // 1) Carrera: bonus por retiradas y por tener menos turnos restantes
+  // 1) Carrera (top-4 sin interacción) en escala de 100 pts/tempo
+  const myTop4 = top4TurnsNoInteraction(gs, me);
+  const oppTop4 = top4TurnsNoInteraction(gs, opp);
+  const raceScore = 100 * (oppTop4 - myTop4); // positivo si voy por delante en carrera
+
+  // 2) Finalizadas explícito (200 pts por pieza por defecto via params.done_bonus)
   const ownDone = countRetired(gs, me);
   const oppDone = countRetired(gs, opp);
-  const ownTurnsLeft = sumTurnsLeft(gs, me);
-  const oppTurnsLeft = sumTurnsLeft(gs, opp);
-  const raceScore = params.done_bonus * (ownDone - oppDone) + (oppTurnsLeft - ownTurnsLeft);
+  const finishedScore = params.done_bonus * (ownDone - oppDone);
 
-  // 2) Choques inminentes: conteo realista de send-backs inmediatos en 1 ply para ambos lados
-  const clashDelta = immediateClashDelta(gs); // (opp_loss - my_loss)
+  // 3) Choques inminentes: conteo de send-backs inmediatos (1 ply) — escalar a 50 pts por captura
+  const clashDelta = immediateClashDelta(gs); // (opp_loss - my_loss) en unidades de capturas
 
-  // 3) Sprint: priorizar cierre cuando hay pieza a <= thr turnos
+  // 3b) Cadena de capturas (bonus por piezas adicionales en una misma jugada)
+  const bestChainMine = bestMyChain(gs, me);
+  const chainBonus = Math.max(0, bestChainMine - 1) * 15; // +15 por pieza extra
+
+  // 4) Sprint: priorizar cierre cuando hay pieza a <= thr turnos (moderador)
   const sprint = sprintTerm(gs, me, opp, params.sprint_threshold);
 
-  // 4) Bloqueos útiles vs exposición (documento del cliente)
+  // 5) Bloqueos útiles vs exposición (moderador)
   const block = blockQuality(gs, me, opp);
 
-  // 4) Tempo (iniciativa) suave (configurable, fallback 5)
-  const tempo = gs.turn === me ? (typeof (params as any).tempo === 'number' ? (params as any).tempo : 5) : 0;
+  // 5b) Paridad en cruces críticos (+12 por cruce ganado) y bloqueos estructurales (+10 por línea sofocada)
+  const parity = parityCrossingScore(gs, me);
+  const structBlocks = structuralBlocksScore(gs, me);
+
+  // 6) Seguridad de los "1" y vulnerabilidad de los "1" rivales
+  const safeOnes = countSafeOnes(gs, me);
+  const vulnOppOnes = countVulnerableOnes(gs, opp, me);
+  const onesScore = 30 * safeOnes - 30 * vulnOppOnes;
+
+  // 7) Valor de retorno (propio en_vuelta y rival sin girar en_ida)
+  const returnScore = valueReturn(gs, me, opp);
+
+  // 8) Ritmo (waste move disponible sin riesgo)
+  const wasteMine = hasWasteMove(gs, me) ? 1 : 0;
+  const wasteOpp = hasWasteMove(gs, opp) ? 1 : 0;
+  const wasteScore = 8 * (wasteMine - wasteOpp);
+
+  // 9) Movilidad segura (jugadas que no conceden salto inmediato), diferencia
+  const mobScore = 6 * (safeMobilityCount(gs, me) - safeMobilityCount(gs, opp));
+
+  // Nota: Evaluación circunscrita a los 12 puntos del documento.
 
   return (
+    // Núcleo: carrera y piezas terminadas
     params.w_race * raceScore +
+    finishedScore +
+    // Moderadores/táctica aproximada (en puntos)
     params.w_clash * clashDelta +
+    (params.w_chain ?? 1) * chainBonus +
     params.w_sprint * sprint +
-    params.w_block * block +
-    tempo
+    (params.w_block * block) +
+    (params.w_parity ?? 1) * parity +
+    (params.w_struct ?? 1) * structBlocks +
+    (params.w_ones ?? 1) * onesScore +
+    (params.w_return ?? 1) * returnScore +
+    (params.w_waste ?? 1) * wasteScore +
+    (params.w_mob ?? 1) * mobScore
   );
 }
 
@@ -62,12 +112,17 @@ function countRetired(gs: GameState, owner: Player): number {
 }
 
 // ===== Carrera en turnos (con congestión ligera) =====
-function sumTurnsLeft(gs: GameState, side: Player): number {
-  let s = 0;
+// ===== Carrera (top-4 sin interacción) =====
+function top4TurnsNoInteraction(gs: GameState, side: Player): number {
+  const times: number[] = [];
   for (const p of gs.pieces) {
     if (p.owner !== side) continue;
-    s += estimateTurnsLeft(gs, p);
+    times.push(estimateTurnsLeftNoInter(gs, p));
   }
+  times.sort((a, b) => a - b);
+  // sum de las 4 más rápidas; si hay menos de 4 (no debería), suma las disponibles
+  let s = 0;
+  for (let i = 0; i < Math.min(4, times.length); i++) s += times[i];
   return s;
 }
 
@@ -93,6 +148,24 @@ function estimateTurnsLeft(gs: GameState, piece: Piece): number {
   return backMoves + congestion;
 }
 
+// Versión sin interacción (ignora rivales y congestión) para la métrica del documento
+function estimateTurnsLeftNoInter(gs: GameState, piece: Piece): number {
+  const lane = gs.lanesByPlayer[piece.owner][piece.laneIndex];
+  if (piece.state === 'retirada') return 0;
+  if (piece.state === 'en_ida') {
+    const distOut = Math.max(0, lane.length - piece.pos);
+    const vOut = Math.max(1, lane.speedOut);
+    const outMoves = Math.ceil(distOut / vOut);
+    const vBack = Math.max(1, lane.speedBack);
+    const backMoves = Math.ceil(lane.length / vBack);
+    return outMoves + backMoves;
+  }
+  // en_vuelta
+  const distBack = Math.max(0, piece.pos);
+  const vBack = Math.max(1, lane.speedBack);
+  return Math.ceil(distBack / vBack);
+}
+
 function countRivalsOnRoute(gs: GameState, piece: Piece, lookaheadMoves: number): number {
   // Cuenta rivales en los próximos aterrizajes reales (1..lookaheadMoves) según la velocidad del carril
   const lane = gs.lanesByPlayer[piece.owner][piece.laneIndex];
@@ -108,7 +181,7 @@ function countRivalsOnRoute(gs: GameState, piece: Piece, lookaheadMoves: number)
   return hits;
 }
 
-// ===== Choques inminentes: delta de turnos (opp_loss - my_loss) =====
+// ===== Choques inminentes: delta de capturas (opp_loss - my_loss) =====
 function immediateClashDelta(gs: GameState): number {
   const side = gs.turn;
   const opp = other(side);
@@ -147,6 +220,194 @@ function coordOf(owner: Player, laneIndex: number, pos: number, gs: GameState): 
   const offset = 1;
   if (owner === 'Light') return { row: laneIndex + offset, col: L - pos };
   return { row: L - pos, col: laneIndex + offset };
+}
+
+// ===== Paridad de cruces =====
+function movesToReachPosNoInter(gs: GameState, p: Piece, targetPos: number): number {
+  const lane = gs.lanesByPlayer[p.owner][p.laneIndex];
+  const L = lane.length;
+  if (p.state === 'retirada') return 1e9;
+  if (p.state === 'en_ida') {
+    if (targetPos >= p.pos) {
+      const v = Math.max(1, lane.speedOut);
+      return Math.ceil((targetPos - p.pos) / v);
+    } else {
+      // Llegar a L, girar, y volver hasta targetPos
+      const vOut = Math.max(1, lane.speedOut);
+      const toL = Math.ceil((L - p.pos) / vOut);
+      const vBack = Math.max(1, lane.speedBack);
+      const back = Math.ceil((L - targetPos) / vBack);
+      return toL + back;
+    }
+  }
+  // en_vuelta: solo podemos decrementar pos hasta 0; si target > pos, es inalcanzable
+  if (targetPos > p.pos) return 1e9;
+  const vBack = Math.max(1, lane.speedBack);
+  return Math.ceil((p.pos - targetPos) / vBack);
+}
+
+function pieceOnLane(gs: GameState, owner: Player, laneIndex: number): Piece | null {
+  return gs.pieces.find((x) => x.owner === owner && x.laneIndex === laneIndex) ?? null;
+}
+
+function parityCrossingScore(gs: GameState, me: Player): number {
+  const opp = other(me);
+  const lanes = gs.lanesByPlayer[me].length;
+  const L = gs.lanesByPlayer[me][0].length;
+  let diff = 0;
+  for (let i = 0; i < lanes; i++) {
+    const myPiece = pieceOnLane(gs, me, i);
+    if (!myPiece || myPiece.state === 'retirada') continue;
+    for (let j = 0; j < lanes; j++) {
+      const oppPiece = pieceOnLane(gs, opp, j);
+      if (!oppPiece || oppPiece.state === 'retirada') continue;
+      // Intersección (row_i, col_j) => Light: col = j+1 => targetPos = L-(j+1); Dark: row = i+1 => targetPos = L-(i+1)
+      const myTarget = (me === 'Light') ? (L - (j + 1)) : (L - (i + 1));
+      const oppTarget = (opp === 'Light') ? (L - (j + 1)) : (L - (i + 1));
+      const myT = movesToReachPosNoInter(gs, myPiece, myTarget);
+      const opT = movesToReachPosNoInter(gs, oppPiece, oppTarget);
+      if (myT >= 1e9 || opT >= 1e9) continue;
+      if (myT < opT) diff += 1; else if (opT < myT) diff -= 1;
+    }
+  }
+  return 12 * diff;
+}
+
+// Consideramos una línea rival "sofocada" si nuestra llegada al cruce de esa línea se adelanta en ≥2 acciones
+function structuralBlocksScore(gs: GameState, me: Player): number {
+  const opp = other(me);
+  const lanes = gs.lanesByPlayer[me].length;
+  const L = gs.lanesByPlayer[me][0].length;
+  let count = 0;
+  for (let j = 0; j < lanes; j++) {
+    const oppPiece = pieceOnLane(gs, opp, j);
+    if (!oppPiece || oppPiece.state === 'retirada') continue;
+    // Elegimos nuestra pieza en el carril i = j (aprox simétrica) como representante
+    const i = j;
+    const myPiece = pieceOnLane(gs, me, i);
+    if (!myPiece || myPiece.state === 'retirada') continue;
+    const myTarget = (me === 'Light') ? (L - (j + 1)) : (L - (i + 1));
+    const oppTarget = (opp === 'Light') ? (L - (j + 1)) : (L - (i + 1));
+    const myT = movesToReachPosNoInter(gs, myPiece, myTarget);
+    const opT = movesToReachPosNoInter(gs, oppPiece, oppTarget);
+    if (myT < 1e9 && opT < 1e9 && (opT - myT) >= 2) count += 1;
+  }
+  return 10 * count;
+}
+
+// (Sin moduladores de ciclo/tempo: solo 12 puntos)
+
+// ===== Helpers adicionales (señales del documento) =====
+function currentSpeed(gs: GameState, p: Piece): number {
+  const lane = gs.lanesByPlayer[p.owner][p.laneIndex];
+  return p.state === 'en_ida' ? Math.max(1, lane.speedOut) : (p.state === 'en_vuelta' ? Math.max(1, lane.speedBack) : 0);
+}
+
+function isSafeFromOppImmediate(gs: GameState, me: Player, laneIndex: number, pos: number): boolean {
+  const opp = other(me);
+  return !rivalReachesHereSoon(gs, opp, laneIndex, pos, 1);
+}
+
+function countSafeOnes(gs: GameState, me: Player): number {
+  let c = 0;
+  for (const p of gs.pieces) {
+    if (p.owner !== me || p.state === 'retirada') continue;
+    if (currentSpeed(gs, p) === 1 && isSafeFromOppImmediate(gs, me, p.laneIndex, p.pos)) c++;
+  }
+  return c;
+}
+
+function myReachesHereSoon(gs: GameState, me: Player, laneIndex: number, pos: number, horizon: number): boolean {
+  for (const q of gs.pieces) {
+    if (q.owner !== me || q.state === 'retirada') continue;
+    const lane = gs.lanesByPlayer[q.owner][q.laneIndex];
+    const dir = q.state === 'en_ida' ? +1 : -1;
+    const speed = q.state === 'en_ida' ? lane.speedOut : lane.speedBack;
+    const maxProbe = Math.min(Math.abs(speed), Math.max(1, horizon));
+    for (let s = 1; s <= maxProbe; s++) {
+      const np = q.pos + dir * s;
+      if (np < 0 || np > lane.length) break;
+      const { row, col } = coordOf(q.owner, q.laneIndex, np, gs);
+      const { row: tr, col: tc } = coordOf(q.owner === 'Light' ? 'Dark' : 'Light', laneIndex, pos, gs);
+      if (row === tr && col === tc) return true;
+    }
+  }
+  return false;
+}
+
+function countVulnerableOnes(gs: GameState, opp: Player, me: Player): number {
+  let c = 0;
+  for (const p of gs.pieces) {
+    if (p.owner !== opp || p.state === 'retirada') continue;
+    if (currentSpeed(gs, p) === 1 && myReachesHereSoon(gs, me, p.laneIndex, p.pos, 1)) c++;
+  }
+  return c;
+}
+
+function valueReturn(gs: GameState, me: Player, opp: Player): number {
+  let s = 0;
+  for (const p of gs.pieces) {
+    if (p.owner === me && p.state === 'en_vuelta') s += 5;
+    if (p.owner === opp && p.state === 'en_ida') s -= 5;
+  }
+  return s;
+}
+
+function opponentHasImmediateJump(gs: GameState): boolean {
+  const opp: Player = gs.turn;
+  for (const q of gs.pieces) {
+    if (q.owner !== opp || q.state === 'retirada') continue;
+    const lane = gs.lanesByPlayer[q.owner][q.laneIndex];
+    const dir = q.state === 'en_ida' ? +1 : -1;
+    const speed = q.state === 'en_ida' ? lane.speedOut : lane.speedBack;
+    const maxProbe = Math.min(Math.abs(speed), 3);
+    for (let s = 1; s <= maxProbe; s++) {
+      const np = q.pos + dir * s;
+      if (np < 0 || np > lane.length) break;
+      if (anyOppAt(gs, q.owner, q.laneIndex, np)) return true;
+    }
+  }
+  return false;
+}
+
+function hasWasteMove(gs: GameState, side: Player): boolean {
+  if (gs.turn !== side) return false;
+  const moves = generateMoves(gs);
+  for (const m of moves) {
+    const child = applyMove(gs, m);
+    // moved piece ends on edge?
+    const p = child.pieces.find((x) => x.id === m);
+    if (!p || p.owner !== side) continue;
+    const L = child.lanesByPlayer[p.owner][p.laneIndex].length;
+    const endsOnEdge = (p.pos === 0 || p.pos === L);
+    if (endsOnEdge && !opponentHasImmediateJump(child)) return true;
+  }
+  return false;
+}
+
+function safeMobilityCount(gs: GameState, side: Player): number {
+  if (gs.turn !== side) return 0;
+  const moves = generateMoves(gs);
+  let c = 0;
+  for (const m of moves) {
+    const child = applyMove(gs, m);
+    if (!opponentHasImmediateJump(child)) c++;
+  }
+  return c;
+}
+
+function sendBackCountLocal(before: GameState, after: GameState, opp: Player): number {
+  let c = 0;
+  for (const qb of before.pieces) {
+    if (qb.owner !== opp || qb.state === 'retirada') continue;
+    const lane = before.lanesByPlayer[qb.owner][qb.laneIndex];
+    const resetPos = qb.state === 'en_ida' ? 0 : lane.length;
+    if (qb.pos === resetPos) continue;
+    const qa = after.pieces.find((x) => x.id === qb.id);
+    if (!qa) continue;
+    if (qa.pos === resetPos) c++;
+  }
+  return c;
 }
 
 // ===== Sprint final =====
@@ -199,12 +460,17 @@ function shallowApplyBestProgress(gs: GameState): GameState {
   return clone;
 }
 
-const EVAL_PARAMS = {
+// Valores por defecto alineados con la escala del documento:
+// - Carrera: raceScore ya viene en puntos (100 por tempo). Usamos w_race=1.
+// - Finalizadas: 200 por pieza (done_bonus).
+// - Capturas inmediatas: 50 por captura (modelado vía w_clash=50 sobre clashDelta de capturas).
+// - Sprint/bloqueo: moderadores pequeños por ahora (se ajustarán al completar 12 señales).
+const EVAL_PARAMS: EvalParams = {
   w_race: 1.0,
-  w_clash: 0.8,
-  w_sprint: 0.6,
-  w_block: 0.3,
-  done_bonus: 5.0,
+  w_clash: 50.0,
+  w_sprint: 8.0,   // moderado; afinable
+  w_block: 10.0,   // aproximación a "bloqueos estructurales" del doc
+  done_bonus: 200.0,
   sprint_threshold: 2,
 };
 

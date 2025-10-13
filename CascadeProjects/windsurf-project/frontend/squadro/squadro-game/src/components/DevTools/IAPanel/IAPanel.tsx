@@ -312,9 +312,9 @@ export default function AIDiagnosticsPanel() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {([
                 ['w_race', 1.0],
-                ['w_clash', 0.8],
-                ['w_sprint', 0.6],
-                ['w_block', 0.3],
+                ['w_clash', 50.0],
+                ['w_sprint', 8.0],
+                ['w_block', 10.0],
               ] as const).map(([k, def]) => (
                 <label key={k} className="text-xs text-neutral-300 inline-flex items-center gap-2" title={k === 'w_race' ? 'w_race — Carrera: recompensa menos turnos restantes. Ej.: si tú 6 y rival 8, un w_race alto favorece tu posición.' : k === 'w_clash' ? 'w_clash — Choques inminentes y swings de turnos. Ej.: enviar atrás una pieza rival sin quedarte expuesto aumenta el score.' : k === 'w_sprint' ? 'w_sprint — Sprint final: incentiva cerrar con piezas a pocos turnos del objetivo. Se activa junto a sprint_thr.' : 'w_block — Bloqueos útiles vs exposición inmediata. Ej.: tapar rutas rivales y evitar quedar al alcance siguiente.'}>
                   {k}
@@ -338,7 +338,7 @@ export default function AIDiagnosticsPanel() {
                   type="number"
                   step={0.5}
                   className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
-                  defaultValue={(ai?.evalWeights as any)?.Light?.done_bonus ?? (ai?.evalWeights as any)?.Dark?.done_bonus ?? 5.0}
+                  defaultValue={(ai?.evalWeights as any)?.Light?.done_bonus ?? (ai?.evalWeights as any)?.Dark?.done_bonus ?? 200.0}
                   onBlur={(e) => {
                     const v = Number(e.target.value);
                     dispatch(setAIEvalWeights({ player: 'Light', weights: { done_bonus: v } }));
@@ -356,19 +356,6 @@ export default function AIDiagnosticsPanel() {
                     const v = Number(e.target.value);
                     dispatch(setAIEvalWeights({ player: 'Light', weights: { sprint_threshold: v } }));
                     dispatch(setAIEvalWeights({ player: 'Dark', weights: { sprint_threshold: v } }));
-                  }}
-                />
-              </label>
-              <label className="text-xs text-neutral-300 inline-flex items-center gap-2" title="tempo — Iniciativa: bonus suave cuando es tu turno para preferir líneas que mantienen presión.">tempo
-                <input
-                  type="number"
-                  step={1}
-                  className="w-20 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
-                  defaultValue={(ai?.evalWeights as any)?.Light?.tempo ?? (ai?.evalWeights as any)?.Dark?.tempo ?? 5}
-                  onBlur={(e) => {
-                    const v = Number(e.target.value);
-                    dispatch(setAIEvalWeights({ player: 'Light', weights: { tempo: v } }));
-                    dispatch(setAIEvalWeights({ player: 'Dark', weights: { tempo: v } }));
                   }}
                 />
               </label>

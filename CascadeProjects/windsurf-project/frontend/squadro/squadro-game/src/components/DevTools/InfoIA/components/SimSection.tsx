@@ -102,6 +102,23 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
     return na !== nb;
   };
 
+  // Ranges for header controls (depth/time/preset)
+  const HDR_RANGE: Record<string, { min?: number; max?: number; avg?: number; values?: string }> = {
+    depth: { min: 1, max: 20, avg: 3 },
+    timeMode: { values: 'Auto / Manual' },
+    timeSeconds: { min: 0, max: 60, avg: 0 },
+    preset: { values: 'Lista de presets' },
+  };
+  const hstats = (key: string): string => {
+    const r = HDR_RANGE[key];
+    if (!r) return '';
+    if (r.values) return ` — Valores: ${r.values}`;
+    const parts: string[] = [];
+    if (typeof r.min === 'number' && typeof r.max === 'number') parts.push(`Rango: ${r.min}–${r.max}`);
+    if (typeof r.avg === 'number') parts.push(`Prom: ${r.avg}`);
+    return parts.length ? ` — ${parts.join(' · ')}` : '';
+  };
+
   return (
     <div className="infoia-sim flex flex-col gap-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -170,11 +187,11 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title={`${p1.title} — Ajustes del motor y heurística para el Jugador 1. Ejemplo: Profundidad 5, Tiempo Auto, TT+PVS+Killers+History ON, LMR configurado.`}>{p1.title}</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 1">
+            <label className="text-xs text-neutral-300" title={"Profundidad objetivo de búsqueda para el Jugador 1" + hstats('depth')}>
               Profundidad
               <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
-            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 1: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
+            <label className="text-xs text-neutral-300" title={"Modo de tiempo para Jugador 1: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito." + hstats('timeMode')}>
               Tiempo
               <select value={p1.timeMode} onChange={(e) => p1.onChangeTimeMode(e.target.value as any)} className={"ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeMode !== p2.timeMode ? ' border-amber-400' : '')}>
                 <option value="auto">Auto</option>
@@ -182,13 +199,13 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </select>
             </label>
             {p1.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 1. Consejo: 0 segundos se interpreta como infinito.">
+              <label className="text-xs text-neutral-300" title={"Límite de tiempo (segundos) por jugada para Jugador 1. Consejo: 0 segundos se interpreta como infinito." + hstats('timeSeconds')}>
                 Segundos
                 <input type="number" min={0} max={60} value={p1.timeSeconds} onChange={(e) => p1.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeSeconds !== p2.timeSeconds ? ' border-amber-400' : '')} />
               </label>
             )}
             {p1.presetOptions && p1.onChangePreset && (
-              <label className="text-xs text-neutral-300 col-span-2" title="Selecciona un preset de IA para Jugador 1">
+              <label className="text-xs text-neutral-300 col-span-2" title={"Selecciona un preset de IA para Jugador 1" + hstats('preset')}>
                 Preset
                 <select value={p1.presetSelectedKey || ''} onChange={(e) => p1.onChangePreset!(e.target.value)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                   <option value="">(ninguno)</option>
@@ -202,11 +219,11 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title={`${p2.title} — Ajustes del motor y heurística para el Jugador 2. Útil para A/B testing contra Jugador 1.`}>{p2.title}</div>
           <div className="grid grid-cols-2 gap-2 mt-2">
-            <label className="text-xs text-neutral-300" title="Profundidad objetivo de búsqueda para el Jugador 2">
+            <label className="text-xs text-neutral-300" title={"Profundidad objetivo de búsqueda para el Jugador 2" + hstats('depth')}>
               Profundidad
               <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
-            <label className="text-xs text-neutral-300" title="Modo de tiempo para Jugador 2: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito.">
+            <label className="text-xs text-neutral-300" title={"Modo de tiempo para Jugador 2: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito." + hstats('timeMode')}>
               Tiempo
               <select value={p2.timeMode} onChange={(e) => p2.onChangeTimeMode(e.target.value as any)} className={"ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeMode !== p2.timeMode ? ' border-amber-400' : '')}>
                 <option value="auto">Auto</option>
@@ -214,13 +231,13 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               </select>
             </label>
             {p2.timeMode === 'manual' && (
-              <label className="text-xs text-neutral-300" title="Límite de tiempo (segundos) por jugada para Jugador 2. Consejo: 0 segundos se interpreta como infinito.">
+              <label className="text-xs text-neutral-300" title={"Límite de tiempo (segundos) por jugada para Jugador 2. Consejo: 0 segundos se interpreta como infinito." + hstats('timeSeconds')}>
                 Segundos
                 <input type="number" min={0} max={60} value={p2.timeSeconds} onChange={(e) => p2.onChangeTimeSeconds(Math.max(0, Math.min(60, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.timeSeconds !== p2.timeSeconds ? ' border-amber-400' : '')} />
               </label>
             )}
             {p2.presetOptions && p2.onChangePreset && (
-              <label className="text-xs text-neutral-300 col-span-2" title="Selecciona un preset de IA para Jugador 2">
+              <label className="text-xs text-neutral-300 col-span-2" title={"Selecciona un preset de IA para Jugador 2" + hstats('preset')}>
                 Preset
                 <select value={p2.presetSelectedKey || ''} onChange={(e) => p2.onChangePreset!(e.target.value)} className="ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100">
                   <option value="">(ninguno)</option>

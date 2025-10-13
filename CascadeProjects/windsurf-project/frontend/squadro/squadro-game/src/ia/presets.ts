@@ -57,7 +57,14 @@ export interface IAPreset {
       w_block?: number;
       done_bonus?: number;
       sprint_threshold?: number;
-      tempo?: number;
+      // Extended (12-point) multipliers
+      w_chain?: number;
+      w_parity?: number;
+      w_struct?: number;
+      w_ones?: number;
+      w_return?: number;
+      w_waste?: number;
+      w_mob?: number;
     };
   };
 }
@@ -102,13 +109,14 @@ export function getDefaultPresets(): IAPreset[] {
         orderingJitterEps: 0,
         randomOpeningPlies: 0,
         evalWeights: {
-          w_race: 1.3,
-          w_clash: 1.25,
-          w_sprint: 0.5,
-          w_block: 0.6,
-          done_bonus: 7.0,
+          // Escala del documento: 100 pts ≈ 1 tempo, done=200, clash=50 aprox
+          w_race: 1.0,
+          w_clash: 55.0,
+          w_sprint: 8.0,
+          w_block: 12.0,
+          done_bonus: 200.0,
           sprint_threshold: 2,
-          tempo: 7,
+          // Extended left as defaults (1.0)
         },
       },
     },
@@ -141,13 +149,13 @@ export function getDefaultPresets(): IAPreset[] {
         randomOpeningPlies: 0,
         // Heurística global más sólida/defensiva
         evalWeights: {
-          w_race: 1.3,
-          w_clash: 1.2,
-          w_sprint: 0.5,
-          w_block: 0.6,
-          done_bonus: 7.0,
+          w_race: 1.0,
+          w_clash: 50.0,
+          w_sprint: 8.0,
+          w_block: 12.0,
+          done_bonus: 200.0,
           sprint_threshold: 2,
-          tempo: 7,
+          // Extended left as defaults (1.0)
         },
       },
     },
@@ -191,13 +199,13 @@ export function getDefaultPresets(): IAPreset[] {
         randomOpeningPlies: 0,
         // Heurística global robusta (ajustable por self-play)
         evalWeights: {
-          w_race: 1.3,
-          w_clash: 1.25,
-          w_sprint: 0.5,
-          w_block: 0.6,
-          done_bonus: 7.0,
+          w_race: 1.0,
+          w_clash: 55.0,
+          w_sprint: 8.0,
+          w_block: 12.0,
+          done_bonus: 200.0,
           sprint_threshold: 2,
-          tempo: 7,
+          // Extended left as defaults (1.0)
         },
       },
     },
@@ -211,13 +219,13 @@ export function getDefaultPresets(): IAPreset[] {
         timeSeconds: 5,
         // Heurística más agresiva y directa a progreso
         evalWeights: {
-          w_race: 1.35,
-          w_clash: 1.0,
-          w_sprint: 0.8,
-          w_block: 0.35,
-          done_bonus: 6.0,
+          w_race: 1.0,
+          w_clash: 65.0,
+          w_sprint: 12.0,
+          w_block: 8.0,
+          done_bonus: 210.0,
           sprint_threshold: 2,
-          tempo: 6,
+          // Extended left as defaults (1.0)
         },
       },
     },
@@ -231,13 +239,13 @@ export function getDefaultPresets(): IAPreset[] {
         timeSeconds: 30,
         // Heurística enfocada en solidez/prevención de contrajuego
         evalWeights: {
-          w_race: 1.15,
-          w_clash: 1.25,
-          w_sprint: 0.4,
-          w_block: 0.8,
-          done_bonus: 7.5,
+          w_race: 1.0,
+          w_clash: 45.0,
+          w_sprint: 6.0,
+          w_block: 14.0,
+          done_bonus: 200.0,
           sprint_threshold: 2,
-          tempo: 6,
+          // Extended left as defaults (1.0)
         },
       },
     },
@@ -284,7 +292,7 @@ export function loadPresets(): IAPreset[] {
       }
       const curW = (cur.evalWeights ||= {});
       const dftW = dft.evalWeights || {};
-      const wKeys = ['w_race','w_clash','w_sprint','w_block','done_bonus','sprint_threshold','tempo'] as const;
+      const wKeys = ['w_race','w_clash','w_sprint','w_block','done_bonus','sprint_threshold','w_chain','w_parity','w_struct','w_ones','w_return','w_waste','w_mob'] as const;
       for (const wk of wKeys) {
         if (curW[wk] === undefined || curW[wk] === null) { curW[wk] = dftW[wk]; changed = true; }
       }

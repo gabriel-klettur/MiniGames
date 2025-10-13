@@ -11,18 +11,26 @@ export const EVAL_SELECTED_KEY = 'squadro:ia:eval-selected';
 
 export function getDefaultEvalPresets(): EvalPreset[] {
   const base: EvalParams = {
+    // Escala del documento: 100 pts ≈ 1 tempo, done=200, clash=50
     w_race: 1.0,
-    w_clash: 0.8,
-    w_sprint: 0.6,
-    w_block: 0.3,
-    done_bonus: 5.0,
+    w_clash: 50.0,
+    w_sprint: 8.0,
+    w_block: 10.0,
+    // Multiplicadores para completar los 12 puntos (1.0 por defecto)
+    w_chain: 1.0,
+    w_parity: 1.0,
+    w_struct: 1.0,
+    w_ones: 1.0,
+    w_return: 1.0,
+    w_waste: 1.0,
+    w_mob: 1.0,
+    done_bonus: 200.0,
     sprint_threshold: 2,
-    tempo: 5,
   };
   return [
     { id: 'balanced', name: 'Balanced', weights: { ...base } },
-    { id: 'aggressive', name: 'Aggressive (jumps)', weights: { ...base, w_clash: 1.2, w_block: 0.2 } },
-    { id: 'closer', name: 'Closer (finish)', weights: { ...base, w_sprint: 0.9, done_bonus: 7 } },
+    { id: 'aggressive', name: 'Aggressive (jumps)', weights: { ...base, w_clash: 75.0, w_block: 8.0 } },
+    { id: 'closer', name: 'Closer (finish)', weights: { ...base, w_sprint: 12.0, done_bonus: 220.0 } },
   ];
 }
 

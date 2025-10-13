@@ -78,6 +78,9 @@ export interface EngineOptions {
   dfpnMaxTurnsLeft?: number;  // optional trigger by total turns-left sum
   // Tablebase probe (fast-path) for known positions
   enableTablebase?: boolean;
+  // Repetition/cycle handling
+  drawScore?: number;               // score to return on detected repetition (default 0)
+  preferDrawWhenLosing?: boolean;   // future use to bias move choice
 }
 
 export interface NodeParams {
@@ -96,6 +99,8 @@ export interface NodeParams {
   iidProbe?: boolean;
   // Optional hook to report progress (nodes) periodically from deep inside the search
   progressHook?: (nodes: number) => void;
+  // Path keys seen in current branch for repetition detection
+  path?: Set<string>;
 }
 
 export interface IterResult {

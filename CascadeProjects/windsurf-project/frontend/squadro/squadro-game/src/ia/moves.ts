@@ -48,15 +48,21 @@ export function orderMoves(
     const gain = afterScore - beforeScore;
     const didRetire = completesNow(child, me, m);
     const opp: Player = me === 'Light' ? 'Dark' : 'Light';
-    const jumpDeltaOpp = approxOppSendBackCount(gs, child, opp); // opp_loss
-    const didJump = jumpDeltaOpp > 0;
+    const chain = sendBackCount(gs, child, opp); // cuenta precisa de rivales devueltos
+    const didJump = chain > 0;
 
     // Penalize if opponent (to move in child) can immediately jump us
     const oppImmediateJump = opponentHasImmediateJump(child);
     const oppImmediateJumpsCount = countOpponentImmediateJumps(child);
 
+    // Amenaza a 1‑ply en nuestro siguiente turno (aprox)
+    const threat = createsThreatNext(child, me) ? 1 : 0;
+
+    // Waste move en borde sin conceder captura inmediata
+    const waste = isWasteMove(child, me, m) && !oppImmediateJump ? 1 : 0;
+
     // SEE-like term: reward our jump potential, penalize opponent's immediate jump capacity
-    const seeTerm = (didJump ? (600 + 300 * Math.min(3, jumpDeltaOpp)) : 0) - (oppImmediateJumpsCount * 700);
+    const seeTerm = (didJump ? (800 + 300 * Math.min(3, chain)) : 0) - (oppImmediateJumpsCount * 700);
 
     // Safe progress: favor gain but subtract exposure penalties
     const safeProg = gain - (oppImmediateJump ? 300 : 0) - (oppImmediateJumpsCount * 250);
@@ -67,8 +73,16 @@ export function orderMoves(
     let pri = 0;
     if (opts?.hashMove && m === opts.hashMove) pri += 10000;
     if (opts?.killers && opts.killers.includes(m)) pri += 8000;
-    if (didRetire) pri += 10000; // completing now is top priority
-    if (didJump) pri += 2500 + 500 * Math.min(3, jumpDeltaOpp);
+    // 1) Terminar ahora: máximo
+    if (didRetire) pri += 10000;
+    // 2) Capturas que devuelven 2+ rivales
+    if (chain >= 2) pri += 6000 + 800 * Math.min(3, chain - 1);
+    // 3) Captura simple
+    else if (chain === 1) pri += 3500;
+    // 4) Amenaza de captura al siguiente turno (segura)
+    if (threat) pri += 1200;
+    // 5) Waste move en borde sin riesgo
+    if (waste) pri += 800;
     pri += Math.max(-600, Math.min(600, safeProg));
     // SEE term bounded to avoid domination
     pri += Math.max(-800, Math.min(800, seeTerm));
@@ -123,6 +137,21 @@ export function approxOppSendBackCount(before: GameState, after: GameState, opp:
     return c;
   };
   return Math.max(0, countEdge(after, opp) - countEdge(before, opp));
+}
+
+// Preciso: cuenta cuántos rivales fueron devueltos a su posición de reset según su estado previo
+function sendBackCount(before: GameState, after: GameState, opp: Player): number {
+  let c = 0;
+  for (const qb of before.pieces) {
+    if (qb.owner !== opp || qb.state === 'retirada') continue;
+    const lane = before.lanesByPlayer[qb.owner][qb.laneIndex];
+    const resetPos = qb.state === 'en_ida' ? 0 : lane.length;
+    if (qb.pos === resetPos) continue; // ya estaba en reset antes
+    const qa = after.pieces.find((x) => x.id === qb.id);
+    if (!qa) continue;
+    if (qa.pos === resetPos) c++;
+  }
+  return c;
 }
 
 function opponentHasImmediateJump(child: GameState): boolean {
@@ -185,7 +214,8 @@ function coordOf(owner: Player, laneIndex: number, pos: number, gs: GameState): 
  * generateTacticalMoves — subconjunto de movimientos "tácticos" para Quiescence.
  * Incluye:
  * - Movimientos que retiran una pieza propia en este mismo turno.
- * - Movimientos que provocan un "salto"/retroceso del oponente (aprox por delta en borde).
+ * - Movimientos que provocan cadena de send-backs (>=1) detectada con precisión.
+ * - Movimientos que crean amenaza clara a 1‑ply para el siguiente turno propio.
  */
 export function generateTacticalMoves(gs: GameState): string[] {
   const side: Player = gs.turn;
@@ -195,9 +225,40 @@ export function generateTacticalMoves(gs: GameState): string[] {
   for (const m of moves) {
     const child = applyMove(gs, m);
     const didRetire = completesNow(child, side, m);
-    const jumpDeltaOpp = approxOppSendBackCount(gs, child, opp);
-    const didJump = jumpDeltaOpp > 0;
-    if (didRetire || didJump) tactical.push(m);
+    const chain = sendBackCount(gs, child, opp);
+    const didJump = chain > 0;
+    const threat = createsThreatNext(child, side);
+    if (didRetire || didJump || threat) tactical.push(m);
   }
   return tactical;
+}
+
+// Amenaza a 1‑ply aproximada: en el child (mueve el rival), ¿alguna pieza nuestra quedará a 1 paso de saltar
+// sobre una pieza rival en nuestro siguiente turno, por pura geometría y velocidades actuales?
+function createsThreatNext(child: GameState, me: Player): boolean {
+  // Miramos posiciones de child (turno del rival). Si en nuestro próximo turno
+  // cualquiera de nuestras piezas podría alcanzar una intersección ocupada por el rival con un paso realista,
+  // lo consideramos amenaza.
+  for (const my of child.pieces) {
+    if (my.owner !== me || my.state === 'retirada') continue;
+    const lane = child.lanesByPlayer[my.owner][my.laneIndex];
+    const dir = my.state === 'en_ida' ? +1 : -1;
+    const speed = my.state === 'en_ida' ? lane.speedOut : lane.speedBack;
+    const maxProbe = Math.min(Math.abs(speed), 3);
+    for (let s = 1; s <= maxProbe; s++) {
+      const np = my.pos + dir * s;
+      if (np < 0 || np > lane.length) break;
+      if (anyOppAt(child, my.owner, my.laneIndex, np)) return true;
+    }
+  }
+  return false;
+}
+
+// Waste move: el movimiento termina en borde (0 o L) del carril de la pieza movida en child.
+function isWasteMove(child: GameState, me: Player, moveId: string): boolean {
+  const p = child.pieces.find((x) => x.id === moveId);
+  if (!p || p.owner !== me) return false;
+  const L = child.lanesByPlayer[p.owner][p.laneIndex].length;
+  // consideramos waste si termina exactamente en borde; no comprobamos sobras de paso explícitas
+  return p.pos === 0 || p.pos === L;
 }

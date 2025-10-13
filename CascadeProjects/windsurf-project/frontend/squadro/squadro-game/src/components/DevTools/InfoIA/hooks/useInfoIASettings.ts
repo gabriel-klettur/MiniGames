@@ -83,13 +83,25 @@ export function useInfoIASettings(): InfoIASettings {
     preferHashMove: true,
     orderingJitterEps: 0,
     enableTablebase: false,
+    // Repetition defaults
+    drawScore: 0,
+    preferDrawWhenLosing: true,
   };
   const defaultEval: EvalParams = {
+    // Document scale defaults
     w_race: 1.0,
-    w_clash: 0.8,
-    w_sprint: 0.6,
-    w_block: 0.3,
-    done_bonus: 5.0,
+    w_clash: 50.0,
+    w_sprint: 8.0,
+    w_block: 10.0,
+    // Additional weights (as multipliers for their point terms)
+    w_chain: 1.0,
+    w_parity: 1.0,
+    w_struct: 1.0,
+    w_ones: 1.0,
+    w_return: 1.0,
+    w_waste: 1.0,
+    w_mob: 1.0,
+    done_bonus: 200.0,
     sprint_threshold: 2,
     tempo: 5,
   };
