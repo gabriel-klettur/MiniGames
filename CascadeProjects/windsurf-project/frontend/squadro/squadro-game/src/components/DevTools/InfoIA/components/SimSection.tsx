@@ -148,9 +148,8 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
               <input
                 type="number"
                 min={1}
-                max={1000}
                 value={gamesCount}
-                onChange={(e) => onChangeGamesCount(Math.max(1, Math.min(1000, Number(e.target.value))))}
+                onChange={(e) => onChangeGamesCount(Math.max(1, Number(e.target.value)))}
                 className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100"
               />
             </label>
