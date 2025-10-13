@@ -51,6 +51,22 @@ export type InfoIARecord = {
   // Optional per-game scores for display (e.g., retired pieces count)
   p1Score?: number;
   p2Score?: number;
+  // Optional AutoTune summary (per game)
+  tune?: {
+    /** Number of SGD steps effectively used (after warmup and mask) */
+    steps: number;
+    /** Root mean squared error proxy (sqrt(SSE/steps)) for the updates */
+    mae: number;
+    /** Sum of absolute diffs across tracked weights for Light */
+    dWLight: number;
+    /** Sum of absolute diffs across tracked weights for Dark */
+    dWDark: number;
+    /** Whether Light/Dark were allowed to tune this game */
+    tunedLight: boolean;
+    tunedDark: boolean;
+    /** AutoTune hyper-parameters used */
+    lr: number; reg: number; K: number; warmup: number;
+  };
   details?: MoveDetail[];
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ToggleSwitch from '../../../ui/ToggleSwitch';
 
 interface PlayerEngineOptionsProps {
@@ -163,6 +163,69 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
   const dis = !!p.disabled;
   const hlInput = (key: string) => (p.isDiff?.(key) ? ' border-amber-400 outline outline-1 outline-amber-400' : '');
   const hlWrap = (key: string) => (p.isDiff?.(key) ? ' rounded border border-amber-400 px-1' : '');
+  // Save/Load JSON for heuristic weights
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const exportJson = () => {
+    const data = {
+      w_race: p.w_race,
+      w_clash: p.w_clash,
+      w_sprint: p.w_sprint,
+      w_block: p.w_block,
+      w_chain: (p as any).w_chain,
+      w_parity: (p as any).w_parity,
+      w_struct: (p as any).w_struct,
+      w_ones: (p as any).w_ones,
+      w_return: (p as any).w_return,
+      w_waste: (p as any).w_waste,
+      w_mob: (p as any).w_mob,
+      done_bonus: p.done_bonus,
+      sprint_threshold: p.sprint_threshold,
+    };
+    try {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      a.href = url;
+      a.download = `heuristica-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Export heurística falló', err);
+    }
+  };
+  const importJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(String(reader.result || '{}')) || {};
+        const num = (v: any) => (typeof v === 'number' && Number.isFinite(v)) ? v : undefined;
+        const call = (fn: ((n: number) => void) | undefined, v: any) => { const n = num(v); if (fn && n !== undefined) fn(n); };
+        call(p.onChangeWRace, obj.w_race);
+        call(p.onChangeWClash, obj.w_clash);
+        call(p.onChangeWSprint, obj.w_sprint);
+        call(p.onChangeWBlock, obj.w_block);
+        call((p as any).onChangeWChain, obj.w_chain);
+        call((p as any).onChangeWParity, obj.w_parity);
+        call((p as any).onChangeWStruct, obj.w_struct);
+        call((p as any).onChangeWOnes, obj.w_ones);
+        call((p as any).onChangeWReturn, obj.w_return);
+        call((p as any).onChangeWWaste, obj.w_waste);
+        call((p as any).onChangeWMob, obj.w_mob);
+        call(p.onChangeDoneBonus, obj.done_bonus);
+        call(p.onChangeSprintThreshold, obj.sprint_threshold);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('Import heurística JSON inválido', err);
+      } finally {
+        if (fileRef.current) fileRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
   return (
     <div className="engine-opts mt-2 flex flex-col gap-3">
       <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
@@ -337,27 +400,44 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
         <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs font-semibold text-neutral-300">Heurística (pesos)</div>
-            <button
-              type="button"
-              className="chip-btn"
-              onClick={() => {
-                p.onChangeWRace?.(1.0);
-                p.onChangeWClash?.(50.0);
-                p.onChangeWSprint?.(8.0);
-                p.onChangeWBlock?.(10.0);
-                (p as any).onChangeWChain?.(1.0);
-                (p as any).onChangeWParity?.(1.0);
-                (p as any).onChangeWStruct?.(1.0);
-                (p as any).onChangeWOnes?.(1.0);
-                (p as any).onChangeWReturn?.(1.0);
-                (p as any).onChangeWWaste?.(1.0);
-                (p as any).onChangeWMob?.(1.0);
-                p.onChangeDoneBonus?.(200.0);
-                p.onChangeSprintThreshold?.(2);
-              }}
-              aria-label="Reset heurística a valores por defecto"
-              title="Reset heurística a valores por defecto"
-            >Reset heurística</button>
+            <div className="inline-flex items-center gap-2">
+              <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) importJson(f); }} />
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={exportJson}
+                aria-label="Guardar heurística como JSON"
+                title="Guardar heurística como JSON"
+              >Save (Json)</button>
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={() => fileRef.current?.click()}
+                aria-label="Cargar heurística desde JSON"
+                title="Cargar heurística desde JSON"
+              >Load (json)</button>
+              <button
+                type="button"
+                className="chip-btn"
+                onClick={() => {
+                  p.onChangeWRace?.(1.0);
+                  p.onChangeWClash?.(50.0);
+                  p.onChangeWSprint?.(8.0);
+                  p.onChangeWBlock?.(10.0);
+                  (p as any).onChangeWChain?.(1.0);
+                  (p as any).onChangeWParity?.(1.0);
+                  (p as any).onChangeWStruct?.(1.0);
+                  (p as any).onChangeWOnes?.(1.0);
+                  (p as any).onChangeWReturn?.(1.0);
+                  (p as any).onChangeWWaste?.(1.0);
+                  (p as any).onChangeWMob?.(1.0);
+                  p.onChangeDoneBonus?.(200.0);
+                  p.onChangeSprintThreshold?.(2);
+                }}
+                aria-label="Reset heurística a valores por defecto"
+                title="Reset heurística a valores por defecto"
+              >Reset heurística</button>
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <label className={labelCls + ' inline-flex items-center gap-2' + hlWrap('w_race')} title={"w_race — Carrera (100 pts ≈ 1 tempo): multiplica el score de carrera basado en top‑4 turnos sin interacción." + stats('w_race')}>

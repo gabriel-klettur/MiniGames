@@ -119,10 +119,62 @@ export function useInfoIASettings(): InfoIASettings {
     done_bonus: 200.0,
     sprint_threshold: 2,
   };
-  const [p1Engine, setP1EngineState] = useState<EngineOptions>({ ...defaultEngine });
-  const [p2Engine, setP2EngineState] = useState<EngineOptions>({ ...defaultEngine });
-  const [p1Eval, setP1EvalState] = useState<EvalParams>({ ...defaultEval });
-  const [p2Eval, setP2EvalState] = useState<EvalParams>({ ...defaultEval });
+  const [p1Engine, setP1EngineState] = useState<EngineOptions>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('squadro.infoia.p1');
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && obj.engine && typeof obj.engine === 'object') {
+            return { ...defaultEngine, ...obj.engine } as EngineOptions;
+          }
+        }
+      }
+    } catch {}
+    return { ...defaultEngine };
+  });
+  const [p2Engine, setP2EngineState] = useState<EngineOptions>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('squadro.infoia.p2');
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && obj.engine && typeof obj.engine === 'object') {
+            return { ...defaultEngine, ...obj.engine } as EngineOptions;
+          }
+        }
+      }
+    } catch {}
+    return { ...defaultEngine };
+  });
+  const [p1Eval, setP1EvalState] = useState<EvalParams>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('squadro.infoia.p1');
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && obj.eval && typeof obj.eval === 'object') {
+            return { ...defaultEval, ...obj.eval } as EvalParams;
+          }
+        }
+      }
+    } catch {}
+    return { ...defaultEval };
+  });
+  const [p2Eval, setP2EvalState] = useState<EvalParams>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('squadro.infoia.p2');
+        if (raw) {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && obj.eval && typeof obj.eval === 'object') {
+            return { ...defaultEval, ...obj.eval } as EvalParams;
+          }
+        }
+      }
+    } catch {}
+    return { ...defaultEval };
+  });
   // AutoTune (global) defaults
   const [autoTuneEnabled, setAutoTuneEnabled] = useState<boolean>(false);
   const [autoTuneLr, setAutoTuneLr] = useState<number>(0.001);
@@ -141,11 +193,86 @@ export function useInfoIASettings(): InfoIASettings {
     setP2EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
   }, []);
   const setP1Eval = useCallback((next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => {
-    setP1EvalState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
-  }, []);
+    setP1EvalState(prev => {
+      const resolved = (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next });
+      // Persist immediately to localStorage to avoid losing updates on fast reloads
+      try {
+        if (typeof window !== 'undefined') {
+          const data = { depth: p1Depth, mode: p1Mode, secs: p1Secs, engine: p1Engine, eval: resolved };
+          localStorage.setItem('squadro.infoia.p1', JSON.stringify(data));
+        }
+      } catch {}
+      return resolved;
+    });
+  }, [p1Depth, p1Mode, p1Secs, p1Engine]);
   const setP2Eval = useCallback((next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => {
-    setP2EvalState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
+    setP2EvalState(prev => {
+      const resolved = (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next });
+      try {
+        if (typeof window !== 'undefined') {
+          const data = { depth: p2Depth, mode: p2Mode, secs: p2Secs, engine: p2Engine, eval: resolved };
+          localStorage.setItem('squadro.infoia.p2', JSON.stringify(data));
+        }
+      } catch {}
+      return resolved;
+    });
+  }, [p2Depth, p2Mode, p2Secs, p2Engine]);
+
+  // LocalStorage persistence (per player)
+  const LS_P1 = 'squadro.infoia.p1';
+  const LS_P2 = 'squadro.infoia.p2';
+  // Avoid saving defaults before we finish loading from localStorage
+  const hydratedRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw1 = localStorage.getItem(LS_P1);
+      if (raw1) {
+        const obj = JSON.parse(raw1);
+        if (obj && typeof obj === 'object') {
+          if (typeof obj.depth === 'number') setP1Depth(Number(obj.depth));
+          if (obj.mode === 'auto' || obj.mode === 'manual') setP1Mode(obj.mode);
+          if (typeof obj.secs === 'number') setP1Secs(Number(obj.secs));
+          if (obj.engine && typeof obj.engine === 'object') setP1EngineState({ ...defaultEngine, ...obj.engine });
+          if (obj.eval && typeof obj.eval === 'object') setP1EvalState({ ...defaultEval, ...obj.eval });
+        }
+      }
+    } catch {}
+    try {
+      const raw2 = localStorage.getItem(LS_P2);
+      if (raw2) {
+        const obj = JSON.parse(raw2);
+        if (obj && typeof obj === 'object') {
+          if (typeof obj.depth === 'number') setP2Depth(Number(obj.depth));
+          if (obj.mode === 'auto' || obj.mode === 'manual') setP2Mode(obj.mode);
+          if (typeof obj.secs === 'number') setP2Secs(Number(obj.secs));
+          if (obj.engine && typeof obj.engine === 'object') setP2EngineState({ ...defaultEngine, ...obj.engine });
+          if (obj.eval && typeof obj.eval === 'object') setP2EvalState({ ...defaultEval, ...obj.eval });
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Mark as hydrated after attempting both loads
+  useEffect(() => { hydratedRef.current = true; }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!hydratedRef.current) return; // wait initial load
+    try {
+      const data = { depth: p1Depth, mode: p1Mode, secs: p1Secs, engine: p1Engine, eval: p1Eval };
+      localStorage.setItem(LS_P1, JSON.stringify(data));
+    } catch {}
+  }, [p1Depth, p1Mode, p1Secs, p1Engine, p1Eval]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!hydratedRef.current) return; // wait initial load
+    try {
+      const data = { depth: p2Depth, mode: p2Mode, secs: p2Secs, engine: p2Engine, eval: p2Eval };
+      localStorage.setItem(LS_P2, JSON.stringify(data));
+    } catch {}
+  }, [p2Depth, p2Mode, p2Secs, p2Engine, p2Eval]);
 
   const resetDefaults = useCallback(() => {
     setVisualize(true);
@@ -172,6 +299,7 @@ export function useInfoIASettings(): InfoIASettings {
     setAutoTuneWarmupPlies(0);
     setAutoTuneTuneLight(true);
     setAutoTuneTuneDark(true);
+    try { if (typeof window !== 'undefined') { localStorage.removeItem(LS_P1); localStorage.removeItem(LS_P2); } } catch {}
   }, []);
 
   return {

@@ -363,21 +363,9 @@ export function useSimulationRunner(
       }
 
       const t1 = performance.now();
-      // Compute simple per-game scores: number of retired pieces per player
       const p1Score = gs.pieces.filter((p) => p.owner === 'Light' && p.state === 'retirada').length;
       const p2Score = gs.pieces.filter((p) => p.owner === 'Dark' && p.state === 'retirada').length;
-      addRecord({
-        id: `${startedAtWall}-${g}`,
-        startedAt: startedAtWall,
-        durationMs: t1 - t0,
-        moves,
-        winner: (gs.winner as any) || 0,
-        p1Depth: settings.p1Depth,
-        p2Depth: settings.p2Depth,
-        p1Score,
-        p2Score,
-        details: curDetails,
-      });
+      let tuneSummary: InfoIARecord['tune'] | undefined = undefined;
 
       // === AutoTune: actualizar w_* tras cada partida ===
       try {
@@ -437,21 +425,49 @@ export function useSimulationRunner(
           // Propagar los nuevos pesos hacia fuera (estado de InfoIA)
           if (settings.onTuneP1Eval) settings.onTuneP1Eval(wLight);
           if (settings.onTuneP2Eval) settings.onTuneP2Eval(wDark);
-          // Logging opcional
+          // Persistir inmediatamente en localStorage para evitar pérdidas en recargas rápidas
+          try {
+            if (typeof window !== 'undefined') {
+              // P1
+              try {
+                const k1 = 'squadro.infoia.p1';
+                const o1 = (() => { try { return JSON.parse(localStorage.getItem(k1) || '{}') || {}; } catch { return {}; } })();
+                localStorage.setItem(k1, JSON.stringify({ ...o1, eval: wLight }));
+              } catch {}
+              // P2
+              try {
+                const k2 = 'squadro.infoia.p2';
+                const o2 = (() => { try { return JSON.parse(localStorage.getItem(k2) || '{}') || {}; } catch { return {}; } })();
+                localStorage.setItem(k2, JSON.stringify({ ...o2, eval: wDark }));
+              } catch {}
+            }
+          } catch {}
+          const mae = stepsUsed > 0 ? Math.sqrt(sse / stepsUsed) : 0;
+          const diff = (a: EvalParams, b: EvalParams) => {
+            const keys: (keyof EvalParams)[] = ['w_race','w_clash','w_sprint','w_block','done_bonus','w_chain','w_parity','w_struct','w_ones','w_return','w_waste','w_mob'];
+            let sum = 0;
+            for (const k of keys) {
+              const va = (a as any)[k] ?? 1;
+              const vb = (b as any)[k] ?? 1;
+              sum += Math.abs(va - vb);
+            }
+            return sum;
+          };
+          tuneSummary = {
+            steps: stepsUsed,
+            mae,
+            dWLight: diff(wLight, wLight0),
+            dWDark: diff(wDark, wDark0),
+            tunedLight: settings.autoTuneTuneLight !== false,
+            tunedDark: settings.autoTuneTuneDark !== false,
+            lr: lr,
+            reg: reg,
+            K,
+            warmup,
+          };
           if (settings.autoTuneLog) {
-            const mae = stepsUsed > 0 ? Math.sqrt(sse / stepsUsed) : 0;
-            const diff = (a: EvalParams, b: EvalParams) => {
-              const keys: (keyof EvalParams)[] = ['w_race','w_clash','w_sprint','w_block','done_bonus','w_chain','w_parity','w_struct','w_ones','w_return','w_waste','w_mob'];
-              let sum = 0;
-              for (const k of keys) {
-                const va = (a as any)[k] ?? 1;
-                const vb = (b as any)[k] ?? 1;
-                sum += Math.abs(va - vb);
-              }
-              return sum;
-            };
             // eslint-disable-next-line no-console
-            console.log('[AutoTune] steps=%d mae=%.3f dW(Light)=%.3f dW(Dark)=%.3f', stepsUsed, mae, diff(wLight, wLight0), diff(wDark, wDark0));
+            console.log('[AutoTune] steps=%d mae=%.3f dW(Light)=%.3f dW(Dark)=%.3f', stepsUsed, mae, tuneSummary.dWLight, tuneSummary.dWDark);
           }
           // Auto-save preset every N games if enabled
           try {
@@ -463,6 +479,20 @@ export function useSimulationRunner(
           } catch {}
         }
       } catch {}
+
+      addRecord({
+        id: `${startedAtWall}-${g}`,
+        startedAt: startedAtWall,
+        durationMs: t1 - t0,
+        moves,
+        winner: (gs.winner as any) || 0,
+        p1Depth: settings.p1Depth,
+        p2Depth: settings.p2Depth,
+        p1Score,
+        p2Score,
+        tune: tuneSummary,
+        details: curDetails,
+      });
 
       // Yield between games
       await new Promise((r) => setTimeout(r, 0));

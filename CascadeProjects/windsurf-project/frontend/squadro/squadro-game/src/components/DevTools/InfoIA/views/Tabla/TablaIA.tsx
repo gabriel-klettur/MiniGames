@@ -281,6 +281,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
               <th className="py-2 px-2 text-left font-semibold" title="Winner — Ganador de la partida (Light/Dark) o 0 para empate.">Winner</th>
               <th className="py-2 px-2 text-left font-semibold" title="P1 — Profundidad (objetivo o alcanzada) asociada al jugador 1. Útil para comparar configuraciones.">P1</th>
               <th className="py-2 px-2 text-left font-semibold" title="P2 — Profundidad (objetivo o alcanzada) asociada al jugador 2. Útil para comparar configuraciones.">P2</th>
+              <th className="py-2 px-2 text-left font-semibold" title="Tune — Resumen del ajuste de heurísticas en esta partida (pasos, error, cambio de pesos, bandos afinados).">Tune</th>
               <th className="py-2 px-2 text-left font-semibold" title="Acciones — Ver detalles, copiar JSON, descargar o eliminar el registro.">Acciones</th>
             </tr>
           </thead>
@@ -358,6 +359,19 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                   <td className="py-2 px-2 font-mono">{r.p1Depth}</td>
                   <td className="py-2 px-2 font-mono">{r.p2Depth}</td>
                   <td className="py-2 px-2">
+                    {r.tune ? (
+                      <div className="inline-flex flex-wrap items-center gap-1" title={`AutoTune — steps=${r.tune.steps}, mae=${r.tune.mae.toFixed(3)}, dW(Light)=${r.tune.dWLight.toFixed(3)}, dW(Dark)=${r.tune.dWDark.toFixed(3)}, lr=${r.tune.lr}, reg=${r.tune.reg}, K=${r.tune.K}, warmup=${r.tune.warmup}`}>
+                        <span className="px-1.5 py-0.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-300" title="Pasos de SGD usados (tras warmup y máscara)">S {r.tune.steps}</span>
+                        <span className="px-1.5 py-0.5 rounded-md border border-sky-500/20 bg-sky-500/10 text-sky-300" title="MAE≈sqrt(SSE/steps)">MAE {r.tune.mae.toFixed(2)}</span>
+                        <span className="px-1.5 py-0.5 rounded-md border border-amber-500/20 bg-amber-500/10 text-amber-300" title="Σ|Δw| Light">ΔL {r.tune.dWLight.toFixed(2)}</span>
+                        <span className="px-1.5 py-0.5 rounded-md border border-rose-500/20 bg-rose-500/10 text-rose-300" title="Σ|Δw| Dark">ΔD {r.tune.dWDark.toFixed(2)}</span>
+                        <span className="px-1.5 py-0.5 rounded-md border border-neutral-600 bg-neutral-700/30 text-neutral-300" title="Bandos afinados (Light/Dark)">{r.tune.tunedLight ? 'L✓' : 'L–'} {r.tune.tunedDark ? 'D✓' : 'D–'}</span>
+                      </div>
+                    ) : (
+                      <span className="text-neutral-500">—</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-2">
                     <div className="inline-flex items-center gap-1">
                       <Button size="sm" variant="neutral" onClick={() => toggle(r.id)} title="Ver/ocultar detalles de la partida">
                         <svg width="12" height="12" viewBox="0 0 24 24" className="mr-1" aria-hidden>
@@ -388,7 +402,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
                 </tr>
                 {expanded[r.id] && (
                   <tr className="bg-neutral-900/40">
-                    <td className="py-2 px-2" colSpan={7}>
+                    <td className="py-2 px-2" colSpan={8}>
                       <div className="flex flex-col gap-2">
                         <div className="text-[11px] text-neutral-300 flex flex-wrap gap-3">
                           <span><strong className="text-neutral-200">Resumen:</strong></span>
@@ -510,7 +524,7 @@ const TablaIA: React.FC<TablaIAProps> = ({ records, loading = false, onCopyRecor
             );})}
             {records.length === 0 && (
               <tr>
-                <td className="py-6 text-neutral-400 text-center" colSpan={7}>No hay partidas todavía.</td>
+                <td className="py-6 text-neutral-400 text-center" colSpan={8}>No hay partidas todavía.</td>
               </tr>
             )}
           </tbody>
