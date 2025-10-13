@@ -335,7 +335,30 @@ const PlayerEngineOptions: React.FC<PlayerEngineOptionsProps> = (p) => {
       </section>
       {(typeof p.w_race === 'number' || typeof p.w_clash === 'number' || typeof p.w_sprint === 'number' || typeof p.w_block === 'number') && (
         <section className="rounded-lg border border-neutral-700 bg-neutral-900/40 p-3">
-          <div className="text-xs font-semibold text-neutral-300 mb-2">Heurística (pesos)</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-neutral-300">Heurística (pesos)</div>
+            <button
+              type="button"
+              className="chip-btn"
+              onClick={() => {
+                p.onChangeWRace?.(1.0);
+                p.onChangeWClash?.(50.0);
+                p.onChangeWSprint?.(8.0);
+                p.onChangeWBlock?.(10.0);
+                (p as any).onChangeWChain?.(1.0);
+                (p as any).onChangeWParity?.(1.0);
+                (p as any).onChangeWStruct?.(1.0);
+                (p as any).onChangeWOnes?.(1.0);
+                (p as any).onChangeWReturn?.(1.0);
+                (p as any).onChangeWWaste?.(1.0);
+                (p as any).onChangeWMob?.(1.0);
+                p.onChangeDoneBonus?.(200.0);
+                p.onChangeSprintThreshold?.(2);
+              }}
+              aria-label="Reset heurística a valores por defecto"
+              title="Reset heurística a valores por defecto"
+            >Reset heurística</button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <label className={labelCls + ' inline-flex items-center gap-2' + hlWrap('w_race')} title={"w_race — Carrera (100 pts ≈ 1 tempo): multiplica el score de carrera basado en top‑4 turnos sin interacción." + stats('w_race')}>
               w_race

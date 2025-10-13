@@ -11,9 +11,53 @@ import { generateMoves, applyMove, approxOppSendBackCount } from './moves';
  * - Captura inmediata (aprox): 50 pts por rival devuelto (aprox por delta en borde).
  * - Sprint/bloqueo (moderadores): pequeños términos auxiliares (mantener hasta completar las 12 señales).
  */
+export interface Features12 {
+  race: number;        // 100 * (oppTop4 - myTop4)
+  done: number;        // (ownDone - oppDone) — to be multiplied by done_bonus
+  clash: number;       // 50 * (oppLoss - myLoss) immed
+  chain: number;       // 15 * extras
+  sprint: number;      // sprint term already in points
+  block: number;       // block term already in points
+  parity: number;      // 12 * crossingsWon
+  struct: number;      // 10 * chokedLines
+  ones: number;        // +30/-30
+  ret: number;         // +5/-5
+  waste: number;       // 8 * (mine - opp)
+  mob: number;         // 6 * (mine - opp)
+}
+
+export function computeFeatures(gs: GameState, me: Player, sprintThr: number): Features12 {
+  const opp = other(me);
+  // Carrera (base)
+  const myTop4 = top4TurnsNoInteraction(gs, me);
+  const oppTop4 = top4TurnsNoInteraction(gs, opp);
+  const race = 100 * (oppTop4 - myTop4);
+  // Finalizadas (delta sin pesar)
+  const ownDone = countRetired(gs, me);
+  const oppDone = countRetired(gs, opp);
+  const done = (ownDone - oppDone);
+  // Choque inmediato y cadenas
+  const clash = 50 * immediateClashDelta(gs);
+  const chain = bestMyChain(gs, me); // ya en puntos (15 por extra)
+  // Sprint y bloqueo
+  const sprint = sprintTerm(gs, me, opp, sprintThr);
+  const block = blockQuality(gs, me, opp);
+  // Paridad y estructurales
+  const parity = parityCrossingScore(gs, me);
+  const struct = structuralBlocksScore(gs, me);
+  // Ones y retorno
+  const ones = onesScoreTerm(gs, me, opp);
+  const ret = valueReturn(gs, me, opp);
+  // Waste y movilidad
+  const wasteMine = hasWasteMove(gs, me) ? 1 : 0;
+  const wasteOpp = hasWasteMove(gs, opp) ? 1 : 0;
+  const waste = 8 * (wasteMine - wasteOpp);
+  const mob = 6 * (safeMobilityCount(gs, me) - safeMobilityCount(gs, opp));
+  return { race, done, clash, chain, sprint, block, parity, struct, ones, ret, waste, mob };
+}
+
 export function evaluate(gs: GameState, root: Player): number {
   const me = root;
-  const opp = other(root);
 
   // Terminal handling: treat wins/losses as near-mate scores so the engine can detect
   // forced outcomes and stop early during iterative deepening.
@@ -21,6 +65,27 @@ export function evaluate(gs: GameState, root: Player): number {
   if (gs.winner) {
     return gs.winner === me ? 100000 : -100000;
   }
+
+
+  // Allow per-player override from game state (InfoIA/IAPanel can set gs.ai.evalWeights)
+  const params: EvalParams = (gs.ai as any)?.evalWeights?.[me] ?? EVAL_PARAMS;
+
+  const phi = computeFeatures(gs, me, params.sprint_threshold);
+  return (
+    params.w_race * phi.race +
+    params.done_bonus * phi.done +
+    params.w_clash * phi.clash +
+    (params.w_chain ?? 1) * phi.chain +
+    params.w_sprint * phi.sprint +
+    params.w_block * phi.block +
+    (params.w_parity ?? 1) * phi.parity +
+    (params.w_struct ?? 1) * phi.struct +
+    (params.w_ones ?? 1) * phi.ones +
+    (params.w_return ?? 1) * phi.ret +
+    (params.w_waste ?? 1) * phi.waste +
+    (params.w_mob ?? 1) * phi.mob
+  );
+}
 
 // Mejor cadena de send-backs del jugador en turno (máximo número de rivales devueltos por una jugada propia)
 function bestMyChain(gs: GameState, me: Player): number {
@@ -34,73 +99,13 @@ function bestMyChain(gs: GameState, me: Player): number {
     if (c > best) best = c;
     if (best >= 3) break; // cap razonable
   }
-  return best;
+  return 15 * Math.max(0, best - 1); // 15 por pieza adicional en cadena (extras)
 }
 
-  // Allow per-player override from game state (InfoIA/IAPanel can set gs.ai.evalWeights)
-  const params: EvalParams = (gs.ai as any)?.evalWeights?.[me] ?? EVAL_PARAMS;
-
-  // 1) Carrera (top-4 sin interacción) en escala de 100 pts/tempo
-  const myTop4 = top4TurnsNoInteraction(gs, me);
-  const oppTop4 = top4TurnsNoInteraction(gs, opp);
-  const raceScore = 100 * (oppTop4 - myTop4); // positivo si voy por delante en carrera
-
-  // 2) Finalizadas explícito (200 pts por pieza por defecto via params.done_bonus)
-  const ownDone = countRetired(gs, me);
-  const oppDone = countRetired(gs, opp);
-  const finishedScore = params.done_bonus * (ownDone - oppDone);
-
-  // 3) Choques inminentes: conteo de send-backs inmediatos (1 ply) — escalar a 50 pts por captura
-  const clashDelta = immediateClashDelta(gs); // (opp_loss - my_loss) en unidades de capturas
-
-  // 3b) Cadena de capturas (bonus por piezas adicionales en una misma jugada)
-  const bestChainMine = bestMyChain(gs, me);
-  const chainBonus = Math.max(0, bestChainMine - 1) * 15; // +15 por pieza extra
-
-  // 4) Sprint: priorizar cierre cuando hay pieza a <= thr turnos (moderador)
-  const sprint = sprintTerm(gs, me, opp, params.sprint_threshold);
-
-  // 5) Bloqueos útiles vs exposición (moderador)
-  const block = blockQuality(gs, me, opp);
-
-  // 5b) Paridad en cruces críticos (+12 por cruce ganado) y bloqueos estructurales (+10 por línea sofocada)
-  const parity = parityCrossingScore(gs, me);
-  const structBlocks = structuralBlocksScore(gs, me);
-
-  // 6) Seguridad de los "1" y vulnerabilidad de los "1" rivales
+function onesScoreTerm(gs: GameState, me: Player, opp: Player): number {
   const safeOnes = countSafeOnes(gs, me);
   const vulnOppOnes = countVulnerableOnes(gs, opp, me);
-  const onesScore = 30 * safeOnes - 30 * vulnOppOnes;
-
-  // 7) Valor de retorno (propio en_vuelta y rival sin girar en_ida)
-  const returnScore = valueReturn(gs, me, opp);
-
-  // 8) Ritmo (waste move disponible sin riesgo)
-  const wasteMine = hasWasteMove(gs, me) ? 1 : 0;
-  const wasteOpp = hasWasteMove(gs, opp) ? 1 : 0;
-  const wasteScore = 8 * (wasteMine - wasteOpp);
-
-  // 9) Movilidad segura (jugadas que no conceden salto inmediato), diferencia
-  const mobScore = 6 * (safeMobilityCount(gs, me) - safeMobilityCount(gs, opp));
-
-  // Nota: Evaluación circunscrita a los 12 puntos del documento.
-
-  return (
-    // Núcleo: carrera y piezas terminadas
-    params.w_race * raceScore +
-    finishedScore +
-    // Moderadores/táctica aproximada (en puntos)
-    params.w_clash * clashDelta +
-    (params.w_chain ?? 1) * chainBonus +
-    params.w_sprint * sprint +
-    (params.w_block * block) +
-    (params.w_parity ?? 1) * parity +
-    (params.w_struct ?? 1) * structBlocks +
-    (params.w_ones ?? 1) * onesScore +
-    (params.w_return ?? 1) * returnScore +
-    (params.w_waste ?? 1) * wasteScore +
-    (params.w_mob ?? 1) * mobScore
-  );
+  return 30 * safeOnes - 30 * vulnOppOnes;
 }
 
 function other(p: Player): Player {

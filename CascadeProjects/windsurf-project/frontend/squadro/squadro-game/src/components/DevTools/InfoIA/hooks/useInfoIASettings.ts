@@ -45,6 +45,21 @@ export interface InfoIASettings {
   // Per-player evaluation weights
   p1Eval: EvalParams; setP1Eval: (next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => void;
   p2Eval: EvalParams; setP2Eval: (next: Partial<EvalParams> | ((prev: EvalParams) => EvalParams)) => void;
+  // AutoTune settings (global)
+  autoTuneEnabled: boolean; setAutoTuneEnabled: (v: boolean) => void;
+  autoTuneLr: number; setAutoTuneLr: (n: number) => void;
+  autoTuneReg: number; setAutoTuneReg: (n: number) => void;
+  autoTuneK: number; setAutoTuneK: (n: number) => void;
+  // AutoTune persistence
+  autoTuneAutoSave: boolean; setAutoTuneAutoSave: (v: boolean) => void;
+  autoTuneSaveEvery: number; setAutoTuneSaveEvery: (n: number) => void;
+  // AutoTune logging
+  autoTuneLog: boolean; setAutoTuneLog: (v: boolean) => void;
+  // AutoTune warmup plies to skip updates at the start of each game
+  autoTuneWarmupPlies: number; setAutoTuneWarmupPlies: (n: number) => void;
+  // AutoTune per-side toggles
+  autoTuneTuneLight: boolean; setAutoTuneTuneLight: (v: boolean) => void;
+  autoTuneTuneDark: boolean; setAutoTuneTuneDark: (v: boolean) => void;
   resetDefaults: () => void;
 }
 
@@ -103,12 +118,22 @@ export function useInfoIASettings(): InfoIASettings {
     w_mob: 1.0,
     done_bonus: 200.0,
     sprint_threshold: 2,
-    tempo: 5,
   };
   const [p1Engine, setP1EngineState] = useState<EngineOptions>({ ...defaultEngine });
   const [p2Engine, setP2EngineState] = useState<EngineOptions>({ ...defaultEngine });
   const [p1Eval, setP1EvalState] = useState<EvalParams>({ ...defaultEval });
   const [p2Eval, setP2EvalState] = useState<EvalParams>({ ...defaultEval });
+  // AutoTune (global) defaults
+  const [autoTuneEnabled, setAutoTuneEnabled] = useState<boolean>(false);
+  const [autoTuneLr, setAutoTuneLr] = useState<number>(0.001);
+  const [autoTuneReg, setAutoTuneReg] = useState<number>(0.00001);
+  const [autoTuneK, setAutoTuneK] = useState<number>(400);
+  const [autoTuneAutoSave, setAutoTuneAutoSave] = useState<boolean>(false);
+  const [autoTuneSaveEvery, setAutoTuneSaveEvery] = useState<number>(10);
+  const [autoTuneLog, setAutoTuneLog] = useState<boolean>(false);
+  const [autoTuneWarmupPlies, setAutoTuneWarmupPlies] = useState<number>(0);
+  const [autoTuneTuneLight, setAutoTuneTuneLight] = useState<boolean>(true);
+  const [autoTuneTuneDark, setAutoTuneTuneDark] = useState<boolean>(true);
   const setP1Engine = useCallback((next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => {
     setP1EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
   }, []);
@@ -137,6 +162,16 @@ export function useInfoIASettings(): InfoIASettings {
     setP2EngineState({ ...defaultEngine });
     setP1EvalState({ ...defaultEval });
     setP2EvalState({ ...defaultEval });
+    setAutoTuneEnabled(false);
+    setAutoTuneLr(0.001);
+    setAutoTuneReg(0.00001);
+    setAutoTuneK(400);
+    setAutoTuneAutoSave(false);
+    setAutoTuneSaveEvery(10);
+    setAutoTuneLog(false);
+    setAutoTuneWarmupPlies(0);
+    setAutoTuneTuneLight(true);
+    setAutoTuneTuneDark(true);
   }, []);
 
   return {
@@ -157,6 +192,16 @@ export function useInfoIASettings(): InfoIASettings {
     p2Engine, setP2Engine,
     p1Eval, setP1Eval,
     p2Eval, setP2Eval,
+    autoTuneEnabled, setAutoTuneEnabled,
+    autoTuneLr, setAutoTuneLr,
+    autoTuneReg, setAutoTuneReg,
+    autoTuneK, setAutoTuneK,
+    autoTuneAutoSave, setAutoTuneAutoSave,
+    autoTuneSaveEvery, setAutoTuneSaveEvery,
+    autoTuneLog, setAutoTuneLog,
+    autoTuneWarmupPlies, setAutoTuneWarmupPlies,
+    autoTuneTuneLight, setAutoTuneTuneLight,
+    autoTuneTuneDark, setAutoTuneTuneDark,
     resetDefaults,
   };
 }

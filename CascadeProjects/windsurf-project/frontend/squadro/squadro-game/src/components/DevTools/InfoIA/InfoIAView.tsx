@@ -20,6 +20,14 @@ export default function InfoIAView(props: InfoIAViewProps) {
     exploreEps, onChangeExploreEps,
     startEligibleLight, onToggleStartEligibleLight,
     startEligibleDark, onToggleStartEligibleDark,
+    autoTuneEnabled, onToggleAutoTuneEnabled,
+    autoTuneLr, onChangeAutoTuneLr,
+    autoTuneReg, onChangeAutoTuneReg,
+    autoTuneK, onChangeAutoTuneK,
+    autoTuneAutoSave, onToggleAutoTuneAutoSave,
+    autoTuneSaveEvery, onChangeAutoTuneSaveEvery,
+    autoTuneTuneLight, onToggleAutoTuneTuneLight,
+    autoTuneTuneDark, onToggleAutoTuneTuneDark,
     p1, p2,
     records,
     moveIndex, moveElapsedMs, moveTargetMs,
@@ -27,6 +35,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
     onCopyRecord, onDownloadRecord, onDeleteRecord,
     onRunSuite,
     suiteResult,
+    onSaveTunedPreset,
   } = props;
 
   return (
@@ -73,6 +82,12 @@ export default function InfoIAView(props: InfoIAViewProps) {
       </div>
 
       {/* Repeats tab (placeholder) */}
+      {onSaveTunedPreset && (
+        <div className="mt-2">
+          <button className="chip-btn" onClick={onSaveTunedPreset} aria-label="Guardar preset AutoTune" title="Guardar pesos actuales como nuevo preset (promedia Light/Dark)">Guardar preset (AutoTune)</button>
+        </div>
+      )}
+
       {activeTab === 'repeats' && (
         <div className="section mt-3">
           <div className="section-title font-semibold text-neutral-200" title="Jugadas Repetidas — (Placeholder) Vista para detectar líneas repetitivas y ajustar heurística/ordenación.">Jugadas Repetidas</div>
@@ -117,6 +132,22 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onToggleStartEligibleLight={onToggleStartEligibleLight}
           startEligibleDark={startEligibleDark}
           onToggleStartEligibleDark={onToggleStartEligibleDark}
+          autoTuneEnabled={autoTuneEnabled}
+          onToggleAutoTuneEnabled={onToggleAutoTuneEnabled}
+          autoTuneLr={autoTuneLr}
+          onChangeAutoTuneLr={onChangeAutoTuneLr}
+          autoTuneReg={autoTuneReg}
+          onChangeAutoTuneReg={onChangeAutoTuneReg}
+          autoTuneK={autoTuneK}
+          onChangeAutoTuneK={onChangeAutoTuneK}
+          autoTuneAutoSave={autoTuneAutoSave}
+          onToggleAutoTuneAutoSave={onToggleAutoTuneAutoSave}
+          autoTuneSaveEvery={autoTuneSaveEvery}
+          onChangeAutoTuneSaveEvery={onChangeAutoTuneSaveEvery}
+          autoTuneTuneLight={autoTuneTuneLight}
+          onToggleAutoTuneTuneLight={onToggleAutoTuneTuneLight}
+          autoTuneTuneDark={autoTuneTuneDark}
+          onToggleAutoTuneTuneDark={onToggleAutoTuneTuneDark}
           p1={p1}
           p2={p2}
           records={records}

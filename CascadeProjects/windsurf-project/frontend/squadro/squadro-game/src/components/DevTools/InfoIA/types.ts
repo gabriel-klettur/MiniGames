@@ -222,9 +222,34 @@ export interface InfoIAViewProps {
   onToggleStartEligibleLight?: () => void;
   startEligibleDark?: boolean;
   onToggleStartEligibleDark?: () => void;
+  // AutoTune controls (global)
+  autoTuneEnabled?: boolean;
+  onToggleAutoTuneEnabled?: () => void;
+  autoTuneLr?: number;
+  onChangeAutoTuneLr?: (n: number) => void;
+  autoTuneReg?: number;
+  onChangeAutoTuneReg?: (n: number) => void;
+  autoTuneK?: number;
+  onChangeAutoTuneK?: (n: number) => void;
+  // AutoTune auto-save presets
+  autoTuneAutoSave?: boolean;
+  onToggleAutoTuneAutoSave?: () => void;
+  autoTuneSaveEvery?: number;
+  onChangeAutoTuneSaveEvery?: (n: number) => void;
+  autoTuneWarmupPlies?: number;
+  onChangeAutoTuneWarmupPlies?: (n: number) => void;
+  autoTuneLog?: boolean;
+  onToggleAutoTuneLog?: () => void;
+  // Per-side tuning mask
+  autoTuneTuneLight?: boolean;
+  onToggleAutoTuneTuneLight?: () => void;
+  autoTuneTuneDark?: boolean;
+  onToggleAutoTuneTuneDark?: () => void;
   // Per-player controls
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
+  // Preset persistence
+  onSaveTunedPreset?: () => void;
   // Table actions
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;

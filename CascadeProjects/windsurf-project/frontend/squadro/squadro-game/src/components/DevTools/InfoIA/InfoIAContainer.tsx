@@ -7,13 +7,48 @@ import { useCompareDatasets } from './hooks/useCompareDatasets.ts';
 import { useRecords } from './hooks/useRecords.ts';
 import { useSimulationRunner } from './hooks/useSimulationRunner.ts';
 import type { EngineOptions } from '../../../ia/search/types';
-import { loadPresets, setSelectedPresetId, type IAPreset } from '../../../ia/presets';
+import { loadPresets, savePresets, setSelectedPresetId, type IAPreset } from '../../../ia/presets';
 import { loadLastSuite, saveLastSuite } from './services/storage.ts';
 
 const InfoIAContainer: React.FC = () => {
   const settings = useInfoIASettings();
   // Suspend localStorage persistence while long simulations are running to avoid UI jank.
   const [suspendPersistence, setSuspendPersistence] = useState<boolean>(false);
+  // Save tuned preset helper (used by runner auto-save and by UI button)
+  const handleSaveTunedPreset = () => {
+    try {
+      const presets = loadPresets();
+      // Promedio de pesos actuales de Light/Dark si existen, si no toma p1
+      const wKeys = ['w_race','w_clash','w_sprint','w_block','done_bonus','sprint_threshold','w_chain','w_parity','w_struct','w_ones','w_return','w_waste','w_mob'] as const;
+      const avg: any = {};
+      for (const k of wKeys) {
+        const a: any = (settings.p1Eval as any)[k];
+        const b: any = (settings.p2Eval as any)[k];
+        const va = typeof a === 'number' ? a : undefined;
+        const vb = typeof b === 'number' ? b : undefined;
+        avg[k] = (va !== undefined && vb !== undefined) ? (va + vb) / 2 : (va !== undefined ? va : (vb !== undefined ? vb : undefined));
+      }
+      const id = `autotune_${Date.now()}`;
+      const name = `AutoTune ${new Date().toLocaleString()}`;
+      const np: IAPreset = {
+        id,
+        name,
+        settings: {
+          difficulty: Math.max(settings.p1Depth, settings.p2Depth),
+          useWorkers: !!settings.useRootParallel,
+          timeMode: settings.p1Mode,
+          timeSeconds: settings.p1Secs,
+          evalWeights: avg,
+        },
+      };
+      presets.push(np);
+      savePresets(presets);
+      setSelectedPresetId(id);
+      try { window.dispatchEvent(new CustomEvent('squadro:presets:update')); } catch {}
+    } catch (err) {
+      console.error('save tuned preset failed', err);
+    }
+  };
   const { compareSets, addFilesFromFileList, removeSet, clearSets } = useCompareDatasets();
   const {
     records,
@@ -53,6 +88,20 @@ const InfoIAContainer: React.FC = () => {
       // Per-player evaluation weights
       p1Eval: settings.p1Eval,
       p2Eval: settings.p2Eval,
+      // AutoTune
+      autoTuneEnabled: settings.autoTuneEnabled,
+      autoTuneLr: settings.autoTuneLr,
+      autoTuneReg: settings.autoTuneReg,
+      autoTuneK: settings.autoTuneK,
+      onTuneP1Eval: (next) => settings.setP1Eval(next),
+      onTuneP2Eval: (next) => settings.setP2Eval(next),
+      autoTuneAutoSave: settings.autoTuneAutoSave,
+      autoTuneSaveEvery: settings.autoTuneSaveEvery,
+      autoTuneWarmupPlies: settings.autoTuneWarmupPlies,
+      autoTuneLog: settings.autoTuneLog,
+      autoTuneTuneLight: settings.autoTuneTuneLight,
+      autoTuneTuneDark: settings.autoTuneTuneDark,
+      onAutoSaveTunedPreset: handleSaveTunedPreset,
     },
     addRecord,
   );
@@ -421,6 +470,26 @@ const InfoIAContainer: React.FC = () => {
       onToggleStartEligibleLight={() => settings.setStartEligibleLight(!settings.startEligibleLight)}
       startEligibleDark={settings.startEligibleDark}
       onToggleStartEligibleDark={() => settings.setStartEligibleDark(!settings.startEligibleDark)}
+      autoTuneEnabled={settings.autoTuneEnabled}
+      onToggleAutoTuneEnabled={() => settings.setAutoTuneEnabled(!settings.autoTuneEnabled)}
+      autoTuneLr={settings.autoTuneLr}
+      onChangeAutoTuneLr={settings.setAutoTuneLr}
+      autoTuneReg={settings.autoTuneReg}
+      onChangeAutoTuneReg={settings.setAutoTuneReg}
+      autoTuneK={settings.autoTuneK}
+      onChangeAutoTuneK={settings.setAutoTuneK}
+      autoTuneAutoSave={settings.autoTuneAutoSave}
+      onToggleAutoTuneAutoSave={() => settings.setAutoTuneAutoSave(!settings.autoTuneAutoSave)}
+      autoTuneSaveEvery={settings.autoTuneSaveEvery}
+      onChangeAutoTuneSaveEvery={(n: number) => settings.setAutoTuneSaveEvery(Math.max(1, Math.round(n)))}
+      autoTuneWarmupPlies={settings.autoTuneWarmupPlies}
+      onChangeAutoTuneWarmupPlies={(n: number) => settings.setAutoTuneWarmupPlies(Math.max(0, Math.round(n)))}
+      autoTuneLog={settings.autoTuneLog}
+      onToggleAutoTuneLog={() => settings.setAutoTuneLog(!settings.autoTuneLog)}
+      autoTuneTuneLight={settings.autoTuneTuneLight}
+      onToggleAutoTuneTuneLight={() => settings.setAutoTuneTuneLight(!settings.autoTuneTuneLight)}
+      autoTuneTuneDark={settings.autoTuneTuneDark}
+      onToggleAutoTuneTuneDark={() => settings.setAutoTuneTuneDark(!settings.autoTuneTuneDark)}
       p1={{
         title: 'Jugador 1 (Light)',
         depth: settings.p1Depth,
@@ -677,6 +746,7 @@ const InfoIAContainer: React.FC = () => {
       onExportJUnit={suiteResult ? handleExportJUnit : undefined}
       suiteResult={suiteResult}
       engineStats={engineStats}
+      onSaveTunedPreset={handleSaveTunedPreset}
     />
   );
 };

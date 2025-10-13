@@ -9,6 +9,8 @@ import type { EngineOptions, SearchStats } from '../../../../ia/search/types';
 import { findBestMoveRootParallel, type SearchEvent } from '../../../../ia/search';
 import { hashState } from '../../../../ia/hash';
 import { generateMoves } from '../../../../ia/moves';
+import { computeFeatures } from '../../../../ia/evaluate';
+import { updateWeights, DEFAULT_CLIP, predictScore } from '../../../../ia/autotune';
 
 export interface SimulationSettings {
   gamesCount: number;
@@ -38,6 +40,23 @@ export interface SimulationSettings {
   exploreEps?: number;
   // Collect per-move heuristics summary when available
   traceHeuristics?: boolean;
+  // AutoTune (global)
+  autoTuneEnabled?: boolean;
+  autoTuneLr?: number;
+  autoTuneReg?: number;
+  autoTuneK?: number; // target magnitude for win/lose in points
+  onTuneP1Eval?: (next: EvalParams) => void;
+  onTuneP2Eval?: (next: EvalParams) => void;
+  // AutoTune auto-save preset
+  autoTuneAutoSave?: boolean;
+  autoTuneSaveEvery?: number;
+  onAutoSaveTunedPreset?: () => void;
+  // AutoTune warmup/logging
+  autoTuneWarmupPlies?: number;
+  autoTuneLog?: boolean;
+  // AutoTune per-side mask
+  autoTuneTuneLight?: boolean;
+  autoTuneTuneDark?: boolean;
 }
 
 export interface SimulationMetrics {
@@ -359,6 +378,91 @@ export function useSimulationRunner(
         p2Score,
         details: curDetails,
       });
+
+      // === AutoTune: actualizar w_* tras cada partida ===
+      try {
+        if (settings.autoTuneEnabled) {
+          // Reconstruir la secuencia de estados para calcular φ_t por turno
+          let replay: GameState = createInitialState();
+          // Alinear el turno inicial del replay con el primer movimiento registrado
+          if (curDetails.length > 0 && curDetails[0]?.player) {
+            replay.turn = curDetails[0].player as Player;
+          }
+          // Determinar objetivo en puntos por resultado, orientado al jugador a mover
+          const K = Math.max(1, Math.round(settings.autoTuneK ?? 400));
+          // pesos locales (copias) para SGD
+          let wLight: EvalParams = { ...(settings.p1Eval as EvalParams) };
+          let wDark: EvalParams = { ...(settings.p2Eval as EvalParams) };
+          const wLight0: EvalParams = { ...wLight };
+          const wDark0: EvalParams = { ...wDark };
+          const lr = Math.max(1e-6, Number(settings.autoTuneLr ?? 0.001));
+          const reg = Math.max(0, Number(settings.autoTuneReg ?? 0.00001));
+          const warmup = Math.max(0, Math.round(settings.autoTuneWarmupPlies ?? 0));
+          let stepsUsed = 0;
+          let sse = 0;
+
+          for (let idx = 0; idx < curDetails.length; idx++) {
+            const step = curDetails[idx];
+            const cur: Player = replay.turn;
+            // Objetivo y: +K si el ganador es quien mueve, -K si es el rival, 0 si tablas
+            let y = 0;
+            if (replay.winner) {
+              y = 0;
+            } else {
+              if (gs.winner === 'Light') y = (cur === 'Light') ? +K : -K;
+              else if (gs.winner === 'Dark') y = (cur === 'Dark') ? +K : -K;
+              else y = (cur === 'Light') ? ((settings.p1Options as any)?.drawScore ?? 0) : ((settings.p2Options as any)?.drawScore ?? 0);
+            }
+            // φ en escala base, usando sprint_threshold del jugador actual
+            const thr = (cur === 'Light' ? (settings.p1Eval?.sprint_threshold ?? 2) : (settings.p2Eval?.sprint_threshold ?? 2));
+            const phi = computeFeatures(replay, cur, thr);
+            // Warmup: saltar las primeras N actualizaciones
+            const allowLight = settings.autoTuneTuneLight !== false;
+            const allowDark = settings.autoTuneTuneDark !== false;
+            if (idx >= warmup && ((cur === 'Light' && allowLight) || (cur === 'Dark' && allowDark))) {
+              const yhat = cur === 'Light' ? predictScore(wLight, phi) : predictScore(wDark, phi);
+              const e = y - yhat;
+              sse += e * e;
+              stepsUsed++;
+              if (cur === 'Light') {
+                wLight = updateWeights(wLight, phi, y, { lr, reg, clip: DEFAULT_CLIP });
+              } else {
+                wDark = updateWeights(wDark, phi, y, { lr, reg, clip: DEFAULT_CLIP });
+              }
+            }
+            // Avanzar el estado con la jugada aplicada en ese paso
+            try { applyMoveRules(replay, step.bestMove as any); } catch {}
+          }
+
+          // Propagar los nuevos pesos hacia fuera (estado de InfoIA)
+          if (settings.onTuneP1Eval) settings.onTuneP1Eval(wLight);
+          if (settings.onTuneP2Eval) settings.onTuneP2Eval(wDark);
+          // Logging opcional
+          if (settings.autoTuneLog) {
+            const mae = stepsUsed > 0 ? Math.sqrt(sse / stepsUsed) : 0;
+            const diff = (a: EvalParams, b: EvalParams) => {
+              const keys: (keyof EvalParams)[] = ['w_race','w_clash','w_sprint','w_block','done_bonus','w_chain','w_parity','w_struct','w_ones','w_return','w_waste','w_mob'];
+              let sum = 0;
+              for (const k of keys) {
+                const va = (a as any)[k] ?? 1;
+                const vb = (b as any)[k] ?? 1;
+                sum += Math.abs(va - vb);
+              }
+              return sum;
+            };
+            // eslint-disable-next-line no-console
+            console.log('[AutoTune] steps=%d mae=%.3f dW(Light)=%.3f dW(Dark)=%.3f', stepsUsed, mae, diff(wLight, wLight0), diff(wDark, wDark0));
+          }
+          // Auto-save preset every N games if enabled
+          try {
+            const doAuto = !!settings.autoTuneAutoSave;
+            const every = Math.max(1, Math.round(settings.autoTuneSaveEvery ?? 10));
+            if (doAuto && ((g + 1) % every === 0)) {
+              settings.onAutoSaveTunedPreset?.();
+            }
+          } catch {}
+        }
+      } catch {}
 
       // Yield between games
       await new Promise((r) => setTimeout(r, 0));

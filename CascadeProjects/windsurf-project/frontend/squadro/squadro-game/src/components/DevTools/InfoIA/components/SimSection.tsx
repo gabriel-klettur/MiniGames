@@ -21,6 +21,25 @@ interface SimSectionProps {
   onToggleStartEligibleLight?: () => void;
   startEligibleDark?: boolean;
   onToggleStartEligibleDark?: () => void;
+  // AutoTune controls
+  autoTuneEnabled?: boolean;
+  onToggleAutoTuneEnabled?: () => void;
+  autoTuneLr?: number;
+  onChangeAutoTuneLr?: (n: number) => void;
+  autoTuneReg?: number;
+  onChangeAutoTuneReg?: (n: number) => void;
+  autoTuneK?: number;
+  onChangeAutoTuneK?: (n: number) => void;
+  // AutoTune auto-save presets
+  autoTuneAutoSave?: boolean;
+  onToggleAutoTuneAutoSave?: () => void;
+  autoTuneSaveEvery?: number;
+  onChangeAutoTuneSaveEvery?: (n: number) => void;
+  // AutoTune per-side toggles
+  autoTuneTuneLight?: boolean;
+  onToggleAutoTuneTuneLight?: () => void;
+  autoTuneTuneDark?: boolean;
+  onToggleAutoTuneTuneDark?: () => void;
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
   records: InfoIARecord[];
@@ -36,7 +55,7 @@ interface SimSectionProps {
   onDeleteRecord: (id: string) => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, autoTuneEnabled, onToggleAutoTuneEnabled, autoTuneLr, onChangeAutoTuneLr, autoTuneReg, onChangeAutoTuneReg, autoTuneK, onChangeAutoTuneK, autoTuneAutoSave, onToggleAutoTuneAutoSave, autoTuneSaveEvery, onChangeAutoTuneSaveEvery, autoTuneTuneLight, onToggleAutoTuneTuneLight, autoTuneTuneDark, onToggleAutoTuneTuneDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -81,14 +100,13 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
     adaptiveGrowthFactor: 1.8,
     adaptiveBFWeight: 0.05,
     orderingJitterEps: 0,
-    // Heuristic weights
+    // Heuristic weights (doc scale)
     w_race: 1.0,
-    w_clash: 0.8,
-    w_sprint: 0.6,
-    w_block: 0.3,
-    done_bonus: 5.0,
+    w_clash: 50.0,
+    w_sprint: 8.0,
+    w_block: 10.0,
+    done_bonus: 200.0,
     sprint_threshold: 2,
-    tempo: 5,
   };
 
   const isDiff = (key: string): boolean => {
@@ -247,6 +265,44 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             )}
           </div>
           <PlayerEngineOptions {...(p2 as any)} isDiff={isDiff} />
+        </div>
+        <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
+          <div className="section-title font-semibold text-neutral-200" title="AutoTune — Ajusta w_* al finalizar cada partida por SGD (objetivo en puntos).">AutoTune</div>
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 items-center text-xs text-neutral-300">
+            <label className="inline-flex items-center gap-2" title="Activar autoajuste tras cada partida">
+              <input type="checkbox" checked={!!autoTuneEnabled} onChange={() => onToggleAutoTuneEnabled?.()} />
+              Activado
+            </label>
+            <label className="flex items-center gap-2" title="Learning rate (η) — Paso del SGD. Valores típicos: 1e-3..1e-4">
+              <span>η</span>
+              <input type="number" step={0.0001} value={typeof autoTuneLr === 'number' ? autoTuneLr : 0.001} onChange={(e) => onChangeAutoTuneLr?.(Math.max(1e-6, Number(e.target.value)))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="flex items-center gap-2" title="Regularización L2 (λ) — Evita pesos grandes. Valores típicos: 1e-5..1e-6">
+              <span>λ</span>
+              <input type="number" step={0.00001} value={typeof autoTuneReg === 'number' ? autoTuneReg : 0.00001} onChange={(e) => onChangeAutoTuneReg?.(Math.max(0, Number(e.target.value)))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="flex items-center gap-2" title="K — Escala del objetivo (puntos) para win/lose. Recomendado ≈ 400">
+              <span>K</span>
+              <input type="number" step={1} value={typeof autoTuneK === 'number' ? autoTuneK : 400} onChange={(e) => onChangeAutoTuneK?.(Math.max(1, Math.round(Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="inline-flex items-center gap-2" title="Ajustar pesos del bando Light">
+              <input type="checkbox" checked={autoTuneTuneLight !== false} onChange={() => onToggleAutoTuneTuneLight?.()} />
+              Tune Light
+            </label>
+            <label className="inline-flex items-center gap-2" title="Ajustar pesos del bando Dark">
+              <input type="checkbox" checked={autoTuneTuneDark !== false} onChange={() => onToggleAutoTuneTuneDark?.()} />
+              Tune Dark
+            </label>
+            <label className="inline-flex items-center gap-2" title="Auto-guardar preset con los pesos ajustados cada N partidas">
+              <input type="checkbox" checked={!!autoTuneAutoSave} onChange={() => onToggleAutoTuneAutoSave?.()} />
+              Auto-guardar preset
+            </label>
+            <label className="flex items-center gap-2" title="Cada cuántas partidas auto-guardar el preset (entero ≥ 1)">
+              <span>cada</span>
+              <input type="number" min={1} step={1} value={typeof autoTuneSaveEvery === 'number' ? autoTuneSaveEvery : 10} onChange={(e) => onChangeAutoTuneSaveEvery?.(Math.max(1, Math.round(Number(e.target.value))))} className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+              <span>juegos</span>
+            </label>
+          </div>
         </div>
       </div>
 
