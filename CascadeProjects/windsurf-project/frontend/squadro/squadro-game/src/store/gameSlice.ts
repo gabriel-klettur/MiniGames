@@ -162,6 +162,16 @@ const gameSlice = createSlice({
       if (!state.ai) return;
       const d = Math.max(1, Math.min(20, Math.round(action.payload)));
       state.ai.difficulty = d;
+      // Apply eval weights from selected eval preset (or fallback to 'balanced') on difficulty change
+      try {
+        const sel = getSelectedEvalPresetId();
+        const preset = (sel ? findEvalPresetById(sel) : null) || findEvalPresetById('balanced');
+        if (preset && preset.weights) {
+          const ew: any = (state.ai.evalWeights ||= {} as any);
+          ew['Light'] = { ...(ew['Light'] || {}), ...(preset.weights as any) } as any;
+          ew['Dark']  = { ...(ew['Dark']  || {}), ...(preset.weights as any) } as any;
+        }
+      } catch {}
     },
     setAIUseWorkers(state: GameState, action: PayloadAction<boolean>) {
       if (!state.ai) return;

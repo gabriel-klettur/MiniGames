@@ -161,6 +161,11 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onCopyRecord={onCopyRecord}
           onDownloadRecord={onDownloadRecord}
           onDeleteRecord={onDeleteRecord}
+          bestLight={props.bestLight}
+          bestDark={props.bestDark}
+          onApplyBestToP1={props.onApplyBestToP1}
+          onApplyBestToP2={props.onApplyBestToP2}
+          onSaveBestPreset={props.onSaveBestPreset}
         />
       )}
       {(suiteResult || props.engineStats) && (

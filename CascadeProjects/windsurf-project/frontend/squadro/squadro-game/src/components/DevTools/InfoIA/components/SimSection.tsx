@@ -53,9 +53,15 @@ interface SimSectionProps {
   onCopyRecord: (id: string) => void;
   onDownloadRecord: (id: string) => void;
   onDeleteRecord: (id: string) => void;
+  // Best heuristics (read-only champion snapshots)
+  bestLight?: { eval: Partial<import('../../../../ia/evalTypes').EvalParams>; wr?: number; games?: number; ts?: number } | null;
+  bestDark?: { eval: Partial<import('../../../../ia/evalTypes').EvalParams>; wr?: number; games?: number; ts?: number } | null;
+  onApplyBestToP1?: (side: 'Light' | 'Dark') => void;
+  onApplyBestToP2?: (side: 'Light' | 'Dark') => void;
+  onSaveBestPreset?: (side: 'Light' | 'Dark') => void;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, autoTuneEnabled, onToggleAutoTuneEnabled, autoTuneLr, onChangeAutoTuneLr, autoTuneReg, onChangeAutoTuneReg, autoTuneK, onChangeAutoTuneK, autoTuneAutoSave, onToggleAutoTuneAutoSave, autoTuneSaveEvery, onChangeAutoTuneSaveEvery, autoTuneTuneLight, onToggleAutoTuneTuneLight, autoTuneTuneDark, onToggleAutoTuneTuneDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, autoTuneEnabled, onToggleAutoTuneEnabled, autoTuneLr, onChangeAutoTuneLr, autoTuneReg, onChangeAutoTuneReg, autoTuneK, onChangeAutoTuneK, autoTuneAutoSave, onToggleAutoTuneAutoSave, autoTuneSaveEvery, onChangeAutoTuneSaveEvery, autoTuneTuneLight, onToggleAutoTuneTuneLight, autoTuneTuneDark, onToggleAutoTuneTuneDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord, bestLight = null, bestDark = null, onApplyBestToP1, onApplyBestToP2, onSaveBestPreset }) => {
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
@@ -232,6 +238,27 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             )}
           </div>
           <PlayerEngineOptions {...(p1 as any)} isDiff={isDiff} />
+          {/* Best Light (read-only) */}
+          {bestLight && bestLight.eval && (
+            <div className="mt-3 rounded-md border border-neutral-700 bg-neutral-900/50 p-2">
+              <div className="text-xs font-semibold text-neutral-200 mb-1">Mejor (Light)</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-[11px] text-neutral-300">
+                {Object.entries(bestLight.eval as any).map(([k, v]) => (
+                  <div key={k}><span className="text-neutral-400">{k}</span>: {String(v)}</div>
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-neutral-400">
+                {typeof bestLight.wr === 'number' && <span>WR: {(bestLight.wr * 100).toFixed(1)}%</span>}
+                {typeof bestLight.games === 'number' && <span>Games: {bestLight.games}</span>}
+                {typeof bestLight.ts === 'number' && <span>{new Date(bestLight.ts).toLocaleString()}</span>}
+              </div>
+              <div className="mt-2 flex gap-2">
+                {onApplyBestToP1 && (<button type="button" className="chip-btn" onClick={() => onApplyBestToP1('Light')} title="Aplicar mejor Light a Jugador 1">Aplicar a P1</button>)}
+                {onApplyBestToP2 && (<button type="button" className="chip-btn" onClick={() => onApplyBestToP2('Light')} title="Aplicar mejor Light a Jugador 2">Aplicar a P2</button>)}
+                {onSaveBestPreset && (<button type="button" className="chip-btn" onClick={() => onSaveBestPreset('Light')} title="Guardar preset con mejor Light">Guardar preset</button>)}
+              </div>
+            </div>
+          )}
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title={`${p2.title} — Ajustes del motor y heurística para el Jugador 2. Útil para A/B testing contra Jugador 1.`}>{p2.title}</div>
@@ -264,6 +291,27 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             )}
           </div>
           <PlayerEngineOptions {...(p2 as any)} isDiff={isDiff} />
+          {/* Best Dark (read-only) */}
+          {bestDark && bestDark.eval && (
+            <div className="mt-3 rounded-md border border-neutral-700 bg-neutral-900/50 p-2">
+              <div className="text-xs font-semibold text-neutral-200 mb-1">Mejor (Dark)</div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-[11px] text-neutral-300">
+                {Object.entries(bestDark.eval as any).map(([k, v]) => (
+                  <div key={k}><span className="text-neutral-400">{k}</span>: {String(v)}</div>
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-neutral-400">
+                {typeof bestDark.wr === 'number' && <span>WR: {(bestDark.wr * 100).toFixed(1)}%</span>}
+                {typeof bestDark.games === 'number' && <span>Games: {bestDark.games}</span>}
+                {typeof bestDark.ts === 'number' && <span>{new Date(bestDark.ts).toLocaleString()}</span>}
+              </div>
+              <div className="mt-2 flex gap-2">
+                {onApplyBestToP1 && (<button type="button" className="chip-btn" onClick={() => onApplyBestToP1('Dark')} title="Aplicar mejor Dark a Jugador 1">Aplicar a P1</button>)}
+                {onApplyBestToP2 && (<button type="button" className="chip-btn" onClick={() => onApplyBestToP2('Dark')} title="Aplicar mejor Dark a Jugador 2">Aplicar a P2</button>)}
+                {onSaveBestPreset && (<button type="button" className="chip-btn" onClick={() => onSaveBestPreset('Dark')} title="Guardar preset con mejor Dark">Guardar preset</button>)}
+              </div>
+            </div>
+          )}
         </div>
         <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
           <div className="section-title font-semibold text-neutral-200" title="AutoTune — Ajusta w_* al finalizar cada partida por SGD (objetivo en puntos).">AutoTune</div>

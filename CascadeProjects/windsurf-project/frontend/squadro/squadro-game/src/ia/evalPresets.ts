@@ -11,20 +11,20 @@ export const EVAL_SELECTED_KEY = 'squadro:ia:eval-selected';
 
 export function getDefaultEvalPresets(): EvalPreset[] {
   const base: EvalParams = {
-    // Escala del documento: 100 pts ≈ 1 tempo, done=200, clash=50
-    w_race: 1.0,
-    w_clash: 50.0,
-    w_sprint: 8.0,
-    w_block: 10.0,
-    // Multiplicadores para completar los 12 puntos (1.0 por defecto)
-    w_chain: 1.0,
-    w_parity: 1.0,
-    w_struct: 1.0,
-    w_ones: 1.0,
-    w_return: 1.0,
-    w_waste: 1.0,
-    w_mob: 1.0,
-    done_bonus: 200.0,
+    // Balanced (user default): calibrado desde experimento Deep3v3_100_82vs18
+    w_race: 2.0,
+    w_clash: 29.978015521361044,
+    w_sprint: 5.365895487831215,
+    w_block: 13.542741590951847,
+    // Multiplicadores extendidos (12 señales)
+    w_chain: 1.9999991600001719,
+    w_parity: 1.999999920000001,
+    w_struct: 1.999999720000018,
+    w_ones: 2.0,
+    w_return: 1.99999996,
+    w_waste: 2.0,
+    w_mob: 2.0,
+    done_bonus: 199.50580333275943,
     sprint_threshold: 2,
   };
   return [
@@ -40,6 +40,11 @@ export function loadEvalPresets(): EvalPreset[] {
     if (!raw) {
       const def = getDefaultEvalPresets();
       localStorage.setItem(EVAL_PRESETS_KEY, JSON.stringify(def));
+      // If no selection yet, select Balanced by default
+      try {
+        const sel = localStorage.getItem(EVAL_SELECTED_KEY);
+        if (!sel) localStorage.setItem(EVAL_SELECTED_KEY, 'balanced');
+      } catch {}
       return def;
     }
     const parsed = JSON.parse(raw) as EvalPreset[];

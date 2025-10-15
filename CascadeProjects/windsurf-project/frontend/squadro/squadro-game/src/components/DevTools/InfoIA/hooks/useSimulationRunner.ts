@@ -126,6 +126,11 @@ export function useSimulationRunner(
   const run = useCallback(async () => {
     runningRef.current = true;
     setRunning(true);
+    let winsLight = 0;
+    let winsDark = 0;
+    let draws = 0;
+    let lastWLight: EvalParams = (settings.p1Eval as EvalParams) as any;
+    let lastWDark: EvalParams = (settings.p2Eval as EvalParams) as any;
 
     for (let g = 0; g < Math.max(1, settings.gamesCount) && runningRef.current; g++) {
       // Local state por partida
@@ -366,6 +371,9 @@ export function useSimulationRunner(
       const p1Score = gs.pieces.filter((p) => p.owner === 'Light' && p.state === 'retirada').length;
       const p2Score = gs.pieces.filter((p) => p.owner === 'Dark' && p.state === 'retirada').length;
       let tuneSummary: InfoIARecord['tune'] | undefined = undefined;
+      if (gs.winner === 'Light') winsLight++;
+      else if (gs.winner === 'Dark') winsDark++;
+      else draws++;
 
       // === AutoTune: actualizar w_* tras cada partida ===
       try {
@@ -425,6 +433,8 @@ export function useSimulationRunner(
           // Propagar los nuevos pesos hacia fuera (estado de InfoIA)
           if (settings.onTuneP1Eval) settings.onTuneP1Eval(wLight);
           if (settings.onTuneP2Eval) settings.onTuneP2Eval(wDark);
+          lastWLight = wLight;
+          lastWDark = wDark;
           // Persistir inmediatamente en localStorage para evitar pérdidas en recargas rápidas
           try {
             if (typeof window !== 'undefined') {
@@ -500,6 +510,27 @@ export function useSimulationRunner(
 
     runningRef.current = false;
     setRunning(false);
+    try {
+      if (typeof window !== 'undefined') {
+        const total = Math.max(1, winsLight + winsDark + draws);
+        const wrl = winsLight / total;
+        const wrd = winsDark / total;
+        try {
+          const k1 = 'squadro.infoia.best.light';
+          const cur1 = (() => { try { return JSON.parse(localStorage.getItem(k1) || '{}') || {}; } catch { return {}; } })();
+          if (!cur1.wr || wrl > cur1.wr) {
+            localStorage.setItem(k1, JSON.stringify({ eval: lastWLight, wr: wrl, games: total, ts: Date.now(), lr: settings.autoTuneLr, reg: settings.autoTuneReg, K: settings.autoTuneK, warmup: settings.autoTuneWarmupPlies }));
+          }
+        } catch {}
+        try {
+          const k2 = 'squadro.infoia.best.dark';
+          const cur2 = (() => { try { return JSON.parse(localStorage.getItem(k2) || '{}') || {}; } catch { return {}; } })();
+          if (!cur2.wr || wrd > cur2.wr) {
+            localStorage.setItem(k2, JSON.stringify({ eval: lastWDark, wr: wrd, games: total, ts: Date.now(), lr: settings.autoTuneLr, reg: settings.autoTuneReg, K: settings.autoTuneK, warmup: settings.autoTuneWarmupPlies }));
+          }
+        } catch {}
+      }
+    } catch {}
   }, [addRecord, settings]);
 
   const start = useCallback(() => {

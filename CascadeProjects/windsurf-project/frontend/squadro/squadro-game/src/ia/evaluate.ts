@@ -471,12 +471,15 @@ function shallowApplyBestProgress(gs: GameState): GameState {
 // - Capturas inmediatas: 50 por captura (modelado vía w_clash=50 sobre clashDelta de capturas).
 // - Sprint/bloqueo: moderadores pequeños por ahora (se ajustarán al completar 12 señales).
 const EVAL_PARAMS: EvalParams = {
-  w_race: 1.0,
-  w_clash: 50.0,
-  w_sprint: 8.0,   // moderado; afinable
-  w_block: 10.0,   // aproximación a "bloqueos estructurales" del doc
-  done_bonus: 200.0,
+  // Default heuristic (user-provided) for VS IA
+  w_race: 2.0,
+  w_clash: 29.978015521361044,
+  w_sprint: 5.365895487831215,
+  w_block: 13.542741590951847,
+  done_bonus: 199.50580333275943,
   sprint_threshold: 2,
+  // Extended multipliers default to 1 unless provided via gs.ai.evalWeights
+  // (kept implicit to avoid changing type expectations)
 };
 
 function deepClone<T>(x: T): T { return JSON.parse(JSON.stringify(x)); }

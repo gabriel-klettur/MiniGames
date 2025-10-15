@@ -283,4 +283,10 @@ export interface InfoIAViewProps {
   } | null;
   // Engine stats (from last search end)
   engineStats?: Partial<SearchStats> | null;
+  // Best heuristics (read-only champion snapshots)
+  bestLight?: { eval: Partial<EvalParams>; wr?: number; games?: number; ts?: number } | null;
+  bestDark?: { eval: Partial<EvalParams>; wr?: number; games?: number; ts?: number } | null;
+  onApplyBestToP1?: (side: 'Light' | 'Dark') => void;
+  onApplyBestToP2?: (side: 'Light' | 'Dark') => void;
+  onSaveBestPreset?: (side: 'Light' | 'Dark') => void;
 }

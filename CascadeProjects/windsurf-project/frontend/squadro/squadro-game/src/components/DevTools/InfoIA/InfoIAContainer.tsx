@@ -211,6 +211,53 @@ const InfoIAContainer: React.FC = () => {
   const [p1PresetKey, setP1PresetKey] = useState<string>('');
   const [p2PresetKey, setP2PresetKey] = useState<string>('');
 
+  const [bestLight, setBestLight] = useState<any>(null);
+  const [bestDark, setBestDark] = useState<any>(null);
+  const refreshBest = () => {
+    try {
+      const bl = (() => { try { return JSON.parse(localStorage.getItem('squadro.infoia.best.light') || 'null'); } catch { return null; } })();
+      const bd = (() => { try { return JSON.parse(localStorage.getItem('squadro.infoia.best.dark') || 'null'); } catch { return null; } })();
+      setBestLight(bl && typeof bl === 'object' ? bl : null);
+      setBestDark(bd && typeof bd === 'object' ? bd : null);
+    } catch {}
+  };
+  useEffect(() => { refreshBest(); }, []);
+
+  const applyBestToP1 = (side: 'Light' | 'Dark') => {
+    const src = side === 'Light' ? bestLight : bestDark;
+    if (!src || !src.eval) return;
+    settings.setP1Eval(prev => ({ ...prev, ...(src.eval as any) }));
+  };
+  const applyBestToP2 = (side: 'Light' | 'Dark') => {
+    const src = side === 'Light' ? bestLight : bestDark;
+    if (!src || !src.eval) return;
+    settings.setP2Eval(prev => ({ ...prev, ...(src.eval as any) }));
+  };
+  const handleSaveBestPreset = (side: 'Light' | 'Dark') => {
+    try {
+      const src = side === 'Light' ? bestLight : bestDark;
+      if (!src || !src.eval) return;
+      const presets = loadPresets();
+      const id = `best_${side.toLowerCase()}_${Date.now()}`;
+      const name = `Best ${side} ${new Date().toLocaleString()}`;
+      const np: IAPreset = {
+        id,
+        name,
+        settings: {
+          difficulty: Math.max(settings.p1Depth, settings.p2Depth),
+          useWorkers: !!settings.useRootParallel,
+          timeMode: settings.p1Mode,
+          timeSeconds: settings.p1Secs,
+          evalWeights: { ...(src.eval as any) },
+        },
+      };
+      presets.push(np);
+      savePresets(presets);
+      setSelectedPresetId(id);
+      try { window.dispatchEvent(new CustomEvent('squadro:presets:update')); } catch {}
+    } catch {}
+  };
+
   const applyPreset = (key: string, who: 1 | 2) => {
     const found = presetItems.find(p => p.id === key);
     if (!found) return;
@@ -315,6 +362,7 @@ const InfoIAContainer: React.FC = () => {
     if (!sim.running) {
       setSuspendPersistence(false);
       flushNow();
+      refreshBest();
     }
   }, [sim.running, flushNow]);
 
@@ -746,6 +794,11 @@ const InfoIAContainer: React.FC = () => {
       onExportJUnit={suiteResult ? handleExportJUnit : undefined}
       suiteResult={suiteResult}
       engineStats={engineStats}
+      bestLight={bestLight}
+      bestDark={bestDark}
+      onApplyBestToP1={applyBestToP1}
+      onApplyBestToP2={applyBestToP2}
+      onSaveBestPreset={handleSaveBestPreset}
       onSaveTunedPreset={handleSaveTunedPreset}
     />
   );
