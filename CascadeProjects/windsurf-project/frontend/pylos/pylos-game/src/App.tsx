@@ -473,8 +473,6 @@ function App() {
         showIAToggle={true}
         showDevToggle={false}
         onStartVsAI={onStartVsAIWrapped}
-        showHistory={showHistory}
-        onToggleHistory={toggleHistory}
       />
       {showIAUser && (
         <IAUserPanel

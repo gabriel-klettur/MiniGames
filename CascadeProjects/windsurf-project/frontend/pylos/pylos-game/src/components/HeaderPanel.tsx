@@ -16,18 +16,13 @@ export interface HeaderPanelProps {
   showDevToggle?: boolean;
   // Iniciar partida contra IA (selección de lado y dificultad)
   onStartVsAI?: (enemy: 'L' | 'D', depth: number) => void;
-  // Historial: estado de visibilidad y alternador
-  showHistory?: boolean;
-  onToggleHistory?: () => void;
-  // Control para ocultar el botón Historial en el header
-  showHistoryToggle?: boolean;
 }
 
 /**
  * HeaderPanel: muestra el nombre del juego y acciones principales (Nuevo, Dev).
  * Se piensa para el Sidebar y busca ser compacto en altura.
  */
-function HeaderPanel({ title = 'Pylos v1.1.10.2025.ALE', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {}, showHistory = false, onToggleHistory = () => {}, showHistoryToggle = true }: HeaderPanelProps) {
+function HeaderPanel({ title = 'Pylos v1.1.10.2025.ALE', onNewGame, showTools, onToggleDev, showIA = false, onToggleIA = () => {}, showIAToggle = true, showDevToggle = true, onStartVsAI = () => {} }: HeaderPanelProps) {
   // Estado del popover para Partida Vs IA
   const [vsOpen, setVsOpen] = useState<boolean>(false);
   const [selectedSide, setSelectedSide] = useState<'L' | 'D' | null>(null);
@@ -49,10 +44,6 @@ function HeaderPanel({ title = 'Pylos v1.1.10.2025.ALE', onNewGame, showTools, o
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [vsOpen]);
 
-  const toggleVsOpen = () => {
-    if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
-    setVsOpen((v) => !v);
-  };
 
   // Inicio inmediato tras elegir dificultad
   const onPickDifficulty = (depth: number) => {
@@ -97,22 +88,7 @@ function HeaderPanel({ title = 'Pylos v1.1.10.2025.ALE', onNewGame, showTools, o
             {/* plus icon */}
             <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 11V5a1 1 0 1 1 2 0v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H5a1 1 0 1 1 0-2h6z"/></svg>
             <span className="sr-only">Nueva partida</span>
-          </button>
-          {/* Botón Partida Vs IA */}
-          <button
-            ref={btnRef}
-            onClick={toggleVsOpen}
-            aria-expanded={vsOpen}
-            aria-controls="vsai-popover"
-            aria-label="Partida versus IA"
-            title="Partida Vs IA"
-          >
-            {/* Swords icon */}
-            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="currentColor" d="M13.5 12.5 21 20l-1 1-7.5-7.5L6 20l-1-1 6.5-6.5L4 5 5 4l7.5 6.5L19 4l1 1-6.5 7.5Z"/>
-            </svg>
-            <span className="header-btn__label">Vs IA</span>
-          </button>
+          </button>          
           {showIAToggle && (
             <button
               onClick={onToggleIA}
@@ -131,19 +107,7 @@ function HeaderPanel({ title = 'Pylos v1.1.10.2025.ALE', onNewGame, showTools, o
               <span className="header-btn__label">IA</span>
             </button>
           )}
-          {showHistoryToggle && (
-            <button
-              onClick={onToggleHistory}
-              aria-pressed={showHistory}
-              aria-label="Alternar historial"
-              title="Historial"
-            >
-              <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor" d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
-              </svg>
-              <span className="header-btn__label"></span>
-            </button>
-          )}
+          {/* History toggle removed as requested */}
           {showDevToggle && (
             <button
               onClick={onToggleDev}

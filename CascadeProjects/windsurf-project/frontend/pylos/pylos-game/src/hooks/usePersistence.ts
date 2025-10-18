@@ -92,16 +92,7 @@ export function usePersistence(): UsePersistenceResult {
     return false;
   });
 
-  const [iaDepth, setIaDepth] = useState<number>(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEYS.ia);
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (typeof p?.depth === 'number') return p.depth;
-      }
-    } catch {}
-    return 3;
-  });
+  const [iaDepth, setIaDepth] = useState<number>(() => 10);
 
   const [iaTimeMode, setIaTimeMode] = useState<'auto' | 'manual'>(() => {
     try {
@@ -170,10 +161,10 @@ export function usePersistence(): UsePersistenceResult {
     try {
       localStorage.setItem(
         LS_KEYS.ia,
-        JSON.stringify({ depth: iaDepth, timeMode: iaTimeMode, timeSeconds: iaTimeSeconds }),
+        JSON.stringify({ timeMode: iaTimeMode, timeSeconds: iaTimeSeconds }),
       );
     } catch {}
-  }, [iaDepth, iaTimeMode, iaTimeSeconds]);
+  }, [iaTimeMode, iaTimeSeconds]);
 
   useEffect(() => {
     try {
