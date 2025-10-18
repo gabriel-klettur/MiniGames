@@ -10,7 +10,7 @@
   -webkit-backdrop-filter: none;
   padding: 0;
   position: relative; /* create stacking context */
-  z-index: 20;        /* ensure above any board overlays */
+  z-index: 1100;      /* above winner modal/backdrop to allow Undo click */
 }
 
 /* Center the single Undo button under the board */

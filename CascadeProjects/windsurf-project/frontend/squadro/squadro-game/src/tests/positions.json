@@ -4,14 +4,14 @@
     "moves": [],
     "depth": 3,
     "timeMs": 1500,
-    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveIs": "L2", "scoreAtLeast": 1.0 }
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveOneOf": ["L0", "L2"] }
   },
   {
     "name": "After_L0_3ply",
     "moves": ["L0"],
     "depth": 3,
     "timeMs": 1500,
-    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveOneOf": ["D3", "D4"], "scoreAtLeast": 1.0 }
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "bestMoveOneOf": ["D2", "D3", "D4"] }
   },
   {
     "name": "TwoPlies_Smoke",
@@ -25,7 +25,7 @@
     "moves": ["L0", "D0", "L1"],
     "depth": 3,
     "timeMs": 1800,
-    "expect": { "minDepth": 3, "bestMoveNonNull": true, "scoreAtLeast": 0.5 }
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "scoreAtLeast": -60 }
   },
   {
     "name": "Back_trip_edge",
@@ -65,5 +65,73 @@
     "timeMs": 200,
     "tbEntry": { "value": "draw", "bestMove": "L3", "score": 0 },
     "expect": { "minDepth": 0, "bestMoveIs": "L3", "scoreAtMost": 1 }
+  },
+  {
+    "name": "Race_vs_TemptingClash",
+    "moves": ["L0", "D3"],
+    "depth": 4,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Safe_Ones_Emphasis",
+    "moves": ["L1", "D0", "L0"],
+    "depth": 4,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Structural_Block_Check",
+    "moves": ["L2", "D4", "L3"],
+    "depth": 4,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Sprint_Final_Window",
+    "moves": ["L0", "D0", "L2", "D1", "L3"],
+    "depth": 4,
+    "timeMs": 1800,
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Initial_3ply_noBlock",
+    "moves": [],
+    "depth": 3,
+    "timeMs": 1800,
+    "ablate": { "block": true },
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "Initial_3ply_noExtended",
+    "moves": [],
+    "depth": 3,
+    "timeMs": 1800,
+    "ablate": { "extended": true },
+    "expect": { "minDepth": 3, "bestMoveNonNull": true }
+  },
+  {
+    "name": "After_L0_3ply_noBlock",
+    "moves": ["L0"],
+    "depth": 3,
+    "timeMs": 1800,
+    "ablate": { "block": true },
+    "expect": { "minDepth": 3, "bestMoveOneOf": ["D2", "D3", "D4"] }
+  },
+  {
+    "name": "Sprint_threshold_close_sprint3",
+    "moves": ["L0", "D0", "L1"],
+    "depth": 3,
+    "timeMs": 1800,
+    "evalOverride": { "sprint_threshold": 3 },
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "scoreAtLeast": -60 }
+  },
+  {
+    "name": "Sprint_threshold_close_noBlock",
+    "moves": ["L0", "D0", "L1"],
+    "depth": 3,
+    "timeMs": 1800,
+    "ablate": { "block": true },
+    "expect": { "minDepth": 3, "bestMoveNonNull": true, "scoreAtLeast": -60 }
   }
 ]

@@ -12,6 +12,7 @@ export interface UseAutoFillParams {
   gameOver: string | undefined;
   flying: FlyingPieceState | null;
   autoRunningRef: React.MutableRefObject<boolean>;
+  autoSuppressedRef: React.MutableRefObject<boolean>;
   reserveLightRef: React.MutableRefObject<HTMLSpanElement | null>;
   reserveDarkRef: React.MutableRefObject<HTMLSpanElement | null>;
   setPendingState: React.Dispatch<React.SetStateAction<GameState | null>>;
@@ -42,6 +43,7 @@ export function useAutoFill(params: UseAutoFillParams): UseAutoFillResult {
     gameOver,
     flying,
     autoRunningRef,
+    autoSuppressedRef,
     reserveLightRef,
     reserveDarkRef,
     setPendingState,
@@ -56,6 +58,16 @@ export function useAutoFill(params: UseAutoFillParams): UseAutoFillResult {
   const autoTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // If Undo just collapsed AUTO, skip one auto-fill cycle to avoid re-triggering immediately.
+    if (autoSuppressedRef.current) {
+      autoRunningRef.current = false;
+      if (autoTimerRef.current !== null) {
+        clearTimeout(autoTimerRef.current);
+        autoTimerRef.current = null;
+      }
+      return;
+    }
+
     // Stop any scheduling if game over or during recovery or while a flying anim is running
     if (gameOver || state.phase === 'recover' || !!flying) {
       autoRunningRef.current = false;

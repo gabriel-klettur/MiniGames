@@ -60,6 +60,11 @@ export interface InfoIASettings {
   // AutoTune per-side toggles
   autoTuneTuneLight: boolean; setAutoTuneTuneLight: (v: boolean) => void;
   autoTuneTuneDark: boolean; setAutoTuneTuneDark: (v: boolean) => void;
+  // AutoTune advanced (stabilization)
+  autoTunePatience: number; setAutoTunePatience: (n: number) => void;
+  autoTuneLrDecay: number; setAutoTuneLrDecay: (n: number) => void;
+  autoTuneUseEMA: boolean; setAutoTuneUseEMA: (v: boolean) => void;
+  autoTuneEMABeta: number; setAutoTuneEMABeta: (n: number) => void;
   resetDefaults: () => void;
 }
 
@@ -186,6 +191,11 @@ export function useInfoIASettings(): InfoIASettings {
   const [autoTuneWarmupPlies, setAutoTuneWarmupPlies] = useState<number>(0);
   const [autoTuneTuneLight, setAutoTuneTuneLight] = useState<boolean>(true);
   const [autoTuneTuneDark, setAutoTuneTuneDark] = useState<boolean>(true);
+  // Advanced AutoTune
+  const [autoTunePatience, setAutoTunePatience] = useState<number>(200);
+  const [autoTuneLrDecay, setAutoTuneLrDecay] = useState<number>(0.5);
+  const [autoTuneUseEMA, setAutoTuneUseEMA] = useState<boolean>(false);
+  const [autoTuneEMABeta, setAutoTuneEMABeta] = useState<number>(0.1);
   const setP1Engine = useCallback((next: Partial<EngineOptions> | ((prev: EngineOptions) => EngineOptions)) => {
     setP1EngineState(prev => (typeof next === 'function' ? (next as any)(prev) : { ...prev, ...next }));
   }, []);
@@ -299,6 +309,10 @@ export function useInfoIASettings(): InfoIASettings {
     setAutoTuneWarmupPlies(0);
     setAutoTuneTuneLight(true);
     setAutoTuneTuneDark(true);
+    setAutoTunePatience(200);
+    setAutoTuneLrDecay(0.5);
+    setAutoTuneUseEMA(false);
+    setAutoTuneEMABeta(0.1);
     try { if (typeof window !== 'undefined') { localStorage.removeItem(LS_P1); localStorage.removeItem(LS_P2); } } catch {}
   }, []);
 
@@ -330,6 +344,10 @@ export function useInfoIASettings(): InfoIASettings {
     autoTuneWarmupPlies, setAutoTuneWarmupPlies,
     autoTuneTuneLight, setAutoTuneTuneLight,
     autoTuneTuneDark, setAutoTuneTuneDark,
+    autoTunePatience, setAutoTunePatience,
+    autoTuneLrDecay, setAutoTuneLrDecay,
+    autoTuneUseEMA, setAutoTuneUseEMA,
+    autoTuneEMABeta, setAutoTuneEMABeta,
     resetDefaults,
   };
 }

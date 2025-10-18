@@ -1,6 +1,6 @@
 import type { GameState, Player, Piece } from '../game/types';
 import type { EvalParams } from './evalTypes';
-import { generateMoves, applyMove, approxOppSendBackCount } from './moves';
+import { generateMoves, generateTacticalMoves, applyMove, approxOppSendBackCount } from './moves';
 
 /**
  * evaluate — Heurística para Squadro.
@@ -68,7 +68,9 @@ export function evaluate(gs: GameState, root: Player): number {
 
 
   // Allow per-player override from game state (InfoIA/IAPanel can set gs.ai.evalWeights)
-  const params: EvalParams = (gs.ai as any)?.evalWeights?.[me] ?? EVAL_PARAMS;
+  // Merge overrides with defaults to avoid undefined weights causing NaN in evaluation
+  const overrides = (gs.ai as any)?.evalWeights?.[me] as Partial<EvalParams> | undefined;
+  const params: EvalParams = { ...EVAL_PARAMS, ...(overrides || {}) } as EvalParams;
 
   const phi = computeFeatures(gs, me, params.sprint_threshold);
   return (
@@ -190,12 +192,12 @@ function countRivalsOnRoute(gs: GameState, piece: Piece, lookaheadMoves: number)
 function immediateClashDelta(gs: GameState): number {
   const side = gs.turn;
   const opp = other(side);
-  const moves = generateMoves(gs);
+  // Prefer tactical moves for clash estimation; fallback to all legal moves
+  const tact = generateTacticalMoves(gs);
+  const moves = tact.length > 0 ? tact : generateMoves(gs);
   if (moves.length === 0) return 0;
   let best = 0;
-  const limit = Math.min(moves.length, 5);
-  for (let i = 0; i < limit; i++) {
-    const m = moves[i];
+  for (const m of moves) {
     const child = applyMove(gs, m);
     const oppLoss = approxOppSendBackCount(gs, child, opp);
     let myLoss = 0;
@@ -472,12 +474,14 @@ function shallowApplyBestProgress(gs: GameState): GameState {
 // - Sprint/bloqueo: moderadores pequeños por ahora (se ajustarán al completar 12 señales).
 const EVAL_PARAMS: EvalParams = {
   // Default heuristic (user-provided) for VS IA
-  w_race: 2.0,
-  w_clash: 29.978015521361044,
+  w_race: 2.2,
+  w_clash: 1.0,
   w_sprint: 5.365895487831215,
-  w_block: 13.542741590951847,
+  w_block: 6.0,
   done_bonus: 199.50580333275943,
-  sprint_threshold: 2,
+  sprint_threshold: 3,
+  w_waste: 0.5,
+  w_mob: 0.5,
   // Extended multipliers default to 1 unless provided via gs.ai.evalWeights
   // (kept implicit to avoid changing type expectations)
 };
@@ -504,7 +508,7 @@ function blockQuality(gs: GameState, me: Player, opp: Player): number {
     if (rivalReachesHereSoon(afterMy, opp, my.laneIndex, my.pos, 2)) exposure++;
   }
 
-  return useful - 0.7 * exposure;
+  return useful - 0.5 * exposure;
 }
 
 function rivalReachesHereSoon(gs: GameState, rival: Player, laneIndex: number, pos: number, horizon: number): boolean {

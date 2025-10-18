@@ -111,7 +111,7 @@ export function getDefaultPresets(): IAPreset[] {
         evalWeights: {
           // Heurística por defecto (usuario)
           w_race: 2.0,
-          w_clash: 29.978015521361044,
+          w_clash: 1.0,
           w_sprint: 5.365895487831215,
           w_block: 13.542741590951847,
           done_bonus: 199.50580333275943,
@@ -157,7 +157,7 @@ export function getDefaultPresets(): IAPreset[] {
         // Heurística por defecto (usuario)
         evalWeights: {
           w_race: 2.0,
-          w_clash: 29.978015521361044,
+          w_clash: 1.0,
           w_sprint: 5.365895487831215,
           w_block: 13.542741590951847,
           done_bonus: 199.50580333275943,
@@ -213,7 +213,7 @@ export function getDefaultPresets(): IAPreset[] {
         // Heurística por defecto (usuario)
         evalWeights: {
           w_race: 2.0,
-          w_clash: 29.978015521361044,
+          w_clash: 1.0,
           w_sprint: 5.365895487831215,
           w_block: 13.542741590951847,
           done_bonus: 199.50580333275943,
@@ -239,7 +239,7 @@ export function getDefaultPresets(): IAPreset[] {
         // Heurística por defecto (usuario)
         evalWeights: {
           w_race: 2.0,
-          w_clash: 29.978015521361044,
+          w_clash: 1.0,
           w_sprint: 5.365895487831215,
           w_block: 13.542741590951847,
           done_bonus: 199.50580333275943,
@@ -265,7 +265,7 @@ export function getDefaultPresets(): IAPreset[] {
         // Heurística por defecto (usuario)
         evalWeights: {
           w_race: 2.0,
-          w_clash: 29.978015521361044,
+          w_clash: 1.0,
           w_sprint: 5.365895487831215,
           w_block: 13.542741590951847,
           done_bonus: 199.50580333275943,

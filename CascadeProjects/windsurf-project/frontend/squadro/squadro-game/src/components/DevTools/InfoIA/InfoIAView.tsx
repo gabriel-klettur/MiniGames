@@ -24,6 +24,11 @@ export default function InfoIAView(props: InfoIAViewProps) {
     autoTuneLr, onChangeAutoTuneLr,
     autoTuneReg, onChangeAutoTuneReg,
     autoTuneK, onChangeAutoTuneK,
+    autoTunePatience, onChangeAutoTunePatience,
+    autoTuneLrDecay, onChangeAutoTuneLrDecay,
+    autoTuneUseEMA, onToggleAutoTuneUseEMA,
+    autoTuneEMABeta, onChangeAutoTuneEMABeta,
+    onLoadChampion, onClearChampion,
     autoTuneAutoSave, onToggleAutoTuneAutoSave,
     autoTuneSaveEvery, onChangeAutoTuneSaveEvery,
     autoTuneTuneLight, onToggleAutoTuneTuneLight,
@@ -144,6 +149,16 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onToggleAutoTuneAutoSave={onToggleAutoTuneAutoSave}
           autoTuneSaveEvery={autoTuneSaveEvery}
           onChangeAutoTuneSaveEvery={onChangeAutoTuneSaveEvery}
+          autoTunePatience={autoTunePatience}
+          onChangeAutoTunePatience={onChangeAutoTunePatience}
+          autoTuneLrDecay={autoTuneLrDecay}
+          onChangeAutoTuneLrDecay={onChangeAutoTuneLrDecay}
+          autoTuneUseEMA={autoTuneUseEMA}
+          onToggleAutoTuneUseEMA={onToggleAutoTuneUseEMA}
+          autoTuneEMABeta={autoTuneEMABeta}
+          onChangeAutoTuneEMABeta={onChangeAutoTuneEMABeta}
+          onLoadChampion={onLoadChampion}
+          onClearChampion={onClearChampion}
           autoTuneTuneLight={autoTuneTuneLight}
           onToggleAutoTuneTuneLight={onToggleAutoTuneTuneLight}
           autoTuneTuneDark={autoTuneTuneDark}
@@ -166,6 +181,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
           onApplyBestToP1={props.onApplyBestToP1}
           onApplyBestToP2={props.onApplyBestToP2}
           onSaveBestPreset={props.onSaveBestPreset}
+          onRunMiniLadder={props.onRunMiniLadder}
         />
       )}
       {(suiteResult || props.engineStats) && (

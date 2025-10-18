@@ -12,6 +12,7 @@ export interface UseBoardInteractionsParams {
   gameOver: string | undefined;
   flying: FlyingPieceState | null;
   autoRunningRef: React.MutableRefObject<boolean>;
+  autoSuppressedRef: React.MutableRefObject<boolean>;
 
   // Refs used to measure animation origins
   currentPieceRef: React.MutableRefObject<HTMLSpanElement | null>;
@@ -49,6 +50,7 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
     gameOver,
     flying,
     autoRunningRef,
+    autoSuppressedRef,
     currentPieceRef,
     reserveLightRef,
     reserveDarkRef,
@@ -85,6 +87,7 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
     if (state.phase === 'recover') {
       const res = recoverPiece(state, pos);
       if (!res.error) {
+        autoSuppressedRef.current = false;
         const key = posKey(pos);
         const srcBtn = document.querySelector<HTMLButtonElement>(`[data-poskey="${key}"]`);
         const srcCenter = srcBtn ? getCellVisualCenter(srcBtn) : null;
@@ -131,6 +134,7 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
       }
       const attempt = movePiece(state, pos);
       if (!attempt.error) {
+        autoSuppressedRef.current = false;
         const srcKey2 = state.selectedSource ? posKey(state.selectedSource) : '?';
         const dstKey = posKey(pos);
         const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `subir ${srcKey2} -> ${dstKey}` };
@@ -167,6 +171,7 @@ export function useBoardInteractions(params: UseBoardInteractionsParams): UseBoa
     // phase 'play'
     const placed = placeFromReserve(state, pos);
     if (!placed.error) {
+      autoSuppressedRef.current = false;
       const key = posKey(pos);
       const log: MoveEntry = { player: state.currentPlayer, source: 'PLAYER', text: `colocar ${key}` };
       const tryAnimatePlace = (attempt: number) => {

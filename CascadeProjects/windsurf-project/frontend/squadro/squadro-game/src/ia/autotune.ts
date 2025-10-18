@@ -20,6 +20,14 @@ export interface TuneParams {
   lr: number;   // learning rate
   reg: number;  // L2 regularization
   clip?: ClipRanges;
+  // Optional objective: 'mse' (default), 'huber', or 'logistic'
+  objective?: 'mse' | 'huber' | 'logistic';
+  // Huber loss delta (if objective==='huber')
+  huberDelta?: number;
+  // Logistic scaling (z = yhat / logisticK), and y is treated as probability in [0,1]
+  logisticK?: number;
+  // Per-coordinate gradient clipping (absolute value)
+  gradClip?: number;
 }
 
 export function predictScore(w: EvalParams, f: Features12): number {
@@ -47,28 +55,193 @@ function clipVal(v: number, range?: [number, number]): number {
 
 export function updateWeights(w: EvalParams, f: Features12, y: number, params: TuneParams): EvalParams {
   const { lr, reg, clip } = params;
+  const obj = params.objective ?? 'mse';
+  const gradClip = typeof params.gradClip === 'number' && params.gradClip > 0 ? params.gradClip : undefined;
+
   const yhat = predictScore(w, f);
-  const e = y - yhat;
-  // Gradient step: w_i += lr * (e * f_i - reg * w_i)
+
+  // Helpers
+  const huber = (e: number, delta: number): number => {
+    const d = Math.max(1, delta);
+    if (Math.abs(e) <= d) return e; // same as MSE in small errors
+    return d * Math.sign(e); // clipped gradient for large residuals
+  };
+  const sigmoid = (z: number) => 1 / (1 + Math.exp(-z));
+  const clipGrad = (g: number): number => gradClip ? Math.max(-gradClip, Math.min(gradClip, g)) : g;
+
+  // Compute per-feature gradient term g_i (without regularization), then apply: w_i += lr * (-reg*w_i [+/-] g_i)
+  const gRace = (() => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      // grad of CE wrt w: (pHat - p) * (f_i / K)
+      return - (pHat - p) * (f.race / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat;
+      const d = params.huberDelta ?? 100;
+      return huber(e, d) * f.race;
+    } else {
+      const e = y - yhat;
+      return e * f.race;
+    }
+  })();
+  const gDone = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.done / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.done;
+    } else {
+      const e = y - yhat; return e * f.done;
+    }
+  })();
+  const gClash = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.clash / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.clash;
+    } else {
+      const e = y - yhat; return e * f.clash;
+    }
+  })();
+  const gSprint = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.sprint / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.sprint;
+    } else {
+      const e = y - yhat; return e * f.sprint;
+    }
+  })();
+  const gBlock = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.block / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.block;
+    } else {
+      const e = y - yhat; return e * f.block;
+    }
+  })();
+  const gChain = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.chain / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.chain;
+    } else {
+      const e = y - yhat; return e * f.chain;
+    }
+  })();
+  const gParity = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.parity / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.parity;
+    } else {
+      const e = y - yhat; return e * f.parity;
+    }
+  })();
+  const gStruct = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.struct / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.struct;
+    } else {
+      const e = y - yhat; return e * f.struct;
+    }
+  })();
+  const gOnes = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.ones / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.ones;
+    } else {
+      const e = y - yhat; return e * f.ones;
+    }
+  })();
+  const gRet = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.ret / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.ret;
+    } else {
+      const e = y - yhat; return e * f.ret;
+    }
+  })();
+  const gWaste = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.waste / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.waste;
+    } else {
+      const e = y - yhat; return e * f.waste;
+    }
+  })();
+  const gMob = ((): number => {
+    if (obj === 'logistic') {
+      const K = Math.max(1, Math.round(params.logisticK ?? 400));
+      const pHat = sigmoid(yhat / K);
+      const p = Math.max(0, Math.min(1, y));
+      return - (pHat - p) * (f.mob / K);
+    } else if (obj === 'huber') {
+      const e = y - yhat; const d = params.huberDelta ?? 100; return huber(e, d) * f.mob;
+    } else {
+      const e = y - yhat; return e * f.mob;
+    }
+  })();
+
   const next: EvalParams = { ...w };
-  next.w_race = clipVal(next.w_race + lr * (e * f.race - reg * next.w_race), clip?.w_race);
-  next.done_bonus = clipVal(next.done_bonus + lr * (e * f.done - reg * next.done_bonus), clip?.done_bonus);
-  next.w_clash = clipVal(next.w_clash + lr * (e * f.clash - reg * next.w_clash), clip?.w_clash);
-  next.w_sprint = clipVal(next.w_sprint + lr * (e * f.sprint - reg * next.w_sprint), clip?.w_sprint);
-  next.w_block = clipVal(next.w_block + lr * (e * f.block - reg * next.w_block), clip?.w_block);
-  next.w_chain = clipVal((next.w_chain ?? 1) + lr * (e * f.chain - reg * (next.w_chain ?? 1)), clip?.w_chain);
-  next.w_parity = clipVal((next.w_parity ?? 1) + lr * (e * f.parity - reg * (next.w_parity ?? 1)), clip?.w_parity);
-  next.w_struct = clipVal((next.w_struct ?? 1) + lr * (e * f.struct - reg * (next.w_struct ?? 1)), clip?.w_struct);
-  next.w_ones = clipVal((next.w_ones ?? 1) + lr * (e * f.ones - reg * (next.w_ones ?? 1)), clip?.w_ones);
-  next.w_return = clipVal((next.w_return ?? 1) + lr * (e * f.ret - reg * (next.w_return ?? 1)), clip?.w_return);
-  next.w_waste = clipVal((next.w_waste ?? 1) + lr * (e * f.waste - reg * (next.w_waste ?? 1)), clip?.w_waste);
-  next.w_mob = clipVal((next.w_mob ?? 1) + lr * (e * f.mob - reg * (next.w_mob ?? 1)), clip?.w_mob);
+  const step = (val: number, g: number, rng?: [number, number]) => {
+    const gg = clipGrad(g);
+    return clipVal(val + lr * (gg - reg * val), rng);
+  };
+  next.w_race = step(next.w_race, gRace, clip?.w_race);
+  next.done_bonus = step(next.done_bonus, gDone, clip?.done_bonus);
+  next.w_clash = step(next.w_clash, gClash, clip?.w_clash);
+  next.w_sprint = step(next.w_sprint, gSprint, clip?.w_sprint);
+  next.w_block = step(next.w_block, gBlock, clip?.w_block);
+  next.w_chain = step((next.w_chain ?? 1), gChain, clip?.w_chain);
+  next.w_parity = step((next.w_parity ?? 1), gParity, clip?.w_parity);
+  next.w_struct = step((next.w_struct ?? 1), gStruct, clip?.w_struct);
+  next.w_ones = step((next.w_ones ?? 1), gOnes, clip?.w_ones);
+  next.w_return = step((next.w_return ?? 1), gRet, clip?.w_return);
+  next.w_waste = step((next.w_waste ?? 1), gWaste, clip?.w_waste);
+  next.w_mob = step((next.w_mob ?? 1), gMob, clip?.w_mob);
   return next;
 }
 
 export const DEFAULT_CLIP: ClipRanges = {
-  w_race: [0, 2],
-  w_clash: [0, 100],
+  w_race: [0, 3],
+  w_clash: [0, 4],
   w_sprint: [0, 20],
   w_block: [0, 20],
   done_bonus: [0, 400],

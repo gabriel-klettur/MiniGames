@@ -15,6 +15,18 @@ export type SuiteCase = {
   allowFailuresPct?: number;
   engine?: Partial<EngineOptions>;
   tbEntry?: { value: 'win' | 'loss' | 'draw'; bestMove?: string; pv?: string[]; score?: number };
+  // Optional per-case evaluation overrides (applied to both sides)
+  evalOverride?: Partial<{
+    w_race: number; w_clash: number; w_sprint: number; w_block: number; done_bonus: number; sprint_threshold: number;
+    w_chain: number; w_parity: number; w_struct: number; w_ones: number; w_return: number; w_waste: number; w_mob: number;
+  }>;
+  // Optional ablation masks to zero groups of terms
+  ablate?: {
+    clash?: boolean;
+    sprint?: boolean;
+    block?: boolean;
+    extended?: boolean; // chain, parity, struct, ones, ret, waste, mob
+  };
   expect: {
     minDepth?: number;
     bestMoveNonNull?: boolean;
@@ -82,6 +94,24 @@ export async function runSuite(): Promise<SuiteResult> {
   const details: SuiteResult['details'] = [];
   for (const c of cases) {
     const root = await buildState(c.moves);
+    // Inject eval overrides/ablations into game state so evaluate() can read them
+    try {
+      const over = c.evalOverride || {};
+      const ab = c.ablate || {};
+      const mk = (): any => {
+        const o: any = { ...over };
+        if (ab.clash) o.w_clash = 0;
+        if (ab.sprint) o.w_sprint = 0;
+        if (ab.block) o.w_block = 0;
+        if (ab.extended) {
+          o.w_chain = 0; o.w_parity = 0; o.w_struct = 0; o.w_ones = 0; o.w_return = 0; o.w_waste = 0; o.w_mob = 0;
+        }
+        return o;
+      };
+      const both = mk();
+      (root as any).ai = (root as any).ai || {};
+      (root as any).ai.evalWeights = { Light: both, Dark: both };
+    } catch {}
     const runs = Math.max(1, Math.floor(c.repeat ?? 1));
     const allowPct = Math.max(0, Math.min(1, c.allowFailuresPct ?? 0));
     const maxAllowed = Math.floor(allowPct * runs);

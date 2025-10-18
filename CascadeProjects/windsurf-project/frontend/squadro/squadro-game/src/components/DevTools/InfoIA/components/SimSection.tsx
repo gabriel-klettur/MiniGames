@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FC } from 'react';
 import TimeBar from '../views/TimeBar';
 import type { InfoIARecord, PlayerControlsProps } from '../types';
@@ -40,6 +40,17 @@ interface SimSectionProps {
   onToggleAutoTuneTuneLight?: () => void;
   autoTuneTuneDark?: boolean;
   onToggleAutoTuneTuneDark?: () => void;
+  // AutoTune advanced (stabilization)
+  autoTunePatience?: number;
+  onChangeAutoTunePatience?: (n: number) => void;
+  autoTuneLrDecay?: number;
+  onChangeAutoTuneLrDecay?: (n: number) => void;
+  autoTuneUseEMA?: boolean;
+  onToggleAutoTuneUseEMA?: () => void;
+  autoTuneEMABeta?: number;
+  onChangeAutoTuneEMABeta?: (n: number) => void;
+  onLoadChampion?: () => void;
+  onClearChampion?: () => void;
   p1: PlayerControlsProps;
   p2: PlayerControlsProps;
   records: InfoIARecord[];
@@ -59,15 +70,36 @@ interface SimSectionProps {
   onApplyBestToP1?: (side: 'Light' | 'Dark') => void;
   onApplyBestToP2?: (side: 'Light' | 'Dark') => void;
   onSaveBestPreset?: (side: 'Light' | 'Dark') => void;
+  // Mini-ladder validation
+  onRunMiniLadder?: (games: number) => Promise<{ games: number; winsLight: number; winsDark: number; draws: number; wr: number }>;
 }
 
-const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, autoTuneEnabled, onToggleAutoTuneEnabled, autoTuneLr, onChangeAutoTuneLr, autoTuneReg, onChangeAutoTuneReg, autoTuneK, onChangeAutoTuneK, autoTuneAutoSave, onToggleAutoTuneAutoSave, autoTuneSaveEvery, onChangeAutoTuneSaveEvery, autoTuneTuneLight, onToggleAutoTuneTuneLight, autoTuneTuneDark, onToggleAutoTuneTuneDark, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord, bestLight = null, bestDark = null, onApplyBestToP1, onApplyBestToP2, onSaveBestPreset }) => {
+const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCount, useRootParallel, onToggleUseRootParallel, workers, onChangeWorkers, randomOpeningPlies, onChangeRandomOpeningPlies, exploreEps, onChangeExploreEps, startEligibleLight, onToggleStartEligibleLight, startEligibleDark, onToggleStartEligibleDark, autoTuneEnabled, onToggleAutoTuneEnabled, autoTuneLr, onChangeAutoTuneLr, autoTuneReg, onChangeAutoTuneReg, autoTuneK, onChangeAutoTuneK, autoTuneAutoSave, onToggleAutoTuneAutoSave, autoTuneSaveEvery, onChangeAutoTuneSaveEvery, autoTuneTuneLight, onToggleAutoTuneTuneLight, autoTuneTuneDark, onToggleAutoTuneTuneDark, autoTunePatience, onChangeAutoTunePatience, autoTuneLrDecay, onChangeAutoTuneLrDecay, autoTuneUseEMA, onToggleAutoTuneUseEMA, autoTuneEMABeta, onChangeAutoTuneEMABeta, onLoadChampion, onClearChampion, onRunMiniLadder, p1, p2, records, moveIndex, moveElapsedMs, moveTargetMs, progDepth = 0, progNodes = 0, progNps = 0, progScore = 0, onCopyRecord, onDownloadRecord, onDeleteRecord, bestLight = null, bestDark = null, onApplyBestToP1, onApplyBestToP2, onSaveBestPreset }) => {
+  // Mini-ladder local state (component scope)
+  const [ladderN, setLadderN] = useState<number>(100);
+  const [ladderRes, setLadderRes] = useState<{ games: number; winsLight: number; winsDark: number; draws: number; wr: number } | null>(null);
+  const [ladderBusy, setLadderBusy] = useState<boolean>(false);
   const [winnerFilter, setWinnerFilter] = useState<'all' | 'Light' | 'Dark' | 'draw'>('all');
   const recordsFiltered = useMemo(() => {
     if (winnerFilter === 'all') return records;
     if (winnerFilter === 'draw') return records.filter(r => r.winner === 0);
     return records.filter(r => r.winner === winnerFilter);
   }, [records, winnerFilter]);
+
+  // Pagination (10 per page)
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+  const totalRecords = recordsFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+  // Clamp page if total changes
+  useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages]);
+  // Reset to first page on filter or records change
+  useEffect(() => { setPage(1); }, [winnerFilter, records.length]);
+  const paginatedRecords = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+    return recordsFiltered.slice(start, end);
+  }, [recordsFiltered, page]);
 
   // Build a comparator using UI defaults to avoid false positives when a value is undefined
   // but the UI shows the same default para ambos paneles.
@@ -238,6 +270,44 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             )}
           </div>
           <PlayerEngineOptions {...(p1 as any)} isDiff={isDiff} />
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-300">
+            <div className="col-span-2 text-neutral-200 font-semibold">AutoTune avanzado</div>
+            <label className="flex items-center gap-2" title="Early stopping: paciencia antes de rollback">
+              <span>Patience</span>
+              <input type="number" min={1} step={1} value={typeof autoTunePatience === 'number' ? autoTunePatience : 200} onChange={(e) => onChangeAutoTunePatience?.(Math.max(1, Math.round(Number(e.target.value))))} className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="flex items-center gap-2" title="Decay del learning rate al hacer rollback">
+              <span>LR decay</span>
+              <input type="number" min={0.01} max={1} step={0.01} value={typeof autoTuneLrDecay === 'number' ? autoTuneLrDecay : 0.5} onChange={(e) => onChangeAutoTuneLrDecay?.(Math.max(0.01, Math.min(1, Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="inline-flex items-center gap-2" title="Usar EMA (Polyak) para promover champion estable">
+              <input type="checkbox" checked={!!autoTuneUseEMA} onChange={() => onToggleAutoTuneUseEMA?.()} />
+              Use EMA
+            </label>
+            <label className="flex items-center gap-2" title="EMA β (0..1), mezcla hacia pesos recientes">
+              <span>EMA β</span>
+              <input type="number" min={0} max={1} step={0.01} value={typeof autoTuneEMABeta === 'number' ? autoTuneEMABeta : 0.1} onChange={(e) => onChangeAutoTuneEMABeta?.(Math.max(0, Math.min(1, Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <div className="col-span-2 flex flex-wrap gap-2 items-center">
+              <button type="button" className="chip-btn" onClick={() => onLoadChampion?.()} title="Cargar Champion guardado">Cargar Champion</button>
+              <button type="button" className="chip-btn" onClick={() => onClearChampion?.()} title="Borrar Champion guardado">Limpiar Champion</button>
+              <span className="ml-2">Mini-Ladder N</span>
+              <input type="number" min={10} step={10} value={ladderN} onChange={(e) => setLadderN(Math.max(10, Math.round(Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+              <button type="button" className="chip-btn" disabled={ladderBusy || running} onClick={async () => {
+                try {
+                  setLadderBusy(true);
+                  setLadderRes(null);
+                  const res = await onRunMiniLadder?.(ladderN);
+                  if (res) setLadderRes(res);
+                } finally { setLadderBusy(false); }
+              }} title="Validar Champion con mini-ladder">
+                {ladderBusy ? 'Validando…' : 'Validar Champion (Mini-Ladder)'}
+              </button>
+              {ladderRes && (
+                <span className="text-neutral-300 text-[11px]">WR={Math.round(ladderRes.wr * 100)}% · {ladderRes.winsLight}-{ladderRes.winsDark}-{ladderRes.draws}</span>
+              )}
+            </div>
+          </div>
           {/* Best Light (read-only) */}
           {bestLight && bestLight.eval && (
             <div className="mt-3 rounded-md border border-neutral-700 bg-neutral-900/50 p-2">
@@ -291,6 +361,44 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
             )}
           </div>
           <PlayerEngineOptions {...(p2 as any)} isDiff={isDiff} />
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-300">
+            <div className="col-span-2 text-neutral-200 font-semibold">AutoTune avanzado</div>
+            <label className="flex items-center gap-2" title="Early stopping: paciencia antes de rollback">
+              <span>Patience</span>
+              <input type="number" min={1} step={1} value={typeof autoTunePatience === 'number' ? autoTunePatience : 200} onChange={(e) => onChangeAutoTunePatience?.(Math.max(1, Math.round(Number(e.target.value))))} className="w-20 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="flex items-center gap-2" title="Decay del learning rate al hacer rollback">
+              <span>LR decay</span>
+              <input type="number" min={0.01} max={1} step={0.01} value={typeof autoTuneLrDecay === 'number' ? autoTuneLrDecay : 0.5} onChange={(e) => onChangeAutoTuneLrDecay?.(Math.max(0.01, Math.min(1, Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <label className="inline-flex items-center gap-2" title="Usar EMA (Polyak) para promover champion estable">
+              <input type="checkbox" checked={!!autoTuneUseEMA} onChange={() => onToggleAutoTuneUseEMA?.()} />
+              Use EMA
+            </label>
+            <label className="flex items-center gap-2" title="EMA β (0..1), mezcla hacia pesos recientes">
+              <span>EMA β</span>
+              <input type="number" min={0} max={1} step={0.01} value={typeof autoTuneEMABeta === 'number' ? autoTuneEMABeta : 0.1} onChange={(e) => onChangeAutoTuneEMABeta?.(Math.max(0, Math.min(1, Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+            </label>
+            <div className="col-span-2 flex flex-wrap gap-2 items-center">
+              <button type="button" className="chip-btn" onClick={() => onLoadChampion?.()} title="Cargar Champion guardado">Cargar Champion</button>
+              <button type="button" className="chip-btn" onClick={() => onClearChampion?.()} title="Borrar Champion guardado">Limpiar Champion</button>
+              <span className="ml-2">Mini-Ladder N</span>
+              <input type="number" min={10} step={10} value={ladderN} onChange={(e) => setLadderN(Math.max(10, Math.round(Number(e.target.value))))} className="w-24 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" />
+              <button type="button" className="chip-btn" disabled={ladderBusy || running} onClick={async () => {
+                try {
+                  setLadderBusy(true);
+                  setLadderRes(null);
+                  const res = await onRunMiniLadder?.(ladderN);
+                  if (res) setLadderRes(res);
+                } finally { setLadderBusy(false); }
+              }} title="Validar Champion con mini-ladder">
+                {ladderBusy ? 'Validando…' : 'Validar Champion (Mini-Ladder)'}
+              </button>
+              {ladderRes && (
+                <span className="text-neutral-300 text-[11px]">WR={Math.round(ladderRes.wr * 100)}% · {ladderRes.winsLight}-{ladderRes.winsDark}-{ladderRes.draws}</span>
+              )}
+            </div>
+          </div>
           {/* Best Dark (read-only) */}
           {bestDark && bestDark.eval && (
             <div className="mt-3 rounded-md border border-neutral-700 bg-neutral-900/50 p-2">
@@ -430,8 +538,43 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
 
       <div className="rounded-lg border border-neutral-700 bg-neutral-900/60 p-3">
         <div className="section-title font-semibold text-neutral-200 mb-2" title="Resultados — Tabla de partidas y detalles por jugada para analizar profundidad, nodos, NPS y score.">Resultados</div>
+        {/* Pagination controls */}
+        <div className="flex flex-wrap items-center gap-2 mb-2 text-xs text-neutral-300">
+          {(() => {
+            const start = totalRecords === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+            const end = Math.min(totalRecords, page * PAGE_SIZE);
+            return (
+              <>
+                <button
+                  type="button"
+                  className="chip-btn"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  title="Página anterior"
+                >
+                  ◀ Prev
+                </button>
+                <button
+                  type="button"
+                  className="chip-btn"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  title="Página siguiente"
+                >
+                  Next ▶
+                </button>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+                  <strong>Página</strong> {page} / {totalPages}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-neutral-700 bg-neutral-900/80">
+                  <strong>Mostrando</strong> {start}–{end} de {totalRecords}
+                </span>
+              </>
+            );
+          })()}
+        </div>
         <TablaIA
-          records={records}
+          records={paginatedRecords}
           onCopyRecord={onCopyRecord}
           onDownloadRecord={onDownloadRecord}
           onDeleteRecord={onDeleteRecord}

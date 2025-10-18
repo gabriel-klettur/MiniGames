@@ -102,6 +102,11 @@ const InfoIAContainer: React.FC = () => {
       autoTuneTuneLight: settings.autoTuneTuneLight,
       autoTuneTuneDark: settings.autoTuneTuneDark,
       onAutoSaveTunedPreset: handleSaveTunedPreset,
+      // Advanced AutoTune (stabilization)
+      autoTunePatience: settings.autoTunePatience,
+      autoTuneLrDecay: settings.autoTuneLrDecay,
+      autoTuneUseEMA: settings.autoTuneUseEMA,
+      autoTuneEMABeta: settings.autoTuneEMABeta,
     },
     addRecord,
   );
@@ -538,6 +543,27 @@ const InfoIAContainer: React.FC = () => {
       onToggleAutoTuneTuneLight={() => settings.setAutoTuneTuneLight(!settings.autoTuneTuneLight)}
       autoTuneTuneDark={settings.autoTuneTuneDark}
       onToggleAutoTuneTuneDark={() => settings.setAutoTuneTuneDark(!settings.autoTuneTuneDark)}
+      // Advanced AutoTune UI: local state and actions
+      autoTunePatience={settings.autoTunePatience}
+      onChangeAutoTunePatience={(n: number) => settings.setAutoTunePatience(Math.max(1, Math.round(n)))}
+      autoTuneLrDecay={settings.autoTuneLrDecay}
+      onChangeAutoTuneLrDecay={(n: number) => settings.setAutoTuneLrDecay(Math.max(0.01, Math.min(1, n)))}
+      autoTuneUseEMA={settings.autoTuneUseEMA}
+      onToggleAutoTuneUseEMA={() => settings.setAutoTuneUseEMA(!settings.autoTuneUseEMA)}
+      autoTuneEMABeta={settings.autoTuneEMABeta}
+      onChangeAutoTuneEMABeta={(n: number) => settings.setAutoTuneEMABeta(Math.max(0, Math.min(1, n)))}
+      onLoadChampion={() => {
+        try {
+          const raw = localStorage.getItem('squadro.infoia.champion');
+          if (!raw) return;
+          const obj = JSON.parse(raw);
+          if (obj && obj.evalLight && obj.evalDark) {
+            settings.setP1Eval((prev: any) => ({ ...prev, ...(obj.evalLight as any) }));
+            settings.setP2Eval((prev: any) => ({ ...prev, ...(obj.evalDark as any) }));
+          }
+        } catch {}
+      }}
+      onClearChampion={() => { try { localStorage.removeItem('squadro.infoia.champion'); } catch {} }}
       p1={{
         title: 'Jugador 1 (Light)',
         depth: settings.p1Depth,
@@ -790,16 +816,16 @@ const InfoIAContainer: React.FC = () => {
       onDownloadRecord={downloadRecord}
       onDeleteRecord={deleteRecord}
       onRunSuite={handleRunSuite}
-      suiteDiff={suiteDiff}
-      onExportJUnit={suiteResult ? handleExportJUnit : undefined}
+      onExportJUnit={handleExportJUnit}
       suiteResult={suiteResult}
+      suiteDiff={suiteDiff}
       engineStats={engineStats}
       bestLight={bestLight}
       bestDark={bestDark}
       onApplyBestToP1={applyBestToP1}
       onApplyBestToP2={applyBestToP2}
       onSaveBestPreset={handleSaveBestPreset}
-      onSaveTunedPreset={handleSaveTunedPreset}
+      onRunMiniLadder={(games: number) => sim.miniLadder(games)}
     />
   );
 };

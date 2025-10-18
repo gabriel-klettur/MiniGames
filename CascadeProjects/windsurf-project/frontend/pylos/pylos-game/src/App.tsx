@@ -109,6 +109,8 @@ function App() {
   const reserveDarkRef = useRef<HTMLSpanElement | null>(null);
   // Auto-completion running flag (timer handled inside useAutoFill)
   const autoRunningRef = useRef<boolean>(false);
+  // Suppress auto-fill once after undoing AUTO sequence
+  const autoSuppressedRef = useRef<boolean>(false);
   // IA autoplay timer is managed inside useAI
 
   // archivedRef defined above
@@ -234,6 +236,7 @@ function App() {
     setRedoMoves,
     flying,
     autoRunningRef,
+    autoSuppressedRef,
     reserveLightRef,
     reserveDarkRef,
     updateAndCheck,
@@ -276,6 +279,7 @@ function App() {
     gameOver,
     flying,
     autoRunningRef,
+    autoSuppressedRef,
     currentPieceRef,
     reserveLightRef,
     reserveDarkRef,
@@ -293,6 +297,7 @@ function App() {
     gameOver,
     flying,
     autoRunningRef,
+    autoSuppressedRef,
     reserveLightRef,
     reserveDarkRef,
     setPendingState,

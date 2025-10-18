@@ -37,6 +37,13 @@ export type MoveDetail = {
     futilityPrunes?: number;
     iidProbes?: number;
     tbHits?: number;
+    /** Optional evaluation breakdown (features, weights, contributions) */
+    eval?: {
+      phi: Record<string, number>;
+      w: Partial<EvalParams>;
+      contrib: Record<string, number>;
+      total: number;
+    };
   };
 };
 
@@ -66,6 +73,18 @@ export type InfoIARecord = {
     tunedDark: boolean;
     /** AutoTune hyper-parameters used */
     lr: number; reg: number; K: number; warmup: number;
+    /** Holdout validation metrics (pre-update predictions) */
+    holdoutFrac?: number;
+    holdoutMAE?: number;
+    holdoutR2?: number;
+    /** Robust objective and params (if enabled) */
+    objective?: 'mse' | 'huber' | 'logistic';
+    huberDelta?: number;
+    logisticK?: number;
+    gradClip?: number;
+    /** Logistic-only holdout metrics */
+    holdoutLogLoss?: number;
+    holdoutBrier?: number;
   };
   details?: MoveDetail[];
 };
@@ -252,10 +271,23 @@ export interface InfoIAViewProps {
   onToggleAutoTuneAutoSave?: () => void;
   autoTuneSaveEvery?: number;
   onChangeAutoTuneSaveEvery?: (n: number) => void;
+  // AutoTune warmup/logging
   autoTuneWarmupPlies?: number;
   onChangeAutoTuneWarmupPlies?: (n: number) => void;
   autoTuneLog?: boolean;
   onToggleAutoTuneLog?: () => void;
+  // AutoTune advanced (stabilization)
+  autoTunePatience?: number;
+  onChangeAutoTunePatience?: (n: number) => void;
+  autoTuneLrDecay?: number;
+  onChangeAutoTuneLrDecay?: (n: number) => void;
+  autoTuneUseEMA?: boolean;
+  onToggleAutoTuneUseEMA?: () => void;
+  autoTuneEMABeta?: number;
+  onChangeAutoTuneEMABeta?: (n: number) => void;
+  // Champion actions
+  onLoadChampion?: () => void;
+  onClearChampion?: () => void;
   // Per-side tuning mask
   autoTuneTuneLight?: boolean;
   onToggleAutoTuneTuneLight?: () => void;
@@ -289,4 +321,6 @@ export interface InfoIAViewProps {
   onApplyBestToP1?: (side: 'Light' | 'Dark') => void;
   onApplyBestToP2?: (side: 'Light' | 'Dark') => void;
   onSaveBestPreset?: (side: 'Light' | 'Dark') => void;
+  // Mini-ladder validation
+  onRunMiniLadder?: (games: number) => Promise<{ games: number; winsLight: number; winsDark: number; draws: number; wr: number }>;
 }

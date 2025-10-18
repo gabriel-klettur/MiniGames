@@ -25,12 +25,13 @@ export function useHistoryLogic(params: {
   setRedoMoves: React.Dispatch<React.SetStateAction<MoveEntry[]>>;
   flying: FlyingPieceState | null;
   autoRunningRef: React.MutableRefObject<boolean>;
+  autoSuppressedRef: React.MutableRefObject<boolean>;
   reserveLightRef: React.MutableRefObject<HTMLSpanElement | null>;
   reserveDarkRef: React.MutableRefObject<HTMLSpanElement | null>;
   updateAndCheck: (nextState: GameState, pushHistory?: boolean, clearRedo?: boolean, logEntry?: MoveEntry) => void;
   setFlying: React.Dispatch<React.SetStateAction<FlyingPieceState | null>>;
 }): UseHistoryResult {
-  const { state, moves, setMoves, setRedoMoves, flying, autoRunningRef, reserveLightRef, reserveDarkRef, updateAndCheck, setFlying } = params;
+  const { state, moves, setMoves, setRedoMoves, flying, autoRunningRef, autoSuppressedRef, reserveLightRef, reserveDarkRef, updateAndCheck, setFlying } = params;
 
   const [history, setHistory] = useState<GameState[]>([]);
   const [redo, setRedo] = useState<GameState[]>([]);
@@ -39,8 +40,29 @@ export function useHistoryLogic(params: {
   const onUndo = () => {
     if (flying || autoRunningRef.current) return;
     if (history.length === 0) return;
-    const prev = history[history.length - 1];
     const lastLog = moves.length > 0 ? moves[moves.length - 1] : undefined;
+
+    let autoCount = 0;
+    for (let i = moves.length - 1; i >= 0; i--) {
+      if (moves[i]?.source === 'AUTO') autoCount++;
+      else break;
+    }
+
+    if (autoCount > 0 && history.length - autoCount >= 0) {
+      autoSuppressedRef.current = true;
+      const targetPrev = history[history.length - autoCount];
+      setHistory((h) => h.slice(0, -autoCount));
+      setRedo((r) => [...r, state]);
+      if (autoCount > 0) {
+        const tail = moves.slice(-autoCount);
+        setRedoMoves((rm) => [...rm, ...tail]);
+        setMoves((m) => m.slice(0, -autoCount));
+      }
+      updateAndCheck(targetPrev, false, false);
+      return;
+    }
+
+    const prev = history[history.length - 1];
 
     // Update stacks
     setHistory((h) => h.slice(0, -1));

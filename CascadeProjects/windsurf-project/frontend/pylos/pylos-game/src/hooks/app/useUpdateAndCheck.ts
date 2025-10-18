@@ -68,7 +68,11 @@ export function useUpdateAndCheck(params: UseUpdateAndCheckParams) {
 
     const over = isGameOver(nextState);
     if (over.over) {
-      const text = over.winner ? `Ganador: ${over.winner === 'L' ? 'Claras (L)' : 'Oscuras (D)'} — ${over.reason ?? ''}` : 'Partida terminada';
+      let text = 'Partida terminada';
+      if (over.winner) {
+        const label = vsAI ? (over.winner === vsAI.enemy ? 'IA' : 'Tú') : 'Tú';
+        text = `Ganador: ${label}`;
+      }
       setGameOver(text);
       if (!archivedRef.current) {
         const now = new Date();
