@@ -20,7 +20,7 @@ function App() {
   // Tabs "Fases" y "Reglas" eliminados
   const [showUX, setShowUX] = useLocalStorageBoolean('soluna:dev:showUX', false);
   const [showIA, setShowIA] = useLocalStorageBoolean('soluna:ui:showIA', true);
-  const [showHistory, setShowHistory] = useLocalStorageBoolean('soluna:ui:showHistory', false);
+  const [showHistory] = useLocalStorageBoolean('soluna:ui:showHistory', false);
   const [showIAPanel, setShowIAPanel] = useLocalStorageBoolean('soluna:dev:showIAPanel', false);
   const [showInfoIA, setShowInfoIA] = useLocalStorageBoolean('soluna:dev:showInfoIA', false);
   const {
@@ -118,8 +118,6 @@ function App() {
           clearMoves();
           dispatch({ type: 'reset-game' });
         }}
-        showHistory={showHistory}
-        onToggleHistory={() => setShowHistory((v) => !v)}
       />
       {/* Panel de usuario IA: centrado, estilo Pylos (toggleable desde header) */}
       {showIA && (

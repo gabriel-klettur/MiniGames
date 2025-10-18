@@ -16,6 +16,10 @@ export type Cfg = {
   teleportRandom: boolean;         // Nueva partida Aleatorio
   teleportManualConfirm: boolean;  // Confirmar tablero en No Aleatorio
   teleportManualPick: boolean;     // Colocar ficha en celda en No Aleatorio
+  /** Nivel de dificultad por defecto para la IA (1-30). */
+  defaultDifficulty: number;
+  /** Mostrar controles de dificultad en popovers (si se oculta, se usa la dificultad por defecto). */
+  showDifficultyInPopovers: boolean;
 };
 
 export const LS_PREFIX = 'soluna:ui:';
@@ -54,6 +58,9 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     teleportRandom: asNumber(getVar('--teleport-random', '1'), 1) > 0,
     teleportManualConfirm: asNumber(getVar('--teleport-manual-confirm', '1'), 1) > 0,
     teleportManualPick: asNumber(getVar('--teleport-manual-pick', '1'), 1) > 0,
+    // Valores por defecto de dificultad (no dependen de CSS)
+    defaultDifficulty: 10,
+    showDifficultyInPopovers: true,
   };
 }
 

@@ -2,6 +2,7 @@ import { useUIUXConfig } from './hooks/useUIUXConfig';
 import { Tabs, type TabItem } from './components/Tabs';
 import { AnimationsTab } from './tabs/AnimationsTab';
 import { PiecesTab } from './tabs/PiecesTab';
+import { DifficultyTab } from './tabs/DifficultyTab';
 
 export default function UIUX() {
   const { cfg, onNum } = useUIUXConfig();
@@ -22,6 +23,12 @@ export default function UIUX() {
         </>
       ),
       tooltip: 'Parámetros de apilado y colisión de fichas'
+    },
+    {
+      id: 'dificultad',
+      label: 'Dificultad',
+      render: () => <DifficultyTab cfg={cfg} onNum={onNum} />,
+      tooltip: 'Control de dificultad por defecto y visibilidad en los popovers'
     },
   ];
 

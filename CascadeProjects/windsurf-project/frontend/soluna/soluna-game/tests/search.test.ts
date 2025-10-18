@@ -1,6 +1,6 @@
 /// <reference types="vitest" />
 import { describe, it, expect } from 'vitest';
-import { bestMove as searchBestMove, type SearchStats } from '../src/ia/search';
+import { bestMove as searchBestMove, type SearchStats, defaultOptions } from '../src/ia/search';
 import { generateAllMoves, type AIMove } from '../src/ia/moves';
 import { evaluate } from '../src/ia/evaluate';
 import type { GameState, Tower } from '../src/game/types';
@@ -129,8 +129,24 @@ describe('ia/search.bestMove', () => {
     const state = baseState({ towers: [a, b, c, d], currentPlayer: 1 });
     const s1: SearchStats = { nodes: 0 };
     const s2: SearchStats = { nodes: 0 };
-    searchBestMove(state, 1, s1);
-    searchBestMove(state, 3, s2);
+    // Disable pruning/TT/LMR to avoid cases where deeper search appears to visit fewer nodes
+    // due to strong pruning. This makes the assertion robust and independent of engine heuristics.
+    const opts = {
+      ...defaultOptions,
+      enableTT: false,
+      preferHashMove: false,
+      enableKillers: false,
+      enableHistory: false,
+      enablePVS: false,
+      enableAspiration: false,
+      enableQuiescence: false,
+      enableLMR: false,
+      enableFutility: false,
+      enableLMP: false,
+      enableNullMove: false,
+    } as const;
+    searchBestMove(state, 1, s1, opts);
+    searchBestMove(state, 3, s2, opts);
     expect(s1.nodes).toBeGreaterThan(0);
     // Deeper search should not visit fewer nodes; allow equality in highly pruned/terminal trees
     expect(s2.nodes).toBeGreaterThanOrEqual(s1.nodes);

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { RefObject } from 'react';
+import { loadCfgLS } from '../../DevTools/UIUX/model/config';
 
 export interface VsAiPopoverProps {
   anchorRect: DOMRect | null;
@@ -16,6 +17,35 @@ export const VsAiPopover: React.FC<VsAiPopoverProps> = ({
   onSelectSide,
   onPickDifficulty,
 }) => {
+  // Local state from UI/UX config (persisted in LS and broadcast via event)
+  const [showDifficultyInPopovers, setShowDifficultyInPopovers] = useState<boolean>(() => {
+    const cfg = loadCfgLS();
+    return cfg.showDifficultyInPopovers ?? true;
+  });
+  const [defaultDifficulty, setDefaultDifficulty] = useState<number>(() => {
+    const cfg = loadCfgLS();
+    const d = cfg.defaultDifficulty ?? 10;
+    return Math.min(30, Math.max(1, d));
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent).detail as any;
+        if (!detail) return;
+        if (typeof detail.showDifficultyInPopovers === 'boolean') {
+          setShowDifficultyInPopovers(detail.showDifficultyInPopovers);
+        }
+        if (typeof detail.defaultDifficulty === 'number') {
+          const d = detail.defaultDifficulty;
+          setDefaultDifficulty(Math.min(30, Math.max(1, d)));
+        }
+      } catch {}
+    };
+    window.addEventListener('soluna:ui:cfg-updated', handler as EventListener);
+    return () => window.removeEventListener('soluna:ui:cfg-updated', handler as EventListener);
+  }, []);
+
   return (
     <div
       id="vsai-popover"
@@ -50,17 +80,34 @@ export const VsAiPopover: React.FC<VsAiPopoverProps> = ({
       </div>
       <div className="vsai-section" aria-label="Seleccionar dificultad">
         <div className="vsai-title">Dificultad</div>
-        <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">
-          {[10,11,12,13,14,15,16,17,18,19].map((d) => (
-            <button
-              key={d}
-              onClick={() => onPickDifficulty(d)}
-              disabled={!selectedSide}
-              title={selectedSide ? `Comenzar vs IA (nivel ${d})` : 'Elige un lado primero'}
-            >{d}</button>
-          ))}
-        </div>
-        <div className="vsai-hint">El juego comienza tras elegir dificultad.</div>
+        {showDifficultyInPopovers ? (
+          <>
+            <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">
+              {[10,11,12,13,14,15,16,17,18,19].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => onPickDifficulty(d)}
+                  disabled={!selectedSide}
+                  title={selectedSide ? `Comenzar vs IA (nivel ${d})` : 'Elige un lado primero'}
+                >{d}</button>
+              ))}
+            </div>
+            <div className="vsai-hint">El juego comienza tras elegir dificultad.</div>
+          </>
+        ) : (
+          <>
+            <div className="vsai-hint">Se usará la dificultad por defecto configurada en DevTools.</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span><strong>Nivel:</strong> {defaultDifficulty}</span>
+              <button
+                className="btn btn-primary"
+                onClick={() => onPickDifficulty(defaultDifficulty)}
+                disabled={!selectedSide}
+                title={selectedSide ? `Comenzar vs IA (nivel ${defaultDifficulty})` : 'Elige un lado primero'}
+              >Comenzar</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

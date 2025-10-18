@@ -14,20 +14,17 @@ export interface HeaderProps {
   showIA?: boolean;
   onToggleIA?: () => void;
   onStartVsAI?: (enemy: 1 | 2, depth: number) => void;
-  // Historial: estado de visibilidad y alternador
-  showHistory?: boolean;
-  onToggleHistory?: () => void;
   // Nueva partida: permite inyectar lógica (limpieza de historial) antes del reset
   onNewGame?: () => void;
 }
 
-export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, showHistory = false, onToggleHistory, onNewGame }: HeaderProps) {
+export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, onNewGame }: HeaderProps) {
   const { state, dispatch } = useGame();
 
   // Estado del popover Vs IA
   const [vsOpen, setVsOpen] = useState(false);
   const [selectedSide, setSelectedSide] = useState<1 | 2 | null>(null);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const anchorRect: DOMRect | null = null;
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const popRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,7 +36,7 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
 
   // Estado del popover Animaciones (presets de aterrizaje y apilado)
   const [animOpen, setAnimOpen] = useState(false);
-  const [animAnchorRect, setAnimAnchorRect] = useState<DOMRect | null>(null);
+  const animAnchorRect: DOMRect | null = null;
   const animBtnRef = useRef<HTMLButtonElement | null>(null);
   const animPopRef = useRef<HTMLDivElement | null>(null);
   const [animSelectedId, setAnimSelectedId] = useState<string | null>(() => {
@@ -80,11 +77,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   // Cierre por click fuera para Animaciones
   useClickOutside([animBtnRef, animPopRef], animOpen, () => setAnimOpen(false));
 
-  const toggleVsOpen = () => {
-    if (btnRef.current) setAnchorRect(btnRef.current.getBoundingClientRect());
-    setVsOpen((v) => !v);
-  };
-
   const toggleBgOpen = () => {
     if (bgBtnRef.current) setBgAnchorRect(bgBtnRef.current.getBoundingClientRect());
     setBgOpen((v) => !v);
@@ -93,11 +85,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
   const toggleNewOpen = () => {
     if (newBtnRef.current) setNewAnchorRect(newBtnRef.current.getBoundingClientRect());
     setNewOpen((v) => !v);
-  };
-
-  const toggleAnimOpen = () => {
-    if (animBtnRef.current) setAnimAnchorRect(animBtnRef.current.getBoundingClientRect());
-    setAnimOpen((v) => !v);
   };
 
   const onPickDifficulty = (d: number) => {
@@ -182,21 +169,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
       <div className="row header">
         <h2>Soluna</h2>
         <div className="header-actions">
-          {/* Animaciones (presets de aterrizaje/apilado) */}
-          <button
-            ref={animBtnRef}
-            onClick={toggleAnimOpen}
-            aria-expanded={animOpen}
-            aria-pressed={animOpen}
-            aria-controls="anim-popover"
-            aria-label="Animaciones"
-            title="Animaciones"
-          >
-            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="currentColor" d="M12 3l6 18h-2.2l-1.5-4.6H9.7L8.2 21H6L12 3zm0 5.8L10.1 14h3.8L12 8.8z"/>
-            </svg>
-            <span className="header-btn__label">A</span>
-          </button>
           {/* Nueva partida (icono + chip) */}
           <button
             ref={newBtnRef}
@@ -228,22 +200,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
             </svg>            
           </button>
 
-          {/* Botón Partida Vs IA (estilo Pylos) */}
-          <button
-            ref={btnRef}
-            onClick={toggleVsOpen}
-            aria-expanded={vsOpen}
-            aria-pressed={vsOpen}
-            aria-controls="vsai-popover"
-            aria-label="Partida versus IA"
-            title="Partida Vs IA"
-          >
-            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="currentColor" d="M13.5 12.5 21 20l-1 1-7.5-7.5L6 20l-1-1 6.5-6.5L4 5 5 4l7.5 6.5L19 4l1 1-6.5 7.5Z"/>
-            </svg>
-            <span className="header-btn__label">Vs IA</span>
-          </button>
-
           {/* Alternar IAUserPanel (icono IA) */}
           <button
             onClick={onToggleIA}
@@ -260,19 +216,6 @@ export default function HeaderPanel({ showIA = true, onToggleIA, onStartVsAI, sh
               <path fill="currentColor" d="M2 11h2v2H2zM20 11h2v2h-2z"/>
             </svg>
             <span className="header-btn__label">IA</span>
-          </button>
-
-          {/* Botón Historial (mismo icono que Pylos) */}
-          <button
-            onClick={onToggleHistory}
-            aria-pressed={!!showHistory}
-            aria-label="Alternar historial"
-            title="Historial"
-          >
-            <svg className="header-btn__icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-              <path fill="currentColor" d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
-            </svg>
-            <span className="header-btn__label"></span>
           </button>
 
           {/* Nueva ronda como acción primaria visible solo cuando aplica */}
