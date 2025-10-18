@@ -86,10 +86,10 @@ export default function ControlSection(props: ControlSectionProps) {
         value={depth}
         onChange={(e) => onChangeDepth(Number(e.target.value))}
         title={
-          'Selecciona d. Regla guía: d=2–3 rápido; d=4–5 medio; d>=6 pesado.\n+Consejo: usar TT/PVS/Aspiration para acelerar a d altos.'
+          'Selecciona d. Regla guía: d=10–19.\n+Consejo: usar TT/PVS/Aspiration para acelerar a d altos.'
         }
       >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((d) => (
+        {[10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((d) => (
           <option key={d} value={d}>{d}</option>
         ))}
       </select>

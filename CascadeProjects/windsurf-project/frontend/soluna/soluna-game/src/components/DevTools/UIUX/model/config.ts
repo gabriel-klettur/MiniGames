@@ -8,6 +8,8 @@ export type Cfg = {
   stackIndicatorVisible: boolean;
   flightCurveEnabled: boolean;
   flightCurveBend: number;
+  /** Duración del vuelo de fichas en milisegundos (aplica a --flight-duration). */
+  flightDurationMs: number;
   flightDestOffsetY: number;
   flightLingerMs: number;
   // Teleport FX toggles
@@ -23,6 +25,18 @@ const asNumber = (v: string | null | undefined, def: number): number => {
   return Number.isFinite(x) ? x : def;
 };
 
+/**
+ * Lee una duración CSS y devuelve milisegundos.
+ * Acepta valores como "1250ms" o "1.25s". Si no hay unidad, asume ms.
+ */
+const asDurationMs = (v: string | null | undefined, defMs: number): number => {
+  const raw = (v || '').trim();
+  if (!raw) return defMs;
+  if (raw.endsWith('ms')) return Number.isFinite(parseFloat(raw)) ? Math.max(0, parseFloat(raw)) : defMs;
+  if (raw.endsWith('s')) return Number.isFinite(parseFloat(raw)) ? Math.max(0, parseFloat(raw) * 1000) : defMs;
+  return Number.isFinite(parseFloat(raw)) ? Math.max(0, parseFloat(raw)) : defMs;
+};
+
 export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg {
   const cs: CSSStyleDeclaration | null = el ? getComputedStyle(el) : null;
   const getVar = (name: string, fallback: string) => (cs?.getPropertyValue?.(name) || fallback);
@@ -34,6 +48,7 @@ export function readComputedCfg(el: HTMLElement | null = getPlayEllipse()): Cfg 
     stackIndicatorVisible: asNumber(getVar('--stack-indicator-visible', '1'), 1) > 0,
     flightCurveEnabled: asNumber(getVar('--flight-curve-enabled', '1'), 1) > 0,
     flightCurveBend: asNumber(getVar('--flight-curve-bend', '0.22'), 0.22),
+    flightDurationMs: asDurationMs(getVar('--flight-duration', '1250ms'), 1250),
     flightDestOffsetY: asNumber(getVar('--flight-dest-offset-y', '0px'), 0),
     flightLingerMs: asNumber(getVar('--flight-linger-ms', '250'), 250),
     teleportRandom: asNumber(getVar('--teleport-random', '1'), 1) > 0,
@@ -51,6 +66,7 @@ export function applyCfg(cfg: Cfg, el: HTMLElement | null = getPlayEllipse()): v
   el.style.setProperty('--stack-indicator-visible', cfg.stackIndicatorVisible ? '1' : '0');
   el.style.setProperty('--flight-curve-enabled', cfg.flightCurveEnabled ? '1' : '0');
   el.style.setProperty('--flight-curve-bend', String(cfg.flightCurveBend));
+  el.style.setProperty('--flight-duration', `${Math.max(0, Math.floor(cfg.flightDurationMs))}ms`);
   el.style.setProperty('--flight-dest-offset-y', `${cfg.flightDestOffsetY}px`);
   el.style.setProperty('--flight-linger-ms', String(cfg.flightLingerMs));
   // Teleport FX flags as CSS vars (read by Board)
@@ -68,6 +84,7 @@ export function resetInline(el: HTMLElement | null = getPlayEllipse()): void {
   el.style.removeProperty('--stack-indicator-visible');
   el.style.removeProperty('--flight-curve-enabled');
   el.style.removeProperty('--flight-curve-bend');
+  el.style.removeProperty('--flight-duration');
   el.style.removeProperty('--flight-dest-offset-y');
   el.style.removeProperty('--flight-linger-ms');
   // Also clear teleport FX flags

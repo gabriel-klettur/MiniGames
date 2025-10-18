@@ -5,6 +5,15 @@ import { SliderRow } from '../components/Rows';
 export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) => (e: React.ChangeEvent<HTMLInputElement>) => void }) {
   return (
     <div style={{ display: 'grid', gap: 6 }}>
+      <SliderRow
+        label={`Duración del vuelo: ${Math.round(cfg.flightDurationMs)}ms`}
+        value={cfg.flightDurationMs}
+        min={400}
+        max={6000}
+        step={50}
+        onChange={onNum('flightDurationMs')}
+        tooltip="Controla la velocidad de las fichas en vuelo (más ms = más lento). Afecta --flight-duration."
+      />
       {/* Curvatura slider removido */}
       <SliderRow
         label={`Desplazamiento Y destino: ${Math.round(cfg.flightDestOffsetY)}px`}
@@ -28,3 +37,4 @@ export function AnimationsTab({ cfg, onNum }: { cfg: Cfg; onNum: (k: keyof Cfg) 
     </div>
   );
 }
+

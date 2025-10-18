@@ -5,7 +5,7 @@ const DifficultyTime: React.FC<{ depth: number; onDepthChange: (d: number) => vo
   <div className="row" style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
     <label className="label">Dificultad</label>
     <select value={depth} onChange={(e) => onDepthChange(Number(e.target.value))}>
-      {[1,2,3,4,5,6,7,8,9,10].map(d => <option key={d} value={d}>{d}</option>)}
+      {[10,11,12,13,14,15,16,17,18,19].map(d => <option key={d} value={d}>{d}</option>)}
     </select>
     <label className="label">Tiempo</label>
     <div className="segmented" role="group">
@@ -22,3 +22,4 @@ const DifficultyTime: React.FC<{ depth: number; onDepthChange: (d: number) => vo
 );
 
 export default DifficultyTime;
+

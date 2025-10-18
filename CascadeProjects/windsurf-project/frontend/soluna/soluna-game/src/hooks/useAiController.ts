@@ -105,7 +105,7 @@ export interface AiController {
  */
 export function useAiController(state: GameState, dispatch: Dispatch<GameAction>): AiController {
   // Settings
-  const [aiDepth, setAiDepth] = useState(2);
+  const [aiDepth, setAiDepth] = useState(10);
   const [aiTimeMode, setAiTimeMode] = useState<TimeMode>('auto');
   const [aiTimeSeconds, setAiTimeSeconds] = useState(3);
   const [aiAutoplay, setAiAutoplay] = useState(false);
