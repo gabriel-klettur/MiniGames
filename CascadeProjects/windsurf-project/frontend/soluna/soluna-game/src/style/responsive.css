@@ -15,15 +15,15 @@
 
 /* Escritorio: ampliar tablero y posicionar paneles */
 @media (min-width: 1024px) {
-  :root { --board-max: 62rem; }
+  :root { --ui-vert-space: 260px; --board-max: min(62rem, calc(100vh - var(--ui-vert-space))); }
   .main-area .iauser-panel { grid-column: 1; grid-row: 1; justify-self: start; }
   .main-area .board-wrapper { grid-column: 1; grid-row: 2; }
   .main-area .devtools-card { grid-column: 2; grid-row: 1 / span 2; }
-  .board-wrapper { margin-top: 100px; }
+  .board-wrapper { margin-top: clamp(8px, 1.5vh, 24px); }
 }
 
 /* Escritorio grande */
-@media (min-width: 1366px) { :root { --board-max: 74rem; } }
+@media (min-width: 1366px) { :root { --ui-vert-space: 260px; --board-max: min(74rem, calc(100vh - var(--ui-vert-space))); } }
 
 /* Tablet landscape / pantallas medianas */
 @media (max-width: 900px) {
