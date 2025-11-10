@@ -25,7 +25,21 @@
 /* Slightly tighter vertical rhythm on wide screens */
 @media (min-width: 1024px) {
   .app { gap: 8px; } /* compact spacing between sections on desktop */
-  :root { --board-top-gap: 10px; }
+  /* Define extra delta at :root; compute board-top-gap inside .content where --content-gap is defined */
+  :root { --board-top-extra: 24px; --ui-vert-space: 260px; }
+  .content { --board-top-gap: calc(var(--content-gap) + var(--board-top-extra)); }
+  /* When the board is height-capped, also cap the width used by cell-size math */
+  :root {
+    --board-width-available: min(
+      calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor)),
+      calc(100vh - var(--ui-vert-space) - (2 * var(--app-padding)))
+    );
+    /* Fine tune balls/holes for desktop so they seat cleanly inside slots */
+    --ball-matrix-scale: 1.02;
+    --hole-matrix-scale: 1.02;
+    --hole-scale: 0.92;
+    --ball-inset-base: 1px; /* shrink piece very slightly within base hole */
+  }
 }
 
 /* Tablet and up: board uses half of the content width */

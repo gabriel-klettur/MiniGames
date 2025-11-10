@@ -35,6 +35,10 @@
   --board-actions-gap: -40px;
   /* Board width factor relative to content width (1 = 100%, 0.5 = 50%) */
   --board-width-factor: 1;
+  /* Available width for board calculations (overridable in desktop) */
+  --board-width-available: calc(
+    (100vw - (2 * var(--app-padding))) * var(--board-width-factor)
+  );
   /* Board art width multiplier (matches .level--board ratios) */
   --board-w-mult-root: 1.799; /* 1024 / 569 ≈ 1.799 */
   /* use base spacing values, then derive scaled ones */
@@ -56,12 +60,12 @@
   --level-gap: calc(var(--level-gap-base) * var(--scale));
   --level-padding: calc(var(--level-padding-base) * var(--scale));
   --max-cols: 4;            /* widest level (4x4) */
-  /* Fluid cell size calculation (see original comments) */
+  /* Fluid cell size calculation driven by board available width */
   --cell-size-base: clamp(
     var(--cell-size-min, 36px),
     calc(
       (
-        ((100vw - (2 * var(--app-padding))) * var(--board-width-factor))
+        var(--board-width-available)
         / (var(--board-w-mult-root) * var(--scale))
         - ((var(--max-cols) - 1) * var(--level-gap-base))
       ) / var(--max-cols)

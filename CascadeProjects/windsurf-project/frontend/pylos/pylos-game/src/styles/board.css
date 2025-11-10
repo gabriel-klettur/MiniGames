@@ -1,6 +1,6 @@
 /* Board container and levels, excluding hole shading system (see board-holes.css) */
 .board { display: block; margin-top: calc(var(--board-top-gap) - var(--content-gap)); width: 100%; position: relative; }
-.board--pyramid { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; width: min(100%, calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor) * var(--board-compact-mult, 1))); margin-left: auto; margin-right: auto; }
+.board--pyramid { position: relative; display: grid; place-items: center; aspect-ratio: 1 / 1; width: min(100%, calc((100vw - (2 * var(--app-padding))) * var(--board-width-factor) * var(--board-compact-mult, 1))); max-width: calc(100vh - var(--ui-vert-space, 260px) - (2 * var(--app-padding))); margin-left: auto; margin-right: auto; }
 /* Stacked view needs flex column to separate levels vertically */
 .board--stacked { display: flex; flex-direction: column; gap: 14px; width: 100%; align-items: center; }
 
