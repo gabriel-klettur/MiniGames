@@ -25,6 +25,8 @@ export interface IAPreset {
     enableKillers?: boolean;
     enableHistory?: boolean;
     enableLMR?: boolean;
+    enableAdaptiveTime?: boolean;
+    forceFullDepth?: boolean;
     // Pruning
     enableLMP?: boolean;
     lmpMaxDepth?: number;
@@ -178,7 +180,7 @@ export function getDefaultPresets(): IAPreset[] {
       settings: {
         difficulty: 10,
         useWorkers: true,
-        timeMode: 'auto',
+        timeMode: 'manual',
         timeSeconds: 0,
         // Búsqueda máxima fuerza con poda segura
         enableTT: true,
@@ -187,12 +189,14 @@ export function getDefaultPresets(): IAPreset[] {
         enablePVS: true,
         enableKillers: true,
         enableHistory: true,
-        enableLMR: true,
+        enableLMR: false,
+        enableAdaptiveTime: false,
+        forceFullDepth: true,
         // Poda selectiva
-        enableLMP: true,
+        enableLMP: false,
         lmpMaxDepth: 2,
         lmpBase: 6,
-        enableFutility: true,
+        enableFutility: false,
         futilityMargin: 150,
         enableIID: true,
         iidMinDepth: 3,

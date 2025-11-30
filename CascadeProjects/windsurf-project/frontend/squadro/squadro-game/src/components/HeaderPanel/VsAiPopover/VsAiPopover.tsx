@@ -53,7 +53,7 @@ const VsAiPopover: React.FC<VsAiPopoverProps> = ({
       <div className="vsai-section" aria-label="Seleccionar dificultad">
         <div className="vsai-title">Dificultad</div>
         <div className="vsai-diffs" role="listbox" aria-label="Nivel de dificultad">
-          {[1,2,3,4,5,6,7,8,9,10].map((d) => (
+          {Array.from({ length: 20 }, (_, i) => i + 1).map((d) => (
             <button
               key={d}
               onClick={() => onPickDifficulty(d)}

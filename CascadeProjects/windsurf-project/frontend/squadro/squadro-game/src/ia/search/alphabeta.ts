@@ -133,7 +133,7 @@ export function bestMoveIterative(
     lastIterDurationMs = performance.now() - iterStart;
     const pvLine = reconstructPV(rootState, tt, depth);
     opts.onProgress?.({ type: 'iter', depth, score: r.score, bestMove, pv: pvLine });
-    if (Math.abs(r.score) > 90000) break; // forced outcome
+    if (Math.abs(r.score) > 90000 && !opts.engine?.forceFullDepth) break; // forced outcome
     const now = performance.now();
     if (now - lastProgressAt >= 0) {
       lastProgressAt = now;

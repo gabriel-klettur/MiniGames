@@ -81,6 +81,7 @@ export interface EngineOptions {
   // Repetition/cycle handling
   drawScore?: number;               // score to return on detected repetition (default 0)
   preferDrawWhenLosing?: boolean;   // future use to bias move choice
+  forceFullDepth?: boolean;
 }
 
 export interface NodeParams {

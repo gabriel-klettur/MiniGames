@@ -100,6 +100,8 @@ function App() {
             enablePVS: ai.enablePVS !== false,
             enableLMR: ai.enableLMR !== false,
             preferHashMove: ai.preferHashMove !== false,
+            enableAdaptiveTime: typeof (ai as any).enableAdaptiveTime === 'boolean' ? (ai as any).enableAdaptiveTime : undefined,
+            forceFullDepth: typeof (ai as any).forceFullDepth === 'boolean' ? (ai as any).forceFullDepth : undefined,
             // Quiescence
             enableQuiescence: !!ai.enableQuiescence,
             quiescenceMaxPlies: typeof (ai as any).quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,
@@ -324,6 +326,8 @@ function App() {
           enablePVS: ai?.enablePVS !== false,
           enableLMR: ai?.enableLMR !== false,
           preferHashMove: ai?.preferHashMove !== false,
+          enableAdaptiveTime: typeof (ai as any)?.enableAdaptiveTime === 'boolean' ? (ai as any).enableAdaptiveTime : undefined,
+          forceFullDepth: typeof (ai as any)?.forceFullDepth === 'boolean' ? (ai as any).forceFullDepth : undefined,
           // Quiescence
           enableQuiescence: !!ai?.enableQuiescence,
           quiescenceMaxPlies: typeof (ai as any)?.quiescenceDepth === 'number' ? (ai as any).quiescenceDepth : 4,

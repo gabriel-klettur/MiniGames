@@ -275,6 +275,8 @@ const gameSlice = createSlice({
       if (typeof (s as any).quiescenceExtendOnJump === 'boolean') (state.ai as any).quiescenceExtendOnJump = !!(s as any).quiescenceExtendOnJump;
       // DF-PN
       if (typeof (s as any).enableDFPN === 'boolean') (state.ai as any).enableDFPN = !!(s as any).enableDFPN;
+      if (typeof (s as any).enableAdaptiveTime === 'boolean') (state.ai as any).enableAdaptiveTime = !!(s as any).enableAdaptiveTime;
+      if (typeof (s as any).forceFullDepth === 'boolean') (state.ai as any).forceFullDepth = !!(s as any).forceFullDepth;
       // LMR params
       if (typeof (s as any).lmrMinDepth === 'number') state.ai.lmrMinDepth = Math.max(0, Math.min(20, Math.round((s as any).lmrMinDepth)));
       if (typeof (s as any).lmrLateMoveIdx === 'number') state.ai.lmrLateMoveIdx = Math.max(0, Math.min(20, Math.round((s as any).lmrLateMoveIdx)));
