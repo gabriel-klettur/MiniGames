@@ -26,6 +26,7 @@ export interface GameState {
   pieces: Piece[]; // 10 pieces total
   turn: Player;
   winner?: Player;
+  lastAiMoveFrom?: Coord | null;
   // UI configuration (visual only; does not affect rules)
   ui: UISettings;
   // Optional AI configuration (does not affect rules directly)
@@ -78,7 +79,7 @@ export interface UISettings {
 export interface AISettings {
   enabled: boolean;          // if true, game is vs AI
   aiSide: Player;            // which side AI plays
-  difficulty: number;        // 1..20
+  difficulty: number;        // 1..30
   timeMode: 'auto' | 'manual';
   timeSeconds: number;       // when manual, budget per move
   useWorkers?: boolean;      // if true (default), run AI in Web Workers

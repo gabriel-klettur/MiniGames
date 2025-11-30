@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { resetGame, setOrientation, setAIEnabled, setAISide, setAIDifficulty } from '../../store/gameSlice';
+import { resetGame, setOrientation, setAIEnabled, setAISide, setAIDifficulty, setAITimeMode, setAITimeSeconds } from '../../store/gameSlice';
 import type { RootState } from '../../store';
 import '../../styles/header.css';
 import type { Player } from '../../game/types';
@@ -115,6 +115,9 @@ export default function HeaderPanel({ showIA = false, onToggleIA }: HeaderProps)
           dispatch(setAIEnabled(true));
           dispatch(setAISide(selectedSide));
           dispatch(setAIDifficulty(difficulty));
+          // VS IA: siempre sin límite de tiempo (manual 0s)
+          dispatch(setAITimeMode('manual'));
+          dispatch(setAITimeSeconds(0));
           setVsOpen(false);
         }}
       />

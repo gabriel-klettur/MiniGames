@@ -35,7 +35,7 @@ const THEMES = {
 
 export default function Board() {
   const dispatch = useAppDispatch();
-  const { pieces, winner, turn, ui, lanesByPlayer } = useAppSelector((s: RootState) => s.game);
+  const { pieces, winner, turn, ui, lanesByPlayer, lastAiMoveFrom } = useAppSelector((s: RootState) => s.game);
   const orientation = ui?.orientation ?? 'classic';
   const profile = getBoardProfile(orientation);
 
@@ -266,13 +266,15 @@ export default function Board() {
       );
     }
 
+    const isLastAiFrom = !!lastAiMoveFrom && lastAiMoveFrom.row === srcRow && lastAiMoveFrom.col === srcCol;
+
     const cellStyle: React.CSSProperties = {
       width: cellPx,
       height: cellPx,
       boxSizing: 'border-box',
       borderRadius: 10,
       // Transparent cells to reveal the board artwork underneath
-      backgroundColor: 'transparent',
+      backgroundColor: isLastAiFrom ? 'rgba(253, 224, 71, 0.35)' : 'transparent',
       border: 'none',
       display: 'flex',
       alignItems: 'center',

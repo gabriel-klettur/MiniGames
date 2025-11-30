@@ -21,6 +21,7 @@ const gameSlice = createSlice({
       state.pieces = next.pieces;
       state.turn = next.turn;
       state.winner = next.winner;
+      state.lastAiMoveFrom = next.lastAiMoveFrom;
       // Preserve UI and AI settings across resets (do NOT disable VS IA)
       if (prevAI) {
         state.ai = {
@@ -58,6 +59,9 @@ const gameSlice = createSlice({
         // eslint-disable-next-line no-console
         console.warn('Movimiento inválido:', err);
       }
+    },
+    setLastAiMoveFrom(state: GameState, action: PayloadAction<{ row: number; col: number } | null | undefined>) {
+      state.lastAiMoveFrom = action.payload ?? null;
     },
     setPieceWidth(state: GameState, action: PayloadAction<number>) {
       const v = Math.max(8, Math.min(48, Math.round(action.payload)));
@@ -160,7 +164,7 @@ const gameSlice = createSlice({
     },
     setAIDifficulty(state: GameState, action: PayloadAction<number>) {
       if (!state.ai) return;
-      const d = Math.max(1, Math.min(20, Math.round(action.payload)));
+      const d = Math.max(1, Math.min(30, Math.round(action.payload)));
       state.ai.difficulty = d;
       // Apply eval weights from selected eval preset (or fallback to 'balanced') on difficulty change
       try {
@@ -240,7 +244,7 @@ const gameSlice = createSlice({
       }
       const s = action.payload || {};
       if (typeof s.difficulty === 'number') {
-        const d = Math.max(1, Math.min(20, Math.round(s.difficulty)));
+        const d = Math.max(1, Math.min(30, Math.round(s.difficulty)));
         state.ai.difficulty = d;
       }
       if (typeof s.useWorkers === 'boolean') {
@@ -363,5 +367,5 @@ const gameSlice = createSlice({
   },
 });
 
-export const { resetGame, movePiece, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiRandomOpeningPlies, incAiOpeningPliesUsed, resetAiOpeningPliesUsed, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAiEnableDFPN, setAiDfpnMaxActive, setAiEnableTablebase, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
+export const { resetGame, movePiece, setLastAiMoveFrom, setPieceWidth, setPieceHeight, setPieceHeightLight, setPieceHeightDark, setPieceScale, setPieceWidthScaleLight, setPieceWidthScaleDark, setShowPieces, setPieceAnimMs, setPieceRotateMs, setBoardScale, setShowCoordsOverlay, setShowPipIndicators, setCalibrationOverlay, setCalibrationOriginX, setCalibrationOriginY, setCalibrationPitchScaleX, setCalibrationPitchScaleY, setOrientation, toggleOrientation, setAIEnabled, setAISide, setAIDifficulty, setAIUseWorkers, setAITimeMode, setAITimeSeconds, setAiRandomOpeningPlies, incAiOpeningPliesUsed, resetAiOpeningPliesUsed, setAiEnableTT, setAiFailSoft, setAiPreferHashMove, setAiEnablePVS, setAiEnableKillers, setAiEnableHistory, setAiEnableLMR, setAiEnableQuiescence, setAiQuiescenceDepth, setAiLmrMinDepth, setAiLmrLateMoveIdx, setAiLmrReduction, setAiOrderingJitterEps, setAiEnableDFPN, setAiDfpnMaxActive, setAiEnableTablebase, setAIBusy, setAIEvalWeights, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, aiSearchReset, applyIAPreset } = gameSlice.actions;
 export default gameSlice.reducer;

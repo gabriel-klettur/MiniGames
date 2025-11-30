@@ -160,7 +160,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
 
   // Ranges for header controls (depth/time/preset)
   const HDR_RANGE: Record<string, { min?: number; max?: number; avg?: number; values?: string }> = {
-    depth: { min: 1, max: 20, avg: 3 },
+    depth: { min: 1, max: 30, avg: 3 },
     timeMode: { values: 'Auto / Manual' },
     timeSeconds: { min: 0, max: 60, avg: 0 },
     preset: { values: 'Lista de presets' },
@@ -244,7 +244,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
           <div className="grid grid-cols-2 gap-2 mt-2">
             <label className="text-xs text-neutral-300" title={"Profundidad objetivo de búsqueda para el Jugador 1" + hstats('depth')}>
               Profundidad
-              <input type="number" min={1} max={20} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
+              <input type="number" min={1} max={30} value={p1.depth} onChange={(e) => p1.onChangeDepth(Math.max(1, Math.min(30, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
             <label className="text-xs text-neutral-300" title={"Modo de tiempo para Jugador 1: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito." + hstats('timeMode')}>
               Tiempo
@@ -335,7 +335,7 @@ const SimSection: FC<SimSectionProps> = ({ running, gamesCount, onChangeGamesCou
           <div className="grid grid-cols-2 gap-2 mt-2">
             <label className="text-xs text-neutral-300" title={"Profundidad objetivo de búsqueda para el Jugador 2" + hstats('depth')}>
               Profundidad
-              <input type="number" min={1} max={20} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(20, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
+              <input type="number" min={1} max={30} value={p2.depth} onChange={(e) => p2.onChangeDepth(Math.max(1, Math.min(30, Number(e.target.value))))} className={"w-20 ml-2 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-100" + (p1.depth !== p2.depth ? ' border-amber-400' : '')} />
             </label>
             <label className="text-xs text-neutral-300" title={"Modo de tiempo para Jugador 2: Auto = infinito (se pasa Infinity al motor); Manual = segundos fijos. Nota: Manual con 0 segundos también equivale a infinito." + hstats('timeMode')}>
               Tiempo

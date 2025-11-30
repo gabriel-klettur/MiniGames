@@ -9,8 +9,8 @@ import './App.css';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import type { RootState } from './store';
 import { store } from './store';
-import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIDifficulty, setAIEnabled, setAISide, incAiOpeningPliesUsed } from './store/gameSlice';
-import { movePiece as movePieceRules } from './game/rules';
+import { movePiece, setAIBusy, aiSearchStarted, aiSearchProgress, aiSearchIter, aiSearchEnded, setAIDifficulty, setAIEnabled, setAISide, incAiOpeningPliesUsed, setLastAiMoveFrom } from './store/gameSlice';
+import { movePiece as movePieceRules, coordOfPiece } from './game/rules';
 import { findBestMove } from './ia/search';
 import { generateMoves } from './ia/moves';
 import { getWorkers, resetPool } from './ia/workerPool';
@@ -42,6 +42,22 @@ function App() {
     if (turn !== ai.aiSide) return;
     if (ai.busy) return;
 
+    const markLastAiMoveFrom = (pieceId: string) => {
+      try {
+        const stateNow: RootState = store.getState();
+        const gsNow = stateNow.game;
+        const piece = gsNow.pieces.find((p) => p.id === pieceId);
+        if (piece) {
+          const { row, col } = coordOfPiece(piece);
+          dispatch(setLastAiMoveFrom({ row, col }));
+        } else {
+          dispatch(setLastAiMoveFrom(null));
+        }
+      } catch {
+        dispatch(setLastAiMoveFrom(null));
+      }
+    };
+
     const computeTime = (gs: RootState['game']) => {
       const a = ai;
       if (!a) return Infinity;
@@ -50,12 +66,12 @@ function App() {
         const secs = Math.max(0, Math.min(60, a.timeSeconds ?? 0));
         return secs === 0 ? Infinity : secs * 1000;
       }
-      // Auto: presupuesto por fase con scaling por dificultad y branching
+      // Auto: presupuesto por fase con scaling por dificultad (1..30) y branching
       const retiredTotal = gs.pieces.filter((p) => p.state === 'retirada').length;
       const phase: 'opening' | 'middle' | 'end' = retiredTotal <= 2 ? 'opening' : (retiredTotal <= 6 ? 'middle' : 'end');
       let baseMs = phase === 'opening' ? 1200 : (phase === 'middle' ? 1800 : 2400);
-      // Escalar por dificultad (1..20) -> factor ~ [0.7 .. 1.6]
-      const diff = Math.max(1, Math.min(20, a.difficulty ?? 5));
+      // Escalar por dificultad (1..30) -> factor ~ [0.7 .. 1.6] (satura en 1.6)
+      const diff = Math.max(1, Math.min(30, a.difficulty ?? 5));
       const diffFactor = Math.max(0.7, Math.min(1.6, 0.7 + 0.045 * (diff - 1)));
       baseMs *= diffFactor;
       // Ajuste por branching de raíz
@@ -76,6 +92,7 @@ function App() {
           const legal = generateMoves(gs);
           if (legal.length > 0) {
             const rand = legal[Math.floor(Math.random() * legal.length)];
+            markLastAiMoveFrom(rand);
             dispatch(movePiece(rand));
             dispatch(incAiOpeningPliesUsed());
             return;
@@ -139,7 +156,10 @@ function App() {
           });
           const durationMs = Date.now() - startAt;
           dispatch(aiSearchEnded({ durationMs, depthReached: res.depthReached, score: res.score, nodesVisited: (state.game.ai?.nodesVisited) || 0, engineStats: res.engineStats }));
-          if (!cancelled && res.moveId) dispatch(movePiece(res.moveId));
+          if (!cancelled && res.moveId) {
+            markLastAiMoveFrom(res.moveId);
+            dispatch(movePiece(res.moveId));
+          }
         } finally {
           if (!cancelled) dispatch(setAIBusy(false));
         }
@@ -286,6 +306,7 @@ function App() {
               const depthReached = Math.max(maxDepthIter, data.depthReached as number);
               dispatch(aiSearchEnded({ durationMs, depthReached, score: data.score as number, nodesVisited, engineStats: (data as any).engineStats }));
               if (!cancelled && data.moveId) {
+                markLastAiMoveFrom(data.moveId as string);
                 dispatch(movePiece(data.moveId as string));
               }
               resetPool();
@@ -300,6 +321,7 @@ function App() {
               const depthReached = bestResult ? Math.max(maxDepthIter, bestResult.depthReached) : maxDepthIter;
               dispatch(aiSearchEnded({ durationMs, depthReached, score: bestResult?.score ?? -Infinity, nodesVisited, engineStats: (data as any).engineStats }));
               if (!cancelled && bestResult && bestResult.moveId) {
+                markLastAiMoveFrom(bestResult.moveId);
                 dispatch(movePiece(bestResult.moveId));
               }
               // Keep pool alive for next move

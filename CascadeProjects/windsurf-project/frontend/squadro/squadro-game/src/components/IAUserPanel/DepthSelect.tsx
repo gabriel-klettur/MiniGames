@@ -14,7 +14,7 @@ const DepthSelect: React.FC<DepthSelectProps> = ({ depth, onChangeDepth }) => {
         value={depth}
         onChange={(e) => onChangeDepth(Number(e.target.value))}
       >
-        {Array.from({ length: 20 }, (_, i) => i + 1).map((d) => (
+        {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => (
           <option key={d} value={d}>{d}</option>
         ))}
       </select>

@@ -95,10 +95,10 @@ export default function AIDiagnosticsPanel() {
               <input
                 type="number"
                 min={1}
-                max={20}
+                max={30}
                 step={1}
                 value={ai?.difficulty ?? 3}
-                onChange={(e) => dispatch(setAIDifficulty(Math.max(1, Math.min(20, Number(e.target.value)))))}
+                onChange={(e) => dispatch(setAIDifficulty(Math.max(1, Math.min(30, Number(e.target.value)))))}
                 className="w-16 text-xs bg-neutral-800 border border-neutral-700 rounded px-2 py-1"
                 aria-label="Profundidad de búsqueda"
                 title="Profundidad objetivo — Límite deseado; la iterativa puede quedarte en d-1 si el tiempo no alcanza. Ejemplo: fija 4–6 para partidas rápidas."

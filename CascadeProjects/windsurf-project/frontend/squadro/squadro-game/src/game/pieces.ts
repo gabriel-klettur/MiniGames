@@ -28,6 +28,7 @@ export function createInitialState(): GameState {
     pieces,
     turn: STARTING_PLAYER,
     winner: undefined,
+    lastAiMoveFrom: null,
     ui: {
       pieceWidth: 16, // default thinner width in px
       pieceHeight: 44, // default height in px
