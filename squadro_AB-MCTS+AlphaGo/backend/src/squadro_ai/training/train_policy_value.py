@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Iterable, Sequence, Tuple
 
+import random
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -79,3 +81,38 @@ def train_step(
   optimizer.step()
 
   return float(loss.item()), float(policy_loss.item()), float(value_loss.item())
+
+
+def train_epoch(
+  model: SquadroPolicyValueNet,
+  optimizer: torch.optim.Optimizer,
+  samples: Sequence[SelfPlaySample],
+  batch_size: int = 256,
+  device: torch.device | None = None,
+) -> Tuple[float, float, float]:
+  """Run multiple mini-batch updates over ``samples`` and return average losses.
+
+  This is a light-weight epoch helper built on top of :func:`train_step`.
+  """
+
+  if not samples:
+    raise ValueError("train_epoch() received an empty sequence")
+
+  indices = list(range(len(samples)))
+  random.shuffle(indices)
+
+  total_loss = 0.0
+  total_pl = 0.0
+  total_vl = 0.0
+  batches = 0
+
+  for start in range(0, len(indices), max(1, batch_size)):
+    batch_idx = indices[start : start + batch_size]
+    batch = [samples[i] for i in batch_idx]
+    loss, pl, vl = train_step(model, optimizer, batch, device=device)
+    total_loss += loss
+    total_pl += pl
+    total_vl += vl
+    batches += 1
+
+  return total_loss / batches, total_pl / batches, total_vl / batches

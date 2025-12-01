@@ -9,6 +9,7 @@
 
 from .interfaces import PolicyValueFn
 from .heuristic import heuristic_policy_value
+from .heuristic_strong import evaluate_strong, strong_heuristic_policy_value
 from .torch_net import (
     SquadroPolicyValueNet,
     TorchPolicyValueAdapter,
@@ -18,6 +19,8 @@ from .torch_net import (
 __all__ = [
     "PolicyValueFn",
     "heuristic_policy_value",
+    "evaluate_strong",
+    "strong_heuristic_policy_value",
     "SquadroPolicyValueNet",
     "TorchPolicyValueAdapter",
     "PIECE_IDS",

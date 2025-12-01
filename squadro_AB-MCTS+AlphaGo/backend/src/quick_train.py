@@ -10,7 +10,7 @@ Este script está pensado para dar *feedback visual rápido* en la terminal:
 from squadro_ai.mcts import MCTSConfig
 from squadro_ai.policy import SquadroPolicyValueNet, TorchPolicyValueAdapter
 from squadro_ai.selfplay import play_one_game
-from squadro_ai.training import train_step
+from squadro_ai.training import train_epoch
 
 import torch
 import os
@@ -43,6 +43,11 @@ def main() -> None:
     max_moves = 100
     epochs = 10000000
 
+    # Replay buffer sencillo: mantenemos un número máximo de muestras de
+    # self-play acumuladas entre epochs para estabilizar el entrenamiento.
+    max_buffer_size = 50_000
+    replay_buffer: list = []
+
     print(
         f"[config] epochs={epochs}, games_per_epoch={num_games}, "
         f"simulations={simulations}, max_moves={max_moves}",
@@ -70,8 +75,26 @@ def main() -> None:
 
             print(f"[self-play] Total samples collected this epoch: {len(all_samples)}")
 
-            print("[train] Running training step on epoch data...", flush=True)
-            loss, pl, vl = train_step(model, opt, all_samples, device=device)
+            # Actualizar replay buffer con las muestras de este epoch y recortar
+            # para no superar max_buffer_size.
+            replay_buffer.extend(all_samples)
+            if len(replay_buffer) > max_buffer_size:
+                # Conservamos las muestras más recientes.
+                replay_buffer = replay_buffer[-max_buffer_size:]
+
+            print(
+                f"[replay] Buffer size after update: {len(replay_buffer)} (max={max_buffer_size})",
+                flush=True,
+            )
+
+            print("[train] Running training epoch on mini-batches from replay buffer...", flush=True)
+            loss, pl, vl = train_epoch(
+                model,
+                opt,
+                replay_buffer,
+                batch_size=256,
+                device=device,
+            )
             print(f"[train] epoch={epoch} loss={loss:.3f}  policy={pl:.3f}  value={vl:.3f}")
     except KeyboardInterrupt:
         print("\n[signal] KeyboardInterrupt detected, saving checkpoint and exiting...", flush=True)
