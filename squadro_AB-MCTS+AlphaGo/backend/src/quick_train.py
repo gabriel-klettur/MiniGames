@@ -96,6 +96,9 @@ def main() -> None:
                 device=device,
             )
             print(f"[train] epoch={epoch} loss={loss:.3f}  policy={pl:.3f}  value={vl:.3f}")
+            # Guardar checkpoint después de cada epoch para poder reanudar entrenamiento fácilmente.
+            torch.save(model.state_dict(), ckpt_path)
+            print(f"[save] Checkpoint saved after epoch {epoch} to: {ckpt_path}", flush=True)
     except KeyboardInterrupt:
         print("\n[signal] KeyboardInterrupt detected, saving checkpoint and exiting...", flush=True)
     finally:
