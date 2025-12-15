@@ -86,6 +86,82 @@ def mcts_best_move(root_state: GameState, config: MCTSConfig, policy_value_fn: P
     return best_move
 
 
+def mcts_policy(
+    root_state: GameState,
+    config: MCTSConfig,
+    policy_value_fn: PolicyValueFn,
+    *,
+    temperature: float = 1.0,
+) -> tuple[Dict[str, float], Optional[str]]:
+    """Run MCTS and return a policy target (from root visits) and a selected move.
+
+    The returned policy maps *all* legal moves to probabilities derived from
+    the visit counts at the root. The selected move is sampled from that
+    distribution when ``temperature > 0``; if ``temperature <= 0`` it becomes
+    deterministic (argmax).
+    """
+
+    if root_state.winner is not None:
+        return {}, None
+
+    legal = legal_moves(root_state)
+    if not legal:
+        return {}, None
+
+    root = _Node(state=clone_state(root_state), to_play=root_state.turn)
+    _expand(root, policy_value_fn, is_root=True, config=config)
+
+    for _ in range(max(1, config.simulations)):
+        node = root
+        while node.children and not node.terminal:
+            node = _select_child(node, config.c_puct)
+        if node.terminal or node.state.winner is not None:
+            value = _terminal_value(node.state, node.to_play)
+        else:
+            value = _expand(node, policy_value_fn, is_root=False, config=config)
+        _backpropagate(node, value)
+
+    if not root.children:
+        return {}, None
+
+    visits: Dict[str, int] = {move_id: child.N for move_id, child in root.children.items()}
+    pi = _visits_to_policy(visits, temperature=temperature)
+    move_id = _select_move_from_policy(pi, visits, temperature=temperature)
+    return pi, move_id
+
+
+def _visits_to_policy(visits: Dict[str, int], *, temperature: float) -> Dict[str, float]:
+    if not visits:
+        return {}
+
+    if temperature <= 1e-8:
+        best = max(visits.items(), key=lambda kv: kv[1])[0]
+        return {m: (1.0 if m == best else 0.0) for m in visits.keys()}
+
+    inv_temp = 1.0 / float(temperature)
+    weights: Dict[str, float] = {m: float(n) ** inv_temp for m, n in visits.items()}
+    total = sum(weights.values())
+    if total <= 0.0:
+        uniform = 1.0 / float(len(visits))
+        return {m: uniform for m in visits.keys()}
+    return {m: (w / total) for m, w in weights.items()}
+
+
+def _select_move_from_policy(
+    pi: Dict[str, float],
+    visits: Dict[str, int],
+    *,
+    temperature: float,
+) -> Optional[str]:
+    if not pi:
+        return None
+    if temperature <= 1e-8:
+        return max(visits.items(), key=lambda kv: kv[1])[0]
+    moves = list(pi.keys())
+    probs = [pi[m] for m in moves]
+    return random.choices(moves, weights=probs, k=1)[0]
+
+
 def _expand(node: _Node, policy_value_fn: PolicyValueFn, *, is_root: bool, config: MCTSConfig) -> float:
     if node.state.winner is not None:
         node.terminal = True

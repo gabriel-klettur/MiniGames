@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from ..game.state import GameState, Player, clone_state, create_initial_state
 from ..game.rules import legal_moves, move_piece
-from ..mcts import MCTSConfig, mcts_best_move
+from ..mcts import MCTSConfig, mcts_policy
 from ..policy import PolicyValueFn
 
 
@@ -33,6 +33,8 @@ def play_one_game(
   policy_value_fn: PolicyValueFn,
   mcts_config: MCTSConfig,
   max_moves: int = 200,
+  temperature: float = 1.0,
+  temperature_moves: int = 10,
 ) -> List[SelfPlaySample]:
   """Play a full self-play game and return training samples.
 
@@ -50,13 +52,13 @@ def play_one_game(
     if not legal:
       break
 
-    move_id = mcts_best_move(state, mcts_config, policy_value_fn)
+    temp = float(temperature) if moves_played < int(temperature_moves) else 0.0
+    pi, move_id = mcts_policy(state, mcts_config, policy_value_fn, temperature=temp)
     if move_id is None:
       break
 
-    # Delta policy: probability 1 on the chosen move, 0 on the rest
-    pi: Dict[str, float] = {m: 0.0 for m in legal}
-    pi[move_id] = 1.0
+    if not pi:
+      pi = {m: 1.0 / float(len(legal)) for m in legal}
 
     history.append((clone_state(state), pi, state.turn))
     move_piece(state, move_id)

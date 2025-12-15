@@ -5,6 +5,6 @@ simulations from a root :class:`~squadro_ai.game.state.GameState` and returns
 an action identifier (piece id) to play.
 """
 
-from .mcts import MCTSConfig, mcts_best_move
+from .mcts import MCTSConfig, mcts_best_move, mcts_policy
 
-__all__ = ["MCTSConfig", "mcts_best_move"]
+__all__ = ["MCTSConfig", "mcts_best_move", "mcts_policy"]
