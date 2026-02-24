@@ -340,47 +340,47 @@ MiniGames/
 │   │   ├── soluna/soluna-game/
 │   │   │   └── src/
 │   │   │       ├── game/              # Rules, store, types
-│   │   │       ├── ia/                # Search (alpha-beta, quiescence,
+│   │   │       ├—— ia/                # Search (alpha-beta, quiescence,
 │   │   │       │   │                  #   moveOrdering, tactics, root),
-│   │   │       │   └── worker/        #   Worker pool (aiWorker, pool)
-│   │   │       ├── components/        # Board (9 sub-components),
-│   │   │       │   ├── DevTools/      #   IAPanel (advanced settings, presets),
+│   │   │       │   └—— worker/        #   Worker pool (aiWorker, pool)
+│   │   │       ├—— components/        # Board (9 sub-components),
+│   │   │       │   ├—— DevTools/      #   IAPanel (advanced settings, presets),
 │   │   │       │   │                  #   InfoIA (simulations, charts, compare),
 │   │   │       │   │                  #   UIUX (4 tabs), FasesPanel, Historial
-│   │   │       │   ├── HeaderPanel/   # 5 popovers (VsAi, NewGame, Assets...)
-│   │   │       │   └── IAUserPanel/   # Per-player AI controls
-│   │   │       ├── hooks/             # 8 custom hooks (AI controller,
+│   │   │       │   ├—— HeaderPanel/   # 5 popovers (VsAi, NewGame, Assets...)
+│   │   │       │   └—— IAUserPanel/   # Per-player AI controls
+│   │   │       ├—— hooks/             # 8 custom hooks (AI controller,
 │   │   │       │                      #   localStorage, history, catalogs)
-│   │   │       └── contexts/          # TokenSetContext
+│   │   │       └—— contexts/          # TokenSetContext
 │   │   │
-│   │   └── squadro/squadro-game/
-│   │       └── src/
-│   │           ├── game/              # Rules (board, pieces, rules, types)
-│   │           ├── ia/                # Search (alpha-beta, quiescence,
+│   │   └—— squadro/squadro-game/
+│   │       └—— src/
+│   │           ├—— game/              # Rules (board, pieces, rules, types)
+│   │           ├—— ia/                # Search (alpha-beta, quiescence,
 │   │           │   │                  #   moveOrdering, rootParallel, DFPN),
 │   │           │   │                  #   evaluate (12 signals), presets,
 │   │           │   │                  #   autotune, tablebase, chooser
-│   │           │   └── workers/       # Worker pool entry points
-│   │           ├── components/        # Board (profiles), IAUserPanel,
-│   │           │   └── DevTools/      #   IAPanel (presets), InfoIA (books,
+│   │           │   └—— workers/       # Worker pool entry points
+│   │           ├—— components/        # Board (profiles), IAUserPanel,
+│   │           │   └—— DevTools/      #   IAPanel (presets), InfoIA (books,
 │   │           │                      #   repeats, compare), UIUX (calibration),
 │   │           │                      #   RulesPanel, Historial
-│   │           ├── store/             # Redux: gameSlice + typed hooks
-│   │           └── tests/             # Position suites, ladder, reporters
+│   │           ├—— store/             # Redux: gameSlice + typed hooks
+│   │           └—— tests/             # Position suites, ladder, reporters
 │   │
-│   ├── python/
-│   │   ├── pylos/                     # Desktop prototype (MVC + Pygame + AI)
-│   │   └── scrapper_bga/             # Board Game Arena stats scraper
+│   ├—— python/
+│   │   ├—— pylos/                     # Desktop prototype (MVC + Pygame + AI)
+│   │   └—— scrapper_bga/             # Board Game Arena stats scraper
 │   │
-│   └── docs/                          # Technical docs per game (IA, rules,
+│   └—— docs/                          # Technical docs per game (IA, rules,
 │                                      #   optimization guides, meeting notes)
 │
-└── squadro_AB-MCTS+AlphaGo/
-    └── backend/src/
-        └── squadro_ai/               # Pure Python MCTS engine with
-            ├── game/                  #   game state, rules
-            ├── mcts/                  #   Monte Carlo Tree Search
-            └── policy/                #   Pluggable policy/value (heuristic → NN)
+└—— squadro_AB-MCTS+AlphaGo/
+    └—— backend/src/
+        └—— squadro_ai/               # Pure Python MCTS engine with
+            ├—— game/                  #   game state, rules
+            ├—— mcts/                  #   Monte Carlo Tree Search
+            └—— policy/                #   Pluggable policy/value (heuristic → NN)
 ```
 
 ---
