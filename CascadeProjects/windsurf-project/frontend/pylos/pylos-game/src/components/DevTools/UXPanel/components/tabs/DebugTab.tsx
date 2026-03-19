@@ -1,4 +1,4 @@
- 
+import { useI18n } from '../../../../../i18n';
 
 export interface DebugTabProps {
   debugHitTest: boolean;
@@ -46,57 +46,58 @@ export default function DebugTab({
   dbgClickableOutlineW,
   onChangeDbgClickableOutlineW,
 }: DebugTabProps) {
+  const { t } = useI18n();
   return (
     <div role="tabpanel" id="panel-debug" aria-labelledby="tab-debug" className="tabs__panel">
       <div className="row">
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <input type="checkbox" checked={!!debugHitTest} onChange={(e) => onToggleDebugHitTest(e.target.checked)} />
-          Mostrar áreas de impacto (hitboxes)
+          {t.uxPanel.showHitboxes}
         </label>
       </div>
       <div className="row" style={{ opacity: debugHitTest ? 1 : 0.75 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={!!debugShowGrid} onChange={(e) => onToggleDebugShowGrid(e.target.checked)} />
-            Rejilla niveles (grid)
+            {t.uxPanel.levelGrid}
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={!!debugShowOverlays} onChange={(e) => onToggleDebugShowOverlays(e.target.checked)} />
-            Overlays de niveles
+            {t.uxPanel.levelOverlays}
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={!!debugShowCellOutlines} onChange={(e) => onToggleDebugShowCellOutlines(e.target.checked)} />
-            Contornos de celdas
+            {t.uxPanel.cellOutlines}
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={!!debugShowDisabledCells} onChange={(e) => onToggleDebugShowDisabledCells(e.target.checked)} />
-            Celdas deshabilitadas
+            {t.uxPanel.disabledCells}
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={!!debugShowClickable} onChange={(e) => onToggleDebugShowClickable(e.target.checked)} />
-            Áreas clicables (rosa)
+            {t.uxPanel.clickableAreas}
           </label>
         </div>
       </div>
       <div className="row" style={{ opacity: debugHitTest ? 1 : 0.75, marginTop: 8 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Ancho rejilla (px)
+            {t.uxPanel.gridWidthPx}
             <input type="number" min={0} max={12} step={1} value={dbgGridOutlineW}
                    onChange={(e) => onChangeDbgGridOutlineW(Number(e.target.value))} style={{ width: 72 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Ancho contorno celda (px)
+            {t.uxPanel.cellOutlineWidthPx}
             <input type="number" min={0} max={12} step={1} value={dbgCellOutlineW}
                    onChange={(e) => onChangeDbgCellOutlineW(Number(e.target.value))} style={{ width: 72 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Ancho contorno deshabilitada (px)
+            {t.uxPanel.disabledOutlineWidthPx}
             <input type="number" min={0} max={12} step={1} value={dbgDisabledOutlineW}
                    onChange={(e) => onChangeDbgDisabledOutlineW(Number(e.target.value))} style={{ width: 72 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Ancho clicable (px)
+            {t.uxPanel.clickableWidthPx}
             <input type="number" min={0} max={12} step={1} value={dbgClickableOutlineW}
                    onChange={(e) => onChangeDbgClickableOutlineW(Number(e.target.value))} style={{ width: 72 }} />
           </label>

@@ -1,3 +1,5 @@
+import { useI18n } from '../../../i18n';
+
 export interface RulesPanelProps {
   className?: string;
 }
@@ -7,14 +9,15 @@ export interface RulesPanelProps {
  * Presentacional puro; no maneja estado.
  */
 function RulesPanel({ className }: RulesPanelProps) {
+  const { t } = useI18n();
   return (
     <div className={["panel", "small", className ?? ""].join(" ").trim()}>
-      <p>Reglas clave:</p>
+      <p>{t.rulesPanel.title}</p>
       <ul>
-        <li>Coloca en casillas soportadas (2x2 abajo).</li>
-        <li>Para mover, solo subir niveles y pieza debe estar libre.</li>
-        <li>Formar cuadrado propio permite recuperar 1–2 piezas libres.</li>
-        <li>También puntúan las líneas (4 abajo, 3 en segundo nivel).</li>
+        <li>{t.rulesPanel.rule1}</li>
+        <li>{t.rulesPanel.rule2}</li>
+        <li>{t.rulesPanel.rule3}</li>
+        <li>{t.rulesPanel.rule4}</li>
       </ul>
     </div>
   );

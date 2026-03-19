@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../../i18n';
+
 export function AntiStallSettings(props: {
   noveltyBonus: number;
   onNoveltyBonusChange: (v: number) => void;
@@ -6,6 +8,7 @@ export function AntiStallSettings(props: {
   timeRiskEnabled: boolean;
   onTimeRiskEnabledChange: (v: boolean) => void;
 }) {
+  const { t } = useI18n();
   const {
     noveltyBonus, onNoveltyBonusChange,
     drawBias, onDrawBiasChange,
@@ -14,14 +17,13 @@ export function AntiStallSettings(props: {
 
   return (
     <>
-      {/* Anti-estancamiento: bonus de novedad, sesgo de tablas y gestión de tiempo bajo riesgo */}
-      <label className="label" htmlFor="infoia-novbonus" title="Pequeño bonus a estados no vistos para diversificar">Bonus novedad</label>
+      <label className="label" htmlFor="infoia-novbonus" title={t.infoIA.noveltyBonusTitle}>{t.infoIA.noveltyBonus}</label>
       <input id="infoia-novbonus" className="field-num" type="number" min={0} max={50} value={noveltyBonus} onChange={(e) => onNoveltyBonusChange(Number(e.target.value))} style={{ width: 90 }} />
 
-      <label className="label" htmlFor="infoia-drawbias" title="Penalización ligera a ciclos (tablas peor que 0) para no preferirlos">Sesgo tablas</label>
+      <label className="label" htmlFor="infoia-drawbias" title={t.infoIA.drawBiasTitle}>{t.infoIA.drawBias}</label>
       <input id="infoia-drawbias" className="field-num" type="number" min={0} max={50} value={drawBias} onChange={(e) => onDrawBiasChange(Number(e.target.value))} style={{ width: 90 }} />
 
-      <label className="label" htmlFor="infoia-timerisk" title="Aumentar presupuesto de tiempo bajo riesgo de repetición">Tiempo sensible al riesgo</label>
+      <label className="label" htmlFor="infoia-timerisk" title={t.infoIA.timeRiskSensitiveTitle}>{t.infoIA.timeRiskSensitive}</label>
       <input id="infoia-timerisk" type="checkbox" checked={timeRiskEnabled} onChange={(e) => onTimeRiskEnabledChange(e.target.checked)} aria-checked={timeRiskEnabled} />
     </>
   );

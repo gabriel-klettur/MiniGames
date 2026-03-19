@@ -8,6 +8,7 @@ import HolesTab from './components/tabs/HolesTab';
 import DebugTab from './components/tabs/DebugTab';
 import { buildConfig, applyConfig } from './utils/config';
 import { saveJson, loadJsonFromFile } from './utils/fileIO';
+import { useI18n } from '../../../i18n';
 
 export interface UXPanelProps {
   // Shading toggles per level
@@ -109,6 +110,7 @@ export interface UXPanelProps {
  * - Duraciones de animación (input numérico en ms)
  */
 export default function UXPanel(props: UXPanelProps) {
+  const { t } = useI18n();
   const {
     noShadeL0, noShadeL1, noShadeL2, noShadeL3,
     onChangeNoShade,
@@ -246,7 +248,7 @@ export default function UXPanel(props: UXPanelProps) {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Save UX config error:', err);
-      window.alert('Error al guardar configuración UI/UX.');
+      window.alert(t.uxPanel.saveError);
     }
   };
 
@@ -254,21 +256,21 @@ export default function UXPanel(props: UXPanelProps) {
     try {
       const json = await loadJsonFromFile(file);
       applyConfig(json, current() as any, appliers as any);
-      window.alert('Configuración UI/UX cargada.');
+      window.alert(t.uxPanel.loadSuccess);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Load UX config error:', err);
-      window.alert('JSON inválido o incompatible.');
+      window.alert(t.uxPanel.loadError);
     }
   };
 
   return (
     <div className="ux-panel">
-      <UXPanelHeader title="Opciones UI/UX" onRequestSave={handleSave} onFileSelected={handleFileSelected} />
+      <UXPanelHeader title={t.uxPanel.title} onRequestSave={handleSave} onFileSelected={handleFileSelected} />
 
       {/* Tabs header */}
       <div className="tabs" onKeyDown={onKeyNav}>
-        <div className="tabs__list" role="tablist" aria-label="Configuración UI/UX">
+        <div className="tabs__list" role="tablist" aria-label={t.uxPanel.configLabel}>
           <button
             role="tab"
             id="tab-shade"
@@ -277,7 +279,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'shade' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('shade')}
-          >Sombreado</button>
+          >{t.uxPanel.shading}</button>
           <button
             role="tab"
             id="tab-size"
@@ -286,7 +288,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'size' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('size')}
-          >Tamaño</button>
+          >{t.uxPanel.size}</button>
           <button
             role="tab"
             id="tab-anim"
@@ -295,7 +297,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'anim' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('anim')}
-          >Animaciones</button>
+          >{t.uxPanel.animations}</button>
           <button
             role="tab"
             id="tab-layout"
@@ -304,7 +306,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'layout' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('layout')}
-          >Tablero</button>
+          >{t.uxPanel.board}</button>
           <button
             role="tab"
             id="tab-holes"
@@ -313,7 +315,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'holes' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('holes')}
-          >Huecos/Bolas</button>
+          >{t.uxPanel.holesBalls}</button>
           <button
             role="tab"
             id="tab-debug"
@@ -322,7 +324,7 @@ export default function UXPanel(props: UXPanelProps) {
             tabIndex={tab === 'debug' ? 0 : -1}
             className="tabs__tab"
             onClick={() => setTab('debug')}
-          >Depuración</button>
+          >{t.uxPanel.debug}</button>
         </div>
       </div>
 

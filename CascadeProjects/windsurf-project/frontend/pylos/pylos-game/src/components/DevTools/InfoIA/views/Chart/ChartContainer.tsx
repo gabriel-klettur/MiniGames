@@ -2,6 +2,7 @@ import type { InfoIAGameRecord } from '../../../../../utils/infoiaDb';
 import Chart from './Chart';
 import { useChartResize } from '../../hooks/useChartResize';
 import { computeAggregates } from '../../utils/aggregates';
+import { useI18n } from '../../../../../i18n';
 
 export type ChartDataset = {
   id?: string;
@@ -11,6 +12,7 @@ export type ChartDataset = {
 };
 
 export default function ChartContainer({ datasets }: { datasets: ChartDataset[] }) {
+  const { t } = useI18n();
   const { boxRef, width, height } = useChartResize();
   const W = width || 980;
   const H = height || 460;
@@ -28,7 +30,7 @@ export default function ChartContainer({ datasets }: { datasets: ChartDataset[] 
       {hasAnyAgg ? (
         <Chart width={W} height={H} datasets={dsAgg} />
       ) : (
-        <p style={{ opacity: 0.8 }}>Sin datos todavía. Ejecuta simulaciones o agrega archivos para comparar.</p>
+        <p style={{ opacity: 0.8 }}>{t.chartsTab.noDataYet}</p>
       )}
     </div>
   );

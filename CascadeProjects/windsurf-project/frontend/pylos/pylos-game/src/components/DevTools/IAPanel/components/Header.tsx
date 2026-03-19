@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../i18n';
+
 export interface HeaderProps {
   title?: string;
   moving?: boolean;
@@ -5,14 +7,16 @@ export interface HeaderProps {
   progressDepth?: number | null;
 }
 
-export default function Header({ title = 'Inteligencia Artificial', moving = false, busy = false, progressDepth = null }: HeaderProps) {
+export default function Header({ title, moving = false, busy = false, progressDepth = null }: HeaderProps) {
+  const { t } = useI18n();
+  const displayTitle = title ?? t.iaPanel.title;
   return (
     <div className="ia-panel__header">
-      <h3 className="ia-panel__title">{title}</h3>
+      <h3 className="ia-panel__title">{displayTitle}</h3>
       <div className="ia-panel__status">
-        {moving && <span className="kpi kpi--accent" aria-live="polite">Moviendo</span>}
-        {busy && !moving && <span className="kpi">Pensando…{typeof progressDepth === 'number' ? ` d${progressDepth}` : ''}</span>}
-        {!busy && !moving && <span className="kpi kpi--muted">En espera</span>}
+        {moving && <span className="kpi kpi--accent" aria-live="polite">{t.iaPanel.moving}</span>}
+        {busy && !moving && <span className="kpi">{t.iaPanel.thinking}{typeof progressDepth === 'number' ? ` d${progressDepth}` : ''}</span>}
+        {!busy && !moving && <span className="kpi kpi--muted">{t.iaPanel.waiting}</span>}
       </div>
     </div>
   );

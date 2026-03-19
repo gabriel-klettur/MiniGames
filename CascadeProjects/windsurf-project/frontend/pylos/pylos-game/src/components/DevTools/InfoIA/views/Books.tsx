@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../../../../i18n';
 
 export type BooksProps = {
   onExportBook: () => void;
@@ -22,9 +23,10 @@ const difficulties: Difficulty[] = ['facil', 'medio', 'dificil'];
 const phases: Phase[] = ['aperturas', 'medio', 'cierres'];
 
 export default function Books(props: BooksProps) {
+  const { t } = useI18n();
   const [supportPct, setSupportPct] = useState<number>(55);
   const [files, setFiles] = useState<BookFileInfo[]>(() =>
-    buildTargets().map((t) => ({ ...t, status: 'loading', entries: null, bytes: null }))
+    buildTargets().map((target) => ({ ...target, status: 'loading', entries: null, bytes: null }))
   );
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -87,12 +89,21 @@ export default function Books(props: BooksProps) {
     setTimeout(() => { void loadAll(); }, 300);
   }, [props, loadAll]);
 
+  const getDifficultyLabel = (d: Difficulty) => {
+    const map: Record<Difficulty, string> = { facil: t.booksTab.easy, medio: t.booksTab.medium, dificil: t.booksTab.hard };
+    return map[d] || d;
+  };
+  const getPhaseLabel = (p: Phase) => {
+    const map: Record<Phase, string> = { aperturas: t.booksTab.openings, medio: t.booksTab.midgame, cierres: t.booksTab.endgame };
+    return map[p] || p;
+  };
+
   return (
     <div className="infoia__books" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div className="row" style={{ gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <h4 className="ia-panel__title" style={{ marginRight: 'auto' }}>Books</h4>
-        <button className="btn-ghost" onClick={props.onExportBook} title="Generar y descargar los 9 books">Exportar Book</button>
-        <label className="label" htmlFor="books-support" title="Soporte mínimo para incluir jugadas en el book (0–100%)">Soporte (%)</label>
+        <h4 className="ia-panel__title" style={{ marginRight: 'auto' }}>{t.booksTab.title}</h4>
+        <button className="btn-ghost" onClick={props.onExportBook} title={t.booksTab.exportBookTitle}>{t.booksTab.exportBook}</button>
+        <label className="label" htmlFor="books-support" title={t.booksTab.supportPctTitle}>{t.booksTab.supportPct}</label>
         <input
           id="books-support"
           className="field-num"
@@ -103,48 +114,48 @@ export default function Books(props: BooksProps) {
           onChange={(e) => setSupportPct(Number(e.target.value))}
           style={{ width: 90 }}
         />
-        <button className="btn-accent" onClick={onPublishClick} title="Publicar todos los books en public/books (dev)">Publicar Books</button>
-        <button className="btn-warning" onClick={onClearClick} title="Vaciar la carpeta public/books (dev)">Vaciar Books</button>
-        <button className="btn-ghost" onClick={() => loadAll()} disabled={loading} title="Recargar estado de books">{loading ? 'Cargando…' : 'Recargar'}</button>
-        <span className="kpi" title="Cantidad de books encontrados">{totalOk}/9</span>
+        <button className="btn-accent" onClick={onPublishClick} title={t.booksTab.publishBooksTitle}>{t.booksTab.publishBooks}</button>
+        <button className="btn-warning" onClick={onClearClick} title={t.booksTab.clearBooksTitle}>{t.booksTab.clearBooks}</button>
+        <button className="btn-ghost" onClick={() => loadAll()} disabled={loading} title={t.booksTab.reloadTitle}>{loading ? t.booksTab.loading : t.booksTab.reload}</button>
+        <span className="kpi" title={t.booksTab.booksFoundTitle}>{totalOk}/9</span>
       </div>
 
       <div className="panel" style={{ padding: 12 }}>
         <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: 6 }}>Dificultad</th>
-              <th style={{ textAlign: 'left', padding: 6 }}>Fase</th>
-              <th style={{ textAlign: 'left', padding: 6 }}>Archivo</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Entradas</th>
-              <th style={{ textAlign: 'right', padding: 6 }}>Bytes</th>
-              <th style={{ textAlign: 'left', padding: 6 }}>Estado</th>
-              <th style={{ textAlign: 'left', padding: 6 }}>Acciones</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>{t.booksTab.difficultyCol}</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>{t.booksTab.phaseCol}</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>{t.booksTab.fileCol}</th>
+              <th style={{ textAlign: 'right', padding: 6 }}>{t.booksTab.entriesCol}</th>
+              <th style={{ textAlign: 'right', padding: 6 }}>{t.booksTab.bytesCol}</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>{t.booksTab.statusCol}</th>
+              <th style={{ textAlign: 'left', padding: 6 }}>{t.booksTab.actionsCol}</th>
             </tr>
           </thead>
           <tbody>
             {files.map((f) => (
               <tr key={`${f.difficulty}-${f.phase}`}>
-                <td style={{ padding: 6 }}>{f.difficulty}</td>
-                <td style={{ padding: 6 }}>{f.phase}</td>
+                <td style={{ padding: 6 }}>{getDifficultyLabel(f.difficulty)}</td>
+                <td style={{ padding: 6 }}>{getPhaseLabel(f.phase)}</td>
                 <td style={{ padding: 6 }}>
                   <code>{`${f.difficulty}_${f.phase}_book.json`}</code>
                 </td>
                 <td style={{ padding: 6, textAlign: 'right' }}>{f.entries != null ? f.entries : '—'}</td>
                 <td style={{ padding: 6, textAlign: 'right' }}>{f.bytes != null ? f.bytes : '—'}</td>
                 <td style={{ padding: 6 }}>
-                  {f.status === 'ok' && <span className="kpi kpi--accent">OK</span>}
-                  {f.status === 'missing' && <span className="kpi kpi--warning">No encontrado</span>}
-                  {f.status === 'loading' && <span className="kpi"><span className="spinner" aria-hidden="true" /> Cargando…</span>}
-                  {f.status === 'error' && <span className="kpi kpi--danger">Error</span>}
+                  {f.status === 'ok' && <span className="kpi kpi--accent">{t.booksTab.statusOk}</span>}
+                  {f.status === 'missing' && <span className="kpi kpi--warning">{t.booksTab.statusNotFound}</span>}
+                  {f.status === 'loading' && <span className="kpi"><span className="spinner" aria-hidden="true" /> {t.booksTab.statusLoading}</span>}
+                  {f.status === 'error' && <span className="kpi kpi--danger">{t.booksTab.statusError}</span>}
                 </td>
                 <td style={{ padding: 6 }}>
                   {f.status === 'ok' ? (
                     <a className="btn-ghost" href={f.url} target="_blank" rel="noreferrer" download>
-                      Descargar
+                      {t.booksTab.download}
                     </a>
                   ) : (
-                    <button className="btn-ghost" disabled title="No disponible">Descargar</button>
+                    <button className="btn-ghost" disabled title={t.booksTab.notAvailable}>{t.booksTab.download}</button>
                   )}
                 </td>
               </tr>

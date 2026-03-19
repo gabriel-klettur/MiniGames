@@ -5,8 +5,11 @@ import { SimulationLimits } from './SimulationLimits.tsx';
 import { MirrorAndBook } from './Mirror.tsx';
 import { ActionsBar } from './ActionsBar.tsx';
 import PlayerIAControls from './PlayerIAControls.tsx';
+import MiniBoard from './MiniBoard.tsx';
 import bolaA from '../../../../../assets/bola_a.webp';
 import bolaB from '../../../../../assets/bola_b.webp';
+import { useI18n } from '../../../../../i18n';
+import type { GameState } from '../../../../../game/types';
 
 export type ControlsProps = {
   depth: number;
@@ -44,9 +47,19 @@ export type ControlsProps = {
   compareSets: Array<{ id: string; name: string; color: string }>;
   onSelectTableSource: (id: string) => void;
   canClearLocal: boolean;
+
+  // Mini board state for simulation preview
+  currentSimState: GameState | null;
+
+  // Real game state + visual props for the mini board clone
+  gameState: GameState;
+  noShade: { 0: boolean; 1: boolean; 2: boolean; 3: boolean };
+  shadeOnlyHoles: boolean;
+  showHoleBorders: boolean;
 };
 
 export default function Controls(props: ControlsProps) {
+  const { t } = useI18n();
   // Layout and spacing handled via CSS classes in styles/infoia.css
   const [resetTick, setResetTick] = useState(0);
 
@@ -131,16 +144,16 @@ export default function Controls(props: ControlsProps) {
             aria-controls="infoia-controls-grid"
             id="infoia-controls-header"
           >
-            <span>Configuracion Simulacion y Metricas</span>
+            <span>{t.infoIA.configSimMetrics}</span>
             <span className="chev" aria-hidden="true">▾</span>
           </button>
         </div>
         {!collapsed && (
-          <div className="infoia__controls" id="infoia-controls-grid" role="region" aria-labelledby="infoia-controls-header">
-            {/* Global: Visualización y books + Dataset */}
-            <div className="infoia__card-stack">
+          <div className="infoia__controls-wrapper" id="infoia-controls-grid" role="region" aria-labelledby="infoia-controls-header">
+            {/* Row 1: Visualization+Books | Simulation Limits | Table (dataset) | Mini Board */}
+            <div className="infoia__top-row">
               <div className="infoia__card">
-                <div className="infoia__card-title">Visualización y books</div>
+                <div className="infoia__card-title">{t.infoIA.visualizationAndBooks}</div>
                 <MirrorAndBook
                   mirrorBoard={props.mirrorBoard}
                   onMirrorChange={props.onMirrorChange}
@@ -149,47 +162,54 @@ export default function Controls(props: ControlsProps) {
                 />
               </div>
               <div className="infoia__card">
-                <div className="infoia__card-title">Tabla (dataset)</div>
+                <div className="infoia__card-title">{t.infoIA.simulationLimits}</div>
+                <SimulationLimits
+                  pliesLimit={props.pliesLimit}
+                  onPliesLimitChange={props.onPliesLimitChange}
+                  gamesCount={props.gamesCount}
+                  onGamesCountChange={props.onGamesCountChange}
+                />
+              </div>
+              <div className="infoia__card">
+                <div className="infoia__card-title">{t.infoIA.tableDataset}</div>
                 <DatasetTabs
                   activeId={props.activeTableSourceId}
                   sets={props.compareSets}
                   onSelect={props.onSelectTableSource}
                 />
               </div>
-            </div>
-            {/* Global: Límites de simulación */}
-            <div className="infoia__card">
-              <div className="infoia__card-title">Límites de simulación</div>
-              <SimulationLimits
-                pliesLimit={props.pliesLimit}
-                onPliesLimitChange={props.onPliesLimitChange}
-                gamesCount={props.gamesCount}
-                onGamesCountChange={props.onGamesCountChange}
+              <MiniBoard
+                state={props.currentSimState ?? props.gameState}
+                gameState={props.gameState}
+                noShade={props.noShade}
+                shadeOnlyHoles={props.shadeOnlyHoles}
+                showHoleBorders={props.showHoleBorders}
               />
             </div>
 
-            <PlayerIAControls
-              key={`player-L-${resetTick}`}
-              player={'L'}
-              title={'Jugador L (Bola clara)'}
-              themeClass={'infoia__player--light'}
-              ballIconSrc={bolaB}
-              ballAlt={'Bola clara'}
-              cardCollapsed={cardCollapsed}
-              onToggleCard={toggleCard}
-            />          
-            
-            <PlayerIAControls
-              key={`player-D-${resetTick}`}
-              player={'D'}
-              title={'Jugador D (Bola oscura)'}
-              themeClass={'infoia__player--dark'}
-              ballIconSrc={bolaA}
-              ballAlt={'Bola oscura'}
-              cardCollapsed={cardCollapsed}
-              onToggleCard={toggleCard}
-            />                
-
+            {/* Row 2: Players section - Player L and Player D side by side */}
+            <div className="infoia__players-row">
+              <PlayerIAControls
+                key={`player-L-${resetTick}`}
+                player={'L'}
+                title={t.infoIA.playerL}
+                themeClass={'infoia__player--light'}
+                ballIconSrc={bolaB}
+                ballAlt={t.infoIA.lightBall}
+                cardCollapsed={cardCollapsed}
+                onToggleCard={toggleCard}
+              />
+              <PlayerIAControls
+                key={`player-D-${resetTick}`}
+                player={'D'}
+                title={t.infoIA.playerD}
+                themeClass={'infoia__player--dark'}
+                ballIconSrc={bolaA}
+                ballAlt={t.infoIA.darkBall}
+                cardCollapsed={cardCollapsed}
+                onToggleCard={toggleCard}
+              />
+            </div>
           </div>
         )}
       </div>

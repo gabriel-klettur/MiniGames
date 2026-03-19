@@ -1,4 +1,5 @@
 import type { AIAdvancedConfig } from '../../types';
+import { useI18n } from '../../../../../i18n';
 
 export interface StartSettingsProps {
   iaConfig: AIAdvancedConfig;
@@ -6,11 +7,12 @@ export interface StartSettingsProps {
 }
 
 export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSettingsProps) {
+  const { t } = useI18n();
   const random = iaConfig.startRandomFirstMove ?? true;
   const seedVal = iaConfig.startSeed ?? '';
   return (
     <>
-      <label>Inicio</label>
+      <label>{t.iaPanel.start}</label>
       <div>
         <input
           id="ia-start-random"
@@ -18,10 +20,10 @@ export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSetti
           checked={random}
           onChange={(e) => onChangeIaConfig({ startRandomFirstMove: e.target.checked })}
         />
-        <label htmlFor="ia-start-random" style={{ marginLeft: 6 }}>Movimiento inicial aleatorio</label>
+        <label htmlFor="ia-start-random" style={{ marginLeft: 6 }}>{t.iaPanel.randomFirstMove}</label>
       </div>
 
-      <label>Semilla (opcional)</label>
+      <label>{t.iaPanel.seed}</label>
       <div>
         <input
           id="ia-start-seed"
@@ -38,15 +40,15 @@ export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSetti
               onChangeIaConfig({ startSeed: Math.floor(n) });
             }
           }}
-          placeholder="p.ej. 1234"
+          placeholder={t.iaPanel.seedPlaceholder}
           style={{ width: 140 }}
           disabled={!random}
         />
       </div>
 
-      <label>Inicio de partida — turnos aleatorios por lado</label>
+      <label>{t.iaPanel.earlyRandomTurns}</label>
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'center' }}>
-        <label htmlFor="ia-start-early-l" title="Número de primeras jugadas de L que serán 100% aleatorias">L — Turnos 1..N aleatorios</label>
+        <label htmlFor="ia-start-early-l">{t.iaPanel.lightRandomTurns}</label>
         <input
           id="ia-start-early-l"
           type="number"
@@ -57,7 +59,7 @@ export default function StartSettings({ iaConfig, onChangeIaConfig }: StartSetti
           onChange={(e) => onChangeIaConfig({ startEarlyRandomL: Math.max(0, Math.min(10, Number(e.target.value))) })}
           style={{ width: 90 }}
         />
-        <label htmlFor="ia-start-early-d" title="Número de primeras jugadas de D que serán 100% aleatorias">D — Turnos 1..N aleatorios</label>
+        <label htmlFor="ia-start-early-d">{t.iaPanel.darkRandomTurns}</label>
         <input
           id="ia-start-early-d"
           type="number"

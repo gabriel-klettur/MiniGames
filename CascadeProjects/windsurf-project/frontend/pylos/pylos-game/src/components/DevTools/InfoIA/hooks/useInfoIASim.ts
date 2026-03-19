@@ -70,6 +70,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
   const { depth, timeMode, timeSeconds, pliesLimit, gamesCount, mirrorBoard, useBook, onMirrorStart, onMirrorUpdate, onMirrorEnd } = params;
 
   const [running, setRunning] = useState<boolean>(false);
+  const [currentSimState, setCurrentSimState] = useState<GameState | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { elapsedMs: moveElapsedMs, targetMs: moveTargetMs, start: startProgress, stop: stopProgress } = useProgress();
   const [moveIndex, setMoveIndex] = useState<number>(0);
@@ -102,6 +103,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     const noProgressLimit = 40; // configurable if needed
     let noProgressPlies = 0;
 
+    setCurrentSimState(state);
     if (mirrorBoard) {
       try { onMirrorStart?.(); } catch {}
       try { onMirrorUpdate?.(state); } catch {}
@@ -353,6 +355,7 @@ export function useInfoIASim(params: UseInfoIASimParams) {
           (pmBase as any).phaseAfter = (state.phase === 'recover' ? 'recover' : 'play');
         } catch {}
         perMove.push(pmBase);
+        setCurrentSimState(state);
         if (mirrorBoard) {
           try { onMirrorUpdate?.(state); } catch {}
         }
@@ -500,5 +503,6 @@ export function useInfoIASim(params: UseInfoIASimParams) {
     moveIndex,
     moveElapsedMs,
     moveTargetMs,
+    currentSimState,
   } as const;
 }

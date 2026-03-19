@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { clearRepetitionDb, exportRepetitionDb, getAvoidList, getTopRepeated, importRepetitionDb, getGlobalPenalty, setGlobalPenalty, getGlobalEnabled, setGlobalEnabled, getLastAvoidImpact, type AvoidImpact, getImpactHistory, clearImpactHistory } from '../../../../utils/repetitionDb';
+import { useI18n } from '../../../../i18n';
 
 export default function RepeatsTab() {
+  const { t } = useI18n();
   const [limit, setLimit] = useState<number>(10);
   const [data, setData] = useState<Array<{ key: string; hi: number; lo: number; count: number }>>([]);
   const [stats, setStats] = useState<{ totalOccurrences: number; distinctKeys: number }>(() => ({ totalOccurrences: 0, distinctKeys: 0 }));
@@ -88,8 +90,8 @@ export default function RepeatsTab() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setMessage('Exportado correctamente');
-    } catch { setMessage('Error al exportar'); }
+      setMessage(t.repeatsTab.exportedOk);
+    } catch { setMessage(t.repeatsTab.exportError); }
   };
 
   const onImport = (file: File) => {
@@ -98,107 +100,107 @@ export default function RepeatsTab() {
       try {
         const res = importRepetitionDb(String(reader.result || ''));
         if (res.ok) {
-          setMessage('Importado correctamente');
+          setMessage(t.repeatsTab.importedOk);
           refresh();
         } else {
-          setMessage(res.error || 'Error al importar');
+          setMessage(res.error || t.repeatsTab.importError);
         }
       } catch (err) {
-        setMessage('Error al importar');
+        setMessage(t.repeatsTab.importError);
       } finally {
         if (fileRef.current) fileRef.current.value = '';
       }
     };
     reader.onerror = () => {
-      setMessage('Error al leer el archivo');
+      setMessage(t.repeatsTab.fileReadError);
       if (fileRef.current) fileRef.current.value = '';
     };
     reader.readAsText(file);
   };
 
   return (
-    <div className="infoia__repeats" style={{ paddingTop: 8 }} title="Panel para gestionar y entender repeticiones globales entre partidas (jugador y simuladas)">
+    <div className="infoia__repeats" style={{ paddingTop: 8 }} title={t.repeatsTab.panelTitle}>
       {message && (
-        <div role="status" aria-live="polite" style={{ marginBottom: 12, color: '#2563eb' }} title="Mensajes de acción (éxito/error)">{message}</div>
+        <div role="status" aria-live="polite" style={{ marginBottom: 12, color: '#2563eb' }}>{message}</div>
       )}
 
-      <div className="row" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }} title="Tarjetas con resumen y controles de la DB de repeticiones entre partidas">
-        <div className="panel small" style={{ minWidth: 260 }} title="Resumen agregado de la base de repeticiones (localStorage)">
-          <h4 style={{ marginTop: 0 }} title="Indicadores de tamaño de la base">Resumen</h4>
+      <div className="row" style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div className="panel small" style={{ minWidth: 260 }} title={t.repeatsTab.summaryTitle}>
+          <h4 style={{ marginTop: 0 }} title={t.repeatsTab.summaryIndicators}>{t.repeatsTab.summary}</h4>
           <div style={{ fontSize: 13 }}>
-            <div title="Número total de estados registrados (incluye duplicados)">Total de ocurrencias: <b>{stats.totalOccurrences}</b></div>
-            <div title="Número de claves Zobrist únicas registradas">Claves distintas: <b>{stats.distinctKeys}</b></div>
+            <div title={t.repeatsTab.totalOccurrencesTitle}>{t.repeatsTab.totalOccurrences}: <b>{stats.totalOccurrences}</b></div>
+            <div title={t.repeatsTab.distinctKeysTitle}>{t.repeatsTab.distinctKeys}: <b>{stats.distinctKeys}</b></div>
           </div>
         </div>
-        <div className="panel small" style={{ minWidth: 260 }} title="Acciones para explorar y mantener la base de repeticiones entre partidas">
-          <h4 style={{ marginTop: 0 }} title="Configura vista y mantenimiento">Controles</h4>
+        <div className="panel small" style={{ minWidth: 260 }} title={t.repeatsTab.controlsTitle}>
+          <h4 style={{ marginTop: 0 }} title={t.repeatsTab.configTitle}>{t.repeatsTab.controls}</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'center' }}>
-            <label htmlFor="rep-limit" title="Cantidad de filas a mostrar en el Top">Top N</label>
-            <input id="rep-limit" type="number" min={10} max={500} step={10} value={limit} onChange={(e) => setLimit(Math.max(10, Math.min(500, Number(e.target.value))))} title="Número de entradas a listar en la tabla inferior" />
-            <label htmlFor="rep-enabled" title="Activa o desactiva el protocolo global de evitación de jugadas repetidas entre partidas">Protocolo activo</label>
-            <input id="rep-enabled" type="checkbox" checked={globalEnabled} onChange={(e) => setGlobalEnabledState(e.target.checked)} title="Si se desactiva, la IA no usará la base global para evitar repeticiones entre partidas" />
-            <label title="Exporta la base a un archivo JSON">Exportar</label>
-            <button onClick={onExport} title="Descarga la DB de repeticiones como JSON">Descargar JSON</button>
-            <label title="Importa una base previamente exportada">Importar</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }} title="Selecciona un archivo .json con la DB de repeticiones">
+            <label htmlFor="rep-limit" title={t.repeatsTab.topNTitle}>{t.repeatsTab.topN}</label>
+            <input id="rep-limit" type="number" min={10} max={500} step={10} value={limit} onChange={(e) => setLimit(Math.max(10, Math.min(500, Number(e.target.value))))} title={t.repeatsTab.topNInputTitle} />
+            <label htmlFor="rep-enabled" title={t.repeatsTab.protocolActiveTitle}>{t.repeatsTab.protocolActive}</label>
+            <input id="rep-enabled" type="checkbox" checked={globalEnabled} onChange={(e) => setGlobalEnabledState(e.target.checked)} title={t.repeatsTab.protocolDisabledTitle} />
+            <label title={t.repeatsTab.exportTitle}>{t.repeatsTab.export}</label>
+            <button onClick={onExport} title={t.repeatsTab.downloadJSONTitle}>{t.repeatsTab.downloadJSON}</button>
+            <label title={t.repeatsTab.importTitle}>{t.repeatsTab.import}</label>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input ref={fileRef} type="file" accept="application/json,.json" onChange={(e) => {
                 const f = e.target.files && e.target.files[0];
                 if (f) onImport(f);
-              }} title="Seleccionar archivo JSON" />
+              }} title={t.repeatsTab.selectFile} />
             </div>
-            <label title="Borra completamente la base de repeticiones">Limpiar</label>
-            <button onClick={() => { clearRepetitionDb(); setMessage('DB de repeticiones limpiada'); refresh(); }} title="Vacía la DB de repeticiones (no reversible)">Vaciar DB</button>
+            <label title={t.repeatsTab.clearTitle}>{t.repeatsTab.clear}</label>
+            <button onClick={() => { clearRepetitionDb(); setMessage(t.repeatsTab.dbCleared); refresh(); }} title={t.repeatsTab.clearDBTitle}>{t.repeatsTab.clearDB}</button>
           </div>
         </div>
-        <div className="panel small" style={{ minWidth: 260 }} title="Previsualización de pesos de evitación aplicados a estados repetidos entre partidas">
-          <h4 style={{ marginTop: 0 }} title="Cálculo de pesos según tu configuración">Penalización efectiva</h4>
-          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }} title="La IA aplica estos pesos para evitar estados frecuentes">
-            Muestra cómo se construirían pesos con la penalización base (coincide con IAPanel Avanzado).
+        <div className="panel small" style={{ minWidth: 260 }} title={t.repeatsTab.effectivePenaltyTitle}>
+          <h4 style={{ marginTop: 0 }} title={t.repeatsTab.penaltyCalcTitle}>{t.repeatsTab.effectivePenalty}</h4>
+          <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }} title={t.repeatsTab.penaltyIAApplies}>
+            {t.repeatsTab.penaltyDescription}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'center' }}>
-            <label htmlFor="rep-pen" title="Escala base de penalización por repetición entre partidas">Penalización base</label>
-            <input id="rep-pen" type="number" min={0} max={500} step={5} value={globalPenalty} onChange={(e) => setGlobalPenaltyState(Math.max(0, Math.min(500, Number(e.target.value))))} title="A mayor valor, más se evitan estados repetidos entre partidas" />
+            <label htmlFor="rep-pen" title={t.repeatsTab.basePenaltyTitle}>{t.repeatsTab.basePenalty}</label>
+            <input id="rep-pen" type="number" min={0} max={500} step={5} value={globalPenalty} onChange={(e) => setGlobalPenaltyState(Math.max(0, Math.min(500, Number(e.target.value))))} title={t.repeatsTab.basePenaltyInputTitle} />
           </div>
-          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }} title="Lista de ejemplos con pesos aplicados">Previsualización (Top 32 claves con peso aplicado):</div>
-          <ul style={{ maxHeight: 180, overflow: 'auto', margin: '6px 0 0 0', paddingLeft: 16 }} title="Estados con mayor peso de evitación">
+          <div style={{ fontSize: 12, opacity: 0.8, marginTop: 6 }} title={t.repeatsTab.previewTitle}>{t.repeatsTab.previewLabel}</div>
+          <ul style={{ maxHeight: 180, overflow: 'auto', margin: '6px 0 0 0', paddingLeft: 16 }} title={t.repeatsTab.previewListTitle}>
             {weightsPreview.map((w) => (
-              <li key={`${w.hi}:${w.lo}`} style={{ fontFamily: 'monospace' }} title={`Clave ${w.hi}:${w.lo} con peso ${w.weight}`}>{w.hi}:{w.lo} — peso {w.weight}</li>
+              <li key={`${w.hi}:${w.lo}`} style={{ fontFamily: 'monospace' }}>{w.hi}:{w.lo} — {w.weight}</li>
             ))}
           </ul>
         </div>
-        <div className="panel small" style={{ minWidth: 260 }} title="Resumen del impacto aplicado en la última búsqueda de la IA">
-          <h4 style={{ marginTop: 0 }} title="Métrica de última búsqueda">Impacto reciente</h4>
+        <div className="panel small" style={{ minWidth: 260 }} title={t.repeatsTab.recentImpactTitle}>
+          <h4 style={{ marginTop: 0 }} title={t.repeatsTab.lastSearchMetric}>{t.repeatsTab.recentImpact}</h4>
           <div style={{ fontSize: 13 }}>
-            <div title="Cuántos hijos de raíz penalizó el protocolo en la última decisión">Penalizados (raíz): <b>{lastImpact?.count ?? 0}</b></div>
-            <div title="Suma de pesos aplicados a esos hijos">Peso total aplicado: <b>{lastImpact?.weight ?? 0}</b></div>
-            <div title="Momento de la última actualización">Última act.: <b>{lastImpact ? new Date(lastImpact.ts).toLocaleTimeString() : '—'}</b></div>
+            <div title={t.repeatsTab.penalizedRootTitle}>{t.repeatsTab.penalizedRoot}: <b>{lastImpact?.count ?? 0}</b></div>
+            <div title={t.repeatsTab.totalWeightAppliedTitle}>{t.repeatsTab.totalWeightApplied}: <b>{lastImpact?.weight ?? 0}</b></div>
+            <div title={t.repeatsTab.lastUpdateTitle}>{t.repeatsTab.lastUpdate}: <b>{lastImpact ? new Date(lastImpact.ts).toLocaleTimeString() : '—'}</b></div>
           </div>
         </div>
-        <div className="panel" style={{ minWidth: 300 }} title="Histórico de impactos aplicados por la IA en el protocolo entre partidas">
-          <h4 style={{ marginTop: 0 }} title="Lista de últimas decisiones y su impacto">Histórico</h4>
+        <div className="panel" style={{ minWidth: 300 }} title={t.repeatsTab.historyTitle}>
+          <h4 style={{ marginTop: 0 }} title={t.repeatsTab.historyListTitle}>{t.repeatsTab.history}</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'center' }}>
-            <label htmlFor="hist-limit" title="Número de entradas recientes a mostrar">Últimas N</label>
-            <input id="hist-limit" type="number" min={10} max={500} step={10} value={histLimit} onChange={(e) => setHistLimit(Math.max(10, Math.min(500, Number(e.target.value))))} title="Tamaño de la ventana de visualización del histórico" />
-            <label htmlFor="avg-window" title="Ventana para el promedio móvil (usa últimas W entradas)">Promedio móvil (W)</label>
-            <input id="avg-window" type="number" min={1} max={200} step={1} value={avgWindow} onChange={(e) => setAvgWindow(Math.max(1, Math.min(200, Number(e.target.value))))} title="Cuántas últimas entradas considerar para el promedio móvil" />
-            <label title="Elimina todo el histórico almacenado">Borrar histórico</label>
-            <button onClick={() => { clearImpactHistory(); setHistory([]); }} title="Vacía el histórico de impactos">Limpiar</button>
+            <label htmlFor="hist-limit" title={t.repeatsTab.lastNTitle}>{t.repeatsTab.lastN}</label>
+            <input id="hist-limit" type="number" min={10} max={500} step={10} value={histLimit} onChange={(e) => setHistLimit(Math.max(10, Math.min(500, Number(e.target.value))))} title={t.repeatsTab.lastNInputTitle} />
+            <label htmlFor="avg-window" title={t.repeatsTab.movingAvgTitle}>{t.repeatsTab.movingAvg}</label>
+            <input id="avg-window" type="number" min={1} max={200} step={1} value={avgWindow} onChange={(e) => setAvgWindow(Math.max(1, Math.min(200, Number(e.target.value))))} title={t.repeatsTab.movingAvgInputTitle} />
+            <label title={t.repeatsTab.clearHistoryTitle}>{t.repeatsTab.clearHistory}</label>
+            <button onClick={() => { clearImpactHistory(); setHistory([]); }} title={t.repeatsTab.clearHistoryBtnTitle}>{t.repeatsTab.clearHistoryBtn}</button>
           </div>
           <div style={{ marginTop: 8, fontSize: 13 }}>
-            <div title="Promedio móvil de penalizados en la ventana W">Promedio móvil — Penalizados: <b>{avg.count}</b></div>
-            <div title="Promedio móvil de peso total en la ventana W">Promedio móvil — Peso: <b>{avg.weight}</b></div>
+            <div title={t.repeatsTab.avgPenalizedTitle}>{t.repeatsTab.avgPenalized}: <b>{avg.count}</b></div>
+            <div title={t.repeatsTab.avgWeightTitle}>{t.repeatsTab.avgWeight}: <b>{avg.weight}</b></div>
           </div>
-          <table className="table" role="table" aria-label="Histórico de impactos" style={{ width: '100%', marginTop: 8 }} title="Últimas decisiones">
+          <table className="table" role="table" aria-label={t.repeatsTab.historyTableLabel} style={{ width: '100%', marginTop: 8 }} title={t.repeatsTab.historyTableTitle}>
             <thead>
               <tr>
-                <th style={{ textAlign: 'left' }} title="Marca temporal">Hora</th>
-                <th style={{ textAlign: 'right' }} title="# penalizados a nivel raíz">Penalizados</th>
-                <th style={{ textAlign: 'right' }} title="Suma de pesos aplicados">Peso</th>
+                <th style={{ textAlign: 'left' }} title={t.repeatsTab.timeColTitle}>{t.repeatsTab.timeCol}</th>
+                <th style={{ textAlign: 'right' }} title={t.repeatsTab.penalizedColTitle}>{t.repeatsTab.penalizedCol}</th>
+                <th style={{ textAlign: 'right' }} title={t.repeatsTab.weightColTitle}>{t.repeatsTab.weightCol}</th>
               </tr>
             </thead>
             <tbody>
               {history.length === 0 ? (
-                <tr><td colSpan={3} style={{ opacity: 0.7 }}>Sin datos</td></tr>
+                <tr><td colSpan={3} style={{ opacity: 0.7 }}>{t.repeatsTab.noDataYet}</td></tr>
               ) : (
                 history.slice(-histLimit).reverse().map((h, i) => (
                   <tr key={h.ts + ':' + i}>
@@ -213,35 +215,35 @@ export default function RepeatsTab() {
         </div>
       </div>
 
-      <div className="panel" style={{ marginTop: 12 }} title="Tabla con las claves Zobrist más repetidas (histórico)">
-        <h4 style={{ marginTop: 0 }} title="Ranking de estados repetidos">Top jugadas/posiciones repetidas</h4>
-        <table className="table" role="table" aria-label="Top claves repetidas" style={{ width: '100%' }} title="Listado de estados por frecuencia">
+      <div className="panel" style={{ marginTop: 12 }}>
+        <h4 style={{ marginTop: 0 }} title={t.repeatsTab.topRepeatedTitle}>{t.repeatsTab.topRepeated}</h4>
+        <table className="table" role="table" aria-label={t.repeatsTab.topRepeatedTableLabel} style={{ width: '100%' }} title={t.repeatsTab.topRepeatedTableTitle}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left' }} title="Posición en el ranking">#</th>
-              <th style={{ textAlign: 'left' }} title="Clave Zobrist (hi:lo)">Clave</th>
-              <th style={{ textAlign: 'right' }} title="Número de apariciones registradas">Count</th>
+              <th style={{ textAlign: 'left' }} title={t.repeatsTab.rankColTitle}>{t.repeatsTab.rankCol}</th>
+              <th style={{ textAlign: 'left' }} title={t.repeatsTab.keyColTitle}>{t.repeatsTab.keyCol}</th>
+              <th style={{ textAlign: 'right' }} title={t.repeatsTab.countColTitle}>{t.repeatsTab.countCol}</th>
             </tr>
           </thead>
           <tbody>
             {data.map((row, idx) => (
-              <tr key={row.key} title={`Clave ${row.hi}:${row.lo} repetida ${row.count} veces`}>
-                <td title={`Ranking #${idx + 1}`}>{idx + 1}</td>
-                <td style={{ fontFamily: 'monospace' }} title={`Identificador de estado ${row.hi}:${row.lo}`}>{row.hi}:{row.lo}</td>
-                <td style={{ textAlign: 'right' }} title={`Apariciones: ${row.count}`}>{row.count}</td>
+              <tr key={row.key}>
+                <td>{idx + 1}</td>
+                <td style={{ fontFamily: 'monospace' }}>{row.hi}:{row.lo}</td>
+                <td style={{ textAlign: 'right' }}>{row.count}</td>
               </tr>
             ))}
             {data.length === 0 && (
-              <tr title="No hay datos aún">
-                <td colSpan={3} style={{ opacity: 0.7 }} title="Juega partidas o ejecuta simulaciones para generar datos">Sin datos aún. Juega partidas para acumular repeticiones.</td>
+              <tr title={t.repeatsTab.noDataPlayTitle}>
+                <td colSpan={3} style={{ opacity: 0.7 }}>{t.repeatsTab.noDataPlay}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }} title="Cómo influye esta base en la IA">
-        Nota: Esta DB afecta a la elección en raíz de la IA entre partidas (evitación ponderada global). El umbral intra-partida y otros ajustes se configuran en el panel de IA Avanzado.
+      <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }} title={t.repeatsTab.footerNoteTitle}>
+        {t.repeatsTab.footerNote}
       </div>
     </div>
   );

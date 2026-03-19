@@ -580,7 +580,7 @@ function App() {
               onChangeIaConfig={(patch) => setIaConfig((prev) => ({ ...prev, ...patch }))}
             />
           )}
-          infoIAPanel={(<InfoIA onMirrorStart={onMirrorStart} onMirrorUpdate={onMirrorUpdate} onMirrorEnd={onMirrorEnd} />)}
+          infoIAPanel={(<InfoIA onMirrorStart={onMirrorStart} onMirrorUpdate={onMirrorUpdate} onMirrorEnd={onMirrorEnd} gameState={state} noShade={noShadeEffective} shadeOnlyHoles={shadeOnlyHoles} showHoleBorders={holeBorders} />)}
           uxPanel={(
             <UXPanel
               noShadeL0={noShade[0]}

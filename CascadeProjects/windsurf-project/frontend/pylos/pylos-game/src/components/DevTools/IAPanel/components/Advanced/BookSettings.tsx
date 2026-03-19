@@ -1,4 +1,5 @@
 import type { AIAdvancedConfig } from '../../types';
+import { useI18n } from '../../../../../i18n';
 
 export interface BookSettingsProps {
   iaConfig: AIAdvancedConfig;
@@ -6,6 +7,7 @@ export interface BookSettingsProps {
 }
 
 export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSettingsProps) {
+  const { t } = useI18n();
   const mode = iaConfig.bookMode ?? 'auto';
   const phase = iaConfig.bookPhase ?? 'aperturas';
   const basePath = iaConfig.bookBasePath ?? '/books';
@@ -13,13 +15,13 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
   const uiDisabled = true;
   return (
     <>
-      <label>Libro de aperturas</label>
+      <label>{t.iaPanel.openingBook}</label>
       <div>
         <input id="ia-book" type="checkbox" checked={iaConfig.bookEnabled} onChange={(e) => onChangeIaConfig({ bookEnabled: e.target.checked })} disabled={uiDisabled} />
-        <label htmlFor="ia-book" style={{ marginLeft: 6 }}>Activado</label>
+        <label htmlFor="ia-book" style={{ marginLeft: 6 }}>{t.iaPanel.enabled}</label>
       </div>
 
-      <label>Modo</label>
+      <label>{t.iaPanel.mode}</label>
       <div>
         <select
           id="ia-book-mode"
@@ -27,14 +29,14 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
           onChange={(e) => onChangeIaConfig({ bookMode: e.target.value as any })}
           disabled={uiDisabled}
         >
-          <option value="auto">Automático (según profundidad)</option>
-          <option value="manual">Manual (URL)</option>
+          <option value="auto">{t.iaPanel.modeAuto}</option>
+          <option value="manual">{t.iaPanel.modeManual}</option>
         </select>
       </div>
 
       {mode === 'auto' && (
         <>
-          <label>Fase</label>
+          <label>{t.iaPanel.phase}</label>
           <div>
             <select
               id="ia-book-phase"
@@ -42,12 +44,12 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
               onChange={(e) => onChangeIaConfig({ bookPhase: e.target.value as any })}
               disabled={uiDisabled}
             >
-              <option value="aperturas">Aperturas</option>
-              <option value="medio">Medio juego</option>
-              <option value="cierres">Cierres</option>
+              <option value="aperturas">{t.iaPanel.phaseOpenings}</option>
+              <option value="medio">{t.iaPanel.phaseMidgame}</option>
+              <option value="cierres">{t.iaPanel.phaseEndgame}</option>
             </select>
           </div>
-          <label>Ruta base</label>
+          <label>{t.iaPanel.basePath}</label>
           <div>
             <input
               id="ia-book-base"
@@ -64,7 +66,7 @@ export default function BookSettings({ iaConfig, onChangeIaConfig }: BookSetting
 
       {mode === 'manual' && (
         <>
-          <label>URL del libro</label>
+          <label>{t.iaPanel.bookUrl}</label>
           <div>
             <input
               id="ia-book-url"

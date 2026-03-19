@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { RootMove } from '../types';
 import { fmtMove } from '../utils/format';
+import { useI18n } from '../../../../i18n';
 
 export interface RootMovesListProps {
   rootMoves: RootMove[] | undefined;
@@ -8,6 +9,7 @@ export interface RootMovesListProps {
 }
 
 export default function RootMovesList({ rootMoves, limit = 6 }: RootMovesListProps) {
+  const { t } = useI18n();
   const sorted = useMemo(() => {
     return (rootMoves || [])
       .slice()
@@ -23,8 +25,8 @@ export default function RootMovesList({ rootMoves, limit = 6 }: RootMovesListPro
   }, [sorted, limit]);
 
   return (
-    <div className="ia-panel__moves" aria-label="Top movimientos">
-      <div className="section-title">Top jugadas (raíz)</div>
+    <div className="ia-panel__moves" aria-label={t.iaPanel.topMoves}>
+      <div className="section-title">{t.iaPanel.topMovesRoot}</div>
       <ol className="moves-list">
         {filled.map((r, i) => {
           const has = !!r;

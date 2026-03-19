@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { AIAdvancedConfig } from '../../types';
 import { getGlobalEnabled, setGlobalEnabled } from '../../../../../utils/repetitionDb';
+import { useI18n } from '../../../../../i18n';
 
 export interface RepetitionSettingsProps {
   iaConfig: AIAdvancedConfig;
@@ -8,10 +9,11 @@ export interface RepetitionSettingsProps {
 }
 
 export default function RepetitionSettings({ iaConfig, onChangeIaConfig }: RepetitionSettingsProps) {
+  const { t } = useI18n();
   const [globalAvoidEnabled, setGlobalAvoidEnabled] = useState<boolean>(() => getGlobalEnabled());
   return (
     <>
-      <label>Evitar repeticiones (entre partidas, global)</label>
+      <label>{t.iaPanel.avoidRepetitionsGlobal}</label>
       <div>
         <input
           id="ia-global-avoid-enabled"
@@ -23,16 +25,16 @@ export default function RepetitionSettings({ iaConfig, onChangeIaConfig }: Repet
             try { setGlobalEnabled(v); } catch {}
           }}
         />
-        <label htmlFor="ia-global-avoid-enabled" style={{ marginLeft: 6 }}>Protocolo activo</label>
+        <label htmlFor="ia-global-avoid-enabled" style={{ marginLeft: 6 }}>{t.iaPanel.protocolActive}</label>
       </div>
 
-      <label>Evitar repeticiones (raíz)</label>
+      <label>{t.iaPanel.avoidRepetitionsRoot}</label>
       <div>
         <input id="ia-avoid-rep" type="checkbox" checked={iaConfig.avoidRepeats ?? true} onChange={(e) => onChangeIaConfig({ avoidRepeats: e.target.checked })} />
-        <label htmlFor="ia-avoid-rep" style={{ marginLeft: 6 }}>Activado</label>
+        <label htmlFor="ia-avoid-rep" style={{ marginLeft: 6 }}>{t.iaPanel.enabled}</label>
       </div>
 
-      <label>Repeticiones máx. (evitar ≥)</label>
+      <label>{t.iaPanel.maxRepetitions}</label>
       <div>
         <input
           id="ia-repeat-max"
@@ -46,7 +48,7 @@ export default function RepetitionSettings({ iaConfig, onChangeIaConfig }: Repet
         />
       </div>
 
-      <label>Penalización por repetición</label>
+      <label>{t.iaPanel.repetitionPenalty}</label>
       <div>
         <input
           id="ia-avoid-penalty"

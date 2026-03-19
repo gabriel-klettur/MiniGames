@@ -1,17 +1,18 @@
+import { useI18n } from '../../../../../i18n';
+
 export function StartSettings(props: {
   startRandom: boolean;
   onStartRandomChange: (v: boolean) => void;
   seedInput: string;
   onSeedInputChange: (v: string) => void;
-  // New: per-player early-random turns count
   earlyRandom?: number;
   onEarlyRandomChange?: (n: number) => void;
 }) {
+  const { t } = useI18n();
   const { startRandom, onStartRandomChange, seedInput, onSeedInputChange, earlyRandom, onEarlyRandomChange } = props;
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {/* Fila 1: sólo el inicio aleatorio */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           <input
             id="infoia-start-rand"
@@ -19,12 +20,11 @@ export function StartSettings(props: {
             checked={startRandom}
             onChange={(e) => onStartRandomChange(e.target.checked)}
             aria-checked={startRandom}
-            title={'Activa un inicio aleatorio sólo cuando el tablero está vacío.\nÚtil para evitar sesgos de apertura durante pruebas largas.'}
+            title={t.infoIA.randomFirstMoveTitle}
           />
-          <label htmlFor="infoia-start-rand">Movimiento inicial aleatorio</label>
+          <label htmlFor="infoia-start-rand">{t.infoIA.randomFirstMove}</label>
         </div>
 
-        {/* Fila 2: N (aleatorio), Semilla y Libro */}
         <div
           style={{
             display: 'grid',
@@ -34,9 +34,7 @@ export function StartSettings(props: {
             alignItems: 'center'
           }}
         >
-          
-          {/* N (aleatorio) */}
-          <label className="label" htmlFor="infoia-start-early" style={{ justifySelf: 'end' }} title={'Número de primeras jugadas de este jugador que serán 100% aleatorias.'}>N (aleatorio)</label>
+          <label className="label" htmlFor="infoia-start-early" style={{ justifySelf: 'end' }} title={t.infoIA.nRandomTitle}>{t.infoIA.nRandom}</label>
           <input
             id="infoia-start-early"
             className="field-num"
@@ -47,21 +45,20 @@ export function StartSettings(props: {
             value={Math.max(0, Math.min(10, Number.isFinite(earlyRandom as number) ? Number(earlyRandom) : 2))}
             onChange={(e) => onEarlyRandomChange?.(Math.max(0, Math.min(10, Math.floor(Number(e.target.value))))) }
             style={{ width: 72 }}
-            title={'Ej.: 2 ⇒ las dos primeras jugadas de este jugador serán aleatorias.'}
+            title={t.infoIA.nRandomExample}
           />
 
-          {/* Semilla */}
-          <label className="label" htmlFor="infoia-start-seed" style={{ justifySelf: 'end' }} title={'Semilla numérica para fijar el resultado del movimiento inicial aleatorio.\nDeja vacío para que sea distinto cada vez.\nEjemplo: escribe 42 y obtendrás siempre el mismo primer movimiento cuando "Movimiento inicial aleatorio" esté activo.'}>Semilla</label>
+          <label className="label" htmlFor="infoia-start-seed" style={{ justifySelf: 'end' }} title={t.infoIA.seedTitle}>{t.infoIA.seed}</label>
           <input
             id="infoia-start-seed"
             className="field-num"
             type="number"
-            placeholder="p. ej., 1234"
+            placeholder={t.infoIA.seedPlaceholder}
             value={seedInput}
             onChange={(e) => onSeedInputChange(e.target.value)}
             style={{ width: 120 }}
             disabled={!startRandom}
-            title={'Valor opcional para reproducibilidad del inicio aleatorio.\nFunciona sólo si "Movimiento inicial aleatorio" está activado.'}
+            title={t.infoIA.seedInputTitle}
           />
         </div>
       </div>

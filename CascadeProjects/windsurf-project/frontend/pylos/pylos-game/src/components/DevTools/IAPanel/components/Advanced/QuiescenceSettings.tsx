@@ -1,4 +1,5 @@
 import type { AIAdvancedConfig } from '../../types';
+import { useI18n } from '../../../../../i18n';
 
 export interface QuiescenceSettingsProps {
   iaConfig: AIAdvancedConfig;
@@ -6,15 +7,16 @@ export interface QuiescenceSettingsProps {
 }
 
 export default function QuiescenceSettings({ iaConfig, onChangeIaConfig }: QuiescenceSettingsProps) {
+  const { t } = useI18n();
   return (
     <>
-      <label>Quiescence</label>
+      <label>{t.iaPanel.quiescence}</label>
       <div>
         <input id="ia-q" type="checkbox" checked={iaConfig.quiescence} onChange={(e) => onChangeIaConfig({ quiescence: e.target.checked })} />
-        <label htmlFor="ia-q" style={{ marginLeft: 6 }}>Activado</label>
+        <label htmlFor="ia-q" style={{ marginLeft: 6 }}>{t.iaPanel.enabled}</label>
       </div>
 
-      <label>Q depth máx</label>
+      <label>{t.iaPanel.qDepthMax}</label>
       <div>
         <input
           type="range"
@@ -27,7 +29,7 @@ export default function QuiescenceSettings({ iaConfig, onChangeIaConfig }: Quies
         <span style={{ marginLeft: 8 }}>{iaConfig.qDepthMax}</span>
       </div>
 
-      <label>Q hijos por nodo</label>
+      <label>{t.iaPanel.qChildrenPerNode}</label>
       <div>
         <input
           type="range"
@@ -40,7 +42,7 @@ export default function QuiescenceSettings({ iaConfig, onChangeIaConfig }: Quies
         <span style={{ marginLeft: 8 }}>{iaConfig.qNodeCap}</span>
       </div>
 
-      <label>Futility margin</label>
+      <label>{t.iaPanel.futilityMargin}</label>
       <div>
         <input
           type="range"

@@ -1,5 +1,6 @@
 import { useRef, type ChangeEvent } from 'react';
 import type { InfoIAGameRecord } from '../../../utils/infoiaDb';
+import type { GameState } from '../../../game/types';
 import TablaIA from './views/Tabla/TablaIA';
 import ChartContainer from './views/Chart/ChartContainer';
 import TimeBar from './views/TimeBar';
@@ -8,6 +9,7 @@ import Controls from './views/Controls/Controls';
 import Books from './views/Books';
 import type { TimeMode } from './types';
 import RepeatsTab from './views/RepeatsTab';
+import { useI18n } from '../../../i18n';
 
 // Lightweight heads for compare datasets (for UI lists)
 export type CompareHead = { id: string; name: string; color: string };
@@ -75,9 +77,19 @@ export type InfoIAViewProps = {
   moveIndex: number;
   moveElapsedMs: number;
   moveTargetMs?: number;
+
+  // Mini board state
+  currentSimState: GameState | null;
+
+  // Real game state + visual props for the mini board clone
+  gameState: GameState;
+  noShade: { 0: boolean; 1: boolean; 2: boolean; 3: boolean };
+  shadeOnlyHoles: boolean;
+  showHoleBorders: boolean;
 };
 
 export default function InfoIAView(props: InfoIAViewProps) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const onAddCompareClick = () => inputRef.current?.click();
   const handleCompareFiles = (e: ChangeEvent<HTMLInputElement>) => {
@@ -128,10 +140,15 @@ export default function InfoIAView(props: InfoIAViewProps) {
     moveIndex,
     moveElapsedMs,
     moveTargetMs,
+    currentSimState,
+    gameState,
+    noShade,
+    shadeOnlyHoles,
+    showHoleBorders,
   } = props;
 
   return (
-    <section className="panel infoia-panel" aria-label="InfoIA (simulaciones de IA)" style={{ position: 'relative' }}>
+    <section className="panel infoia-panel" aria-label={t.infoIA.panelLabel}>
       {toast && (
         <div
           role="status"
@@ -156,50 +173,50 @@ export default function InfoIAView(props: InfoIAViewProps) {
       )}
 
       <div className="infoia__header" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>InfoIA</h3>
-        <div className="infoia__tabs segmented" role="tablist" aria-label="Secciones de InfoIA">
+        <h3 className="ia-panel__title" style={{ marginRight: 'auto' }}>{t.infoIA.title}</h3>
+        <div className="infoia__tabs segmented" role="tablist" aria-label={t.infoIA.panelLabel}>
           <button
             className={activeTab === 'repeats' ? 'active' : ''}
             role="tab"
             aria-selected={activeTab === 'repeats'}
             onClick={() => onChangeTab('repeats')}
-            title="Configurar y visualizar jugadas repetidas"
+            title={t.infoIA.repeatedMovesTitle}
           >
-            Jugadas Repetidas
+            {t.infoIA.repeatedMoves}
           </button>
           <button
             className={activeTab === 'sim' ? 'active' : ''}
             role="tab"
             aria-selected={activeTab === 'sim'}
             onClick={() => onChangeTab('sim')}
-            title="Ver simulaciones y métricas"
+            title={t.infoIA.simulationsTitle}
           >
-            Simulaciones y Métricas
+            {t.infoIA.simulations}
           </button>
           <button
             className={activeTab === 'charts' ? 'active' : ''}
             role="tab"
             aria-selected={activeTab === 'charts'}
             onClick={() => onChangeTab('charts')}
-            title="Ver gráficos"
+            title={t.infoIA.chartsTitle}
           >
-            Gráficos
+            {t.infoIA.charts}
           </button>
           <button
             className={activeTab === 'books' ? 'active' : ''}
             role="tab"
             aria-selected={activeTab === 'books'}
             onClick={() => onChangeTab('books')}
-            title="Ver y gestionar Books"
+            title={t.infoIA.booksTitle}
           >
-            Books
+            {t.infoIA.books}
           </button>
         </div>
         <div className="infoia__status" aria-live="polite">
           {running && (
-            <span className="kpi kpi--accent" title="Ejecución en curso">
+            <span className="kpi kpi--accent" title={t.infoIA.running}>
               <span className="spinner" aria-hidden="true" />
-              Ejecutando…
+              {t.infoIA.running}
             </span>
           )}
         </div>
@@ -259,6 +276,11 @@ export default function InfoIAView(props: InfoIAViewProps) {
             compareSets={compareHeads}
             onSelectTableSource={onSelectTableSource}
             canClearLocal={canClearLocal}
+            currentSimState={currentSimState}
+            gameState={gameState}
+            noShade={noShade}
+            shadeOnlyHoles={shadeOnlyHoles}
+            showHoleBorders={showHoleBorders}
           />
 
           {/* Per-move time progress */}
@@ -299,7 +321,7 @@ export default function InfoIAView(props: InfoIAViewProps) {
           />
 
           {(() => {
-            const local = { id: 'local', name: 'Local', color: '#22c55e', records };
+            const local = { id: 'local', name: t.infoIA.local, color: '#22c55e', records };
             const datasets = [local, ...compareDatasets];
             return (
               <ChartContainer datasets={datasets} />

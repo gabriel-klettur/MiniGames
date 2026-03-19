@@ -3,6 +3,7 @@ import bolaA from '../assets/bola_a.webp';
 import bolaB from '../assets/bola_b.webp';
 import type { MoveEntry } from '../hooks/usePersistence';
 import HistoryPagination from './HistoryPagination';
+import { useI18n } from '../i18n';
 
 export interface MoveLogProps {
   moves: MoveEntry[];
@@ -17,6 +18,7 @@ export interface MoveLogProps {
  * Also compacts consecutive duplicate entries with a small counter.
  */
 export default function MoveLog({ moves, onDownload, hasArchive = false, onClear, disablePagination = true }: MoveLogProps) {
+  const { t } = useI18n();
   type Entry = MoveEntry & { count: number };
 
   const grouped: Entry[] = useMemo(() => {
@@ -44,12 +46,12 @@ export default function MoveLog({ moves, onDownload, hasArchive = false, onClear
   const pageItems = disablePagination ? grouped : grouped.slice(start, end);
 
   const iconFor = (p: 'L' | 'D') => (p === 'L' ? bolaB : bolaA);
-  const labelFor = (s: MoveEntry['source']) => (s === 'IA' ? 'IA' : s === 'AUTO' ? 'AUTO' : 'Jugador');
+  const labelFor = (s: MoveEntry['source']) => (s === 'IA' ? 'IA' : s === 'AUTO' ? 'AUTO' : t.historyPanel.player);
 
   return (
-    <section className="moves" aria-label="Historial de movimientos">
+    <section className="moves" aria-label={t.historyPanel.ariaLabel}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <h3 style={{ margin: 0 }}>Historial</h3>
+        <h3 style={{ margin: 0 }}>{t.historyPanel.title}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {onDownload && (
             <>
@@ -57,48 +59,48 @@ export default function MoveLog({ moves, onDownload, hasArchive = false, onClear
                 <button
                   type="button"
                   onClick={onClear}
-                  title="Limpiar historial (actual + archivadas)"
+                  title={t.historyPanel.clearTitle}
                   style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #555', background: '#2a2a2a', color: '#fff', cursor: 'pointer' }}
                 >
-                  Limpiar
+                  {t.historyPanel.clear}
                 </button>
               )}
               <button
                 type="button"
                 onClick={onDownload}
                 disabled={grouped.length === 0 && !hasArchive}
-                title={grouped.length === 0 && !hasArchive ? 'No hay datos para descargar' : 'Descargar historial (actual + archivadas)'}
+                title={grouped.length === 0 && !hasArchive ? t.historyPanel.noDataToDownload : t.historyPanel.downloadTitle}
                 style={{ fontSize: 12, padding: '6px 10px', borderRadius: 6, border: '1px solid #555', background: '#222', color: '#fff', cursor: grouped.length === 0 && !hasArchive ? 'not-allowed' : 'pointer' }}
               >
-                Descargar
+                {t.historyPanel.download}
               </button>
             </>
           )}
         </div>
       </div>
       {grouped.length === 0 ? (
-        <p className="muted">Sin movimientos</p>
+        <p className="muted">{t.historyPanel.noMoves}</p>
       ) : (
         <ol>
           {pageItems.map((e, i) => (
             <li key={i} className="moves__item">
               <img
                 src={iconFor(e.player)}
-                alt={e.player === 'L' ? 'Claras (L)' : 'Oscuras (D)'}
+                alt={e.player === 'L' ? t.historyPanel.lightBalls : t.historyPanel.darkBalls}
                 className="moves__icon"
                 style={{ width: 18, height: 18, borderRadius: '50%', marginRight: 8, verticalAlign: 'middle' }}
                 draggable={false}
               />
               <span
                 className="moves__tag"
-                aria-label={`Origen: ${labelFor(e.source)}`}
+                aria-label={`${t.historyPanel.source}: ${labelFor(e.source)}`}
                 style={{ display: 'inline-block', fontSize: 12, padding: '2px 6px', borderRadius: 6, background: '#444', color: '#fff', marginRight: 6 }}
               >
                 {labelFor(e.source)}
               </span>
               <span className="moves__text">{e.text}</span>
               {e.count > 1 && (
-                <span className="moves__count" title={`Repetido ${e.count} veces`} style={{ marginLeft: 6, opacity: 0.8 }}>×{e.count}</span>
+                <span className="moves__count" title={t.historyPanel.repeated.replace('{count}', String(e.count))} style={{ marginLeft: 6, opacity: 0.8 }}>×{e.count}</span>
               )}
             </li>
           ))}

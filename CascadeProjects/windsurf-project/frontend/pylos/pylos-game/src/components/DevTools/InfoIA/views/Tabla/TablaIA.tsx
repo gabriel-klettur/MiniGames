@@ -7,6 +7,7 @@ import WinnerIcon from './components/WinnerIcon';
 import RecordActions from './components/RecordActions';
 import GroupActions from './components/GroupActions';
 import GameDetails from './components/GameDetails';
+import { useI18n } from '../../../../../i18n';
 
 export type TablaIAProps = {
   records: InfoIAGameRecord[];
@@ -18,6 +19,7 @@ export type TablaIAProps = {
 };
 
 export default function TablaIA({ records, loading = false, allowDelete = true, onDelete, groupByDepth = false, onToast }: TablaIAProps) {
+  const { t } = useI18n();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const toggleExpanded = (id: string) => setExpandedId(prev => (prev === id ? null : id));
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null); // group key `${depthL}|${depthD}`
@@ -37,7 +39,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
   if (loading) {
     return (
       <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
-        <table className="table"><tbody><tr><td colSpan={14}>Cargando…</td></tr></tbody></table>
+        <table className="table"><tbody><tr><td colSpan={14}>{t.infoIA.loading}</td></tr></tbody></table>
       </div>
     );
   }
@@ -45,7 +47,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
   if (!records || records.length === 0) {
     return (
       <div className="infoia__table-wrapper" style={{ overflowX: 'auto' }}>
-        <table className="table"><tbody><tr><td colSpan={14}>Sin registros aún</td></tr></tbody></table>
+        <table className="table"><tbody><tr><td colSpan={14}>{t.infoIA.noRecordsYet}</td></tr></tbody></table>
       </div>
     );
   }

@@ -1,3 +1,5 @@
+import { useI18n } from '../../../../../i18n';
+
 export function ActionsBar(props: {
   running: boolean;
   loading: boolean;
@@ -11,6 +13,7 @@ export function ActionsBar(props: {
   canClearLocal: boolean;
   activeTableSourceId: string;
 }) {
+  const { t } = useI18n();
   const {
     running, loading, onStart, onStop, onDefault,
     onExportJSON, onExportCSV,
@@ -20,20 +23,20 @@ export function ActionsBar(props: {
   return (
     <div className="infoia__actions">
       {!running ? (
-        <button className="primary" onClick={onStart} disabled={loading} title="Iniciar simulaciones">Iniciar</button>
+        <button className="primary" onClick={onStart} disabled={loading} title={t.infoIA.startTitle}>{t.infoIA.start}</button>
       ) : (
-        <button className="btn-stop" onClick={onStop} title="Detener simulación en curso">Detener</button>
+        <button className="btn-stop" onClick={onStop} title={t.infoIA.stopTitle}>{t.infoIA.stop}</button>
       )}
       <button
         className="btn-accent"
         onClick={onDefault}
-        title="Restablecer todos los parámetros a valores por defecto"
+        title={t.infoIA.defaultTitle}
         disabled={running}
-      >Default</button>
-      <button className="btn-ghost" onClick={onExportJSON}>Exportar JSON</button>
-      <button className="btn-ghost" onClick={onExportCSV}>Exportar CSV</button>
-      <button className="btn-ghost" onClick={onAddCompare} title="Agregar CSV o JSON">Agregar CSV o JSON</button>
-      <button className="btn-danger" onClick={onClearAll} disabled={!canClearLocal} title={activeTableSourceId !== 'local' ? 'Solo disponible para datos locales' : 'Borrar todos los registros locales'}>Borrar todo</button>
+      >{t.infoIA.defaultBtn}</button>
+      <button className="btn-ghost" onClick={onExportJSON}>{t.infoIA.exportJSON}</button>
+      <button className="btn-ghost" onClick={onExportCSV}>{t.infoIA.exportCSV}</button>
+      <button className="btn-ghost" onClick={onAddCompare} title={t.infoIA.addCompareTitle}>{t.infoIA.addCompareBtn}</button>
+      <button className="btn-danger" onClick={onClearAll} disabled={!canClearLocal} title={activeTableSourceId !== 'local' ? t.infoIA.clearAllOnlyLocal : t.infoIA.clearAllTitle}>{t.infoIA.clearAllBtn}</button>
     </div>
   );
 }

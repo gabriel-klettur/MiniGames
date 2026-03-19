@@ -1,4 +1,5 @@
- 
+import { useI18n } from '../../../../../i18n';
+
 export interface SizeTabProps {
   // Pieces
   pieceScale: number;
@@ -35,6 +36,7 @@ export interface SizeTabProps {
 }
 
 export default function SizeTab(props: SizeTabProps) {
+  const { t } = useI18n();
   const {
     pieceScale, onChangePieceScale,
     scale, onChangeScale,
@@ -55,10 +57,10 @@ export default function SizeTab(props: SizeTabProps) {
     <div role="tabpanel" id="panel-size" aria-labelledby="tab-size" className="tabs__panel">
       {/* Pieces */}
       <div className="row">
-        <label className="label">Bolas</label>
+        <label className="label">{t.uxPanel.balls}</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Escala pieza
+            {t.uxPanel.pieceScale}
             <input type="number" min={0.8} max={2.5} step={0.05} value={Number.isFinite(pieceScale) ? pieceScale : 1}
                    onChange={(e) => onChangePieceScale(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
@@ -67,25 +69,25 @@ export default function SizeTab(props: SizeTabProps) {
 
       {/* Board & Cells */}
       <div className="row">
-        <label className="label">Tablero y celdas</label>
+        <label className="label">{t.uxPanel.boardAndCells}</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Escala tablero
+            {t.uxPanel.boardScale}
             <input type="number" min={0.3} max={2.0} step={0.05} value={scale}
                    onChange={(e) => onChangeScale(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Tamaño celda mínimo (px)
+            {t.uxPanel.cellSizeMin}
             <input type="number" min={16} max={200} step={1} value={cellSizeMin}
                    onChange={(e) => onChangeCellSizeMin(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Multiplicador celda
+            {t.uxPanel.cellSizeMult}
             <input type="number" min={0.5} max={2} step={0.05} value={cellSizeMult}
                    onChange={(e) => onChangeCellSizeMult(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Separación niveles base (px)
+            {t.uxPanel.levelGapBasePx}
             <input type="number" min={0} max={40} step={1} value={levelGapBase}
                    onChange={(e) => onChangeLevelGapBase(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
@@ -94,30 +96,30 @@ export default function SizeTab(props: SizeTabProps) {
 
       {/* Holes */}
       <div className="row">
-        <label className="label">Huecos (holes)</label>
+        <label className="label">{t.uxPanel.holes}</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Escala hueco
+            {t.uxPanel.holeScale}
             <input type="number" min={0.6} max={1.6} step={0.05} value={holeScale}
                    onChange={(e) => onChangeHoleScale(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Escala matriz bola
+            {t.uxPanel.ballMatrixScale}
             <input type="number" min={0.6} max={1.6} step={0.05} value={ballMatrixScale}
                    onChange={(e) => onChangeBallMatrixScale(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Escala matriz hueco
+            {t.uxPanel.holeMatrixScale}
             <input type="number" min={0.6} max={1.6} step={0.05} value={holeMatrixScale}
                    onChange={(e) => onChangeHoleMatrixScale(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Ancho anillo (px)
+            {t.uxPanel.ringWidthPx}
             <input type="number" min={0} max={10} step={1} value={holeRingW}
                    onChange={(e) => onChangeHoleRingW(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Inset (px)
+            {t.uxPanel.insetPx}
             <input type="number" min={0} max={12} step={1} value={holeInset}
                    onChange={(e) => onChangeHoleInset(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
@@ -126,25 +128,25 @@ export default function SizeTab(props: SizeTabProps) {
 
       {/* Debug hitboxes thickness */}
       <div className="row">
-        <label className="label">Hitboxes (depuración) — grosores</label>
+        <label className="label">{t.uxPanel.hitboxesDebug}</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '8px 12px', alignItems: 'center' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Rejilla (px)
+            {t.uxPanel.gridPx}
             <input type="number" min={0} max={12} step={1} value={dbgGridOutlineW}
                    onChange={(e) => onChangeDbgGridOutlineW(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Contorno celda (px)
+            {t.uxPanel.cellOutlinePx}
             <input type="number" min={0} max={12} step={1} value={dbgCellOutlineW}
                    onChange={(e) => onChangeDbgCellOutlineW(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Deshabilitada (px)
+            {t.uxPanel.disabledPx}
             <input type="number" min={0} max={12} step={1} value={dbgDisabledOutlineW}
                    onChange={(e) => onChangeDbgDisabledOutlineW(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            Clicable rosa (px)
+            {t.uxPanel.clickablePinkPx}
             <input type="number" min={0} max={12} step={1} value={dbgClickableOutlineW}
                    onChange={(e) => onChangeDbgClickableOutlineW(parseFloat(e.target.value))} style={{ width: 90 }} />
           </label>

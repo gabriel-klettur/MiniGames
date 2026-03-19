@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { AggRow } from '../../utils/aggregates';
 import { niceStep } from '../../utils/chart';
+import { useI18n } from '../../../../../i18n';
 
 export type ChartAggDataset = {
   id?: string;
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export default function Chart({ width: W, height: H, datasets }: Props) {
+  const { t: tr } = useI18n();
   const hasAnyAgg = datasets.some((d) => d.aggregates.length > 0);
   if (!hasAnyAgg) {
     // Caller should handle empty state; this is a safe fallback.
@@ -81,7 +83,7 @@ export default function Chart({ width: W, height: H, datasets }: Props) {
     <div style={containerStyle}>
       {W > 0 && H > 0 && (
         <>
-          <svg width={W} height={H} role="img" aria-label="Gráfico comparativo de métricas por dificultad">
+          <svg width={W} height={H} role="img" aria-label={tr.chartsTab.chartLabel}>
             <defs>
               <filter id="ds" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
@@ -130,7 +132,7 @@ export default function Chart({ width: W, height: H, datasets }: Props) {
                   <text x={margin.left - 8} y={yScale(t) + 4} textAnchor="end" fontSize={fsAxis} fill="#ffffff">{t % 1 === 0 ? `${t}s` : `${t.toFixed(1)}s`}</text>
                 </g>
               ))}
-              <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={fsLegend} opacity={0.9} fill="#ffffff">Segundos (s)</text>
+              <text transform={`translate(${margin.left - 52}, ${margin.top + innerH / 2}) rotate(-90)`} textAnchor="middle" fontSize={fsLegend} opacity={0.9} fill="#ffffff">{tr.chartsTab.yAxisLabel}</text>
             </g>
 
             {/* Vertical guides and X axis */}
@@ -139,10 +141,10 @@ export default function Chart({ width: W, height: H, datasets }: Props) {
                 <g key={d} transform={`translate(${xForIndex(i)}, 0)`}>
                   <line y1={margin.top} y2={H - margin.bottom} stroke="#1f2937" strokeOpacity={0.25} />
                   <line y1={H - margin.bottom} y2={H - margin.bottom + 6} stroke="#64748b" />
-                  <text y={H - margin.bottom + 18} textAnchor="middle" fontSize={fsAxis} fill="#ffffff">Dificultad {d}</text>
+                  <text y={H - margin.bottom + 18} textAnchor="middle" fontSize={fsAxis} fill="#ffffff">{tr.chartsTab.difficultyLabel.replace('{depth}', String(d))}</text>
                 </g>
               ))}
-              <text x={W - margin.right} y={H - 8} textAnchor="end" fontSize={fsLegend} opacity={0.9} fill="#ffffff">Dificultad</text>
+              <text x={W - margin.right} y={H - 8} textAnchor="end" fontSize={fsLegend} opacity={0.9} fill="#ffffff">{tr.chartsTab.xAxisLabel}</text>
             </g>
 
             {/* Dataset lines */}
@@ -177,7 +179,7 @@ export default function Chart({ width: W, height: H, datasets }: Props) {
                           <g key={p.key} filter="url(#ds)">
                             <circle cx={cx} cy={cy} r={p.r} fill={ds.color} stroke="#0b1220" strokeWidth={p.strokeW} />
                             <circle cx={cx} cy={cy} r={p.r + 2} fill="none" stroke={ds.color} strokeOpacity={0.25} />
-                            <title>{`${ds.name} · ${p.key === 'avgSec' ? 'Promedio' : p.key === 'minSec' ? 'Mín' : 'Máx'}: ${p.val.toFixed(3)}s @ Dificultad ${a.depth}`}</title>
+                            <title>{`${ds.name} · ${p.key === 'avgSec' ? tr.chartsTab.avgLabel : p.key === 'minSec' ? tr.chartsTab.minLabel : tr.chartsTab.maxLabel}: ${p.val.toFixed(3)}s @ ${tr.chartsTab.difficultyLabel.replace('{depth}', String(a.depth))}`}</title>
                           </g>
                         );
                       })}

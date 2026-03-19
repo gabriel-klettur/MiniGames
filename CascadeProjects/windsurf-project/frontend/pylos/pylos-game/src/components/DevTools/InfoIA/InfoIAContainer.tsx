@@ -16,6 +16,10 @@ export type InfoIAProps = {
   onMirrorStart?: () => void;
   onMirrorUpdate?: (s: GameState) => void;
   onMirrorEnd?: (s: GameState) => void;
+  gameState: GameState;
+  noShade: { 0: boolean; 1: boolean; 2: boolean; 3: boolean };
+  shadeOnlyHoles: boolean;
+  showHoleBorders: boolean;
 };
 
 export default function InfoIAContainer(props: InfoIAProps) {
@@ -91,7 +95,7 @@ export default function InfoIAContainer(props: InfoIAProps) {
   useEffect(() => { void refresh(); }, [refresh]);
 
   // Simulation
-  const { running, start, stop, moveIndex, moveElapsedMs, moveTargetMs } = useInfoIASim({
+  const { running, start, stop, moveIndex, moveElapsedMs, moveTargetMs, currentSimState } = useInfoIASim({
     depth,
     timeMode,
     timeSeconds,
@@ -329,6 +333,11 @@ export default function InfoIAContainer(props: InfoIAProps) {
       moveIndex={moveIndex}
       moveElapsedMs={moveElapsedMs}
       moveTargetMs={moveTargetMs}
+      currentSimState={currentSimState}
+      gameState={props.gameState}
+      noShade={props.noShade}
+      shadeOnlyHoles={props.shadeOnlyHoles}
+      showHoleBorders={props.showHoleBorders}
     />
   );
 }

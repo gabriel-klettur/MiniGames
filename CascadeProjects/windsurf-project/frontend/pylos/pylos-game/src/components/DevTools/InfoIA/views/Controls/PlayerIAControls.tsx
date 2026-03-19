@@ -12,6 +12,7 @@ import { PersistenceSettings } from './PersistenceSettings';
 import { DifficultyTime } from './DifficultyTime';
 import { HeuristicSettings } from './HeuristicSettings';
 import { BookSettings } from './BookSettings';
+import { useI18n } from '../../../../../i18n';
 
 export type PlayerIAControlsProps = {
   player: PlayerId; // 'L' | 'D'
@@ -221,6 +222,7 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
   }, [persistCap, player]);
 
   const { cardCollapsed, onToggleCard } = props;
+  const { t } = useI18n();
 
   const renderCardHeader = (
     id: 'difficulty' | 'start' | 'book' | 'repetition' | 'persistence' | 'antiStall' | 'heuristic',
@@ -234,7 +236,7 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
         onClick={() => onToggleCard(id)}
         aria-expanded={!cardCollapsed[id]}
         aria-controls={`card-${player}-${id}`}
-        title={cardCollapsed[id] ? 'Expandir' : 'Contraer'}
+        title={cardCollapsed[id] ? t.infoIA.expand : t.infoIA.collapse}
       >
         ▾
       </button>
@@ -248,126 +250,135 @@ export default function PlayerIAControls(props: PlayerIAControlsProps) {
         <h4 className="infoia__player-title">{title}</h4>
       </header>
 
-      <div className="infoia__card">
-        {renderCardHeader('difficulty', 'Dificultad y tiempo')}
-        {!cardCollapsed.difficulty && (
-          <div className="infoia__card-body" id={`card-${player}-difficulty`}>
-            <DifficultyTime
-              depth={depth}
-              onDepthChange={setDepth}
-              timeMode={timeMode}
-              onTimeModeChange={setTimeMode}
-              timeSeconds={timeSeconds}
-              onTimeSecondsChange={setTimeSeconds}
-            />
+      {/* 2-column grid for player cards */}
+      <div className="infoia__player-cards">
+        {/* Column 1 */}
+        <div className="infoia__player-col">
+          <div className="infoia__card">
+            {renderCardHeader('difficulty', t.infoIA.difficultyAndTime)}
+            {!cardCollapsed.difficulty && (
+              <div className="infoia__card-body" id={`card-${player}-difficulty`}>
+                <DifficultyTime
+                  depth={depth}
+                  onDepthChange={setDepth}
+                  timeMode={timeMode}
+                  onTimeModeChange={setTimeMode}
+                  timeSeconds={timeSeconds}
+                  onTimeSecondsChange={setTimeSeconds}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('start', 'Inicio y semilla')}
-        {!cardCollapsed.start && (
-          <div className="infoia__card-body" id={`card-${player}-start`}>
-            <StartSettings
-              startRandom={startRandom}
-              onStartRandomChange={setStartRandom}
-              seedInput={seedInput}
-              onSeedInputChange={setSeedInput}
-              earlyRandom={earlyRandom}
-              onEarlyRandomChange={setEarlyRandom}
-            />
+          <div className="infoia__card">
+            {renderCardHeader('start', t.infoIA.startAndSeed)}
+            {!cardCollapsed.start && (
+              <div className="infoia__card-body" id={`card-${player}-start`}>
+                <StartSettings
+                  startRandom={startRandom}
+                  onStartRandomChange={setStartRandom}
+                  seedInput={seedInput}
+                  onSeedInputChange={setSeedInput}
+                  earlyRandom={earlyRandom}
+                  onEarlyRandomChange={setEarlyRandom}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('book', 'Libro (aperturas)')}
-        {!cardCollapsed.book && (
-          <div className="infoia__card-body" id={`card-${player}-book`}>
-            <BookSettings
-              bookEnabled={bookEnabled}
-              onBookEnabledChange={setBookEnabled}
-            />
+          <div className="infoia__card">
+            {renderCardHeader('repetition', t.infoIA.repetitionAndPenalty)}
+            {!cardCollapsed.repetition && (
+              <div className="infoia__card-body" id={`card-${player}-repetition`}>
+                <RepetitionSettings
+                  repeatMax={repeatMax}
+                  onRepeatMaxChange={setRepeatMax}
+                  avoidPenalty={avoidPenalty}
+                  onAvoidPenaltyChange={setAvoidPenalty}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('heuristic', 'Heurística (búsqueda)')}
-        {!cardCollapsed.heuristic && (
-          <div className="infoia__card-body" id={`card-${player}-heuristic`}>
-            <HeuristicSettings
-              diversify={diversify}
-              onDiversifyChange={setDiversify}
-              epsilon={epsilon}
-              onEpsilonChange={setEpsilon}
-              tieDelta={tieDelta}
-              onTieDeltaChange={setTieDelta}
-              workers={workers}
-              onWorkersChange={setWorkers}
-              rootTopK={rootTopK}
-              onRootTopKChange={setRootTopK}
-              rootJitter={rootJitter}
-              onRootJitterChange={setRootJitter}
-              rootJitterProb={rootJitterProb}
-              onRootJitterProbChange={setRootJitterProb}
-              rootLMR={rootLMR}
-              onRootLMRChange={setRootLMR}
-              bitboardsEnabled={bitboardsEnabled}
-              onBitboardsEnabledChange={setBitboardsEnabled}
-            />
+          <div className="infoia__card">
+            {renderCardHeader('antiStall', t.infoIA.antiStall)}
+            {!cardCollapsed.antiStall && (
+              <div className="infoia__card-body" id={`card-${player}-antiStall`}>
+                <AntiStallSettings
+                  noveltyBonus={noveltyBonus}
+                  onNoveltyBonusChange={setNoveltyBonus}
+                  drawBias={drawBias}
+                  onDrawBiasChange={setDrawBias}
+                  timeRiskEnabled={timeRiskEnabled}
+                  onTimeRiskEnabledChange={setTimeRiskEnabled}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('repetition', 'Repetición y penalización')}
-        {!cardCollapsed.repetition && (
-          <div className="infoia__card-body" id={`card-${player}-repetition`}>
-            <RepetitionSettings
-              repeatMax={repeatMax}
-              onRepeatMaxChange={setRepeatMax}
-              avoidPenalty={avoidPenalty}
-              onAvoidPenaltyChange={setAvoidPenalty}
-            />
+        {/* Column 2 */}
+        <div className="infoia__player-col">
+          <div className="infoia__card">
+            {renderCardHeader('heuristic', t.infoIA.heuristicSearch)}
+            {!cardCollapsed.heuristic && (
+              <div className="infoia__card-body" id={`card-${player}-heuristic`}>
+                <HeuristicSettings
+                  diversify={diversify}
+                  onDiversifyChange={setDiversify}
+                  epsilon={epsilon}
+                  onEpsilonChange={setEpsilon}
+                  tieDelta={tieDelta}
+                  onTieDeltaChange={setTieDelta}
+                  workers={workers}
+                  onWorkersChange={setWorkers}
+                  rootTopK={rootTopK}
+                  onRootTopKChange={setRootTopK}
+                  rootJitter={rootJitter}
+                  onRootJitterChange={setRootJitter}
+                  rootJitterProb={rootJitterProb}
+                  onRootJitterProbChange={setRootJitterProb}
+                  rootLMR={rootLMR}
+                  onRootLMRChange={setRootLMR}
+                  bitboardsEnabled={bitboardsEnabled}
+                  onBitboardsEnabledChange={setBitboardsEnabled}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('persistence', 'Persistencia y límites')}
-        {!cardCollapsed.persistence && (
-          <div className="infoia__card-body" id={`card-${player}-persistence`}>
-            <PersistenceSettings
-              noProgressLimit={noProgressLimit}
-              onNoProgressLimitChange={setNoProgressLimit}
-              avoidStepFactor={avoidStepFactor}
-              onAvoidStepFactorChange={setAvoidStepFactor}
-              persistAntiLoopsEnabled={persistAntiLoopsEnabled}
-              onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
-              halfLifeDays={halfLifeDays}
-              onHalfLifeDaysChange={setHalfLifeDays}
-              persistCap={persistCap}
-              onPersistCapChange={setPersistCap}
-            />
+          <div className="infoia__card">
+            {renderCardHeader('book', t.infoIA.bookOpenings)}
+            {!cardCollapsed.book && (
+              <div className="infoia__card-body" id={`card-${player}-book`}>
+                <BookSettings
+                  bookEnabled={bookEnabled}
+                  onBookEnabledChange={setBookEnabled}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="infoia__card">
-        {renderCardHeader('antiStall', 'Anti-estancamiento')}
-        {!cardCollapsed.antiStall && (
-          <div className="infoia__card-body" id={`card-${player}-antiStall`}>
-            <AntiStallSettings
-              noveltyBonus={noveltyBonus}
-              onNoveltyBonusChange={setNoveltyBonus}
-              drawBias={drawBias}
-              onDrawBiasChange={setDrawBias}
-              timeRiskEnabled={timeRiskEnabled}
-              onTimeRiskEnabledChange={setTimeRiskEnabled}
-            />
+          <div className="infoia__card">
+            {renderCardHeader('persistence', t.infoIA.persistenceAndLimits)}
+            {!cardCollapsed.persistence && (
+              <div className="infoia__card-body" id={`card-${player}-persistence`}>
+                <PersistenceSettings
+                  noProgressLimit={noProgressLimit}
+                  onNoProgressLimitChange={setNoProgressLimit}
+                  avoidStepFactor={avoidStepFactor}
+                  onAvoidStepFactorChange={setAvoidStepFactor}
+                  persistAntiLoopsEnabled={persistAntiLoopsEnabled}
+                  onPersistAntiLoopsEnabledChange={setPersistAntiLoopsEnabled}
+                  halfLifeDays={halfLifeDays}
+                  onHalfLifeDaysChange={setHalfLifeDays}
+                  persistCap={persistCap}
+                  onPersistCapChange={setPersistCap}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </section>
   );

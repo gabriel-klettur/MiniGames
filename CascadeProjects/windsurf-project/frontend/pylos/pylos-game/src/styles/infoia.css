@@ -4,30 +4,116 @@
 .infoia__status { display: inline-flex; align-items: center; gap: 8px; }
 .infoia__controls .label { color: var(--muted); }
 
-/* Controls layout: professional 4-column grid with responsive fallbacks */
+/* Controls wrapper: contains top row and players row */
+.infoia__controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px;
+}
+
+/* Top row: 3 cards + mini board in a row */
+.infoia__top-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) auto;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .infoia__top-row { grid-template-columns: repeat(2, 1fr) auto; }
+}
+@media (max-width: 800px) {
+  .infoia__top-row { grid-template-columns: 1fr auto; }
+}
+@media (max-width: 600px) {
+  .infoia__top-row { grid-template-columns: 1fr; }
+}
+
+/* Mini board container */
+.infoia__mini-board {
+  height: 200px;
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.65);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  overflow: hidden;
+  position: relative;
+}
+
+.infoia__mini-board--empty {
+  opacity: 0.6;
+}
+
+/* Inner wrapper: renders the Board at its natural size then CSS-scales it down.
+   Uses a fixed size matching the board's natural dimensions.
+   Centered via negative margins (half of 660) + top/left 50%. */
+.infoia__mini-board-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* Remove margin-top the Board normally has (from board.css .board rule) */
+.infoia__mini-board .board {
+  margin-top: 0 !important;
+}
+
+/* Force the board to fill the wrapper (whose size is set dynamically from JS
+   to match the main board's actual computed width). */
+.infoia__mini-board .board--pyramid {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+
+
+/* Players row: 2 players side by side */
+.infoia__players-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .infoia__players-row { grid-template-columns: 1fr; }
+}
+
+/* Player cards: 2-column grid inside each player */
+.infoia__player-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 8px;
+}
+
+.infoia__player-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 800px) {
+  .infoia__player-cards { grid-template-columns: 1fr; }
+}
+
+/* Legacy controls layout (kept for compatibility) */
 .infoia__controls {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
   align-items: start;
   gap: 12px;
 }
-/* Single-row variant: do not wrap; scroll horizontally when needed */
-.infoia__controls--single-row {
-  display: grid !important;
-  /* Una columna por item; todas comparten el ancho disponible en una sola fila */
-  grid-template-columns: none !important;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  align-items: start;
-  gap: 12px;
-  width: 100%;
-  overflow: hidden;
-}
-
-/* Permitir que las tarjetas se encojan y su contenido no fuerce overflow */
-.infoia__controls--single-row .infoia__card { min-width: 0; grid-template-columns: max-content minmax(0, 1fr); }
-.infoia__controls--single-row .infoia__card * { min-width: 0; }
-.infoia__controls--single-row .infoia__dataset-tabs { max-width: 100%; }
 @media (max-width: 1400px) {
   .infoia__controls { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
 }
@@ -215,3 +301,205 @@
 .infoia__player--light { border-left: 3px solid rgba(255,255,255,0.45); }
 .infoia__player--dark .infoia__player-header  { background: rgba(59,130,246,0.10); border: 1px solid rgba(59,130,246,0.30); }
 .infoia__player--dark { border-left: 3px solid rgba(59,130,246,0.50); }
+
+/* ===== Repeats Tab Professional Styling ===== */
+.infoia__repeats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoia__repeats .row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.infoia__repeats .panel {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.45);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.infoia__repeats .panel.small {
+  min-width: 0;
+}
+
+.infoia__repeats .panel h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.infoia__repeats .panel label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.infoia__repeats .panel input[type="number"],
+.infoia__repeats .panel input[type="checkbox"] {
+  accent-color: #3b82f6;
+}
+
+.infoia__repeats .panel input[type="number"] {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  border-radius: 8px;
+  text-align: right;
+}
+
+.infoia__repeats .panel button {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+
+.infoia__repeats .panel button:hover {
+  filter: brightness(1.1);
+}
+
+.infoia__repeats .table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.infoia__repeats .table th {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 10px;
+  background: rgba(17, 24, 39, 0.5);
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.infoia__repeats .table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.infoia__repeats .table tbody tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+/* ===== Books Tab Professional Styling ===== */
+.infoia__books {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoia__books .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.infoia__books .panel {
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.45);
+  border: 1px solid var(--panel-border-color);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.infoia__books .table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.infoia__books .table th {
+  text-align: left;
+  font-weight: 600;
+  padding: 10px 12px;
+  background: rgba(17, 24, 39, 0.5);
+  border-bottom: 1px solid var(--panel-border-color);
+}
+
+.infoia__books .table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.infoia__books .table tbody tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+.infoia__books .btn-warning {
+  background: rgba(245, 158, 11, 0.18) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #fde68a !important;
+}
+
+/* ===== Charts Tab Professional Styling ===== */
+.infoia__charts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== KPI badges ===== */
+.kpi {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  background: rgba(17, 24, 39, 0.55);
+  border: 1px solid var(--panel-border-color);
+  color: var(--text);
+}
+
+.kpi--accent {
+  background: rgba(34, 197, 94, 0.18);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.kpi--warning {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fde68a;
+}
+
+.kpi--danger {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fecaca;
+}
+
+/* Spinner animation */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
