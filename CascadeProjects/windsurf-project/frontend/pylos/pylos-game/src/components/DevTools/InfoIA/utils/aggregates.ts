@@ -43,8 +43,10 @@ export type DifficultyGroup = {
     count: number;
     winsL: number;
     winsD: number;
+    draws: number;
     winRateL: number; // 0..1
     winRateR: number; // 0..1 (complement or winsD/count)
+    drawRate: number; // 0..1
     avgMoves: number;
     avgSec: number; // mean of per-record avgThinkMs
     minSec: number; // min across all moves in group
@@ -89,12 +91,15 @@ export function computeDifficultyGroups(list: InfoIAGameRecord[]): DifficultyGro
       }
     }
     if (!isFinite(minSec)) minSec = 0;
+    const draws = count - winsL - winsD;
     const stats = {
       count,
       winsL,
       winsD,
+      draws,
       winRateL: count > 0 ? winsL / count : 0,
       winRateR: count > 0 ? winsD / count : 0,
+      drawRate: count > 0 ? draws / count : 0,
       avgMoves: count > 0 ? sumMoves / count : 0,
       avgSec: count > 0 ? sumAvgSec / count : 0,
       minSec,

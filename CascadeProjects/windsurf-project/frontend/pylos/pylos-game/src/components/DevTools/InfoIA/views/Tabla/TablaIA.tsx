@@ -159,6 +159,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
             <th className="text-right" title="Número de partidas en el grupo">Partidas</th>
             <th className="text-right" title="Victorias y WR — Claras">WR (%) <WinnerIcon winner="L" size={14} /></th>
             <th className="text-right" title="Victorias y WR — Oscuras">WR (%) <WinnerIcon winner="D" size={14} /></th>
+            <th className="text-right" title="Empates (partidas sin ganador)">Empates (%)</th>
             <th className="text-right" title="Tiempo promedio por jugada (s)">Prom (s)</th>
             <th className="text-right" title="Tiempo mínimo por jugada (s)">Mín (s)</th>
             <th className="text-right" title="Tiempo máximo por jugada (s)">Máx (s)</th>
@@ -180,6 +181,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
                 <td className="text-right">{g.stats.count}</td>
                 <td className="text-right">{g.stats.winsL} ({(g.stats.winRateL * 100).toFixed(1)}%)</td>
                 <td className="text-right">{g.stats.winsD} ({(g.stats.winRateR * 100).toFixed(1)}%)</td>
+                <td className="text-right">{g.stats.draws} ({(g.stats.drawRate * 100).toFixed(1)}%)</td>
                 <td className="text-right">{fmtSecOrMinSec(g.stats.avgSec, 3)}</td>
                 <td className="text-right">{fmtSecOrMinSec(g.stats.minSec, 3)}</td>
                 <td className="text-right">{fmtSecOrMinSec(g.stats.maxSec, 3)}</td>
@@ -197,7 +199,7 @@ export default function TablaIA({ records, loading = false, allowDelete = true, 
               </tr>
               {expandedGroup === g.key && (
                 <tr className="expand">
-                  <td colSpan={9} style={{ background: 'rgba(2,6,23,0.4)' }}>
+                  <td colSpan={10} style={{ background: 'rgba(2,6,23,0.4)' }}>
                     <div style={{ overflowX: 'auto' }}>
                       <table className="table table--compact">
                         <thead>
