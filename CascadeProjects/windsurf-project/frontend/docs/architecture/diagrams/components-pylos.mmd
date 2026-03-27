@@ -1,0 +1,94 @@
+%% Pylos - Specific Component Architecture (C4 Level 3)
+%% Highlights unique features: Opening Book, Bitboard, Phase-Tapering
+
+graph TB
+    subgraph ui ["UI Components"]
+        BOARD["Board.tsx<br/><i>12KB - Pyramid rendering</i>"]
+        FLYING["FlyingPiece.tsx<br/><i>Piece animations</i>"]
+        STORED["StoredGames.tsx<br/><i>Session management</i>"]
+        DEVTOOLS["DevTools<br/><i>IAPanel, InfoIA, BookPanel</i>"]
+    end
+
+    subgraph hooks ["Hooks Layer (25+ hooks)"]
+        direction LR
+        USEAI["useAI.ts<br/><i>24KB - AI controller</i>"]
+        USEANIM["useAnimations.ts<br/><i>13KB - Animation state</i>"]
+        USEPERSIST["usePersistence.ts<br/><i>6KB - localStorage</i>"]
+        APPHOOKS["app/<br/><i>18 specialized hooks</i>"]
+    end
+
+    subgraph ai_core ["AI Core"]
+        direction TB
+        
+        subgraph search_module ["Search Module"]
+            SEARCH["search/search.ts<br/><i>22KB - Full search impl</i>"]
+            PVS["PVS<br/><i>Principal Variation Search</i>"]
+            ASPIRATION["Aspiration Windows<br/><i>Narrow-bound search</i>"]
+            QUIESCE["Quiescence<br/><i>Tactical extension</i>"]
+        end
+
+        subgraph opening ["Opening Book System"]
+            BOOK["book.ts<br/><i>5KB - Book probe</i>"]
+            BOOKURL["setBookUrl()<br/><i>External book loading</i>"]
+            BOOKPANEL["BookPanel/<br/><i>UI for book config</i>"]
+        end
+
+        subgraph optimization ["Bitboard Optimization"]
+            BITBOARD["bitboard.ts<br/><i>3.9KB - Bit operations</i>"]
+            PRECOMP["precomputed.ts<br/><i>4.5KB - Center tables</i>"]
+            SIGNATURE["signature.ts<br/><i>2.7KB - Position hashing</i>"]
+        end
+    end
+
+    subgraph evaluation ["Phase-Tapering Evaluation"]
+        direction TB
+        
+        subgraph phases ["Game Phases"]
+            OPENING["Opening Phase<br/><i>Center preference</i>"]
+            MIDGAME["Midgame Phase<br/><i>Square/line threats</i>"]
+            ENDGAME["Endgame Phase<br/><i>Material focus</i>"]
+        end
+
+        subgraph signals ["Evaluation Signals"]
+            MAT["Material<br/><i>Reserve count</i>"]
+            HEIGHT["Height/Position<br/><i>Pyramid levels</i>"]
+            CENTER["Center Preference<br/><i>Precomputed tables</i>"]
+            THREATS["Square/Line Threats<br/><i>Formation detection</i>"]
+            RECOVER["Recoverable Pieces<br/><i>Lift potential</i>"]
+        end
+
+        EVAL["evaluate.ts<br/><i>4.4KB - Signal aggregation</i>"]
+    end
+
+    subgraph game ["Game Engine"]
+        RULES["rules.ts<br/><i>13KB - Full validation</i>"]
+        BOARDLOGIC["board.ts<br/><i>3.7KB - State ops</i>"]
+        TYPES["types.ts<br/><i>Domain models</i>"]
+    end
+
+    subgraph testing ["Test Coverage (16+ specs)"]
+        direction LR
+        RULESPEC["rules.spec.ts<br/>rules.more.spec.ts<br/>rules.extra.spec.ts"]
+        BOARDSPEC["board.spec.ts<br/>board.more.spec.ts"]
+        EVALSPEC["evaluate.spec.ts"]
+        MOVESPEC["moves.spec.ts"]
+        SEARCHSPEC["search.spec.ts<br/>search.more.spec.ts"]
+        COMPSPEC["Board.spec.tsx<br/>FlyingPiece.spec.tsx"]
+    end
+
+    %% Connections
+    ui --> hooks
+    hooks --> ai_core
+    ai_core --> evaluation
+    phases --> EVAL
+    signals --> EVAL
+    EVAL --> game
+
+    %% Styling
+    classDef unique fill:#f56565,stroke:#c53030,color:#fff
+    classDef phase fill:#9f7aea,stroke:#6b46c1,color:#fff
+    classDef test fill:#48bb78,stroke:#2f855a,color:#fff
+
+    class BOOK,BOOKURL,BOOKPANEL,BITBOARD,PRECOMP,SIGNATURE unique
+    class OPENING,MIDGAME,ENDGAME phase
+    class RULESPEC,BOARDSPEC,EVALSPEC,MOVESPEC,SEARCHSPEC,COMPSPEC test

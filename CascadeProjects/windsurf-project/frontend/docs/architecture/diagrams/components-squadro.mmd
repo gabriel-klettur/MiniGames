@@ -1,0 +1,81 @@
+%% Squadro - Specific Component Architecture (C4 Level 3)
+%% Highlights unique features: Root-Parallel, DFPN, 12-Signal Evaluation
+
+graph TB
+    subgraph ui ["UI Components"]
+        BOARD["Board<br/><i>+ boardProfiles.ts</i>"]
+        IAUSER["IAUserPanel<br/><i>Depth, presets, player toggle</i>"]
+        DEVTOOLS["DevTools<br/><i>IAPanel, InfoIA, UIUX</i>"]
+    end
+
+    subgraph state ["State (Redux Toolkit)"]
+        SLICE["gameSlice.ts<br/><i>21KB - Full game state</i>"]
+        HOOKS["hooks.ts<br/><i>Typed selectors</i>"]
+    end
+
+    subgraph ai_core ["AI Core"]
+        direction TB
+        
+        subgraph search_module ["Search Module"]
+            ALPHABETA["alphabeta.ts<br/><i>PVS, LMR, LMP, Futility</i>"]
+            QUIESCE["quiescence.ts<br/><i>Tactical extension</i>"]
+            IID["IID<br/><i>Internal Iterative Deepening</i>"]
+        end
+
+        subgraph parallel ["Parallelization"]
+            ROOTPAR["rootParallel.ts<br/><i>Root-level split</i>"]
+            POOL["workerPool.ts<br/><i>Worker management</i>"]
+            SPLIT["2nd-Ply Split<br/><i>Deeper parallelism</i>"]
+        end
+
+        subgraph endgame ["Endgame Solver"]
+            DFPN["dfpn/<br/><i>Proof-Number Search</i>"]
+            TABLEBASE["tablebase.ts<br/><i>Precomputed positions</i>"]
+        end
+    end
+
+    subgraph evaluation ["12-Signal Evaluation"]
+        direction LR
+        SIG1["Race<br/><i>Top-4 progress</i>"]
+        SIG2["Retired<br/><i>Completed pieces</i>"]
+        SIG3["Collision<br/><i>Capture potential</i>"]
+        SIG4["Chain<br/><i>Piece coordination</i>"]
+        SIG5["Sprint<br/><i>Fast advancement</i>"]
+        SIG6["Block<br/><i>Opponent obstruction</i>"]
+        SIG7["Parity<br/><i>Turn advantage</i>"]
+        SIG8["Structure<br/><i>Formation quality</i>"]
+        SIG9["Ones<br/><i>Single-step pieces</i>"]
+        SIG10["Return<br/><i>Backtrack progress</i>"]
+        SIG11["Waste<br/><i>Inefficient moves</i>"]
+        SIG12["Mobility<br/><i>Available moves</i>"]
+    end
+
+    subgraph support ["Support Modules"]
+        EVAL["evaluate.ts<br/><i>21KB - Signal aggregation</i>"]
+        PRESETS["presets.ts<br/><i>11KB - Engine configs</i>"]
+        AUTOTUNE["autotune.ts<br/><i>9KB - Parameter optimization</i>"]
+        CHOOSER["chooser.ts<br/><i>Move selection logic</i>"]
+    end
+
+    subgraph game ["Game Engine"]
+        RULES["rules.ts<br/><i>Lane movement, collisions</i>"]
+        PIECES["pieces.ts<br/><i>Speed asymmetry</i>"]
+        TYPES["types.ts<br/><i>GameState, Player</i>"]
+    end
+
+    %% Connections
+    ui --> state
+    state --> ai_core
+    ai_core --> evaluation
+    evaluation --> EVAL
+    EVAL --> game
+    support --> ai_core
+    parallel --> ALPHABETA
+
+    %% Styling
+    classDef unique fill:#f56565,stroke:#c53030,color:#fff
+    classDef standard fill:#4299e1,stroke:#2b6cb0,color:#fff
+    classDef eval fill:#48bb78,stroke:#2f855a,color:#fff
+
+    class ROOTPAR,POOL,SPLIT,DFPN,TABLEBASE,AUTOTUNE unique
+    class SIG1,SIG2,SIG3,SIG4,SIG5,SIG6,SIG7,SIG8,SIG9,SIG10,SIG11,SIG12 eval

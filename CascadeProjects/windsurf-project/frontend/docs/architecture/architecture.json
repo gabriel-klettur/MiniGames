@@ -1,0 +1,210 @@
+{
+  "system_name": "MiniGames Suite",
+  "purpose": "Collection of four AI-powered abstract strategy board games with configurable AI engines, real-time telemetry, and responsive UIs running entirely client-side in the browser",
+  "actors": [
+    {
+      "id": "human_player",
+      "name": "Human Player",
+      "description": "End user who plays the games via browser interface"
+    },
+    {
+      "id": "ai_opponent",
+      "name": "AI Opponent",
+      "description": "Configurable AI engine running in Web Workers with alpha-beta search and advanced optimizations"
+    },
+    {
+      "id": "developer",
+      "name": "Developer",
+      "description": "Uses DevTools panels for AI tuning, telemetry analysis, and debugging"
+    }
+  ],
+  "external_systems": [
+    {
+      "id": "browser_storage",
+      "name": "Browser localStorage",
+      "description": "Persists game sessions, AI presets, UI preferences, and configuration"
+    },
+    {
+      "id": "static_hosting",
+      "name": "Static Hosting (Vercel/Netlify)",
+      "description": "Serves built static assets (HTML, JS, CSS)",
+      "note": "SUPUESTO: No hay evidencia de despliegue actual en el código"
+    }
+  ],
+  "containers": [
+    {
+      "id": "pylos_game",
+      "name": "Pylos Game",
+      "technology": "React 19, TypeScript 5.8, Vite 7, CSS Modules",
+      "description": "Stacking pyramid game with opening book, bitboard optimization, and phase-tapering evaluation",
+      "state_management": "Hooks + Local Reducers",
+      "ai_features": ["Opening Book", "Bitboard", "Phase-tapering", "Quiescence", "PVS", "TT", "Aspiration Windows"]
+    },
+    {
+      "id": "quoridor_game",
+      "name": "Quoridor Game",
+      "technology": "React 19, TypeScript 5.8, Vite 7, Redux Toolkit 2.9, Tailwind CSS 4.1",
+      "description": "Maze-building race game with path-finding evaluation and wall pressure heuristics",
+      "state_management": "Redux Toolkit (gameSlice, uiSlice, iaSlice)",
+      "ai_features": ["Minimax", "Alpha-Beta", "TT", "Zobrist", "Path-finding Eval", "Trace/Telemetry"]
+    },
+    {
+      "id": "soluna_game",
+      "name": "Soluna Game",
+      "technology": "React 19, TypeScript 5.8, Vite 7, CSS Modules",
+      "description": "Token-merging strategy game with worker pool parallelization and adaptive time control",
+      "state_management": "Context + Reducer (game/store.tsx)",
+      "ai_features": ["Worker Pool", "Adaptive Time Budget", "LMR", "Quiescence", "PVS", "TT", "Killers", "History"]
+    },
+    {
+      "id": "squadro_game",
+      "name": "Squadro Game",
+      "technology": "React 19, TypeScript 5.8, Vite 7, Redux Toolkit 2.9, Tailwind CSS 4.1",
+      "description": "Racing game with root-parallel search, DFPN endgame solver, and 12-signal evaluation function",
+      "state_management": "Redux Toolkit (gameSlice)",
+      "ai_features": ["Root-Parallel", "2nd-Ply Split", "DFPN", "12-Signal Eval", "LMR", "LMP", "Futility Pruning", "IID", "Aspiration Windows", "Quiescence"]
+    }
+  ],
+  "components": {
+    "shared_architecture": {
+      "game_engine": {
+        "path": "src/game/",
+        "modules": ["board.ts", "rules.ts", "types.ts", "pieces.ts"],
+        "responsibility": "Game rules, move validation, win detection, state representation"
+      },
+      "ai_engine": {
+        "path": "src/ia/",
+        "modules": ["search/", "evaluate.ts", "moves.ts", "tt.ts", "hash.ts", "worker/"],
+        "responsibility": "Alpha-beta search, transposition table, Zobrist hashing, move ordering, evaluation, Web Worker execution"
+      },
+      "state_layer": {
+        "path": "src/store/ or src/game/store.tsx",
+        "patterns": ["Redux Toolkit", "Context + Reducer"],
+        "responsibility": "Global state management, action dispatching, selectors"
+      },
+      "ui_components": {
+        "path": "src/components/",
+        "modules": ["Board/", "HeaderPanel/", "FootPanel/", "InfoPanel/", "GameOverModal/", "IAUserPanel/", "DevTools/"],
+        "responsibility": "Visual rendering, user interaction, responsive layouts"
+      },
+      "devtools": {
+        "path": "src/components/DevTools/",
+        "modules": ["IAPanel/", "InfoIA/", "UIUX/", "FasesPanel/", "Historial/"],
+        "responsibility": "AI telemetry, engine configuration, simulation runner, debugging"
+      },
+      "hooks": {
+        "path": "src/hooks/",
+        "modules": ["useAI.ts", "useHistory.ts", "usePersistence.ts", "useLocalStorage.ts"],
+        "responsibility": "AI controller, game history, localStorage persistence"
+      }
+    },
+    "game_specific": {
+      "pylos": {
+        "unique_modules": ["book.ts", "bitboard.ts", "precomputed.ts", "signature.ts"],
+        "unique_components": ["BookPanel/", "FlyingPiece.tsx", "StoredGames.tsx"]
+      },
+      "quoridor": {
+        "unique_modules": ["walls.ts", "trace.ts", "telemetry.ts"],
+        "unique_components": ["WallsHitBox.tsx", "IA/TracePanel.tsx", "IA/SearchTree.tsx"]
+      },
+      "soluna": {
+        "unique_modules": ["worker/pool.ts", "time.ts", "tactics.ts"],
+        "unique_components": ["TokenButton/", "TokenStack/", "FlightLayer/", "CellTokenPicker/"]
+      },
+      "squadro": {
+        "unique_modules": ["search/dfpn/", "search/rootParallel.ts", "workerPool.ts", "autotune.ts", "tablebase.ts"],
+        "unique_components": ["boardProfiles.ts"]
+      }
+    }
+  },
+  "main_flows": [
+    {
+      "id": "ai_move_flow",
+      "name": "AI Move Calculation",
+      "description": "Critical flow: human makes move → state updates → AI triggered → Web Worker search → result returned → UI updates",
+      "steps": [
+        "User clicks board to make move",
+        "State layer validates and applies move",
+        "AI hook/controller detects turn change",
+        "Search request sent to Web Worker via postMessage",
+        "Worker executes iterative deepening alpha-beta search",
+        "Progress events streamed back to UI (nodes, depth, score)",
+        "Best move returned with PV, metrics, and evaluation",
+        "State layer applies AI move",
+        "UI animates piece movement and updates panels"
+      ]
+    },
+    {
+      "id": "devtools_simulation",
+      "name": "AI vs AI Simulation",
+      "description": "Developer runs automated games for AI tuning and comparison",
+      "steps": [
+        "Developer configures AI presets for both players",
+        "Simulation runner starts game loop",
+        "Each turn triggers AI search with configured parameters",
+        "Metrics collected: nodes, time, depth, evaluation",
+        "Results exported to CSV or visualized in charts",
+        "Presets compared across multiple games"
+      ]
+    }
+  ],
+  "deployment_nodes": [
+    {
+      "id": "browser",
+      "name": "Web Browser",
+      "technology": "Chrome, Firefox, Safari, Edge",
+      "hosted_containers": ["pylos_game", "quoridor_game", "soluna_game", "squadro_game"],
+      "description": "All games run entirely client-side with no backend dependencies"
+    },
+    {
+      "id": "static_host",
+      "name": "Static File Server",
+      "technology": "Vercel, Netlify, GitHub Pages (SUPUESTO)",
+      "description": "Serves Vite-built static assets (HTML, JS, CSS, assets)"
+    },
+    {
+      "id": "web_workers",
+      "name": "Web Workers",
+      "technology": "Dedicated Workers, Worker Pool",
+      "description": "AI computation runs off main thread to maintain UI responsiveness"
+    }
+  ],
+  "tech_stack": {
+    "frontend_framework": "React 19.1",
+    "language": "TypeScript 5.8",
+    "build_tool": "Vite 7",
+    "state_management": ["Redux Toolkit 2.9", "React Context + useReducer"],
+    "styling": ["Tailwind CSS 4.1", "CSS Modules"],
+    "testing": "Vitest 3.2",
+    "linting": "ESLint 9",
+    "parallelization": "Web Workers (postMessage API)",
+    "persistence": "localStorage",
+    "ai_algorithms": [
+      "Negamax with Alpha-Beta pruning",
+      "Principal Variation Search (PVS)",
+      "Iterative Deepening",
+      "Transposition Table (Zobrist hashing)",
+      "Killer Heuristic",
+      "History Heuristic",
+      "Late Move Reductions (LMR)",
+      "Late Move Pruning (LMP)",
+      "Futility Pruning",
+      "Aspiration Windows",
+      "Quiescence Search",
+      "Internal Iterative Deepening (IID)",
+      "DFPN (Proof-Number Search)",
+      "Opening Book"
+    ]
+  },
+  "assumptions": [
+    "No backend server exists; all logic is client-side",
+    "Deployment target is static hosting (Vercel/Netlify) based on README roadmap",
+    "peg-solitario-game directory is empty and excluded from documentation",
+    "Python modules (MCTS, BGA scraper) are separate research tools, not part of frontend architecture"
+  ],
+  "uncertainties": [
+    "Exact deployment configuration not found in codebase",
+    "No CI/CD pipeline configuration detected",
+    "IndexedDB usage mentioned in utils but extent unclear"
+  ]
+}

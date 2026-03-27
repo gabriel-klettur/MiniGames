@@ -1,0 +1,36 @@
+%% MiniGames Suite - Context Diagram (C4 Level 1)
+%% Shows the system boundary, actors, and external systems
+
+graph TB
+    subgraph actors [" "]
+        direction TB
+        HP[("👤 Human Player<br/><i>Plays games via browser</i>")]
+        DEV[("👨‍💻 Developer<br/><i>Tunes AI, analyzes telemetry</i>")]
+    end
+
+    subgraph system ["MiniGames Suite"]
+        direction TB
+        MG["🎮 MiniGames Frontend<br/><i>React 19 + TypeScript 5.8</i><br/><i>4 AI-powered board games</i>"]
+    end
+
+    subgraph external [" "]
+        direction TB
+        LS[("💾 Browser localStorage<br/><i>Persists sessions, presets,<br/>UI preferences</i>")]
+        WW[("⚙️ Web Workers<br/><i>Off-thread AI computation</i>")]
+        SH[("☁️ Static Hosting<br/><i>Vercel / Netlify</i><br/><i>(SUPUESTO)</i>")]
+    end
+
+    HP -->|"Plays games<br/>Configures AI difficulty"| MG
+    DEV -->|"Runs simulations<br/>Adjusts engine flags"| MG
+    MG -->|"Reads/writes<br/>game state & config"| LS
+    MG -->|"postMessage<br/>search requests"| WW
+    WW -->|"Returns best move<br/>+ metrics"| MG
+    SH -->|"Serves static<br/>assets"| MG
+
+    classDef actor fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#999999,stroke:#6b6b6b,color:#fff
+
+    class HP,DEV actor
+    class MG system
+    class LS,WW,SH external

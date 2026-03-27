@@ -1,0 +1,80 @@
+%% MiniGames - AI Move Sequence Diagram
+%% Critical flow: User makes move → AI calculates response → UI updates
+
+sequenceDiagram
+    autonumber
+    participant U as 👤 User
+    participant UI as 🖥️ UI Components
+    participant S as 📦 State Layer
+    participant H as 🪝 useAI Hook
+    participant W as ⚙️ Web Worker
+    participant AI as 🧠 AI Engine
+    participant G as 🎮 Game Engine
+
+    Note over U,G: User Turn Phase
+    U->>UI: Click board (make move)
+    UI->>S: Dispatch move action
+    S->>G: Validate move (rules.ts)
+    G-->>S: Move valid ✓
+    S->>S: Apply move to state
+    S-->>UI: State updated
+    UI->>UI: Render new position
+
+    Note over U,G: AI Turn Phase
+    S->>H: Turn changed to AI
+    H->>H: Check if AI enabled
+    
+    rect rgb(255, 240, 240)
+        Note over H,AI: Off-Thread Computation
+        H->>W: postMessage({type: 'SEARCH', state, depth, timeMs})
+        W->>AI: Initialize search context
+        
+        loop Iterative Deepening (depth 1 → maxDepth)
+            AI->>AI: Age TT generation
+            AI->>AI: Set aspiration window (if enabled)
+            
+            rect rgb(240, 255, 240)
+                Note over AI,G: Alpha-Beta Search
+                AI->>G: generateMoves(state)
+                G-->>AI: Legal moves[]
+                AI->>AI: Order moves (TT, killers, history)
+                
+                loop For each move
+                    AI->>G: applyMove(state, move)
+                    AI->>AI: Recursive search (PVS, LMR)
+                    AI->>AI: Check TT for cached result
+                    alt Quiescence needed
+                        AI->>AI: quiesce() for tactical positions
+                    end
+                    AI->>AI: Update alpha/beta bounds
+                    alt Beta cutoff
+                        AI->>AI: Store killer move
+                        AI->>AI: Update history table
+                    end
+                end
+            end
+            
+            AI->>AI: Store result in TT
+            AI-->>W: Iteration complete (score, PV)
+            W-->>H: postMessage({type: 'PROGRESS', depth, nodes, score})
+            H-->>UI: Update telemetry panels
+            
+            alt Time budget exhausted
+                AI->>AI: Break iteration loop
+            end
+        end
+        
+        AI-->>W: Search complete
+        W-->>H: postMessage({type: 'RESULT', bestMove, score, pv, metrics})
+    end
+
+    Note over U,G: AI Move Application
+    H->>S: Dispatch AI move action
+    S->>G: Validate AI move
+    G-->>S: Move valid ✓
+    S->>S: Apply AI move to state
+    S-->>UI: State updated
+    UI->>UI: Animate piece movement
+    UI->>UI: Update evaluation bar
+    UI->>UI: Display PV line
+    UI-->>U: Ready for next move

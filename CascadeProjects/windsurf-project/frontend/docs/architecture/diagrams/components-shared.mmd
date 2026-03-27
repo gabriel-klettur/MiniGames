@@ -1,0 +1,83 @@
+%% MiniGames - Shared Component Architecture (C4 Level 3)
+%% Layered architecture common to all four games
+
+graph TB
+    subgraph ui_layer ["UI Layer"]
+        direction LR
+        BOARD["Board<br/><i>Game visualization</i>"]
+        PANELS["Panels<br/><i>Header, Footer, Info</i>"]
+        MODAL["GameOverModal<br/><i>Win/Draw display</i>"]
+        IAUSER["IAUserPanel<br/><i>Difficulty, presets</i>"]
+    end
+
+    subgraph devtools_layer ["DevTools Layer"]
+        direction LR
+        IAPANEL["IAPanel<br/><i>Engine flags, KPIs</i>"]
+        INFOIA["InfoIA<br/><i>Simulations, charts</i>"]
+        UIUX["UIUX<br/><i>Themes, animations</i>"]
+        HISTORIAL["Historial<br/><i>Move history</i>"]
+    end
+
+    subgraph state_layer ["State Management Layer"]
+        direction LR
+        REDUX["Redux Toolkit<br/><i>Quoridor, Squadro</i>"]
+        CONTEXT["Context + Reducer<br/><i>Pylos, Soluna</i>"]
+    end
+
+    subgraph hooks_layer ["Hooks Layer"]
+        direction LR
+        USEAI["useAI<br/><i>AI controller</i>"]
+        USEHIST["useHistory<br/><i>Undo/redo</i>"]
+        USEPERSIST["usePersistence<br/><i>localStorage</i>"]
+    end
+
+    subgraph ai_layer ["AI Engine Layer"]
+        direction LR
+        SEARCH["Search<br/><i>Alpha-beta, PVS, ID</i>"]
+        EVAL["Evaluate<br/><i>Heuristic function</i>"]
+        TT["Transposition Table<br/><i>Zobrist hashing</i>"]
+        ORDERING["Move Ordering<br/><i>Killers, history</i>"]
+    end
+
+    subgraph game_layer ["Game Engine Layer"]
+        direction LR
+        RULES["Rules<br/><i>Move validation</i>"]
+        BOARDLOGIC["Board<br/><i>State representation</i>"]
+        TYPES["Types<br/><i>Domain models</i>"]
+    end
+
+    subgraph worker_layer ["Web Worker Layer"]
+        WORKER["aiWorker.ts<br/><i>Off-thread execution</i>"]
+    end
+
+    subgraph persistence_layer ["Persistence Layer"]
+        STORAGE["localStorage<br/><i>Sessions, presets, config</i>"]
+    end
+
+    %% Connections
+    ui_layer --> state_layer
+    devtools_layer --> state_layer
+    state_layer --> hooks_layer
+    hooks_layer --> worker_layer
+    worker_layer --> ai_layer
+    ai_layer --> game_layer
+    hooks_layer --> persistence_layer
+
+    %% Styling
+    classDef uiStyle fill:#61dafb,stroke:#21a1c4,color:#000
+    classDef devStyle fill:#ffd700,stroke:#b8860b,color:#000
+    classDef stateStyle fill:#764abc,stroke:#4a2c7a,color:#fff
+    classDef hookStyle fill:#68d391,stroke:#38a169,color:#000
+    classDef aiStyle fill:#f56565,stroke:#c53030,color:#fff
+    classDef gameStyle fill:#4299e1,stroke:#2b6cb0,color:#fff
+    classDef workerStyle fill:#ed8936,stroke:#c05621,color:#fff
+    classDef storageStyle fill:#a0aec0,stroke:#718096,color:#000
+
+    class BOARD,PANELS,MODAL,IAUSER uiStyle
+    class IAPANEL,INFOIA,UIUX,HISTORIAL devStyle
+    class REDUX,CONTEXT stateStyle
+    class USEAI,USEHIST,USEPERSIST hookStyle
+    class SEARCH,EVAL,TT,ORDERING aiStyle
+    class RULES,BOARDLOGIC,TYPES gameStyle
+    class WORKER workerStyle
+    class STORAGE storageStyle

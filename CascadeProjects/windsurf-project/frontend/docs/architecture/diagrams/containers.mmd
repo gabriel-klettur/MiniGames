@@ -1,0 +1,47 @@
+%% MiniGames Suite - Container Diagram (C4 Level 2)
+%% Shows the four game containers and their technology stacks
+
+graph TB
+    subgraph actors [" "]
+        HP[("👤 Human Player")]
+        DEV[("👨‍💻 Developer")]
+    end
+
+    subgraph minigames ["MiniGames Suite"]
+        direction TB
+        
+        subgraph pylos ["Pylos Game"]
+            PY["🔺 Pylos<br/><i>React 19 + CSS Modules</i><br/><i>Hooks + Reducers</i><br/><br/>Opening Book | Bitboard<br/>Phase-tapering Eval"]
+        end
+
+        subgraph quoridor ["Quoridor Game"]
+            QR["🧱 Quoridor<br/><i>React 19 + Tailwind CSS</i><br/><i>Redux Toolkit</i><br/><br/>Path-finding Eval<br/>Wall Pressure Heuristics"]
+        end
+
+        subgraph soluna ["Soluna Game"]
+            SL["🌙 Soluna<br/><i>React 19 + CSS Modules</i><br/><i>Context + Reducer</i><br/><br/>Worker Pool<br/>Adaptive Time Budget"]
+        end
+
+        subgraph squadro ["Squadro Game"]
+            SQ["🏎️ Squadro<br/><i>React 19 + Tailwind CSS</i><br/><i>Redux Toolkit</i><br/><br/>Root-Parallel | DFPN<br/>12-Signal Evaluation"]
+        end
+    end
+
+    subgraph shared ["Shared Infrastructure"]
+        WW["⚙️ Web Workers<br/><i>AI Computation Layer</i>"]
+        LS["💾 localStorage<br/><i>Persistence Layer</i>"]
+    end
+
+    HP --> PY & QR & SL & SQ
+    DEV --> PY & QR & SL & SQ
+
+    PY & QR & SL & SQ --> WW
+    PY & QR & SL & SQ --> LS
+
+    classDef actor fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef infra fill:#999999,stroke:#6b6b6b,color:#fff
+
+    class HP,DEV actor
+    class PY,QR,SL,SQ container
+    class WW,LS infra

@@ -1,0 +1,70 @@
+%% MiniGames - Deployment Diagram
+%% Client-side architecture with static hosting
+
+graph TB
+    subgraph user_device ["User Device (Browser)"]
+        direction TB
+        
+        subgraph browser ["Web Browser"]
+            direction LR
+            
+            subgraph main_thread ["Main Thread"]
+                REACT["React 19 App<br/><i>UI rendering, state</i>"]
+                REDUX["Redux / Context<br/><i>State management</i>"]
+                HOOKS["Hooks<br/><i>AI controller, persistence</i>"]
+            end
+            
+            subgraph workers ["Web Workers"]
+                W1["Worker 1<br/><i>AI Search</i>"]
+                W2["Worker 2<br/><i>Parallel (Squadro)</i>"]
+                WN["Worker N<br/><i>Pool (Soluna)</i>"]
+            end
+            
+            subgraph storage ["Browser Storage"]
+                LS["localStorage<br/><i>Sessions, presets, config</i>"]
+                IDB["IndexedDB<br/><i>Large datasets (SUPUESTO)</i>"]
+            end
+        end
+    end
+
+    subgraph hosting ["Static Hosting (SUPUESTO)"]
+        direction TB
+        
+        subgraph cdn ["CDN / Edge"]
+            STATIC["Static Assets<br/><i>HTML, JS, CSS</i>"]
+            ASSETS["Game Assets<br/><i>Images, sounds</i>"]
+        end
+        
+        subgraph build ["Build Artifacts"]
+            VITE["Vite Build<br/><i>Optimized bundles</i>"]
+        end
+    end
+
+    subgraph dev ["Development Environment"]
+        direction TB
+        VITEDEV["Vite Dev Server<br/><i>HMR, fast refresh</i>"]
+        VITEST["Vitest<br/><i>Unit tests</i>"]
+        ESLINT["ESLint 9<br/><i>Code quality</i>"]
+    end
+
+    %% Connections
+    STATIC --> browser
+    ASSETS --> browser
+    REACT <--> REDUX
+    REDUX <--> HOOKS
+    HOOKS <-->|"postMessage"| workers
+    HOOKS <--> storage
+    VITE --> cdn
+
+    %% Styling
+    classDef browser fill:#61dafb,stroke:#21a1c4,color:#000
+    classDef worker fill:#ed8936,stroke:#c05621,color:#fff
+    classDef storage fill:#a0aec0,stroke:#718096,color:#000
+    classDef hosting fill:#48bb78,stroke:#2f855a,color:#fff
+    classDef dev fill:#9f7aea,stroke:#6b46c1,color:#fff
+
+    class REACT,REDUX,HOOKS browser
+    class W1,W2,WN worker
+    class LS,IDB storage
+    class STATIC,ASSETS,VITE hosting
+    class VITEDEV,VITEST,ESLINT dev
