@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "projects": {
+    "quoridor": {
+      "rootDirectory": "games/quoridor/quoridor_web",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "installCommand": "npm install"
+    },
+    "pylos": {
+      "rootDirectory": "games/pylos/pylos_web", 
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "installCommand": "npm install"
+    },
+    "soluna": {
+      "rootDirectory": "games/soluna/soluna_web",
+      "buildCommand": "npm run build", 
+      "outputDirectory": "dist",
+      "installCommand": "npm install"
+    },
+    "squadro": {
+      "rootDirectory": "games/squadro/squadro_web",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist", 
+      "installCommand": "npm install"
+    }
+  }
+}
