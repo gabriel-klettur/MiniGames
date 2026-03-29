@@ -470,11 +470,11 @@ class HistoryTable {
 
 ## 🏗️ Patrones de Arquitectura
 
-### **Diseño Modular**
-
 #### **Separación de Responsabilidades**
 
-**Módulos Core**:
+**Concepto**: Principio de diseño que establece que cada módulo o componente debe tener una única responsabilidad bien definida. En IA de juegos, esto significa separar la lógica de generación de movimientos, la evaluación de posiciones, la búsqueda de algoritmos y la gestión del tiempo en módulos independientes que interactúan a través de interfaces claras.
+
+**Core Modules**:
 ```typescript
 // Módulo de Estado de Juego
 interface GameState {
@@ -507,6 +507,8 @@ interface Evaluator {
 
 #### **Inyección de Dependencias**
 
+**Concepto**: Patrón de diseño que implementa la Inversión de Control (IoC) para desacoplar componentes. En lugar de que una clase cree sus propias dependencias, estas se "inyectan" desde el exterior. Esto facilita el testing, permite cambiar implementaciones sin modificar el código que las usa, y promueve un diseño más modular y flexible.
+
 **Implementación**:
 ```typescript
 class GameAI {
@@ -527,6 +529,8 @@ class GameAI {
 ### **Procesamiento Paralelo**
 
 #### **Patrón Worker Pool**
+
+**Concepto**: Un Worker Pool es un patrón de diseño que gestiona un conjunto de hilos de trabajo (workers) para ejecutar tareas concurrentemente de manera eficiente. En lugar de crear y destruir hilos para cada tarea, se reutilizan workers existentes, reduciendo la sobrecarga de creación y permitiendo controlar el nivel de paralelismo. Cada worker es un hilo separado que puede ejecutar tareas de forma independiente, ideal para CPU-intensive tasks como búsquedas de IA.
 
 **Arquitectura**:
 ```typescript
@@ -618,6 +622,8 @@ async function rootParallelSearch(state: GameState, timeLimit: number) {
 
 #### **Asignación Adaptativa de Tiempo**
 
+**Concepto**: Sistema de gestión de tiempo que ajusta dinámicamente el tiempo de búsqueda basado en factores como la complejidad de la posición, la fase del juego, la presión temporal y la urgencia. A diferencia de los sistemas fijos, este enfoque optimiza el uso del tiempo disponible para maximizar la calidad de las decisiones dentro de las restricciones temporales.
+
 **Implementación**:
 ```typescript
 class AdaptiveTimeManager {
@@ -700,6 +706,8 @@ class AdaptiveTimeManager {
 ### **Sistemas de Configuración**
 
 #### **Configuración Runtime**
+
+**Concepto**: Sistema que permite modificar parámetros de la IA en tiempo de ejecución sin necesidad de recompilar. Facilita la experimentación con diferentes configuraciones, permite ajustes dinámicos según el contexto del juego, y soporta perfiles predefinidos (presets) para diferentes niveles de dificultad o estilos de juego.
 
 **Patrón de Diseño**:
 ```typescript
@@ -800,7 +808,11 @@ class ConfigManager {
 
 #### **Implementación de IA**
 
-**Representación con Bitboards**:
+#### **Representación con Bitboards**
+
+**Concepto**: Técnica de representación de tablero que usa enteros binarios donde cada bit representa una casilla específica. Permite operaciones bit a bit extremadamente rápidas para manipular y consultar el estado del tablero, haciendo posible evaluar millones de posiciones por segundo. Es especialmente eficiente para juegos con tableros fijos y reglas geométricas como Pylos.
+
+**Implementación**:
 ```typescript
 class PylosBitboards {
   private levels: number[] = [0, 0, 0, 0]; // 4 niveles, 16 bits cada uno
@@ -878,7 +890,11 @@ function evaluateRecoveryOpportunities(state: GameState, player: Player): number
 
 #### **Implementación de IA**
 
-**Evaluación de Caminos con BFS**:
+#### **Evaluación de Caminos con BFS**
+
+**Concepto**: Algoritmo de Búsqueda en Anchura (Breadth-First Search) que explora el tablero nivel por nivel para encontrar el camino más corto desde la posición actual del peón hasta la meta. En Quoridor, esto es crucial para evaluar la efectividad de las paredes y calcular la distancia real considerando los obstáculos colocados.
+
+**Implementación**:
 ```typescript
 class PathFinder {
   findShortestPath(state: GameState, player: Player): PathResult {
@@ -930,9 +946,12 @@ class PathFinder {
     return moves;
   }
 }
-```
 
-**Función de Mérito de Pared**:
+#### **Función de Mérito de Pared**
+
+**Concepto**: Algoritmo que evalúa cuán efectiva es una pared para bloquear o ralentizar el progreso del oponente. Considera factores como el aumento en la distancia del camino, si la pared está en una ruta crítica hacia la meta, y el valor posicional estratégico de la ubicación de la pared.
+
+**Implementación**:
 ```typescript
 function calculateWallMerit(state: GameState, wall: Wall, player: Player): number {
   const opponent = getOpponent(player);
@@ -967,7 +986,11 @@ function calculateWallMerit(state: GameState, wall: Wall, player: Player): numbe
 
 #### **Implementación de IA**
 
-**Evaluación de Fusión**:
+#### **Evaluación de Fusión**
+
+**Concepto**: Sistema que analiza las oportunidades de fusionar piezas del mismo tipo y nivel, un aspecto central en Soluna. Evalúa fusiones inmediatas, potenciales y en cadena, considerando cómo las fusiones afectan el control del tablero, la ventaja de turnos y las oportunidades tácticas futuras.
+
+**Implementación**:
 ```typescript
 function evaluateFusionOpportunities(state: GameState, player: Player): FusionEvaluation {
   const evaluation: FusionEvaluation = {
@@ -1002,12 +1025,14 @@ function evaluateFusionOpportunities(state: GameState, player: Player): FusionEv
   
   // Calcular ventaja de altura
   evaluation.heightAdvantage = this.calculateHeightAdvantage(state, player);
-  
   return evaluation;
 }
-```
 
-**Implementación de Búsqueda Paralela**:
+#### **Implementación de Búsqueda Paralela**
+
+**Concepto**: Sistema que aprovecha múltiples núcleos de CPU para ejecutar búsquedas de IA concurrentemente. En Soluna, esto es especialmente importante debido al alto factor de ramificación del juego, permitiendo explorar más profundidad en el mismo tiempo mediante técnicas como root parallelization y second-ply split.
+
+**Implementación**:
 ```typescript
 class SolunaParallelSearch {
   async findBestMoveParallel(state: GameState, timeLimit: number): Promise<Move> {
@@ -1056,7 +1081,11 @@ class SolunaParallelSearch {
 
 #### **Implementación de IA**
 
-**Sistema de Evaluación de 12 Señales**:
+#### **Sistema de Evaluación de 12 Señales**
+
+**Concepto**: Sistema de evaluación multi-factor altamente sofisticado que analiza 12 características distintas del estado del juego en Squadro. Cada señal representa un aspecto estratégico diferente (carrera, colisiones, movilidad, etc.) y se combina con pesos específicos para producir una evaluación comprehensiva de la posición.
+
+**Implementación**:
 ```typescript
 interface SquadroFeatures {
   race: number;        // 100 * (oppTop4 - myTop4)
@@ -1110,22 +1139,17 @@ class SquadroEvaluator {
       ret: this.computeRetFeature(state, player, opponent),
       waste: this.computeWasteFeature(state, player, opponent),
       mob: this.computeMobFeature(state, player, opponent)
-    };
-  }
+  };
 }
 ```
 
-**Análisis de Cadena de Colisiones**:
+#### **Análisis de Cadena de Colisiones**
+
+**Concepto**: Algoritmo que analiza las reacciones en cadena que ocurren cuando una pieza colisiona con otra en Squadro. Calcula no solo las colisiones inmediatas, sino también las colisiones secundarias y terciarias que pueden resultar, evaluando el impacto táctico total de un movimiento en términos de ventaja posicional y control del carril.
+
+**Implementación**:
 ```typescript
 function analyzeCollisionChains(state: GameState, move: Move): ChainAnalysis {
-  const analysis: ChainAnalysis = {
-    immediateSendBacks: 0,
-    chainSendBacks: 0,
-    chainDepth: 0,
-    affectedPieces: []
-  };
-  
-  // Simular el movimiento
   const simulatedState = applyMove(state, move);
   
   // Encontrar colisiones inmediatas
@@ -1151,6 +1175,20 @@ function analyzeCollisionChains(state: GameState, move: Move): ChainAnalysis {
 ### **Profiling y Métricas**
 
 #### **Monitoreo de Rendimiento**
+
+**Concepto**: Sistema que mide y analiza continuamente métricas clave del rendimiento de la IA para identificar cuellos de botella, optimizar algoritmos y garantizar una experiencia de juego fluida. El monitoreo incluye parámetros de búsqueda, evaluación, memoria y uso de recursos del sistema.
+
+**Parámetros Monitoreados**:
+- **Nodes Per Second (NPS)**: Número de posiciones evaluadas por segundo, indicador principal de rendimiento de búsqueda
+- **Search Time**: Tiempo total que toma cada búsqueda de movimiento, incluyendo todas las optimizaciones
+- **Transposition Table Hit Rate**: Porcentaje de búsquedas exitosas en la cache, eficiencia del hashing
+- **Quiescence Search Depth**: Profundidad promedio de las búsquedas de quiescence, complejidad táctica
+- **Move Ordering Efficiency**: Efectividad de las heurísticas de ordenamiento, impacto en podas
+- **Memory Usage**: Consumo total de memoria incluyendo tablas, cachés y objetos temporales
+- **Worker Utilization**: Porcentaje de uso de workers en sistemas paralelos, eficiencia de paralelización
+- **Cache Miss Rate**: Frecuencia de fallos en caché, indicador de presión de memoria
+- **Branch Prediction Success**: Tasa de predicción correcta de branches, optimización CPU
+- **Garbage Collection Impact**: Tiempo y frecuencia de recolección de basura, overhead del runtime
 
 **Implementación**:
 ```typescript
