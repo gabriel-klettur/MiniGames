@@ -49,6 +49,8 @@ export const es: TranslationDict = {
   cat_data_structures: 'Estructuras de Datos',
   cat_testing: 'Testing',
   cat_machine_learning: 'Machine Learning',
+  cat_devops_tools: 'Herramientas DevOps',
+  cat_agents: 'Agentes de IA',
 
   // Quiz mode
   quiz_no_active: 'No hay quiz activo.',

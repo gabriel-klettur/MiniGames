@@ -5,8 +5,11 @@ import { architectureConcepts } from './architecture';
 import { dataStructureConcepts } from './dataStructures';
 import { testingConcepts } from './testing';
 import { machineLearningConcepts } from './machineLearning';
+import { devopsToolsConcepts } from './devopsTools';
+import { agentsConcepts } from './agents';
 import { enConceptsA } from './enA';
 import { enConceptsB } from './enB';
+import { enConceptsC } from './enC';
 import type { Concept } from '../types';
 import type { Locale } from '../../i18n/types';
 
@@ -18,6 +21,8 @@ export const ALL_CONCEPTS: Concept[] = [
   ...dataStructureConcepts,
   ...testingConcepts,
   ...machineLearningConcepts,
+  ...devopsToolsConcepts,
+  ...agentsConcepts,
 ];
 
 export const conceptById = new Map(ALL_CONCEPTS.map((c) => [c.id, c]));
@@ -25,6 +30,7 @@ export const conceptById = new Map(ALL_CONCEPTS.map((c) => [c.id, c]));
 const EN_OVERRIDES: Record<string, { definition: string; keyPoints: string[] }> = {
   ...enConceptsA,
   ...enConceptsB,
+  ...enConceptsC,
 };
 
 /** Returns all concepts with definitions/keyPoints localized */

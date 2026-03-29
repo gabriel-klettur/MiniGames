@@ -16,6 +16,8 @@ export const CATEGORIES: CategoryMeta[] = [
   { id: 'data-structures', labelKey: 'cat_data_structures', emoji: '📦', color: 'text-green-400' },
   { id: 'testing', labelKey: 'cat_testing', emoji: '🧪', color: 'text-teal-400' },
   { id: 'machine-learning', labelKey: 'cat_machine_learning', emoji: '🧠', color: 'text-rose-400' },
+  { id: 'devops-tools', labelKey: 'cat_devops_tools', emoji: '🐳', color: 'text-cyan-400' },
+  { id: 'agents', labelKey: 'cat_agents', emoji: '🤖', color: 'text-indigo-400' },
 ];
 
 const LABELS_ES: Record<Category, string> = {
@@ -26,6 +28,8 @@ const LABELS_ES: Record<Category, string> = {
   'data-structures': 'Estructuras de Datos',
   testing: 'Testing',
   'machine-learning': 'Machine Learning',
+  'devops-tools': 'Herramientas DevOps',
+  agents: 'Agentes de IA',
 };
 
 const LABELS_EN: Record<Category, string> = {
@@ -36,6 +40,8 @@ const LABELS_EN: Record<Category, string> = {
   'data-structures': 'Data Structures',
   testing: 'Testing',
   'machine-learning': 'Machine Learning',
+  'devops-tools': 'DevOps Tools',
+  agents: 'AI Agents',
 };
 
 const LABELS: Record<Locale, Record<Category, string>> = { es: LABELS_ES, en: LABELS_EN };

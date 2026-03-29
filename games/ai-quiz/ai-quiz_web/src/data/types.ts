@@ -5,7 +5,9 @@ export type Category =
   | 'architecture'
   | 'data-structures'
   | 'testing'
-  | 'machine-learning';
+  | 'machine-learning'
+  | 'devops-tools'
+  | 'agents';
 
 export type Difficulty = 1 | 2 | 3;
 
