@@ -35,8 +35,8 @@ export default function MultipleChoiceQuestion({ question, onAnswer }: Props) {
   return (
     <div className="flex flex-col gap-4">
       {/* Prompt */}
-      <div className="rounded-card border border-gray-700 bg-gray-800/50 p-5">
-        <p className="mb-1 text-xs font-medium uppercase text-gray-500">
+      <div className="glass rounded-card p-5">
+        <p className="mb-1 text-[11px] font-medium uppercase tracking-wider text-gray-500">
           {isDefToTerm ? t('q_def_to_term') : t('q_term_to_def')}
         </p>
         <p className={`leading-relaxed text-gray-100 ${isDefToTerm ? 'text-sm' : 'text-lg font-semibold'}`}>
@@ -54,14 +54,14 @@ export default function MultipleChoiceQuestion({ question, onAnswer }: Props) {
           const isCorrectOption = opt.id === question.correctAnswer;
           const isSelected = opt.id === selected;
 
-          let style = 'border-gray-700 bg-gray-800/40 hover:bg-gray-800 hover:border-gray-600';
+          let style = 'border-white/[0.06] bg-surface-2/60 hover:bg-surface-3 hover:border-white/[0.1]';
           if (answered) {
             if (isCorrectOption) {
-              style = 'border-success-500 bg-success-500/10 ring-1 ring-success-500/40';
+              style = 'border-success-500/30 bg-success-500/[0.08] ring-1 ring-success-500/30 shadow-glow-success';
             } else if (isSelected && !isCorrectOption) {
-              style = 'border-error-500 bg-error-500/10 ring-1 ring-error-500/40 animate-shake';
+              style = 'border-error-500/30 bg-error-500/[0.08] ring-1 ring-error-500/30 shadow-glow-error animate-shake';
             } else {
-              style = 'border-gray-700/50 bg-gray-800/20 opacity-50';
+              style = 'border-white/[0.03] bg-surface-1/40 opacity-40';
             }
           }
 
@@ -70,7 +70,7 @@ export default function MultipleChoiceQuestion({ question, onAnswer }: Props) {
               key={opt.id}
               onClick={() => handleSelect(opt.id)}
               disabled={answered}
-              className={`flex items-center gap-3 rounded-card border p-4 text-left transition ${style} ${
+              className={`flex items-center gap-3 rounded-card border p-4 text-left transition-all duration-200 ${style} ${
                 answered && isCorrectOption ? 'animate-pulse-success' : ''
               }`}
             >

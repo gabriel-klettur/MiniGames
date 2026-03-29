@@ -32,20 +32,20 @@ export default function ScoreBreakdown({ quiz }: Props) {
     <div className="flex flex-col gap-4">
       {/* Category bars */}
       <section>
-        <h3 className="mb-2 text-sm font-medium text-gray-400">{t('results_breakdown')}</h3>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-600">{t('results_breakdown')}</h3>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {CATEGORIES.map(({ id, emoji, labelKey }) => {
             const data = byCat.get(id);
             if (!data) return null;
             const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
             return (
-              <div key={id} className="flex items-center gap-3 rounded-lg bg-gray-800/50 px-3 py-2">
+              <div key={id} className="flex items-center gap-3 glass-subtle rounded-lg px-3 py-2">
                 <span className="text-sm">{emoji}</span>
                 <span className="flex-1 text-xs text-gray-300">{t(labelKey)}</span>
-                <div className="h-1.5 w-16 rounded-full bg-gray-700">
-                  <div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+                <div className="h-1 w-16 rounded-full bg-white/[0.06]">
+                  <div className="h-1 rounded-full progress-gradient" style={{ width: `${pct}%` }} />
                 </div>
-                <span className="w-10 text-right text-xs text-gray-400">{data.correct}/{data.total}</span>
+                <span className="w-10 text-right text-xs tabular-nums text-gray-500">{data.correct}/{data.total}</span>
               </div>
             );
           })}
@@ -55,14 +55,14 @@ export default function ScoreBreakdown({ quiz }: Props) {
       {/* Mistakes */}
       {mistakes.length > 0 && (
         <section>
-          <h3 className="mb-2 text-sm font-medium text-error-400">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-error-400">
             {t('results_mistakes')} ({mistakes.length})
           </h3>
           <div className="space-y-2">
             {mistakes.map((m, i) => (
-              <div key={i} className="rounded-lg border border-error-500/20 bg-error-500/5 px-4 py-2">
+              <div key={i} className="rounded-lg border border-error-500/15 bg-error-500/[0.04] px-4 py-2">
                 <p className="text-sm font-medium text-gray-200">{m.term}</p>
-                <p className="mt-1 text-xs text-gray-400">{m.explanation}</p>
+                <p className="mt-1 text-xs text-gray-500">{m.explanation}</p>
               </div>
             ))}
           </div>

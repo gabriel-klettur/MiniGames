@@ -31,10 +31,10 @@ export default function StudyMode() {
   return (
     <div className="flex flex-col gap-6 animate-slide-up">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-100">{t('study_title')}</h2>
+        <h2 className="text-gradient text-xl font-bold tracking-tight">{t('study_title')}</h2>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
-          className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+          className="text-xs text-gray-500 transition-colors hover:text-gray-300"
         >
           {t('study_back')}
         </button>
@@ -53,11 +53,11 @@ export default function StudyMode() {
       </div>
 
       {/* Progress */}
-      <div className="flex items-center gap-3 text-sm text-gray-400">
-        <span>{index + 1} / {filtered.length}</span>
-        <div className="h-1.5 flex-1 rounded-full bg-gray-800">
+      <div className="flex items-center gap-3 text-xs text-gray-500">
+        <span className="tabular-nums">{index + 1} / {filtered.length}</span>
+        <div className="h-1 flex-1 rounded-full bg-white/[0.06]">
           <div
-            className="h-1.5 rounded-full bg-brand-500 transition-all"
+            className="h-1 rounded-full progress-gradient transition-all"
             style={{ width: `${((index + 1) / filtered.length) * 100}%` }}
           />
         </div>
@@ -69,10 +69,10 @@ export default function StudyMode() {
 
       {/* Navigation */}
       <div className="flex justify-center gap-4">
-        <button onClick={prev} className="rounded-lg bg-gray-800 px-6 py-2 font-medium text-gray-300 transition hover:bg-gray-700">
+        <button onClick={prev} className="glass rounded-lg px-6 py-2 font-medium text-gray-300 transition-all duration-200 hover:shadow-glow-sm">
           {t('study_prev')}
         </button>
-        <button onClick={next} className="rounded-lg bg-brand-600 px-6 py-2 font-medium text-white transition hover:bg-brand-500">
+        <button onClick={next} className="rounded-lg bg-gradient-to-r from-brand-600 to-brand-500 px-6 py-2 font-medium text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110">
           {t('study_next')}
         </button>
       </div>
@@ -84,8 +84,8 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-        active ? 'bg-brand-600/30 text-brand-300 ring-1 ring-brand-500/50' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 ${
+        active ? 'bg-brand-500/[0.15] text-brand-300 ring-1 ring-brand-500/30 shadow-sm' : 'glass-subtle text-gray-400 hover:bg-white/[0.06]'
       }`}
     >
       {children}

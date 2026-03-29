@@ -53,12 +53,12 @@ export default function QuizConfigurator() {
   };
 
   return (
-    <section id="configurator" className="rounded-card border border-gray-800 bg-gray-900/60 p-5">
-      <h2 className="mb-4 text-lg font-semibold text-gray-200">{t('config_title')}</h2>
+    <section id="configurator" className="glass rounded-card p-6">
+      <h2 className="mb-5 text-base font-semibold tracking-tight text-gray-200">{t('config_title')}</h2>
 
       {/* Categories */}
-      <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_categories')}</legend>
+      <fieldset className="mb-5">
+        <legend className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-600">{t('config_categories')}</legend>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map(({ id, emoji, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.categories.includes(id)} onClick={() => toggleCategory(id)}>
@@ -69,8 +69,8 @@ export default function QuizConfigurator() {
       </fieldset>
 
       {/* Difficulty */}
-      <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_difficulty')}</legend>
+      <fieldset className="mb-5">
+        <legend className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-600">{t('config_difficulty')}</legend>
         <div className="flex flex-wrap gap-2">
           {DIFFICULTIES.map(({ id, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.difficulties.includes(id)} onClick={() => toggleDifficulty(id)}>
@@ -81,8 +81,8 @@ export default function QuizConfigurator() {
       </fieldset>
 
       {/* Question types */}
-      <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_question_types')}</legend>
+      <fieldset className="mb-5">
+        <legend className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-600">{t('config_question_types')}</legend>
         <div className="flex flex-wrap gap-2">
           {QUESTION_TYPES.map(({ id, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.questionTypes.includes(id)} onClick={() => toggleType(id)}>
@@ -93,18 +93,18 @@ export default function QuizConfigurator() {
       </fieldset>
 
       {/* Count */}
-      <div className="mb-5 flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-400">{t('config_question_count')}</label>
+      <div className="mb-6 flex items-center gap-3">
+        <label className="text-xs font-semibold uppercase tracking-wider text-gray-600">{t('config_question_count')}</label>
         <input
           type="range" min={5} max={30} step={5}
           value={quizConfig.questionCount}
           onChange={(e) => dispatch({ type: 'SET_CONFIG', config: { questionCount: +e.target.value } })}
           className="flex-1 accent-brand-500"
         />
-        <span className="w-8 text-center text-sm font-semibold text-gray-200">{quizConfig.questionCount}</span>
+        <span className="w-8 text-center text-sm font-bold tabular-nums text-gray-300">{quizConfig.questionCount}</span>
       </div>
 
-      <button onClick={start} className="w-full rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500">
+      <button onClick={start} className="w-full rounded-card bg-gradient-to-r from-brand-600 to-brand-500 py-3.5 font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110">
         {t('config_start')}
       </button>
     </section>
@@ -115,8 +115,8 @@ function ToggleChip({ active, onClick, children }: { active: boolean; onClick: (
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-        active ? 'bg-brand-600/30 text-brand-300 ring-1 ring-brand-500/50' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 ${
+        active ? 'bg-brand-500/[0.15] text-brand-300 ring-1 ring-brand-500/30 shadow-sm' : 'glass-subtle text-gray-400 hover:bg-white/[0.06]'
       }`}
     >
       {children}

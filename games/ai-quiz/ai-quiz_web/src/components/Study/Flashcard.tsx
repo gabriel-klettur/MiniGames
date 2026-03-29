@@ -31,21 +31,21 @@ export default function Flashcard({ concept, isStudied }: Props) {
     >
       <div className={`relative min-h-[280px] preserve-3d transition-transform duration-500 ${flipped ? 'rotate-y-180' : ''}`}>
         {/* Front */}
-        <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-card border border-gray-700 bg-gray-900 p-6 shadow-card">
+        <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-card glass border-glow p-6 shadow-card">
           {isStudied && <span className="absolute right-3 top-3 text-success-400">✓</span>}
-          <span className="mb-2 text-xs text-gray-500">{getCategoryEmoji(concept.category)} {t(`cat_${concept.category.replace(/-/g, '_')}`)}</span>
-          <h3 className="text-2xl font-bold text-brand-300">{concept.term}</h3>
+          <span className="mb-2 text-[11px] uppercase tracking-wider text-gray-500">{getCategoryEmoji(concept.category)} {t(`cat_${concept.category.replace(/-/g, '_')}`)}</span>
+          <h3 className="text-gradient text-2xl font-bold">{concept.term}</h3>
           {concept.termEs !== concept.term && (
-            <p className="mt-1 text-sm text-gray-400">{concept.termEs}</p>
+            <p className="mt-1 text-sm text-gray-500">{concept.termEs}</p>
           )}
-          <p className="mt-2 text-xs text-gray-500">{t(`difficulty_${concept.difficulty}`)}</p>
-          <p className="mt-4 text-xs text-gray-500">{t('study_flip_front')}</p>
+          <p className="mt-2 text-[11px] uppercase tracking-wider text-gray-600">{t(`difficulty_${concept.difficulty}`)}</p>
+          <p className="mt-4 text-xs text-gray-600">{t('study_flip_front')}</p>
         </div>
 
         {/* Back */}
-        <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col rounded-card border border-brand-700/30 bg-gray-900 p-6 shadow-card overflow-y-auto">
-          <h4 className="mb-2 text-sm font-semibold text-brand-400">{concept.term}</h4>
-          <p className="text-sm leading-relaxed text-gray-200">{concept.definition}</p>
+        <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col rounded-card glass border-brand-500/10 p-6 shadow-card overflow-y-auto">
+          <h4 className="mb-2 text-sm font-semibold text-brand-300">{concept.term}</h4>
+          <p className="text-sm leading-relaxed text-gray-300">{concept.definition}</p>
           <ul className="mt-4 space-y-1">
             {concept.keyPoints.map((kp, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
@@ -58,7 +58,7 @@ export default function Flashcard({ concept, isStudied }: Props) {
             <HelpPanel conceptId={concept.id} />
             <DiagramPanel conceptId={concept.id} />
           </div>
-          <p className="mt-auto pt-4 text-xs text-gray-500">{t('study_flip_back')}</p>
+          <p className="mt-auto pt-4 text-xs text-gray-600">{t('study_flip_back')}</p>
         </div>
       </div>
     </div>

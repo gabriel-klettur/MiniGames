@@ -16,10 +16,10 @@ function DiagramPanel({ conceptId, defaultOpen = false }: Props) {
   if (!diagram) return null;
 
   return (
-    <div className="rounded-card border border-gray-700/50 bg-gray-800/30">
+    <div className="glass-subtle rounded-card">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm font-medium text-gray-300 transition hover:text-brand-300"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-gray-400 transition hover:text-brand-300"
       >
         <span>{open ? t('diagram_hide') : t('diagram_show')}</span>
         <span className={`transform transition-transform ${open ? 'rotate-180' : ''}`}>
@@ -28,7 +28,7 @@ function DiagramPanel({ conceptId, defaultOpen = false }: Props) {
       </button>
 
       {open && (
-        <div className="border-t border-gray-700/30 p-4 animate-slide-up">
+        <div className="border-t border-white/[0.04] p-4 animate-slide-up">
           <InteractiveDiagram diagram={diagram} />
         </div>
       )}

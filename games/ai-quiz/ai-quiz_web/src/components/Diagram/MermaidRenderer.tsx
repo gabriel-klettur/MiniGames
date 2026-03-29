@@ -74,7 +74,7 @@ function MermaidRenderer({ id, code, onSvgReady }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-error-500/30 bg-error-500/5 p-3 text-xs text-error-400">
+      <div className="rounded-lg border border-error-500/15 bg-error-500/[0.04] p-3 text-xs text-error-400">
         {error}
       </div>
     );
@@ -83,7 +83,7 @@ function MermaidRenderer({ id, code, onSvgReady }: Props) {
   return (
     <div className="diagram-container relative">
       {loading && (
-        <div className="flex items-center justify-center rounded-lg border border-gray-700 bg-gray-800/30 p-8">
+        <div className="flex items-center justify-center glass-subtle rounded-lg p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
           <span className="ml-3 text-sm text-gray-400">Loading...</span>
         </div>

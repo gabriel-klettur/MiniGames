@@ -10,54 +10,61 @@ export default function Header() {
     ? Math.round((stats.totalCorrect / stats.totalAnswered) * 100)
     : 0;
 
-  const NAV_ITEMS: { view: ViewId; labelKey: string; emoji: string }[] = [
-    { view: 'home', labelKey: 'nav_home', emoji: '🏠' },
-    { view: 'study', labelKey: 'nav_study', emoji: '📖' },
+  const NAV_ITEMS: { view: ViewId; labelKey: string }[] = [
+    { view: 'home', labelKey: 'nav_home' },
+    { view: 'study', labelKey: 'nav_study' },
   ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-800 bg-gray-950/90 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3 sm:px-6">
         {/* Brand */}
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
-          className="flex items-center gap-2 text-lg font-bold text-brand-400 hover:text-brand-300 transition-colors"
+          className="text-base font-bold tracking-tight text-gradient transition-opacity hover:opacity-80"
         >
           {t('nav_brand')}
         </button>
 
         {/* Nav */}
-        <nav className="flex items-center gap-1">
-          {NAV_ITEMS.map(({ view, labelKey, emoji }) => (
+        <nav className="flex items-center gap-0.5">
+          {NAV_ITEMS.map(({ view, labelKey }) => (
             <button
               key={view}
               onClick={() => dispatch({ type: 'SET_VIEW', view })}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`relative rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-all duration-200 ${
                 state.currentView === view
-                  ? 'bg-brand-600/20 text-brand-300'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'
+                  ? 'text-brand-300 bg-brand-500/[0.12]'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.04]'
               }`}
             >
-              {emoji} {t(labelKey)}
+              {t(labelKey)}
             </button>
           ))}
+
+          <div className="mx-2 h-4 w-px bg-white/[0.08]" />
 
           {/* Language switcher */}
           <button
             onClick={() => setLocale(locale === 'es' ? 'en' : 'es')}
-            className="ml-2 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-200"
+            className="rounded-lg px-2.5 py-1.5 text-[13px] font-medium text-gray-500 transition-all duration-200 hover:text-gray-300 hover:bg-white/[0.04]"
             title={locale === 'es' ? 'Switch to English' : 'Cambiar a Español'}
           >
-            {locale === 'es' ? '🇬🇧 EN' : '🇪🇸 ES'}
+            {locale === 'es' ? 'EN' : 'ES'}
           </button>
         </nav>
 
         {/* Mini Stats */}
-        <div className="hidden items-center gap-3 text-xs text-gray-400 sm:flex">
-          <span title={t('mini_correct_title')}>
-            ✅ {stats.totalCorrect}/{stats.totalAnswered} ({pct}%)
+        <div className="hidden items-center gap-3 text-[11px] font-medium tracking-wide text-gray-500 sm:flex">
+          <span title={t('mini_correct_title')} className="flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-success-500/60" />
+            {stats.totalCorrect}/{stats.totalAnswered}
+            <span className="text-gray-600">({pct}%)</span>
           </span>
-          <span title={t('mini_streak_title')}>🔥 {stats.bestStreak}</span>
+          <span title={t('mini_streak_title')} className="flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500/60" />
+            {stats.bestStreak}
+          </span>
         </div>
       </div>
     </header>

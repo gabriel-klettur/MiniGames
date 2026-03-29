@@ -8,16 +8,16 @@ export default function ProgressBar({ current, total }: Props) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm font-medium text-gray-400">
+      <span className="text-xs font-medium tabular-nums text-gray-500">
         {current + 1} / {total}
       </span>
-      <div className="h-2 flex-1 rounded-full bg-gray-800">
+      <div className="h-1.5 flex-1 rounded-full bg-white/[0.06]">
         <div
-          className="h-2 rounded-full bg-brand-500 transition-all duration-300"
+          className="h-1.5 rounded-full progress-gradient transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-sm text-gray-500">{pct}%</span>
+      <span className="text-xs tabular-nums text-gray-500">{pct}%</span>
     </div>
   );
 }

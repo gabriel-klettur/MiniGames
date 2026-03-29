@@ -20,23 +20,23 @@ export default function StatsOverview({ stats }: Props) {
       <StatCard label={t('stat_best_streak')} value={stats.bestStreak} />
 
       {/* Category breakdown (compact) */}
-      <div className="col-span-full mt-2">
-        <h3 className="mb-2 text-sm font-medium text-gray-400">{t('stat_by_category')}</h3>
+      <div className="col-span-full mt-3">
+        <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-gray-600">{t('stat_by_category')}</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {CATEGORIES.map(({ id, emoji, labelKey }) => {
             const cat = stats.byCategory[id];
             const catPct = cat.total > 0 ? Math.round((cat.correct / cat.total) * 100) : 0;
             return (
-              <div key={id} className="rounded-lg bg-gray-800/60 px-3 py-2 text-xs">
-                <span className="font-medium text-gray-300">{emoji} {t(labelKey)}</span>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 rounded-full bg-gray-700">
+              <div key={id} className="glass-subtle rounded-xl px-3 py-2.5 text-xs">
+                <span className="font-medium text-gray-400">{emoji} {t(labelKey)}</span>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="h-1 flex-1 rounded-full bg-white/[0.06]">
                     <div
-                      className="h-1.5 rounded-full bg-brand-500 transition-all"
+                      className="h-1 rounded-full progress-gradient transition-all duration-500"
                       style={{ width: `${catPct}%` }}
                     />
                   </div>
-                  <span className="text-gray-400">{catPct}%</span>
+                  <span className="text-gray-500 tabular-nums">{catPct}%</span>
                 </div>
               </div>
             );
@@ -49,9 +49,9 @@ export default function StatsOverview({ stats }: Props) {
 
 function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
-    <div className="rounded-card bg-gray-800/60 px-4 py-3 text-center">
-      <p className={`text-2xl font-bold ${color ?? 'text-gray-100'}`}>{value}</p>
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="glass rounded-card px-4 py-3.5 text-center transition-all duration-200 hover:shadow-glow-sm">
+      <p className={`text-2xl font-bold tracking-tight ${color ?? 'text-gray-100'}`}>{value}</p>
+      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wider text-gray-500">{label}</p>
     </div>
   );
 }

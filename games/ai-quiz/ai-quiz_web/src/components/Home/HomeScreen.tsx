@@ -8,13 +8,13 @@ export default function HomeScreen() {
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col gap-8 animate-slide-up">
+    <div className="flex flex-col gap-10 animate-slide-up">
       {/* Hero */}
-      <section className="text-center">
-        <h1 className="text-3xl font-bold text-gray-100 sm:text-4xl">
+      <section className="pt-4 text-center">
+        <h1 className="text-gradient text-4xl font-extrabold tracking-tight sm:text-5xl">
           {t('hero_title')}
         </h1>
-        <p className="mt-2 text-gray-400">
+        <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-gray-500">
           {t('hero_subtitle')}
         </p>
       </section>
@@ -26,22 +26,22 @@ export default function HomeScreen() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'study' })}
-          className="rounded-card bg-gray-800 px-4 py-4 text-center font-medium text-gray-200 shadow-card transition hover:bg-gray-700"
+          className="glass group rounded-card px-4 py-4 text-center font-medium text-gray-300 transition-all duration-200 hover:bg-white/[0.06] hover:shadow-glow-sm"
         >
-          {t('btn_study')}
+          <span className="text-sm">{t('btn_study')}</span>
         </button>
         <button
           onClick={() => document.getElementById('configurator')?.scrollIntoView({ behavior: 'smooth' })}
-          className="rounded-card bg-brand-600 px-4 py-4 text-center font-medium text-white shadow-card transition hover:bg-brand-500"
+          className="border-glow rounded-card bg-gradient-to-r from-brand-600 to-brand-500 px-4 py-4 text-center font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110"
         >
-          {t('btn_start_quiz')}
+          <span className="text-sm">{t('btn_start_quiz')}</span>
         </button>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'review' })}
           disabled={state.mistakeBank.length === 0}
-          className="rounded-card bg-gray-800 px-4 py-4 text-center font-medium text-gray-200 shadow-card transition hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="glass group rounded-card px-4 py-4 text-center font-medium text-gray-300 transition-all duration-200 hover:bg-white/[0.06] hover:shadow-glow-sm disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:shadow-none"
         >
-          {t('btn_review')} ({state.mistakeBank.length})
+          <span className="text-sm">{t('btn_review')} ({state.mistakeBank.length})</span>
         </button>
       </div>
 

@@ -68,11 +68,11 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
   };
 
   const statusStyles = {
-    idle: 'border-gray-700 bg-gray-800/40',
-    active: 'border-brand-500 bg-brand-500/10 ring-1 ring-brand-500/40',
-    connected: 'border-brand-400/50 bg-brand-500/5',
-    correct: 'border-success-500 bg-success-500/10',
-    incorrect: 'border-error-500 bg-error-500/10',
+    idle: 'border-white/[0.06] bg-surface-2/60',
+    active: 'border-brand-500/30 bg-brand-500/[0.08] ring-1 ring-brand-500/30',
+    connected: 'border-brand-400/20 bg-brand-500/[0.04]',
+    correct: 'border-success-500/30 bg-success-500/[0.08] shadow-glow-success',
+    incorrect: 'border-error-500/30 bg-error-500/[0.08] shadow-glow-error',
   };
 
   const correctCount = submitted ? pairs.filter((p) => connections.get(p.termId) === p.termId).length : 0;
@@ -95,7 +95,7 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
               key={p.termId}
               onClick={() => handleTermClick(p.termId)}
               disabled={submitted}
-              className={`rounded-lg border p-3 text-left text-sm font-medium transition ${statusStyles[getTermStatus(p.termId)]}`}
+              className={`rounded-lg border p-3 text-left text-sm font-medium transition-all duration-200 ${statusStyles[getTermStatus(p.termId)]}`}
             >
               {submitted && getTermStatus(p.termId) === 'correct' && <span className="mr-1 text-success-400">✓</span>}
               {submitted && getTermStatus(p.termId) === 'incorrect' && <span className="mr-1 text-error-400">✗</span>}
@@ -111,7 +111,7 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
               key={`def-${p.termId}`}
               onClick={() => handleDefClick(p.termId)}
               disabled={submitted || !activeTerm}
-              className={`rounded-lg border p-3 text-left text-xs leading-relaxed transition ${statusStyles[getDefStatus(p.termId)]}`}
+              className={`rounded-lg border p-3 text-left text-xs leading-relaxed transition-all duration-200 ${statusStyles[getDefStatus(p.termId)]}`}
             >
               {p.definition}
             </button>
@@ -124,7 +124,7 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
         <button
           onClick={handleSubmit}
           disabled={!allConnected}
-          className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-card bg-gradient-to-r from-brand-600 to-brand-500 py-3 font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
         >
           {t('q_check')} ({connections.size}/{pairs.length})
         </button>

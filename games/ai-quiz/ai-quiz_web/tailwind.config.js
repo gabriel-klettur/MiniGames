@@ -20,6 +20,13 @@ export default {
           800: '#3730a3',
           900: '#312e81',
         },
+        surface: {
+          0: '#06060b',
+          1: '#0c0c14',
+          2: '#12121e',
+          3: '#1a1a2e',
+          4: '#22223a',
+        },
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -37,17 +44,23 @@ export default {
       },
       boxShadow: {
         elevated: '0 10px 30px rgba(0,0,0,0.35)',
-        card: '0 4px 12px rgba(0,0,0,0.1)',
+        card: '0 2px 8px rgba(0,0,0,0.2), 0 0 0 1px rgba(99,102,241,0.04)',
+        'glow-sm': '0 0 15px rgba(99,102,241,0.15)',
+        'glow-md': '0 0 30px rgba(99,102,241,0.2)',
+        'glow-success': '0 0 20px rgba(34,197,94,0.2)',
+        'glow-error': '0 0 20px rgba(239,68,68,0.15)',
       },
       borderRadius: {
-        card: '12px',
+        card: '14px',
       },
       animation: {
         'flip': 'flip 0.6s ease-in-out',
         'shake': 'shake 0.5s ease-in-out',
         'pulse-success': 'pulse-success 0.5s ease-out',
-        'slide-up': 'slide-up 0.3s ease-out',
-        'confetti': 'confetti 1s ease-out forwards',
+        'slide-up': 'slide-up 0.35s cubic-bezier(0.16,1,0.3,1)',
+        'fade-in': 'fade-in 0.4s ease-out',
+        'glow-pulse': 'glow-pulse 3s ease-in-out infinite',
+        'float': 'float 6s ease-in-out infinite',
       },
       keyframes: {
         flip: {
@@ -65,8 +78,20 @@ export default {
           '100%': { transform: 'scale(1)' },
         },
         'slide-up': {
-          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'glow-pulse': {
+          '0%, 100%': { opacity: '0.4' },
+          '50%': { opacity: '0.7' },
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         },
       },
     },

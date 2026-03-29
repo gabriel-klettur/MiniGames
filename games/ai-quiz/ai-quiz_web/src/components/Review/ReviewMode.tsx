@@ -19,11 +19,11 @@ export default function ReviewMode() {
     return (
       <div className="flex flex-col items-center gap-4 animate-slide-up text-center">
         <p className="text-4xl">🎉</p>
-        <h2 className="text-xl font-bold text-gray-100">{t('review_empty_title')}</h2>
-        <p className="text-gray-400">{t('review_empty_msg')}</p>
+        <h2 className="text-gradient text-xl font-bold">{t('review_empty_title')}</h2>
+        <p className="text-gray-500">{t('review_empty_msg')}</p>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
-          className="rounded-card bg-brand-600 px-6 py-3 font-semibold text-white transition hover:bg-brand-500"
+          className="rounded-card bg-gradient-to-r from-brand-600 to-brand-500 px-6 py-3 font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110"
         >
           {t('quiz_back_home')}
         </button>
@@ -36,18 +36,18 @@ export default function ReviewMode() {
     return (
       <div className="flex flex-col items-center gap-4 animate-slide-up text-center">
         <p className="text-4xl">✅</p>
-        <h2 className="text-xl font-bold text-gray-100">{t('review_done_title')}</h2>
-        <p className="text-gray-400">{t('review_done_msg', { count: state.mistakeBank.length })}</p>
+        <h2 className="text-gradient text-xl font-bold">{t('review_done_title')}</h2>
+        <p className="text-gray-500">{t('review_done_msg', { count: state.mistakeBank.length })}</p>
         <div className="flex gap-3">
           <button
             onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
-            className="rounded-card bg-gray-800 px-6 py-3 font-medium text-gray-200 transition hover:bg-gray-700"
+            className="glass rounded-card px-6 py-3 font-medium text-gray-200 transition-all duration-200 hover:shadow-glow-sm"
           >
             {t('results_home')}
           </button>
           <button
             onClick={() => dispatch({ type: 'SET_VIEW', view: 'review' })}
-            className="rounded-card bg-brand-600 px-6 py-3 font-medium text-white transition hover:bg-brand-500"
+            className="rounded-card bg-gradient-to-r from-brand-600 to-brand-500 px-6 py-3 font-medium text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110"
           >
             {t('review_repeat')}
           </button>
@@ -74,8 +74,8 @@ export default function ReviewMode() {
   return (
     <div className="flex flex-col gap-5 animate-slide-up" key={question.id}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-100">{t('review_title')}</h2>
-        <span className="text-xs text-gray-400">{t('review_pending', { count: state.mistakeBank.length })}</span>
+        <h2 className="text-gradient text-lg font-bold">{t('review_title')}</h2>
+        <span className="text-[11px] uppercase tracking-wider text-gray-500">{t('review_pending', { count: state.mistakeBank.length })}</span>
       </div>
 
       <ProgressBar current={index} total={questions.length} />
@@ -89,7 +89,7 @@ export default function ReviewMode() {
       {answered && (
         <button
           onClick={handleNext}
-          className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500"
+          className="rounded-card bg-gradient-to-r from-brand-600 to-brand-500 py-3 font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110"
         >
           {index >= questions.length - 1 ? t('review_finish') : t('quiz_next')}
         </button>

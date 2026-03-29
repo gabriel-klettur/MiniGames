@@ -14,10 +14,10 @@ function HelpPanel({ conceptId }: Props) {
   if (!help) return null;
 
   return (
-    <div className="rounded-card border border-gray-700/50 bg-gray-800/30">
+    <div className="glass-subtle rounded-card">
       <button
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm font-medium text-gray-300 transition hover:text-brand-300"
+        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-medium text-gray-400 transition hover:text-brand-300"
       >
         <span>{open ? t('help_hide') : t('help_show')}</span>
         <span className={`transform transition-transform ${open ? 'rotate-180' : ''}`}>
@@ -26,8 +26,8 @@ function HelpPanel({ conceptId }: Props) {
       </button>
 
       {open && (
-        <div className="border-t border-gray-700/30 p-4 animate-slide-up space-y-3">
-          <p className="text-xs italic text-gray-400">{help.context}</p>
+        <div className="border-t border-white/[0.04] p-4 animate-slide-up space-y-3">
+          <p className="text-xs italic text-gray-500">{help.context}</p>
           <ul className="space-y-2">
             {help.glossary.map((entry) => (
               <li key={entry.term} className="text-sm">

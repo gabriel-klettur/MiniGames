@@ -51,7 +51,7 @@ export default function QuizMode() {
 
       {/* Streak */}
       {state.stats.streak > 1 && (
-        <p className="text-center text-sm text-amber-400">{t('quiz_streak', { count: state.stats.streak })}</p>
+        <p className="text-center text-xs font-medium uppercase tracking-wider text-amber-400/80">{t('quiz_streak', { count: state.stats.streak })}</p>
       )}
 
       {/* Question component by type */}
@@ -69,7 +69,7 @@ export default function QuizMode() {
       {answered && (
         <button
           onClick={handleNext}
-          className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500"
+          className="rounded-card bg-gradient-to-r from-brand-600 to-brand-500 py-3 font-semibold text-white shadow-glow-sm transition-all duration-200 hover:shadow-glow-md hover:brightness-110"
         >
           {isLast ? t('quiz_results') : t('quiz_next')}
         </button>
