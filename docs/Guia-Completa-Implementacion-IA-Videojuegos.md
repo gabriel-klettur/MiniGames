@@ -3,47 +3,55 @@
 ## 📚 Tabla de Contenidos
 
 ### **🎯 Introducción**
+
 - [Propósito y Alcance](#propósito-y-alcance)
 - [Audiencia Objetivo](#audiencia-objetivo)
 - [Prerrequisitos](#prerrequisitos)
 
 ### **🔧 Conceptos Fundamentales de IA**
+
 - [Algoritmos de Búsqueda](#algoritmos-de-búsqueda)
 - [Funciones de Evaluación](#funciones-de-evaluación)
 - [Técnicas de Optimización](#técnicas-de-optimización)
 - [Estructuras de Datos](#estructuras-de-datos)
 
 ### **🏗️ Patrones de Arquitectura**
+
 - [Diseño Modular](#diseño-modular)
 - [Procesamiento Paralelo](#procesamiento-paralelo)
 - [Gestión de Tiempo](#gestión-de-tiempo)
 - [Sistemas de Configuración](#sistemas-de-configuración)
 
 ### **🎮 Implementaciones Específicas por Juego**
+
 - [Pylos: Estrategia Abstracta](#pylos-estrategia-abstracta)
 - [Quoridor: Búsqueda de Caminos](#quoridor-búsqueda-de-caminos)
 - [Soluna: Mecánicas de Fusión](#soluna-mecánicas-de-fusión)
 - [Squadro: Juegos de Carrera](#squadro-juegos-de-carrera)
 
 ### **⚡ Optimización de Rendimiento**
+
 - [Profiling y Métricas](#profiling-y-métricas)
 - [Gestión de Memoria](#gestión-de-memoria)
 - [Optimización CPU](#optimización-cpu)
 - [Consideraciones GPU](#consideraciones-gpu)
 
 ### **🧪 Testing y Validación**
+
 - [Unit Testing](#unit-testing)
 - [Integration Testing](#integration-testing)
 - [Performance Testing](#performance-testing)
 - [Evaluación de Calidad de IA](#evaluación-de-calidad-de-ia)
 
 ### **🚀 Temas Avanzados**
+
 - [Integración de Machine Learning](#integración-de-machine-learning)
 - [Redes Neuronales](#redes-neuronales)
 - [Reinforcement Learning](#reinforcement-learning)
 - [Enfoques Híbridos](#enfoques-híbridos)
 
 ### **📖 Roadmap de Implementación**
+
 - [Fase 1: Fundamentos](#fase-1-fundamentos)
 - [Fase 2: IA Core](#fase-2-ia-core)
 - [Fase 3: Optimización](#fase-3-optimización)
@@ -68,18 +76,21 @@ Esta guía proporciona una hoja de ruta completa para implementar inteligencia a
 ### **Prerrequisitos**
 
 #### **Habilidades de Programación**
+
 - Dominio sólido de al menos un lenguaje de programación
 - Comprensión de estructuras de datos y algoritmos
 - Familiaridad con programación orientada a objetos
 - Conocimiento básico de concurrencia y procesamiento paralelo
 
 #### **Fundamentos Matemáticos**
+
 - Matemáticas discretas (grafos, árboles, combinatoria)
 - Probabilidad y estadística básica
 - Álgebra lineal (para temas avanzados)
 - Análisis de algoritmos (notación Big O)
 
 #### **Conceptos de Desarrollo de Juegos**
+
 - Game loops y ciclos de actualización
 - Gestión de estados
 - Sistemas de eventos
@@ -96,6 +107,7 @@ Esta guía proporciona una hoja de ruta completa para implementar inteligencia a
 **Concepto**: Algoritmo de decisión recursiva para juegos de suma cero de dos jugadores.
 
 **Implementación**:
+
 ```typescript
 function minimax(state, depth, maximizingPlayer) {
   if (depth === 0 || isTerminal(state)) {
@@ -121,6 +133,7 @@ function minimax(state, depth, maximizingPlayer) {
 ```
 
 **Puntos Clave**:
+
 - Explora todo el árbol de juego hasta profundidad especificada
 - Asume juego óptimo de ambos jugadores
 - Complejidad exponencial: O(b^d)
@@ -131,6 +144,7 @@ function minimax(state, depth, maximizingPlayer) {
 **Concepto**: Optimización de minimax que elimina ramas que no influirán en la decisión final.
 
 **Implementación**:
+
 ```typescript
 function alphaBeta(state, depth, alpha, beta, maximizingPlayer) {
   if (depth === 0 || isTerminal(state)) {
@@ -164,6 +178,7 @@ function alphaBeta(state, depth, alpha, beta, maximizingPlayer) {
 ```
 
 **Impacto en Rendimiento**:
+
 - Reduce complejidad de O(b^d) a O(b^(d/2))
 - Permite búsquedas mucho más profundas
 - Crítico para rendimiento en tiempo real
@@ -173,6 +188,7 @@ function alphaBeta(state, depth, alpha, beta, maximizingPlayer) {
 **Concepto**: Variante de minimax que simplifica el código usando cambio de perspectiva.
 
 **Implementación**:
+
 ```typescript
 function negamax(state, depth, alpha, beta, player) {
   if (depth === 0 || isTerminal(state)) {
@@ -193,6 +209,7 @@ function negamax(state, depth, alpha, beta, player) {
 ```
 
 **Ventajas**:
+
 - Código más limpio con función única
 - Menos duplicación
 - Más fácil de mantener
@@ -202,6 +219,7 @@ function negamax(state, depth, alpha, beta, player) {
 **Concepto**: Búsqueda progresiva por profundidad con gestión de tiempo.
 
 **Implementación**:
+
 ```typescript
 function iterativeDeepening(state, timeLimit) {
   const startTime = performance.now();
@@ -211,10 +229,10 @@ function iterativeDeepening(state, timeLimit) {
   while (true) {
     const elapsed = performance.now() - startTime;
     if (elapsed > timeLimit * 0.8) break; // Margen de seguridad
-    
+  
     const result = alphaBeta(state, depth, -Infinity, Infinity, true);
     bestMove = result.move;
-    
+  
     depth++;
   }
   
@@ -223,6 +241,7 @@ function iterativeDeepening(state, timeLimit) {
 ```
 
 **Beneficios**:
+
 - Siempre tiene un movimiento disponible
 - Mejora ordenamiento de movimientos para búsquedas más profundas
 - Se adapta al tiempo disponible
@@ -234,6 +253,7 @@ function iterativeDeepening(state, timeLimit) {
 **Concepto**: Combina múltiples factores estratégicos en un solo puntaje.
 
 **Plantilla**:
+
 ```typescript
 interface EvaluationComponents {
   material: number;      // Ventaja de piezas
@@ -261,6 +281,7 @@ function evaluate(state, player) {
 **Concepto**: Ajusta pesos de evaluación basados en la fase del juego.
 
 **Implementación**:
+
 ```typescript
 function getPhaseWeights(phase) {
   switch (phase) {
@@ -299,6 +320,7 @@ function getPhaseWeights(phase) {
 **Concepto**: Estructura de datos que cachea resultados de posiciones ya evaluadas para evitar recálculo. Usa hashing para identificar posiciones idénticas que pueden alcanzarse por diferentes secuencias de movimientos (transposiciones).
 
 **Implementación**:
+
 ```typescript
 class TranspositionTable {
   constructor(size = 1024 * 1024) {
@@ -314,11 +336,11 @@ class TranspositionTable {
   lookup(key, depth, alpha, beta) {
     const index = key % this.size;
     const entry = this.table[index];
-    
+  
     if (!entry || entry.key !== key || entry.depth < depth) {
       return null;
     }
-    
+  
     switch (entry.flag) {
       case 'EXACT': return entry.score;
       case 'ALPHA': return entry.score <= alpha ? entry.score : null;
@@ -334,11 +356,12 @@ class TranspositionTable {
 **Concepto**: Técnica de hashing eficiente que genera claves únicas para posiciones de tablero usando XOR de números aleatorios pre-generados. Permite identificar rápidamente si dos posiciones son idénticas sin comparar todo el estado del tablero.
 
 **Implementación**:
+
 ```typescript
 class ZobristHash {
   constructor(boardSize, pieceTypes) {
     this.table = {};
-    
+  
     // Inicializar números aleatorios para cada pieza en cada posición
     for (const piece of pieceTypes) {
       this.table[piece] = {};
@@ -352,11 +375,11 @@ class ZobristHash {
   
   hash(state) {
     let hash = 0;
-    
+  
     for (const piece of state.pieces) {
       hash ^= this.table[piece.type][`${piece.x},${piece.y}`];
     }
-    
+  
     return hash;
   }
   
@@ -371,6 +394,7 @@ class ZobristHash {
 **Concepto**: Extensión de búsqueda que solo explora movimientos tácticos (capturas, promociones, jaques) cuando la búsqueda normal llega a profundidad cero, para evitar el "horizon effect" donde la IA ignora amenazas inminentes.
 
 **Implementación**:
+
 ```typescript
 function quiescence(state, alpha, beta, player) {
   if (isTerminal(state)) {
@@ -392,7 +416,7 @@ function quiescence(state, alpha, beta, player) {
   for (const move of tacticalMoves) {
     const nextState = applyMove(state, move);
     const score = -quiescence(nextState, -beta, -alpha, getOpponent(player));
-    
+  
     if (player === 'white') {
       if (score >= beta) return beta;
       if (score > alpha) alpha = score;
@@ -413,6 +437,7 @@ function quiescence(state, alpha, beta, player) {
 **Concepto**: Movimientos que causaron podas de beta (cutoffs) en niveles anteriores del árbol de búsqueda y se guardan como "asesinos" porque tienden a ser buenos movimientos en posiciones similares.
 
 **Implementación**::
+
 ```typescript
 class KillerMoves {
   constructor(maxDepth = 64) {
@@ -423,7 +448,7 @@ class KillerMoves {
     if (!this.killers[ply]) {
       this.killers[ply] = [];
     }
-    
+  
     // Agregar movimiento si no está presente
     if (!this.killers[ply].includes(move)) {
       this.killers[ply].unshift(move);
@@ -444,6 +469,7 @@ class KillerMoves {
 **Concepto**: Técnica que registra qué movimientos han sido históricamente buenos en posiciones similares, asignando mayor prioridad a movimientos que han producido buenas evaluaciones en búsquedas anteriores.
 
 **Implementación**::
+
 ```typescript
 class HistoryTable {
   constructor() {
@@ -475,6 +501,7 @@ class HistoryTable {
 **Concepto**: Principio de diseño que establece que cada módulo o componente debe tener una única responsabilidad bien definida. En IA de juegos, esto significa separar la lógica de generación de movimientos, la evaluación de posiciones, la búsqueda de algoritmos y la gestión del tiempo en módulos independientes que interactúan a través de interfaces claras.
 
 **Core Modules**:
+
 ```typescript
 // Módulo de Estado de Juego
 interface GameState {
@@ -510,6 +537,7 @@ interface Evaluator {
 **Concepto**: Patrón de diseño que implementa la Inversión de Control (IoC) para desacoplar componentes. En lugar de que una clase cree sus propias dependencias, estas se "inyectan" desde el exterior. Esto facilita el testing, permite cambiar implementaciones sin modificar el código que las usa, y promueve un diseño más modular y flexible.
 
 **Implementación**:
+
 ```typescript
 class GameAI {
   constructor(
@@ -533,6 +561,7 @@ class GameAI {
 **Concepto**: Un Worker Pool es un patrón de diseño que gestiona un conjunto de hilos de trabajo (workers) para ejecutar tareas concurrentemente de manera eficiente. En lugar de crear y destruir hilos para cada tarea, se reutilizan workers existentes, reduciendo la sobrecarga de creación y permitiendo controlar el nivel de paralelismo. Cada worker es un hilo separado que puede ejecutar tareas de forma independiente, ideal para CPU-intensive tasks como búsquedas de IA.
 
 **Arquitectura**:
+
 ```typescript
 class WorkerPool {
   private workers: Worker[] = [];
@@ -551,7 +580,7 @@ class WorkerPool {
     return new Promise((resolve, reject) => {
       task.resolve = resolve;
       task.reject = reject;
-      
+    
       if (this.availableWorkers.length > 0) {
         this.executeOnWorker(task);
       } else {
@@ -562,19 +591,19 @@ class WorkerPool {
   
   private executeOnWorker(task: Task) {
     const worker = this.availableWorkers.pop();
-    
+  
     worker.onmessage = (event) => {
       task.resolve(event.data);
       this.availableWorkers.push(worker);
       this.processQueue();
     };
-    
+  
     worker.onerror = (error) => {
       task.reject(error);
       this.availableWorkers.push(worker);
       this.processQueue();
     };
-    
+  
     worker.postMessage(task.data);
   }
   
@@ -594,6 +623,7 @@ class WorkerPool {
 **Concepto**: Técnica de paralelización que distribuye los movimientos del nivel raíz entre múltiples workers, permitiendo evaluar diferentes movimientos principales simultáneamente para reducir el tiempo total de búsqueda.
 
 **Implementación**::
+
 ```typescript
 async function rootParallelSearch(state: GameState, timeLimit: number) {
   const moves = generateMoves(state);
@@ -625,6 +655,7 @@ async function rootParallelSearch(state: GameState, timeLimit: number) {
 **Concepto**: Sistema de gestión de tiempo que ajusta dinámicamente el tiempo de búsqueda basado en factores como la complejidad de la posición, la fase del juego, la presión temporal y la urgencia. A diferencia de los sistemas fijos, este enfoque optimiza el uso del tiempo disponible para maximizar la calidad de las decisiones dentro de las restricciones temporales.
 
 **Implementación**:
+
 ```typescript
 class AdaptiveTimeManager {
   private baseTime: number;
@@ -641,29 +672,29 @@ class AdaptiveTimeManager {
     const complexity = this.calculateComplexity(state);
     const phase = this.detectGamePhase(state);
     const urgency = this.calculateUrgency(state);
-    
+  
     let allocation = this.baseTime;
-    
+  
     // Ajustar por complejidad
     allocation *= (1 + complexity * 0.5);
-    
+  
     // Ajustar por fase del juego
     if (phase === 'endgame') {
       allocation *= 1.3;
     } else if (phase === 'opening') {
       allocation *= 0.8;
     }
-    
+  
     // Ajustar por urgencia
     allocation *= (1 + urgency * 0.3);
-    
+  
     // Asegurar no exceder tiempo restante
     const maxAllocation = this.remainingTime * 0.1; // Usar máximo 10% del tiempo restante
     allocation = Math.min(allocation, maxAllocation);
-    
+  
     // Margen de seguridad
     allocation *= 0.9;
-    
+  
     return Math.max(50, allocation); // Mínimo 50ms
   }
   
@@ -671,7 +702,7 @@ class AdaptiveTimeManager {
     // Calcular basado en factor de ramificación, complejidad táctica, etc.
     const moveCount = generateMoves(state).length;
     const tacticalMoves = countTacticalMoves(state);
-    
+  
     return Math.min(1.0, (moveCount / 30 + tacticalMoves / 10) / 2);
   }
   
@@ -679,7 +710,7 @@ class AdaptiveTimeManager {
     // Implementar lógica de detección de fase
     const moveCount = state.moveHistory.length;
     const pieceCount = countPieces(state);
-    
+  
     if (moveCount < 10) return 'opening';
     if (pieceCount < 10) return 'endgame';
     return 'middle';
@@ -689,7 +720,7 @@ class AdaptiveTimeManager {
     // Calcular presión de tiempo basado en tiempo restante y número de movimiento
     const timePressure = 1 - (this.remainingTime / (this.baseTime * 100));
     const movePressure = Math.min(1.0, this.moveNumber / 50);
-    
+  
     return (timePressure + movePressure) / 2;
   }
   
@@ -710,6 +741,7 @@ class AdaptiveTimeManager {
 **Concepto**: Sistema que permite modificar parámetros de la IA en tiempo de ejecución sin necesidad de recompilar. Facilita la experimentación con diferentes configuraciones, permite ajustes dinámicos según el contexto del juego, y soporta perfiles predefinidos (presets) para diferentes niveles de dificultad o estilos de juego.
 
 **Patrón de Diseño**:
+
 ```typescript
 interface AIConfig {
   search: {
@@ -750,7 +782,7 @@ class ConfigManager {
       optimization: { transpositionTableSize: 1024, enableKillerMoves: false, enableHistoryHeuristic: false },
       parallel: { workerCount: 1, enableRootParallel: false, enableSecondPlySplit: false }
     });
-    
+  
     this.presets.set('expert', {
       search: { maxDepth: 8, timeLimit: 5000, enableIterativeDeepening: true, enableQuiescence: true },
       evaluation: { weights: this.getExpertWeights(), enableTapering: true },
@@ -801,6 +833,7 @@ class ConfigManager {
 ### **Pylos: Estrategia Abstracta**
 
 #### **Características del Juego**
+
 - **Tipo**: Juego de estrategia abstracta
 - **Mecánicas**: Colocación de piezas, apilamiento, recuperación
 - **Complejidad**: Factor de ramificación medio, profundidad táctica
@@ -813,6 +846,7 @@ class ConfigManager {
 **Concepto**: Técnica de representación de tablero que usa enteros binarios donde cada bit representa una casilla específica. Permite operaciones bit a bit extremadamente rápidas para manipular y consultar el estado del tablero, haciendo posible evaluar millones de posiciones por segundo. Es especialmente eficiente para juegos con tableros fijos y reglas geométricas como Pylos.
 
 **Implementación**:
+
 ```typescript
 class PylosBitboards {
   private levels: number[] = [0, 0, 0, 0]; // 4 niveles, 16 bits cada uno
@@ -833,10 +867,10 @@ class PylosBitboards {
   
   getSupports(level: number, position: number): boolean {
     if (level === 0) return true; // Nivel inferior siempre soportado
-    
+  
     const supportMask = this.getSupportMask(position);
     const belowLevel = this.levels[level - 1];
-    
+  
     return (belowLevel & supportMask) === supportMask;
   }
   
@@ -844,7 +878,7 @@ class PylosBitboards {
     // Calcular qué posiciones abajo soportan esta posición
     const row = Math.floor(position / 4);
     const col = position % 4;
-    
+  
     if (level === 1) {
       // Soporte 2x2 para nivel 1
       return (1 << (row * 4 + col)) | (1 << (row * 4 + col + 1)) |
@@ -853,13 +887,14 @@ class PylosBitboards {
       // Soporte 2x2 para nivel 2 (solo posiciones centrales)
       return (1 << 5) | (1 << 6) | (1 << 9) | (1 << 10);
     }
-    
+  
     return 0; // Nivel 3 (superior) no tiene soporte
   }
 }
 ```
 
 **Evaluación de Recuperación**:
+
 ```typescript
 function evaluateRecoveryOpportunities(state: GameState, player: Player): number {
   let score = 0;
@@ -883,6 +918,7 @@ function evaluateRecoveryOpportunities(state: GameState, player: Player): number
 ### **Quoridor: Búsqueda de Caminos**
 
 #### **Características del Juego**
+
 - **Tipo**: Juego de estrategia de construcción de caminos
 - **Mecánicas**: Movimiento de peones, colocación de paredes
 - **Complejidad**: Alto factor de ramificación, evaluación de caminos crítica
@@ -895,26 +931,27 @@ function evaluateRecoveryOpportunities(state: GameState, player: Player): number
 **Concepto**: Algoritmo de Búsqueda en Anchura (Breadth-First Search) que explora el tablero nivel por nivel para encontrar el camino más corto desde la posición actual del peón hasta la meta. En Quoridor, esto es crucial para evaluar la efectividad de las paredes y calcular la distancia real considerando los obstáculos colocados.
 
 **Implementación**:
+
 ```typescript
 class PathFinder {
   findShortestPath(state: GameState, player: Player): PathResult {
     const start = state.pawns[player];
     const goalRow = player === 'white' ? 0 : 8;
-    
+  
     const queue: QueueItem[] = [{ pos: start, dist: 0, path: [] }];
     const visited = new Set<string>();
-    
+  
     while (queue.length > 0) {
       const { pos, dist, path } = queue.shift()!;
-      
+    
       if (pos.row === goalRow) {
         return { distance: dist, path: [...path, pos] };
       }
-      
+    
       const key = `${pos.row},${pos.col}`;
       if (visited.has(key)) continue;
       visited.add(key);
-      
+    
       const moves = this.generatePawnMoves(state, player, pos);
       for (const move of moves) {
         queue.push({
@@ -924,7 +961,7 @@ class PathFinder {
         });
       }
     }
-    
+  
     return { distance: Infinity, path: [] }; // No se encontró camino
   }
   
@@ -934,15 +971,15 @@ class PathFinder {
       { row: -1, col: 0 }, { row: 1, col: 0 },
       { row: 0, col: -1 }, { row: 0, col: 1 }
     ];
-    
+  
     for (const dir of directions) {
       const newPos = { row: pos.row + dir.row, col: pos.col + dir.col };
-      
+    
       if (this.isValidPosition(newPos) && !this.isBlocked(state, pos, newPos)) {
         moves.push(newPos);
       }
     }
-    
+  
     return moves;
   }
 }
@@ -979,6 +1016,7 @@ function calculateWallMerit(state: GameState, wall: Wall, player: Player): numbe
 ### **Soluna: Mecánicas de Fusión**
 
 #### **Características del Juego**
+
 - **Tipo**: Juego abstracto de fusión
 - **Mecánicas**: Colocación de piezas, fusión, control de turnos
 - **Complejidad**: Alto factor de ramificación, profundidad táctica
@@ -991,6 +1029,7 @@ function calculateWallMerit(state: GameState, wall: Wall, player: Player): numbe
 **Concepto**: Sistema que analiza las oportunidades de fusionar piezas del mismo tipo y nivel, un aspecto central en Soluna. Evalúa fusiones inmediatas, potenciales y en cadena, considerando cómo las fusiones afectan el control del tablero, la ventaja de turnos y las oportunidades tácticas futuras.
 
 **Implementación**:
+
 ```typescript
 function evaluateFusionOpportunities(state: GameState, player: Player): FusionEvaluation {
   const evaluation: FusionEvaluation = {
@@ -1038,7 +1077,7 @@ class SolunaParallelSearch {
   async findBestMoveParallel(state: GameState, timeLimit: number): Promise<Move> {
     const moves = this.generateMoves(state);
     const workerCount = navigator.hardwareConcurrency || 4;
-    
+  
     // Paralelización raíz
     if (moves.length >= workerCount) {
       return this.rootParallelSearch(state, moves, workerCount, timeLimit);
@@ -1051,7 +1090,7 @@ class SolunaParallelSearch {
   private async rootParallelSearch(state: GameState, moves: Move[], workerCount: number, timeLimit: number): Promise<Move> {
     const movesPerWorker = Math.ceil(moves.length / workerCount);
     const tasks = [];
-    
+  
     for (let i = 0; i < workerCount; i++) {
       const workerMoves = moves.slice(i * movesPerWorker, (i + 1) * movesPerWorker);
       if (workerMoves.length > 0) {
@@ -1064,7 +1103,7 @@ class SolunaParallelSearch {
         }));
       }
     }
-    
+  
     const results = await Promise.all(tasks);
     return this.selectBestMove(results);
   }
@@ -1074,6 +1113,7 @@ class SolunaParallelSearch {
 ### **Squadro: Juegos de Carrera**
 
 #### **Características del Juego**
+
 - **Tipo**: Juego de carrera asimétrico
 - **Mecánicas**: Movimiento de piezas, colisiones, retirada
 - **Complejidad**: Factor de ramificación medio, complejidad táctica
@@ -1086,6 +1126,7 @@ class SolunaParallelSearch {
 **Concepto**: Sistema de evaluación multi-factor altamente sofisticado que analiza 12 características distintas del estado del juego en Squadro. Cada señal representa un aspecto estratégico diferente (carrera, colisiones, movilidad, etc.) y se combina con pesos específicos para producir una evaluación comprehensiva de la posición.
 
 **Implementación**:
+
 ```typescript
 interface SquadroFeatures {
   race: number;        // 100 * (oppTop4 - myTop4)
@@ -1106,7 +1147,7 @@ class SquadroEvaluator {
   evaluate(state: GameState, player: Player): number {
     const features = this.computeFeatures(state, player);
     const weights = this.getWeights();
-    
+  
     return (
       features.race * weights.race +
       features.done * weights.done +
@@ -1125,7 +1166,7 @@ class SquadroEvaluator {
   
   private computeFeatures(state: GameState, player: Player): SquadroFeatures {
     const opponent = getOpponent(player);
-    
+  
     return {
       race: this.computeRaceFeature(state, player, opponent),
       done: this.computeDoneFeature(state, player, opponent),
@@ -1148,6 +1189,7 @@ class SquadroEvaluator {
 **Concepto**: Algoritmo que analiza las reacciones en cadena que ocurren cuando una pieza colisiona con otra en Squadro. Calcula no solo las colisiones inmediatas, sino también las colisiones secundarias y terciarias que pueden resultar, evaluando el impacto táctico total de un movimiento en términos de ventaja posicional y control del carril.
 
 **Implementación**:
+
 ```typescript
 function analyzeCollisionChains(state: GameState, move: Move): ChainAnalysis {
   const simulatedState = applyMove(state, move);
@@ -1179,6 +1221,7 @@ function analyzeCollisionChains(state: GameState, move: Move): ChainAnalysis {
 **Concepto**: Sistema que mide y analiza continuamente métricas clave del rendimiento de la IA para identificar cuellos de botella, optimizar algoritmos y garantizar una experiencia de juego fluida. El monitoreo incluye parámetros de búsqueda, evaluación, memoria y uso de recursos del sistema.
 
 **Parámetros Monitoreados**:
+
 - **Nodes Per Second (NPS)**: Número de posiciones evaluadas por segundo, indicador principal de rendimiento de búsqueda
 - **Search Time**: Tiempo total que toma cada búsqueda de movimiento, incluyendo todas las optimizaciones
 - **Transposition Table Hit Rate**: Porcentaje de búsquedas exitosas en la cache, eficiencia del hashing
@@ -1191,6 +1234,7 @@ function analyzeCollisionChains(state: GameState, move: Move): ChainAnalysis {
 - **Garbage Collection Impact**: Tiempo y frecuencia de recolección de basura, overhead del runtime
 
 **Implementación**:
+
 ```typescript
 class PerformanceMonitor {
   private metrics: Map<string, number[]> = new Map();
@@ -1203,11 +1247,11 @@ class PerformanceMonitor {
   endTimer(name: string): number {
     const startTime = this.timers.get(name);
     if (!startTime) return 0;
-    
+  
     const duration = performance.now() - startTime;
     this.recordMetric(name, duration);
     this.timers.delete(name);
-    
+  
     return duration;
   }
   
@@ -1215,10 +1259,10 @@ class PerformanceMonitor {
     if (!this.metrics.has(name)) {
       this.metrics.set(name, []);
     }
-    
+  
     const values = this.metrics.get(name)!;
     values.push(value);
-    
+  
     // Mantener solo últimos 1000 valores
     if (values.length > 1000) {
       values.shift();
@@ -1227,14 +1271,14 @@ class PerformanceMonitor {
   
   getStatistics(name: string): MetricStatistics {
     const values = this.metrics.get(name) || [];
-    
+  
     if (values.length === 0) {
       return { count: 0, min: 0, max: 0, avg: 0, median: 0 };
     }
-    
+  
     const sorted = [...values].sort((a, b) => a - b);
     const sum = values.reduce((a, b) => a + b, 0);
-    
+  
     return {
       count: values.length,
       min: sorted[0],
@@ -1252,28 +1296,28 @@ class PerformanceMonitor {
       transpositionHitRate: this.calculateTTHitRate(),
       memoryUsage: this.getMemoryUsage()
     };
-    
+  
     return report;
   }
   
   private calculateNPS(): number {
     const searchTime = this.getStatistics('search_time');
     const nodeCount = this.getStatistics('nodes_searched');
-    
+  
     if (searchTime.count === 0 || nodeCount.count === 0) return 0;
-    
+  
     const avgSearchTime = searchTime.avg / 1000; // Convertir a segundos
     const avgNodes = nodeCount.avg;
-    
+  
     return avgNodes / avgSearchTime;
   }
   
   private calculateTTHitRate(): number {
     const ttHits = this.getStatistics('tt_hits');
     const ttLookups = this.getStatistics('tt_lookups');
-    
+  
     if (ttLookups.count === 0) return 0;
-    
+  
     return (ttHits.avg / ttLookups.avg) * 100;
   }
   
@@ -1285,7 +1329,7 @@ class PerformanceMonitor {
         limit: performance.memory.jsHeapSizeLimit
       };
     }
-    
+  
     return { used: 0, total: 0, limit: 0 };
   }
 }
@@ -1298,6 +1342,7 @@ class PerformanceMonitor {
 **Concepto**: Patrón de diseño que reutiliza objetos en lugar de crear y destruirlos constantemente, reduciendo la presión sobre el garbage collector y mejorando el rendimiento en aplicaciones con alta frecuencia de creación de objetos.
 
 **Implementación**:
+
 ```typescript
 class ObjectPool<T> {
   private pool: T[] = [];
@@ -1307,7 +1352,7 @@ class ObjectPool<T> {
   constructor(createFn: () => T, resetFn: (obj: T) => void, initialSize = 10) {
     this.createFn = createFn;
     this.resetFn = resetFn;
-    
+  
     // Pre-asignar objetos
     for (let i = 0; i < initialSize; i++) {
       this.pool.push(createFn());
@@ -1318,7 +1363,7 @@ class ObjectPool<T> {
     if (this.pool.length > 0) {
       return this.pool.pop()!;
     }
-    
+  
     return this.createFn();
   }
   
@@ -1353,6 +1398,7 @@ const gameStatePool = new ObjectPool(
 #### **Gestión de Transposition Table**
 
 **Reemplazo Basado en Edad**:
+
 ```typescript
 class AdvancedTranspositionTable {
   private entries: TTEntry[];
@@ -1367,7 +1413,7 @@ class AdvancedTranspositionTable {
   store(key: number, depth: number, score: number, flag: TTFlag, move: Move) {
     const index = key % this.entries.length;
     const currentEntry = this.entries[index];
-    
+  
     // Reemplazar si:
     // 1. Entrada está vacía
     // 2. Nueva entrada tiene mayor profundidad
@@ -1375,7 +1421,7 @@ class AdvancedTranspositionTable {
     const shouldReplace = !currentEntry ||
                         depth > currentEntry.depth ||
                         (this.currentAge - this.ages[index]) > 100;
-    
+  
     if (shouldReplace) {
       this.entries[index] = { key, depth, score, flag, move };
       this.ages[index] = this.currentAge;
@@ -1385,14 +1431,14 @@ class AdvancedTranspositionTable {
   lookup(key: number, depth: number, alpha: number, beta: number): TTEntry | null {
     const index = key % this.entries.length;
     const entry = this.entries[index];
-    
+  
     if (!entry || entry.key !== key || entry.depth < depth) {
       return null;
     }
-    
+  
     // Actualizar edad en búsqueda exitosa
     this.ages[index] = this.currentAge;
-    
+  
     switch (entry.flag) {
       case 'EXACT': return entry;
       case 'ALPHA': return entry.score <= alpha ? entry : null;
@@ -1420,6 +1466,7 @@ class AdvancedTranspositionTable {
 **Concepto**: Single Instruction, Multiple Data - operaciones que realizan el mismo cálculo sobre múltiples datos simultáneamente usando registros vectoriales del procesador, acelerando significativamente cálculos paralelos como evaluaciones de múltiples posiciones.
 
 **Implementación**:
+
 ```typescript
 // Usar SIMD.js para evaluación paralela (cuando esté disponible)
 class VectorizedEvaluator {
@@ -1433,7 +1480,7 @@ class VectorizedEvaluator {
   
   private simdEvaluate(positions: Float32Array, weights: Float32Array): Float32Array {
     const result = new Float32Array(positions.length / weights.length);
-    
+  
     for (let i = 0; i < result.length; i++) {
       const posOffset = i * weights.length;
       const positionVec = SIMD.Float32x4.load(positions, posOffset);
@@ -1442,24 +1489,24 @@ class VectorizedEvaluator {
       const sum = SIMD.Float32x4.addS(product, SIMD.Float32x4.splat(0));
       result[i] = SIMD.Float32x4.extractLane(sum, 0);
     }
-    
+  
     return result;
   }
   
   private scalarEvaluate(positions: Float32Array, weights: Float32Array): Float32Array {
     const result = new Float32Array(positions.length / weights.length);
-    
+  
     for (let i = 0; i < result.length; i++) {
       let score = 0;
       const posOffset = i * weights.length;
-      
+    
       for (let j = 0; j < weights.length; j++) {
         score += positions[posOffset + j] * weights[j];
       }
-      
+    
       result[i] = score;
     }
-    
+  
     return result;
   }
 }
@@ -1468,13 +1515,14 @@ class VectorizedEvaluator {
 #### **Optimización de Predicción de Branches**
 
 **Optimización de Ordenamiento de Movimientos**:
+
 ```typescript
 class OptimizedMoveOrdering {
   orderMoves(moves: Move[], state: GameState, ttMove: Move | null): Move[] {
     // Separar movimientos por tipo para mejor predicción de branches
     const tacticalMoves: Move[] = [];
     const normalMoves: Move[] = [];
-    
+  
     // Movimiento TT primero (si está disponible)
     if (ttMove) {
       const ttIndex = moves.findIndex(m => this.movesEqual(m, ttMove));
@@ -1483,7 +1531,7 @@ class OptimizedMoveOrdering {
         return [ttMoveFound, ...this.orderRemainingMoves(moves, state)];
       }
     }
-    
+  
     // Separar movimientos tácticos y normales
     for (const move of moves) {
       if (this.isTacticalMove(move, state)) {
@@ -1492,11 +1540,11 @@ class OptimizedMoveOrdering {
         normalMoves.push(move);
       }
     }
-    
+  
     // Ordenar cada grupo por separado
     this.orderTacticalMoves(tacticalMoves, state);
     this.orderNormalMoves(normalMoves, state);
-    
+  
     // Combinar con movimientos tácticos primero
     return [...tacticalMoves, ...normalMoves];
   }
@@ -1530,6 +1578,7 @@ class OptimizedMoveOrdering {
 #### **Testing de Algoritmos de Búsqueda**
 
 **Framework de Test**:
+
 ```typescript
 class SearchTestSuite {
   private testCases: SearchTestCase[] = [];
@@ -1545,7 +1594,7 @@ class SearchTestSuite {
       errors: [],
       details: []
     };
-    
+  
     for (const testCase of this.testCases) {
       try {
         const result = await this.runSingleTest(testCase);
@@ -1561,24 +1610,24 @@ class SearchTestSuite {
         results.errors.push(`Error de test: ${error.message}`);
       }
     }
-    
+  
     return results;
   }
   
   private async runSingleTest(testCase: SearchTestCase): Promise<TestResult> {
     const startTime = performance.now();
-    
+  
     try {
       const actualMove = await this.searchEngine.findBestMove(
         testCase.state,
         testCase.timeLimit
       );
-      
+    
       const endTime = performance.now();
       const searchTime = endTime - startTime;
-      
+    
       const passed = this.movesEqual(actualMove, testCase.expectedMove);
-      
+    
       return {
         name: testCase.name,
         passed,
@@ -1621,6 +1670,7 @@ searchTests.addTestCase({
 #### **Testing de Funciones de Evaluación**
 
 **Tests de Evaluación de Posiciones**:
+
 ```typescript
 class EvaluationTestSuite {
   private testPositions: EvaluationTestCase[] = [];
@@ -1637,22 +1687,22 @@ class EvaluationTestSuite {
       maxError: 0,
       details: []
     };
-    
+  
     for (const testCase of this.testPositions) {
       const actualScore = this.evaluator.evaluate(testCase.state, testCase.player);
       const error = Math.abs(actualScore - testCase.expectedScore);
-      
+    
       const passed = error <= testCase.tolerance;
-      
+    
       if (passed) {
         results.passed++;
       } else {
         results.failed++;
       }
-      
+    
       results.totalError += error;
       results.maxError = Math.max(results.maxError, error);
-      
+    
       results.details.push({
         name: testCase.name,
         actualScore,
@@ -1661,9 +1711,9 @@ class EvaluationTestSuite {
         passed
       });
     }
-    
+  
     results.averageError = results.totalError / this.testPositions.length;
-    
+  
     return results;
   }
 }
@@ -1693,27 +1743,28 @@ evalTests.addTestPosition({
 #### **Testing End-to-End de Juegos**
 
 **Tests de Simulación de Juegos**:
+
 ```typescript
 class GameIntegrationTest {
   async runFullGameTest(aiConfig: AIConfig): Promise<GameTestResult> {
     const game = new Game();
     const ai = new GameAI(aiConfig);
-    
+  
     const moves: Move[] = [];
     const moveTimes: number[] = [];
     const positions: GameState[] = [];
-    
+  
     let moveCount = 0;
     const maxMoves = 200;
-    
+  
     while (!game.isOver() && moveCount < maxMoves) {
       const startTime = performance.now();
-      
+    
       const move = await ai.makeMove(game.getState());
       const endTime = performance.now();
-      
+    
       const moveTime = endTime - startTime;
-      
+    
       // Validar movimiento
       if (!game.isValidMove(move)) {
         return {
@@ -1724,17 +1775,17 @@ class GameIntegrationTest {
           positions
         };
       }
-      
+    
       // Hacer movimiento
       game.makeMove(move);
-      
+    
       moves.push(move);
       moveTimes.push(moveTime);
       positions.push(game.getState());
-      
+    
       moveCount++;
     }
-    
+  
     return {
       success: true,
       winner: game.getWinner(),
@@ -1753,23 +1804,23 @@ class GameIntegrationTest {
       games: [],
       standings: new Map()
     };
-    
+  
     // Torneo round-robin
     for (let i = 0; i < configs.length; i++) {
       for (let j = i + 1; j < configs.length; j++) {
         // Juego 1: i como blanco, j como negro
         const game1 = await this.runGameWithConfigs(configs[i], configs[j]);
-        
+      
         // Juego 2: j como blanco, i como negro
         const game2 = await this.runGameWithConfigs(configs[j], configs[i]);
-        
+      
         results.games.push(game1, game2);
-        
+      
         // Actualizar standings
         this.updateStandings(results.standings, i, j, game1.winner, game2.winner);
       }
     }
-    
+  
     return results;
   }
 }
@@ -1780,6 +1831,7 @@ class GameIntegrationTest {
 #### **Benchmark Suite**
 
 **Benchmarks de Rendimiento**:
+
 ```typescript
 class PerformanceBenchmark {
   async runBenchmarkSuite(): Promise<BenchmarkResults> {
@@ -1789,7 +1841,7 @@ class PerformanceBenchmark {
       memoryPerformance: await this.benchmarkMemory(),
       parallelPerformance: await this.benchmarkParallel()
     };
-    
+  
     return results;
   }
   
@@ -1801,7 +1853,7 @@ class PerformanceBenchmark {
       timePerDepth: [],
       ttHitRates: []
     };
-    
+  
     for (const depth of depths) {
       const depthResults = {
         depth,
@@ -1810,52 +1862,52 @@ class PerformanceBenchmark {
         ttHits: 0,
         ttLookups: 0
       };
-      
+    
       for (const position of testPositions) {
         const startTime = performance.now();
-        
+      
         const searchResult = await this.searchEngine.search(
           position,
           depth,
           Infinity,
           Infinity
         );
-        
+      
         const endTime = performance.now();
-        
+      
         depthResults.nodes += searchResult.nodes;
         depthResults.time += endTime - startTime;
         depthResults.ttHits += searchResult.ttHits;
         depthResults.ttLookups += searchResult.ttLookups;
       }
-      
+    
       depthResults.nodesPerSecond = depthResults.nodes / (depthResults.time / 1000);
       depthResults.ttHitRate = (depthResults.ttHits / depthResults.ttLookups) * 100;
-      
+    
       results.nodesPerSecond.push(depthResults.nodesPerSecond);
       results.timePerDepth.push(depthResults.time);
       results.ttHitRates.push(depthResults.ttHitRate);
     }
-    
+  
     return results;
   }
   
   private async benchmarkEvaluation(): Promise<EvaluationBenchmarkResults> {
     const testPositions = this.getTestPositions();
     const iterations = 10000;
-    
+  
     const startTime = performance.now();
-    
+  
     for (let i = 0; i < iterations; i++) {
       for (const position of testPositions) {
         this.evaluator.evaluate(position, 'white');
       }
     }
-    
+  
     const endTime = performance.now();
     const totalTime = endTime - startTime;
     const evaluationsPerSecond = (iterations * testPositions.length) / (totalTime / 1000);
-    
+  
     return {
       evaluationsPerSecond,
       averageTimePerEvaluation: totalTime / (iterations * testPositions.length)
@@ -1869,6 +1921,7 @@ class PerformanceBenchmark {
 #### **Testing de Fuerza**
 
 **Sistema de Rating Elo**:
+
 ```typescript
 class EloRatingSystem {
   private K_FACTOR = 32;
@@ -1884,39 +1937,39 @@ class EloRatingSystem {
   async runRatingTournament(ais: AIPlayer[]): Promise<RatingResults> {
     const ratings = new Map<AIPlayer, number>();
     const results: GameResult[] = [];
-    
+  
     // Inicializar ratings (todos empiezan en 1500)
     for (const ai of ais) {
       ratings.set(ai, 1500);
     }
-    
+  
     // Jugar torneo
     for (let i = 0; i < ais.length; i++) {
       for (let j = i + 1; j < ais.length; j++) {
         const ai1 = ais[i];
         const ai2 = ais[j];
-        
+      
         // Jugar múltiples juegos
         for (let game = 0; game < 10; game++) {
           const result = await this.playGame(ai1, ai2);
-          
+        
           const rating1 = ratings.get(ai1)!;
           const rating2 = ratings.get(ai2)!;
-          
+        
           const expected1 = this.calculateExpectedRating(rating1, rating2);
           const expected2 = this.calculateExpectedRating(rating2, rating1);
-          
+        
           const actual1 = result.winner === ai1 ? 1 : result.winner === ai2 ? 0 : 0.5;
           const actual2 = result.winner === ai2 ? 1 : result.winner === ai1 ? 0 : 0.5;
-          
+        
           ratings.set(ai1, this.updateRating(rating1, expected1, actual1));
           ratings.set(ai2, this.updateRating(rating2, expected2, actual2));
-          
+        
           results.push(result);
         }
       }
     }
-    
+  
     return {
       finalRatings: ratings,
       games: results,
@@ -1939,6 +1992,7 @@ class EloRatingSystem {
 **Concepto**: Uso de redes neuronales artificiales para evaluar posiciones de juego, aprendiendo patrones complejos de datos de entrenamiento que pueden capturar matices sutiles que las funciones de evaluación tradicionales podrían pasar por alto.
 
 **Integración con TensorFlow.js**:
+
 ```typescript
 class NeuralNetworkEvaluator {
   private model: tf.LayersModel | null = null;
@@ -1958,15 +2012,15 @@ class NeuralNetworkEvaluator {
       // Fallback a evaluación tradicional
       return this.fallbackEvaluator.evaluate(state, player);
     }
-    
+  
     const input = this.stateToTensor(state, player);
     const output = this.model.predict(input) as tf.Tensor;
     const score = await output.data();
-    
+  
     // Limpiar tensors
     input.dispose();
     output.dispose();
-    
+  
     return score[0];
   }
   
@@ -1974,9 +2028,9 @@ class NeuralNetworkEvaluator {
     // Convertir estado de juego a tensor de entrada de red neuronal
     const inputSize = this.calculateInputSize(state);
     const input = new Float32Array(inputSize);
-    
+  
     let index = 0;
-    
+  
     // Codificar estado del tablero
     for (let row = 0; row < state.board.length; row++) {
       for (let col = 0; col < state.board[row].length; col++) {
@@ -1985,7 +2039,7 @@ class NeuralNetworkEvaluator {
           // One-hot encode tipo de pieza y jugador
           const pieceType = this.encodePieceType(piece.type);
           const playerEncoding = piece.player === player ? 1 : -1;
-          
+        
           input[index++] = pieceType;
           input[index++] = playerEncoding;
         } else {
@@ -1994,27 +2048,27 @@ class NeuralNetworkEvaluator {
         }
       }
     }
-    
+  
     // Codificar contexto del juego
     input[index++] = player === 'white' ? 1 : 0;
     input[index++] = state.moveHistory.length / 100; // Normalizar conteo de movimientos
     input[index++] = this.calculateMaterialBalance(state, player);
-    
+  
     return tf.tensor2d([input]);
   }
   
   async trainModel(trainingData: TrainingData[]): Promise<void> {
     if (!this.model) return;
-    
+  
     const { inputs, labels } = this.prepareTrainingData(trainingData);
-    
+  
     // Compilar modelo
     this.model.compile({
       optimizer: tf.train.adam(0.001),
       loss: 'meanSquaredError',
       metrics: ['mae']
     });
-    
+  
     // Entrenar modelo
     await this.model.fit(inputs, labels, {
       epochs: 100,
@@ -2026,7 +2080,7 @@ class NeuralNetworkEvaluator {
         }
       }
     });
-    
+  
     // Limpiar
     inputs.dispose();
     labels.dispose();
@@ -2039,6 +2093,7 @@ class NeuralNetworkEvaluator {
 **Concepto**: Paradigma de machine learning donde un agente aprende a tomar decisiones óptimas a través de la interacción con un entorno, recibiendo recompensas o castigos por sus acciones y ajustando su estrategia para maximizar la recompensa acumulada.
 
 **Entrenamiento Self-Play**:
+
 ```typescript
 class ReinforcementLearningTrainer {
   private model: tf.LayersModel;
@@ -2055,36 +2110,36 @@ class ReinforcementLearningTrainer {
       winRates: [],
       modelLosses: []
     };
-    
+  
     for (let episode = 0; episode < episodes; episode++) {
       const episodeResult = await this.playSelfPlayGame();
-      
+    
       // Almacenar experiencia
       this.experienceBuffer.push(...episodeResult.experiences);
-      
+    
       // Mantener tamaño del buffer
       if (this.experienceBuffer.length > this.bufferSize) {
         this.experienceBuffer = this.experienceBuffer.slice(-this.bufferSize);
       }
-      
+    
       // Entrenar modelo
       if (episode % 10 === 0 && this.experienceBuffer.length > 1000) {
         const loss = await this.trainFromExperience();
         results.modelLosses.push(loss);
       }
-      
+    
       results.episodeRewards.push(episodeResult.reward);
-      
+    
       // Calcular win rate sobre últimos 100 episodios
       if (episode >= 100) {
         const recentRewards = results.episodeRewards.slice(-100);
         const winRate = recentRewards.filter(r => r > 0).length / recentRewards.length;
         results.winRates.push(winRate);
       }
-      
+    
       console.log(`Episode ${episode}: Reward = ${episodeResult.reward}`);
     }
-    
+  
     return results;
   }
   
@@ -2092,14 +2147,14 @@ class ReinforcementLearningTrainer {
     const game = new Game();
     const experiences: Experience[] = [];
     let totalReward = 0;
-    
+  
     while (!game.isOver()) {
       const state = game.getState();
       const currentPlayer = game.getCurrentPlayer();
-      
+    
       // Obtener acción del modelo
       const action = await this.selectAction(state, currentPlayer);
-      
+    
       // Almacenar experiencia
       const experience: Experience = {
         state,
@@ -2108,20 +2163,20 @@ class ReinforcementLearningTrainer {
         nextState: null,
         done: false
       };
-      
+    
       // Aplicar acción
       game.makeMove(action);
-      
+    
       experience.nextState = game.getState();
       experience.done = game.isOver();
-      
+    
       experiences.push(experience);
     }
-    
+  
     // Calcular recompensas
     const winner = game.getWinner();
     const finalReward = winner === 'white' ? 1 : winner === 'black' ? -1 : 0;
-    
+  
     // Distribuir recompensas con diferencia temporal
     for (let i = experiences.length - 1; i >= 0; i--) {
       const gamma = 0.99;
@@ -2129,7 +2184,7 @@ class ReinforcementLearningTrainer {
       experiences[i].reward = finalReward * discount;
       totalReward += experiences[i].reward;
     }
-    
+  
     return {
       experiences,
       reward: totalReward
@@ -2139,7 +2194,7 @@ class ReinforcementLearningTrainer {
   private async selectAction(state: GameState, player: Player): Promise<Move> {
     // Exploración epsilon-greedy
     const epsilon = 0.1;
-    
+  
     if (Math.random() < epsilon) {
       // Exploración aleatoria
       const moves = game.getValidMoves(state);
@@ -2149,20 +2204,20 @@ class ReinforcementLearningTrainer {
       const moves = game.getValidMoves(state);
       let bestMove = moves[0];
       let bestValue = -Infinity;
-      
+    
       for (const move of moves) {
         const nextState = this.applyMove(state, move);
         const value = await this.model.predict(this.stateToTensor(nextState, player)) as tf.Tensor;
         const valueData = await value.data();
-        
+      
         if (valueData[0] > bestValue) {
           bestValue = valueData[0];
           bestMove = move;
         }
-        
+      
         value.dispose();
       }
-      
+    
       return bestMove;
     }
   }
@@ -2176,6 +2231,7 @@ class ReinforcementLearningTrainer {
 **Traditional + Neural Network**:
 
 **Sistema de Evaluación Híbrido**:
+
 ```typescript
 class HybridEvaluator {
   private traditionalEvaluator: TraditionalEvaluator;
@@ -2185,11 +2241,11 @@ class HybridEvaluator {
   evaluate(state: GameState, player: Player): number {
     const traditionalScore = this.traditionalEvaluator.evaluate(state, player);
     const neuralScore = this.neuralEvaluator.evaluateSync(state, player);
-    
+  
     // Blending dinámico basado en fase del juego
     const phase = this.detectGamePhase(state);
     let dynamicBlend = this.blendFactor;
-    
+  
     switch (phase) {
       case 'opening':
         dynamicBlend = 0.3; // Confiar más en evaluación tradicional en opening
@@ -2201,7 +2257,7 @@ class HybridEvaluator {
         dynamicBlend = 0.7; // Confiar más en red neuronal en endgame
         break;
     }
-    
+  
     return traditionalScore * (1 - dynamicBlend) + neuralScore * dynamicBlend;
   }
   
@@ -2222,18 +2278,21 @@ class HybridEvaluator {
 ### **Fase 1: Fundamentos**
 
 #### **Semana 1-2: Infraestructura Core**
+
 - [ ] Configurar estructura de proyecto y sistema de build
 - [ ] Implementar gestión básica de estado de juego
 - [ ] Crear sistema de generación de movimientos
 - [ ] Configurar framework de testing
 
 #### **Semana 3-4: IA Básica**
+
 - [ ] Implementar algoritmo minimax
 - [ ] Agregar alpha-beta pruning
 - [ ] Crear función de evaluación simple
 - [ ] Agregar gestión básica de tiempo
 
 **Deliverables**:
+
 - Motor de juego funcional con IA básica
 - Unit tests para componentes core
 - Benchmarks de rendimiento
@@ -2241,18 +2300,21 @@ class HybridEvaluator {
 ### **Fase 2: IA Core**
 
 #### **Semana 5-6: Búsqueda Avanzada**
+
 - [ ] Implementar iterative deepening
 - [ ] Agregar transposition table con Zobrist hashing
 - [ ] Implementar heurísticas de ordenamiento de movimientos
 - [ ] Agregar quiescence search
 
 #### **Semana 7-8: Sistema de Evaluación**
+
 - [ ] Desarrollar evaluación multi-componente
 - [ ] Agregar ponderación basada en fases
 - [ ] Implementar evaluación específica del juego
 - [ ] Crear sistema de tuning de evaluación
 
 **Deliverables**:
+
 - Motor de búsqueda avanzado
 - Sistema de evaluación sofisticado
 - Optimización de rendimiento
@@ -2260,18 +2322,21 @@ class HybridEvaluator {
 ### **Fase 3: Optimización**
 
 #### **Semana 9-10: Rendimiento**
+
 - [ ] Implementar búsqueda paralela
 - [ ] Agregar gestión de worker pool
 - [ ] Optimizar uso de memoria
 - [ ] Agregar monitoreo de rendimiento
 
 #### **Semana 11-12: Características Avanzadas**
+
 - [ ] Agregar libro de aperturas (si aplica)
 - [ ] Implementar endgame tablebase
 - [ ] Crear sistema de configuración
 - [ ] Agregar gestión de tiempo adaptativa
 
 **Deliverables**:
+
 - Motor de IA de alto rendimiento
 - Características de optimización avanzadas
 - Monitoreo comprehensivo
@@ -2279,18 +2344,21 @@ class HybridEvaluator {
 ### **Fase 4: Características Avanzadas**
 
 #### **Semana 13-14: Machine Learning**
+
 - [ ] Integrar evaluación con red neuronal
 - [ ] Implementar reinforcement learning
 - [ ] Crear sistema de evaluación híbrido
 - [ ] Agregar pipeline de entrenamiento de modelos
 
 #### **Semana 15-16: Pulido y Despliegue**
+
 - [ ] Testing comprehensivo
 - [ ] Optimización de rendimiento
 - [ ] Completar documentación
 - [ ] Preparación de despliegue
 
 **Deliverables**:
+
 - Sistema de IA completo con integración ML
 - Implementación lista para producción
 - Documentación completa

@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
+  }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@layer components {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Mermaid diagram overrides */
+  .diagram-container svg {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  /* Node highlight for animation steps */
+  .diagram-highlight rect,
+  .diagram-highlight polygon,
+  .diagram-highlight circle,
+  .diagram-highlight .label {
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+    transition: filter 0.3s ease, stroke 0.3s ease;
+  }
+
+  .diagram-highlight rect,
+  .diagram-highlight polygon,
+  .diagram-highlight circle {
+    stroke: #818cf8 !important;
+    stroke-width: 2.5px !important;
+  }
+
+  /* Edge highlight */
+  .diagram-highlight-edge path {
+    stroke: #818cf8 !important;
+    stroke-width: 2.5px !important;
+    filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.4));
+    transition: stroke 0.3s ease;
+  }
+
+  /* Clickable node hover indicator */
+  .diagram-container .node:hover {
+    filter: brightness(1.2);
+    cursor: pointer;
+  }
+
+  /* Tooltip arrow */
+  .diagram-tooltip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #111827;
+  }
+}

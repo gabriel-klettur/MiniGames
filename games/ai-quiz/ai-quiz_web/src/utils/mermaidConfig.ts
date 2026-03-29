@@ -1,0 +1,36 @@
+import type { MermaidConfig } from 'mermaid';
+
+export const MERMAID_CONFIG: MermaidConfig = {
+  startOnLoad: false,
+  securityLevel: 'strict',
+  theme: 'dark',
+  themeVariables: {
+    darkMode: true,
+    background: '#111827',
+    primaryColor: '#4f46e5',
+    primaryTextColor: '#e0e7ff',
+    primaryBorderColor: '#6366f1',
+    secondaryColor: '#1e1b4b',
+    secondaryTextColor: '#a5b4fc',
+    secondaryBorderColor: '#4338ca',
+    tertiaryColor: '#1f2937',
+    tertiaryTextColor: '#d1d5db',
+    tertiaryBorderColor: '#374151',
+    lineColor: '#6366f1',
+    textColor: '#e5e7eb',
+    mainBkg: '#1e1b4b',
+    nodeBorder: '#6366f1',
+    clusterBkg: '#1f2937',
+    clusterBorder: '#374151',
+    titleColor: '#a5b4fc',
+    edgeLabelBackground: '#1f2937',
+    nodeTextColor: '#e0e7ff',
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    padding: 12,
+    nodeSpacing: 40,
+    rankSpacing: 50,
+  },
+};
