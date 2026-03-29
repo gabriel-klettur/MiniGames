@@ -1,16 +1,18 @@
 import { useQuiz } from '../../contexts/QuizContext';
+import { useI18n } from '../../i18n';
 import ScoreBreakdown from './ScoreBreakdown';
 
 export default function ResultsScreen() {
   const { state, dispatch } = useQuiz();
+  const { t } = useI18n();
   const quiz = state.currentQuiz;
 
   if (!quiz) {
     return (
       <div className="text-center text-gray-400">
-        <p>No hay resultados disponibles.</p>
+        <p>{t('results_none')}</p>
         <button onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })} className="mt-4 text-brand-400 hover:underline">
-          Volver al inicio
+          {t('quiz_back_home')}
         </button>
       </div>
     );
@@ -30,10 +32,10 @@ export default function ResultsScreen() {
         {pct >= 90 && <p className="mb-2 text-3xl">🎉</p>}
         <p className={`text-5xl font-bold ${colorClass}`}>{pct}%</p>
         <p className="mt-2 text-gray-400">
-          {correct} de {total} correctas
+          {t('results_correct', { correct, total })}
         </p>
         <p className="mt-1 text-sm text-gray-500">
-          {pct >= 90 ? '¡Excelente dominio!' : pct >= 70 ? '¡Buen trabajo!' : pct >= 50 ? 'Vas por buen camino' : 'Sigue practicando 💪'}
+          {pct >= 90 ? t('results_excellent') : pct >= 70 ? t('results_good') : pct >= 50 ? t('results_ok') : t('results_practice')}
         </p>
       </section>
 
@@ -47,20 +49,20 @@ export default function ResultsScreen() {
             onClick={() => dispatch({ type: 'SET_VIEW', view: 'review' })}
             className="rounded-card bg-amber-600/20 px-4 py-3 text-center font-medium text-amber-300 transition hover:bg-amber-600/30"
           >
-            🔄 Repasar errores ({state.mistakeBank.length})
+            {t('results_review')} ({state.mistakeBank.length})
           </button>
         )}
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
           className="rounded-card bg-gray-800 px-4 py-3 text-center font-medium text-gray-200 transition hover:bg-gray-700"
         >
-          🏠 Inicio
+          {t('results_home')}
         </button>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
           className="rounded-card bg-brand-600 px-4 py-3 text-center font-medium text-white transition hover:bg-brand-500"
         >
-          🎯 Nuevo Quiz
+          {t('results_new_quiz')}
         </button>
       </div>
     </div>

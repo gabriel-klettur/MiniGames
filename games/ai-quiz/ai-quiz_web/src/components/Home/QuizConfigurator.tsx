@@ -1,24 +1,26 @@
 import { useQuiz } from '../../contexts/QuizContext';
+import { useI18n } from '../../i18n';
 import { CATEGORIES } from '../../data/categories';
 import { generateQuizSession } from '../../data/questionGenerator';
 import type { Category, Difficulty, QuestionType } from '../../data/types';
 
-const QUESTION_TYPES: { id: QuestionType; label: string }[] = [
-  { id: 'definition-to-term', label: 'Definición → Término' },
-  { id: 'term-to-definition', label: 'Término → Definición' },
-  { id: 'true-false', label: 'Verdadero / Falso' },
-  { id: 'match-columns', label: 'Relacionar columnas' },
-];
-
-const DIFFICULTIES: { id: Difficulty; label: string }[] = [
-  { id: 1, label: '⭐ Básico' },
-  { id: 2, label: '⭐⭐ Intermedio' },
-  { id: 3, label: '⭐⭐⭐ Avanzado' },
-];
-
 export default function QuizConfigurator() {
   const { state, dispatch } = useQuiz();
+  const { t, locale } = useI18n();
   const { quizConfig } = state;
+
+  const QUESTION_TYPES: { id: QuestionType; labelKey: string }[] = [
+    { id: 'definition-to-term', labelKey: 'qtype_definition_to_term' },
+    { id: 'term-to-definition', labelKey: 'qtype_term_to_definition' },
+    { id: 'true-false', labelKey: 'qtype_true_false' },
+    { id: 'match-columns', labelKey: 'qtype_match_columns' },
+  ];
+
+  const DIFFICULTIES: { id: Difficulty; labelKey: string }[] = [
+    { id: 1, labelKey: 'difficulty_1' },
+    { id: 2, labelKey: 'difficulty_2' },
+    { id: 3, labelKey: 'difficulty_3' },
+  ];
 
   const toggleCategory = (id: Category) => {
     const next = quizConfig.categories.includes(id)
@@ -36,13 +38,13 @@ export default function QuizConfigurator() {
 
   const toggleType = (id: QuestionType) => {
     const next = quizConfig.questionTypes.includes(id)
-      ? quizConfig.questionTypes.filter((t) => t !== id)
+      ? quizConfig.questionTypes.filter((qt) => qt !== id)
       : [...quizConfig.questionTypes, id];
     if (next.length > 0) dispatch({ type: 'SET_CONFIG', config: { questionTypes: next } });
   };
 
   const start = () => {
-    const questions = generateQuizSession(quizConfig);
+    const questions = generateQuizSession(quizConfig, locale);
     if (questions.length === 0) return;
     dispatch({
       type: 'START_QUIZ',
@@ -52,15 +54,15 @@ export default function QuizConfigurator() {
 
   return (
     <section id="configurator" className="rounded-card border border-gray-800 bg-gray-900/60 p-5">
-      <h2 className="mb-4 text-lg font-semibold text-gray-200">Configurar Quiz</h2>
+      <h2 className="mb-4 text-lg font-semibold text-gray-200">{t('config_title')}</h2>
 
       {/* Categories */}
       <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">Categorías</legend>
+        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_categories')}</legend>
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map(({ id, emoji, label }) => (
+          {CATEGORIES.map(({ id, emoji, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.categories.includes(id)} onClick={() => toggleCategory(id)}>
-              {emoji} {label}
+              {emoji} {t(labelKey)}
             </ToggleChip>
           ))}
         </div>
@@ -68,11 +70,11 @@ export default function QuizConfigurator() {
 
       {/* Difficulty */}
       <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">Dificultad</legend>
+        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_difficulty')}</legend>
         <div className="flex flex-wrap gap-2">
-          {DIFFICULTIES.map(({ id, label }) => (
+          {DIFFICULTIES.map(({ id, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.difficulties.includes(id)} onClick={() => toggleDifficulty(id)}>
-              {label}
+              {t(labelKey)}
             </ToggleChip>
           ))}
         </div>
@@ -80,11 +82,11 @@ export default function QuizConfigurator() {
 
       {/* Question types */}
       <fieldset className="mb-4">
-        <legend className="mb-2 text-sm font-medium text-gray-400">Tipos de pregunta</legend>
+        <legend className="mb-2 text-sm font-medium text-gray-400">{t('config_question_types')}</legend>
         <div className="flex flex-wrap gap-2">
-          {QUESTION_TYPES.map(({ id, label }) => (
+          {QUESTION_TYPES.map(({ id, labelKey }) => (
             <ToggleChip key={id} active={quizConfig.questionTypes.includes(id)} onClick={() => toggleType(id)}>
-              {label}
+              {t(labelKey)}
             </ToggleChip>
           ))}
         </div>
@@ -92,7 +94,7 @@ export default function QuizConfigurator() {
 
       {/* Count */}
       <div className="mb-5 flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-400">Preguntas:</label>
+        <label className="text-sm font-medium text-gray-400">{t('config_question_count')}</label>
         <input
           type="range" min={5} max={30} step={5}
           value={quizConfig.questionCount}
@@ -103,7 +105,7 @@ export default function QuizConfigurator() {
       </div>
 
       <button onClick={start} className="w-full rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500">
-        🚀 Comenzar Quiz
+        {t('config_start')}
       </button>
     </section>
   );

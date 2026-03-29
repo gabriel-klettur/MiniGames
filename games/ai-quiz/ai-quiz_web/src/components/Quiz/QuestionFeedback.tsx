@@ -1,9 +1,13 @@
+import { useI18n } from '../../i18n';
+
 interface Props {
   isCorrect: boolean;
   explanation: string;
 }
 
 export default function QuestionFeedback({ isCorrect, explanation }: Props) {
+  const { t } = useI18n();
+
   return (
     <div
       className={`animate-slide-up mt-4 rounded-card border p-4 ${
@@ -14,9 +18,9 @@ export default function QuestionFeedback({ isCorrect, explanation }: Props) {
     >
       <div className="mb-2 flex items-center gap-2">
         {isCorrect ? (
-          <span className="text-lg text-success-400">✓ ¡Correcto!</span>
+          <span className="text-lg text-success-400">{t('feedback_correct')}</span>
         ) : (
-          <span className="text-lg text-error-400">✗ Incorrecto</span>
+          <span className="text-lg text-error-400">{t('feedback_incorrect')}</span>
         )}
       </div>
       <p className="text-sm leading-relaxed text-gray-300">{explanation}</p>

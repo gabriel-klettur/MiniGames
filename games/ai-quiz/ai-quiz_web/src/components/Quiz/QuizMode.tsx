@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuiz } from '../../contexts/QuizContext';
+import { useI18n } from '../../i18n';
 import type { UserAnswer } from '../../data/types';
 import ProgressBar from './ProgressBar';
 import MultipleChoiceQuestion from './MultipleChoiceQuestion';
@@ -8,18 +9,19 @@ import MatchColumnsQuestion from './MatchColumnsQuestion';
 
 export default function QuizMode() {
   const { state, dispatch } = useQuiz();
+  const { t } = useI18n();
   const { currentQuiz } = state;
   const [answered, setAnswered] = useState(false);
 
   if (!currentQuiz) {
     return (
       <div className="text-center text-gray-400">
-        <p>No hay quiz activo.</p>
+        <p>{t('quiz_no_active')}</p>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
           className="mt-4 text-brand-400 hover:underline"
         >
-          Volver al inicio
+          {t('quiz_back_home')}
         </button>
       </div>
     );
@@ -49,7 +51,7 @@ export default function QuizMode() {
 
       {/* Streak */}
       {state.stats.streak > 1 && (
-        <p className="text-center text-sm text-amber-400">🔥 Racha: {state.stats.streak}</p>
+        <p className="text-center text-sm text-amber-400">{t('quiz_streak', { count: state.stats.streak })}</p>
       )}
 
       {/* Question component by type */}
@@ -69,7 +71,7 @@ export default function QuizMode() {
           onClick={handleNext}
           className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500"
         >
-          {isLast ? '📊 Ver Resultados' : 'Siguiente →'}
+          {isLast ? t('quiz_results') : t('quiz_next')}
         </button>
       )}
     </div>

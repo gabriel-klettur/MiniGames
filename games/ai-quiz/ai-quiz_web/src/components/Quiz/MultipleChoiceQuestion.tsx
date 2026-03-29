@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import type { Question, UserAnswer } from '../../data/types';
+import { useI18n } from '../../i18n';
 import QuestionFeedback from './QuestionFeedback';
 import { DiagramPanel } from '../Diagram';
+import { HelpPanel } from '../Help';
 
 interface Props {
   question: Question;
@@ -9,6 +11,7 @@ interface Props {
 }
 
 export default function MultipleChoiceQuestion({ question, onAnswer }: Props) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const startRef = useRef(Date.now());
@@ -34,14 +37,15 @@ export default function MultipleChoiceQuestion({ question, onAnswer }: Props) {
       {/* Prompt */}
       <div className="rounded-card border border-gray-700 bg-gray-800/50 p-5">
         <p className="mb-1 text-xs font-medium uppercase text-gray-500">
-          {isDefToTerm ? '¿Qué concepto describe esta definición?' : '¿Cuál es la definición correcta?'}
+          {isDefToTerm ? t('q_def_to_term') : t('q_term_to_def')}
         </p>
         <p className={`leading-relaxed text-gray-100 ${isDefToTerm ? 'text-sm' : 'text-lg font-semibold'}`}>
           {question.prompt}
         </p>
       </div>
 
-      {/* Diagram */}
+      {/* Help & Diagram */}
+      <HelpPanel conceptId={question.conceptId} />
       <DiagramPanel conceptId={question.conceptId} />
 
       {/* Options */}

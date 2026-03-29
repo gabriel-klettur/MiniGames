@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { AnimationStep } from '../../data/diagrams/types';
+import { useI18n } from '../../i18n';
 
 interface Props {
   steps: AnimationStep[];
@@ -10,6 +11,7 @@ interface Props {
 }
 
 function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogglePlay }: Props) {
+  const { t } = useI18n();
   const total = steps.length;
   const step = steps[currentStep];
 
@@ -29,7 +31,7 @@ function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogg
     <div className="flex flex-col gap-2">
       {/* Step description */}
       <div className="min-h-[2.5rem] rounded-lg bg-gray-800/60 px-3 py-2 text-center text-sm text-gray-300">
-        {step?.description ?? 'Sin descripción'}
+        {step?.description ?? t('anim_no_desc')}
       </div>
 
       {/* Controls */}
@@ -38,7 +40,7 @@ function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogg
           onClick={handleReset}
           disabled={currentStep === 0}
           className="rounded-lg px-2 py-1 text-xs text-gray-400 transition hover:bg-gray-800 hover:text-gray-200 disabled:opacity-30"
-          title="Reiniciar"
+          title={t('anim_reset')}
         >
           ⏮
         </button>
@@ -47,7 +49,7 @@ function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogg
           onClick={handlePrev}
           disabled={currentStep === 0}
           className="rounded-lg px-2 py-1 text-xs text-gray-400 transition hover:bg-gray-800 hover:text-gray-200 disabled:opacity-30"
-          title="Paso anterior"
+          title={t('anim_prev')}
         >
           ◀
         </button>
@@ -55,16 +57,16 @@ function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogg
         <button
           onClick={onTogglePlay}
           className="rounded-lg bg-brand-600/80 px-3 py-1 text-xs font-medium text-white transition hover:bg-brand-500"
-          title={isPlaying ? 'Pausar' : 'Reproducir'}
+          title={isPlaying ? t('anim_pause_tip') : t('anim_play_tip')}
         >
-          {isPlaying ? '⏸ Pausar' : '▶ Play'}
+          {isPlaying ? t('anim_pause') : t('anim_play')}
         </button>
 
         <button
           onClick={handleNext}
           disabled={currentStep >= total - 1}
           className="rounded-lg px-2 py-1 text-xs text-gray-400 transition hover:bg-gray-800 hover:text-gray-200 disabled:opacity-30"
-          title="Siguiente paso"
+          title={t('anim_next')}
         >
           ▶
         </button>
@@ -88,7 +90,7 @@ function AnimationControls({ steps, currentStep, isPlaying, onStepChange, onTogg
                   ? 'bg-brand-700'
                   : 'bg-gray-700'
             }`}
-            title={`Paso ${i + 1}`}
+            title={t('anim_step', { n: i + 1 })}
           />
         ))}
       </div>

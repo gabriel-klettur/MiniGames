@@ -61,7 +61,7 @@ function MermaidRenderer({ id, code, onSvgReady }: Props) {
 
       setLoading(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error renderizando diagrama');
+      setError(err instanceof Error ? err.message : 'render-error');
       setLoading(false);
     }
   }, [id, code, onSvgReady]);
@@ -75,7 +75,7 @@ function MermaidRenderer({ id, code, onSvgReady }: Props) {
   if (error) {
     return (
       <div className="rounded-lg border border-error-500/30 bg-error-500/5 p-3 text-xs text-error-400">
-        Error en diagrama: {error}
+        {error}
       </div>
     );
   }
@@ -85,7 +85,7 @@ function MermaidRenderer({ id, code, onSvgReady }: Props) {
       {loading && (
         <div className="flex items-center justify-center rounded-lg border border-gray-700 bg-gray-800/30 p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-          <span className="ml-3 text-sm text-gray-400">Cargando diagrama...</span>
+          <span className="ml-3 text-sm text-gray-400">Loading...</span>
         </div>
       )}
       <div

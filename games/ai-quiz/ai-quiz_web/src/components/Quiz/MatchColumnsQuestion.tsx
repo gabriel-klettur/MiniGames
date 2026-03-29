@@ -1,8 +1,10 @@
 import { useState, useRef, useMemo } from 'react';
 import type { Question, UserAnswer } from '../../data/types';
+import { useI18n } from '../../i18n';
 import { shuffle } from '../../data/questionUtils';
 import QuestionFeedback from './QuestionFeedback';
 import { DiagramPanel } from '../Diagram';
+import { HelpPanel } from '../Help';
 
 interface Props {
   question: Question;
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
+  const { t } = useI18n();
   const pairs = question.pairs ?? [];
   const shuffledDefs = useMemo(() => shuffle(pairs), [question.id]);
 
@@ -77,10 +80,11 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-center text-sm text-gray-400">
-        Selecciona un término a la izquierda y luego su definición a la derecha
+        {t('q_match_hint')}
       </p>
 
-      {/* Diagram */}
+      {/* Help & Diagram */}
+      <HelpPanel conceptId={question.conceptId} />
       <DiagramPanel conceptId={question.conceptId} />
 
       <div className="grid grid-cols-2 gap-4">
@@ -122,7 +126,7 @@ export default function MatchColumnsQuestion({ question, onAnswer }: Props) {
           disabled={!allConnected}
           className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Comprobar ({connections.size}/{pairs.length})
+          {t('q_check')} ({connections.size}/{pairs.length})
         </button>
       )}
 

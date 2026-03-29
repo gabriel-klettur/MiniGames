@@ -1,26 +1,49 @@
 import type { Category } from './types';
+import type { Locale } from '../i18n/types';
 
 interface CategoryMeta {
   id: Category;
-  label: string;
+  labelKey: string;
   emoji: string;
   color: string;
 }
 
 export const CATEGORIES: CategoryMeta[] = [
-  { id: 'search-algorithms', label: 'Algoritmos de Búsqueda', emoji: '🔍', color: 'text-blue-400' },
-  { id: 'evaluation', label: 'Evaluación', emoji: '⚖️', color: 'text-amber-400' },
-  { id: 'optimization', label: 'Optimización', emoji: '⚡', color: 'text-yellow-400' },
-  { id: 'architecture', label: 'Arquitectura', emoji: '🏗️', color: 'text-purple-400' },
-  { id: 'data-structures', label: 'Estructuras de Datos', emoji: '📦', color: 'text-green-400' },
-  { id: 'testing', label: 'Testing', emoji: '🧪', color: 'text-teal-400' },
-  { id: 'machine-learning', label: 'Machine Learning', emoji: '🧠', color: 'text-rose-400' },
+  { id: 'search-algorithms', labelKey: 'cat_search_algorithms', emoji: '🔍', color: 'text-blue-400' },
+  { id: 'evaluation', labelKey: 'cat_evaluation', emoji: '⚖️', color: 'text-amber-400' },
+  { id: 'optimization', labelKey: 'cat_optimization', emoji: '⚡', color: 'text-yellow-400' },
+  { id: 'architecture', labelKey: 'cat_architecture', emoji: '🏗️', color: 'text-purple-400' },
+  { id: 'data-structures', labelKey: 'cat_data_structures', emoji: '📦', color: 'text-green-400' },
+  { id: 'testing', labelKey: 'cat_testing', emoji: '🧪', color: 'text-teal-400' },
+  { id: 'machine-learning', labelKey: 'cat_machine_learning', emoji: '🧠', color: 'text-rose-400' },
 ];
+
+const LABELS_ES: Record<Category, string> = {
+  'search-algorithms': 'Algoritmos de Búsqueda',
+  evaluation: 'Evaluación',
+  optimization: 'Optimización',
+  architecture: 'Arquitectura',
+  'data-structures': 'Estructuras de Datos',
+  testing: 'Testing',
+  'machine-learning': 'Machine Learning',
+};
+
+const LABELS_EN: Record<Category, string> = {
+  'search-algorithms': 'Search Algorithms',
+  evaluation: 'Evaluation',
+  optimization: 'Optimization',
+  architecture: 'Architecture',
+  'data-structures': 'Data Structures',
+  testing: 'Testing',
+  'machine-learning': 'Machine Learning',
+};
+
+const LABELS: Record<Locale, Record<Category, string>> = { es: LABELS_ES, en: LABELS_EN };
 
 export const categoryMap = new Map(CATEGORIES.map((c) => [c.id, c]));
 
-export function getCategoryLabel(id: Category): string {
-  return categoryMap.get(id)?.label ?? id;
+export function getCategoryLabel(id: Category, locale: Locale = 'es'): string {
+  return LABELS[locale][id] ?? id;
 }
 
 export function getCategoryEmoji(id: Category): string {

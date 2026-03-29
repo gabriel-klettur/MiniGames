@@ -1,12 +1,15 @@
 import type { CurrentQuiz } from '../../data/types';
 import { CATEGORIES } from '../../data/categories';
 import { conceptById } from '../../data/concepts';
+import { useI18n } from '../../i18n';
 
 interface Props {
   quiz: CurrentQuiz;
 }
 
 export default function ScoreBreakdown({ quiz }: Props) {
+  const { t } = useI18n();
+
   // Group answers by category
   const byCat = new Map<string, { correct: number; total: number }>();
   for (const [i, q] of quiz.questions.entries()) {
@@ -29,16 +32,16 @@ export default function ScoreBreakdown({ quiz }: Props) {
     <div className="flex flex-col gap-4">
       {/* Category bars */}
       <section>
-        <h3 className="mb-2 text-sm font-medium text-gray-400">Desglose por categoría</h3>
+        <h3 className="mb-2 text-sm font-medium text-gray-400">{t('results_breakdown')}</h3>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {CATEGORIES.map(({ id, emoji, label }) => {
+          {CATEGORIES.map(({ id, emoji, labelKey }) => {
             const data = byCat.get(id);
             if (!data) return null;
             const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
             return (
               <div key={id} className="flex items-center gap-3 rounded-lg bg-gray-800/50 px-3 py-2">
                 <span className="text-sm">{emoji}</span>
-                <span className="flex-1 text-xs text-gray-300">{label}</span>
+                <span className="flex-1 text-xs text-gray-300">{t(labelKey)}</span>
                 <div className="h-1.5 w-16 rounded-full bg-gray-700">
                   <div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
                 </div>
@@ -53,7 +56,7 @@ export default function ScoreBreakdown({ quiz }: Props) {
       {mistakes.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-medium text-error-400">
-            ✗ Conceptos a repasar ({mistakes.length})
+            {t('results_mistakes')} ({mistakes.length})
           </h3>
           <div className="space-y-2">
             {mistakes.map((m, i) => (

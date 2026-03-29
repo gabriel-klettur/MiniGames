@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import type { Question, UserAnswer } from '../../data/types';
+import { useI18n } from '../../i18n';
 import QuestionFeedback from './QuestionFeedback';
 import { DiagramPanel } from '../Diagram';
+import { HelpPanel } from '../Help';
 
 interface Props {
   question: Question;
@@ -9,6 +11,7 @@ interface Props {
 }
 
 export default function TrueFalseQuestion({ question, onAnswer }: Props) {
+  const { t } = useI18n();
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const startRef = useRef(Date.now());
@@ -32,18 +35,19 @@ export default function TrueFalseQuestion({ question, onAnswer }: Props) {
       {/* Statement */}
       <div className="rounded-card border border-gray-700 bg-gray-800/50 p-6 text-center">
         <p className="mb-1 text-xs font-medium uppercase text-gray-500">
-          ¿Verdadero o falso?
+          {t('q_true_false')}
         </p>
         <p className="text-lg leading-relaxed text-gray-100">{question.prompt}</p>
       </div>
 
-      {/* Diagram */}
+      {/* Help & Diagram */}
+      <HelpPanel conceptId={question.conceptId} />
       <DiagramPanel conceptId={question.conceptId} />
 
       {/* Buttons */}
       <div className="grid grid-cols-2 gap-4">
         {(['true', 'false'] as const).map((value) => {
-          const label = value === 'true' ? '✓ Verdadero' : '✗ Falso';
+          const label = value === 'true' ? t('q_true') : t('q_false');
           const isCorrectOption = value === question.correctAnswer;
           const isSelected = value === selected;
 

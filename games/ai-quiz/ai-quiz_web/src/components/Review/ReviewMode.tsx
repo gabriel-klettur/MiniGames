@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuiz } from '../../contexts/QuizContext';
+import { useI18n } from '../../i18n';
 import { generateReviewSession } from '../../data/questionGenerator';
 import type { UserAnswer } from '../../data/types';
 import ProgressBar from '../Quiz/ProgressBar';
@@ -8,7 +9,8 @@ import QuestionFeedback from '../Quiz/QuestionFeedback';
 
 export default function ReviewMode() {
   const { state, dispatch } = useQuiz();
-  const [questions] = useState(() => generateReviewSession(state.mistakeBank, Math.min(10, state.mistakeBank.length)));
+  const { t, locale } = useI18n();
+  const [questions] = useState(() => generateReviewSession(state.mistakeBank, Math.min(10, state.mistakeBank.length), locale));
   const [index, setIndex] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [lastCorrect, setLastCorrect] = useState<boolean | null>(null);
@@ -17,13 +19,13 @@ export default function ReviewMode() {
     return (
       <div className="flex flex-col items-center gap-4 animate-slide-up text-center">
         <p className="text-4xl">🎉</p>
-        <h2 className="text-xl font-bold text-gray-100">¡Sin errores pendientes!</h2>
-        <p className="text-gray-400">Has dominado todos los conceptos.</p>
+        <h2 className="text-xl font-bold text-gray-100">{t('review_empty_title')}</h2>
+        <p className="text-gray-400">{t('review_empty_msg')}</p>
         <button
           onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
           className="rounded-card bg-brand-600 px-6 py-3 font-semibold text-white transition hover:bg-brand-500"
         >
-          Volver al inicio
+          {t('quiz_back_home')}
         </button>
       </div>
     );
@@ -34,20 +36,20 @@ export default function ReviewMode() {
     return (
       <div className="flex flex-col items-center gap-4 animate-slide-up text-center">
         <p className="text-4xl">✅</p>
-        <h2 className="text-xl font-bold text-gray-100">Repaso completado</h2>
-        <p className="text-gray-400">Quedan {state.mistakeBank.length} conceptos en tu banco de errores.</p>
+        <h2 className="text-xl font-bold text-gray-100">{t('review_done_title')}</h2>
+        <p className="text-gray-400">{t('review_done_msg', { count: state.mistakeBank.length })}</p>
         <div className="flex gap-3">
           <button
             onClick={() => dispatch({ type: 'SET_VIEW', view: 'home' })}
             className="rounded-card bg-gray-800 px-6 py-3 font-medium text-gray-200 transition hover:bg-gray-700"
           >
-            🏠 Inicio
+            {t('results_home')}
           </button>
           <button
             onClick={() => dispatch({ type: 'SET_VIEW', view: 'review' })}
             className="rounded-card bg-brand-600 px-6 py-3 font-medium text-white transition hover:bg-brand-500"
           >
-            🔄 Repetir
+            {t('review_repeat')}
           </button>
         </div>
       </div>
@@ -72,8 +74,8 @@ export default function ReviewMode() {
   return (
     <div className="flex flex-col gap-5 animate-slide-up" key={question.id}>
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-100">🔄 Modo Repaso</h2>
-        <span className="text-xs text-gray-400">{state.mistakeBank.length} conceptos pendientes</span>
+        <h2 className="text-lg font-bold text-gray-100">{t('review_title')}</h2>
+        <span className="text-xs text-gray-400">{t('review_pending', { count: state.mistakeBank.length })}</span>
       </div>
 
       <ProgressBar current={index} total={questions.length} />
@@ -81,7 +83,7 @@ export default function ReviewMode() {
       <MultipleChoiceQuestion question={question} onAnswer={handleAnswer} />
 
       {answered && lastCorrect !== null && !lastCorrect && (
-        <QuestionFeedback isCorrect={false} explanation="Este concepto permanece en tu banco de repaso." />
+        <QuestionFeedback isCorrect={false} explanation={t('review_mistake_stays')} />
       )}
 
       {answered && (
@@ -89,7 +91,7 @@ export default function ReviewMode() {
           onClick={handleNext}
           className="rounded-card bg-brand-600 py-3 font-semibold text-white transition hover:bg-brand-500"
         >
-          {index >= questions.length - 1 ? '📊 Finalizar Repaso' : 'Siguiente →'}
+          {index >= questions.length - 1 ? t('review_finish') : t('quiz_next')}
         </button>
       )}
     </div>

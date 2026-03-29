@@ -1,5 +1,6 @@
 import { useState, memo } from 'react';
 import { getDiagramById } from '../../data/diagrams';
+import { useI18n } from '../../i18n';
 import InteractiveDiagram from './InteractiveDiagram';
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 function DiagramPanel({ conceptId, defaultOpen = false }: Props) {
+  const { t } = useI18n();
   const diagram = getDiagramById(conceptId);
   const [open, setOpen] = useState(defaultOpen);
 
@@ -19,7 +21,7 @@ function DiagramPanel({ conceptId, defaultOpen = false }: Props) {
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm font-medium text-gray-300 transition hover:text-brand-300"
       >
-        <span>📊 {open ? 'Ocultar' : 'Ver'} diagrama</span>
+        <span>{open ? t('diagram_hide') : t('diagram_show')}</span>
         <span className={`transform transition-transform ${open ? 'rotate-180' : ''}`}>
           ▼
         </span>

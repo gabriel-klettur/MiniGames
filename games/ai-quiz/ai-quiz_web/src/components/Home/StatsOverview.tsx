@@ -1,32 +1,34 @@
 import type { QuizStats } from '../../data/types';
 import { CATEGORIES } from '../../data/categories';
+import { useI18n } from '../../i18n';
 
 interface Props {
   stats: QuizStats;
 }
 
 export default function StatsOverview({ stats }: Props) {
+  const { t } = useI18n();
   const pct = stats.totalAnswered > 0
     ? Math.round((stats.totalCorrect / stats.totalAnswered) * 100)
     : 0;
 
   return (
     <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatCard label="Respondidas" value={stats.totalAnswered} />
-      <StatCard label="Acierto" value={`${pct}%`} color={pct >= 80 ? 'text-success-400' : pct >= 50 ? 'text-amber-400' : 'text-error-400'} />
-      <StatCard label="Racha actual" value={stats.streak} />
-      <StatCard label="Mejor racha" value={stats.bestStreak} />
+      <StatCard label={t('stat_answered')} value={stats.totalAnswered} />
+      <StatCard label={t('stat_accuracy')} value={`${pct}%`} color={pct >= 80 ? 'text-success-400' : pct >= 50 ? 'text-amber-400' : 'text-error-400'} />
+      <StatCard label={t('stat_streak')} value={stats.streak} />
+      <StatCard label={t('stat_best_streak')} value={stats.bestStreak} />
 
       {/* Category breakdown (compact) */}
       <div className="col-span-full mt-2">
-        <h3 className="mb-2 text-sm font-medium text-gray-400">Por categoría</h3>
+        <h3 className="mb-2 text-sm font-medium text-gray-400">{t('stat_by_category')}</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {CATEGORIES.map(({ id, emoji, label }) => {
+          {CATEGORIES.map(({ id, emoji, labelKey }) => {
             const cat = stats.byCategory[id];
             const catPct = cat.total > 0 ? Math.round((cat.correct / cat.total) * 100) : 0;
             return (
               <div key={id} className="rounded-lg bg-gray-800/60 px-3 py-2 text-xs">
-                <span className="font-medium text-gray-300">{emoji} {label}</span>
+                <span className="font-medium text-gray-300">{emoji} {t(labelKey)}</span>
                 <div className="mt-1 flex items-center gap-2">
                   <div className="h-1.5 flex-1 rounded-full bg-gray-700">
                     <div

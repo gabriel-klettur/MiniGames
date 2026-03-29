@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import type { Concept } from '../../data/types';
-import { getCategoryLabel, getCategoryEmoji } from '../../data/categories';
+import { getCategoryEmoji } from '../../data/categories';
+import { useI18n } from '../../i18n';
 import { DiagramPanel } from '../Diagram';
+import { HelpPanel } from '../Help';
 
 interface Props {
   concept: Concept;
   isStudied: boolean;
 }
 
-const DIFFICULTY_LABELS: Record<number, string> = { 1: '⭐ Básico', 2: '⭐⭐ Intermedio', 3: '⭐⭐⭐ Avanzado' };
-
 export default function Flashcard({ concept, isStudied }: Props) {
+  const { t } = useI18n();
   const [flipped, setFlipped] = useState(false);
 
   // Reset flip when concept changes
@@ -32,13 +33,13 @@ export default function Flashcard({ concept, isStudied }: Props) {
         {/* Front */}
         <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-card border border-gray-700 bg-gray-900 p-6 shadow-card">
           {isStudied && <span className="absolute right-3 top-3 text-success-400">✓</span>}
-          <span className="mb-2 text-xs text-gray-500">{getCategoryEmoji(concept.category)} {getCategoryLabel(concept.category)}</span>
+          <span className="mb-2 text-xs text-gray-500">{getCategoryEmoji(concept.category)} {t(`cat_${concept.category.replace(/-/g, '_')}`)}</span>
           <h3 className="text-2xl font-bold text-brand-300">{concept.term}</h3>
           {concept.termEs !== concept.term && (
             <p className="mt-1 text-sm text-gray-400">{concept.termEs}</p>
           )}
-          <p className="mt-2 text-xs text-gray-500">{DIFFICULTY_LABELS[concept.difficulty]}</p>
-          <p className="mt-4 text-xs text-gray-500">Click para ver definición →</p>
+          <p className="mt-2 text-xs text-gray-500">{t(`difficulty_${concept.difficulty}`)}</p>
+          <p className="mt-4 text-xs text-gray-500">{t('study_flip_front')}</p>
         </div>
 
         {/* Back */}
@@ -53,10 +54,11 @@ export default function Flashcard({ concept, isStudied }: Props) {
               </li>
             ))}
           </ul>
-          <div className="mt-4" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-4 space-y-2" onClick={(e) => e.stopPropagation()}>
+            <HelpPanel conceptId={concept.id} />
             <DiagramPanel conceptId={concept.id} />
           </div>
-          <p className="mt-auto pt-4 text-xs text-gray-500">Click para volver ←</p>
+          <p className="mt-auto pt-4 text-xs text-gray-500">{t('study_flip_back')}</p>
         </div>
       </div>
     </div>
